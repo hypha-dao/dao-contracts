@@ -1,0 +1,17 @@
+**.vscode/
+build
+**/CMakeFiles
+**/cmake_install.cmake
+**/Makefile
+**/CMakeCache.txt
+hyphadao_project-prefix
+**/*.wasm
+**/.nyc*
+**/.nyc_output/**
+node_modules
+**.DS_Store
+.DS_Store
+eosc-vault.json
+**/*_project-prefix*
+test_results
+dao.*
