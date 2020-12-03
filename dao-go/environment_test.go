@@ -333,6 +333,8 @@ func SetupMember(t *testing.T, ctx context.Context, api *eos.API,
 	_, err = dao.Enroll(ctx, api, contract, contract, memberAccount)
 	assert.NilError(t, err)
 
+	pause(t, time.Second, "Build block...", "")
+
 	memberDoc, err := docgraph.GetLastDocumentOfEdge(ctx, api, contract, "member")
 	assert.NilError(t, err)
 
