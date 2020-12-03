@@ -8,6 +8,7 @@
 #include <eosio/action.hpp>
 #include <dao.hpp>
 #include <trail.hpp>
+#include <util.hpp>
 
 using namespace eosio;
 
@@ -21,6 +22,8 @@ namespace hypha
         verify_membership(proposer);
         contentGroups = propose_impl(proposer, contentGroups);
 
+        eosio::print ("Proposal::propose - proposer: " + proposer.to_string() + "\n");
+
         contentGroups.push_back(create_system_group(proposer,
                                                     GetProposalType(),
                                                     ContentWrapper::getContent(contentGroups, common::DETAILS, common::TITLE).getAs<std::string>(),
@@ -29,13 +32,11 @@ namespace hypha
 
         // creates the document, or the graph NODE
         auto memberHash = Member::getHash(proposer);
-        ContentGroups rootCgs = Document::rollup(Content(common::ROOT_NODE, m_dao.get_self()));
-        auto rootNode = Document::hashContents(rootCgs);
 
+        eosio::checksum256 root = getRoot(m_dao.get_self());
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
-        proposalNode.emplace();
-        // proposalNode.emplace();
 
+        eosio::print ("Proposal::propose - proposer: " + proposer.to_string() + "\n");
         // the proposer OWNS the proposal; this creates the graph EDGE
         Edge memberProposalEdge(m_dao.get_self(), proposer, memberHash, proposalNode.getHash(), common::OWNS);
         memberProposalEdge.emplace();
@@ -45,7 +46,7 @@ namespace hypha
         proposalMemberEdge.emplace();
 
         // the DHO also links to the document as a proposal, another graph EDGE
-        Edge rootProposalEdge(m_dao.get_self(), proposer, rootNode, proposalNode.getHash(), common::PROPOSAL);
+        Edge rootProposalEdge(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
         rootProposalEdge.emplace();
 
         return proposalNode;
@@ -53,9 +54,9 @@ namespace hypha
 
     void Proposal::close(Document proposal)
     {
-        ContentGroups rootCgs = Document::rollup(Content(common::ROOT_NODE, m_dao.get_self()));
-        auto rootNode = Document::hashContents(rootCgs);
-        Edge edge (m_dao.get_self(), m_dao.get_self(), rootNode, proposal.getHash(), common::PROPOSAL);
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+
+        Edge edge = Edge::get(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL);
         edge.erase();
 
         name ballot_id = ContentWrapper::getContent(proposal.getContentGroups(), common::SYSTEM, common::BALLOT_ID).getAs<eosio::name>();
@@ -65,13 +66,13 @@ namespace hypha
             pass_impl(proposal);
 
             // if proposal passes, create an edge for PASSED_PROPS
-            Edge rootPassedProposal(m_dao.get_self(), m_dao.get_self(), rootNode, proposal.getHash(), common::PASSED_PROPS);
+            Edge rootPassedProposal(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::PASSED_PROPS);
             rootPassedProposal.emplace();
         }
         else
         {
             // create edge for FAILED_PROPS
-            Edge rootFailedProposal(m_dao.get_self(), m_dao.get_self(), rootNode, proposal.getHash(), common::FAILED_PROPS);
+            Edge rootFailedProposal(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::FAILED_PROPS);
             rootFailedProposal.emplace();
         }
 
@@ -150,8 +151,13 @@ namespace hypha
                                                               proposer.to_string() + "@active or " + m_dao.get_self().to_string() + "@active.");
 
         // increment the ballot_id
+        eosio::print ("register_ballot: retrieving : " + common::LAST_BALLOT_ID + "\n");
+
         name ballotId = name(m_dao.getSettingOrFail<eosio::name>(common::LAST_BALLOT_ID).value + 1);
-        m_dao.setsetting(common::LAST_BALLOT_ID, ballotId);
+        eosio::print ("register_ballot: ballotId: " + ballotId.to_string() + "\n");
+
+        m_dao.set_setting(common::LAST_BALLOT_ID, ballotId);
+        eosio::print ("register_ballot: after set setting: " + ballotId.to_string() + "\n");
 
         name trailContract = m_dao.getSettingOrFail<eosio::name>(common::TELOS_DECIDE_CONTRACT);
 
@@ -164,6 +170,8 @@ namespace hypha
         options.push_back(name("fail"));
         options.push_back(name("abstain"));
 
+        eosio::print ("register_ballot: before newballot: m_dao.get_self(): " + m_dao.get_self().to_string() + "\n");
+
         action(
             permission_level{m_dao.get_self(), name("active")},
             trailContract, name("newballot"),
@@ -175,6 +183,8 @@ namespace hypha
                 name("1token1vote"),
                 options))
             .send();
+
+        eosio::print ("register_ballot: after newballot: " + ballotId.to_string() + "\n");
 
         //	  // default is to vote all tokens, not just staked tokens
         //    action (

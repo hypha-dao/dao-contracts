@@ -41,6 +41,10 @@ namespace common {
     static const string         START_PERIOD                = string ("start_period");
     static const string         END_PERIOD                  = string ("end_period");
 
+    static const string         BEGIN_DATE                  = string ("begin_date");
+    static const string         end_time                    = string ("end_time");
+    static const string         LABEL                       = string ("label");
+
     static const string         HYPHA_COEFFICIENT           = string ("hypha_coefficient_x10000");
     static const string         HVOICE_COEFFICIENT          = string ("hvoice_coefficient_x10000");
     static const string         SEEDS_COEFFICIENT           = string ("seeds_coefficient_x10000");
@@ -95,6 +99,8 @@ namespace common {
     static constexpr name       OWNED_BY                    = name ("ownedby");
     static constexpr name       OWNS                        = name ("owns");
     static constexpr name       MEMBER_OF                   = name ("memberof");
+    static constexpr name       APPLICANT                   = name ("applicant");
+    static constexpr name       APPLICANT_OF                = name ("applicantof");
 
     static constexpr name       ASSIGN_BADGE                = name ("assignbadge");
     static constexpr name       VOTE_TALLY                  = name ("votetally");
@@ -103,6 +109,7 @@ namespace common {
 
     static constexpr name       ASSIGNED                    = name ("assigned");
     static constexpr name       ASSIGNEE_NAME               = name ("assignee");
+    static constexpr name       PERIOD                      = name ("period");
 
     
     // graph edges hanging off of primary DHO node

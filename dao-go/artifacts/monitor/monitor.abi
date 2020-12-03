@@ -1,0 +1,376 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [
+        {
+            "new_type_name": "metadata_value",
+            "type": "variant_name_string_asset_time_point_int64"
+        },
+        {
+            "new_type_name": "metric_value",
+            "type": "variant_int64_asset"
+        }
+    ],
+    "structs": [
+        {
+            "name": "Config",
+            "base": "",
+            "fields": [
+                {
+                    "name": "authorized_owners",
+                    "type": "name[]"
+                },
+                {
+                    "name": "metadata",
+                    "type": "Metadata"
+                }
+            ]
+        },
+        {
+            "name": "Metadata",
+            "base": "",
+            "fields": [
+                {
+                    "name": "values",
+                    "type": "pair_string_metadata_value[]"
+                }
+            ]
+        },
+        {
+            "name": "Metric",
+            "base": "",
+            "fields": [
+                {
+                    "name": "metric_name",
+                    "type": "name"
+                },
+                {
+                    "name": "metadata",
+                    "type": "Metadata"
+                },
+                {
+                    "name": "value",
+                    "type": "metric_value"
+                }
+            ]
+        },
+        {
+            "name": "TimeSeries",
+            "base": "",
+            "fields": [
+                {
+                    "name": "timestamp",
+                    "type": "time_point"
+                },
+                {
+                    "name": "delta",
+                    "type": "metric_value"
+                },
+                {
+                    "name": "annotation",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "add",
+            "base": "",
+            "fields": [
+                {
+                    "name": "metric_name",
+                    "type": "name"
+                },
+                {
+                    "name": "operand",
+                    "type": "metric_value"
+                }
+            ]
+        },
+        {
+            "name": "addowner",
+            "base": "",
+            "fields": [
+                {
+                    "name": "authorized_owner",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "addowners",
+            "base": "",
+            "fields": [
+                {
+                    "name": "authorized_owners",
+                    "type": "name[]"
+                }
+            ]
+        },
+        {
+            "name": "annotate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "metric_name",
+                    "type": "name"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "time_point"
+                },
+                {
+                    "name": "annotation",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "event",
+            "base": "",
+            "fields": [
+                {
+                    "name": "broadcaster",
+                    "type": "name"
+                },
+                {
+                    "name": "level",
+                    "type": "name"
+                },
+                {
+                    "name": "values",
+                    "type": "pair_string_metadata_value[]"
+                }
+            ]
+        },
+        {
+            "name": "increment",
+            "base": "",
+            "fields": [
+                {
+                    "name": "metric_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "newmetric",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "metric_name",
+                    "type": "name"
+                },
+                {
+                    "name": "meta",
+                    "type": "Metadata?"
+                }
+            ]
+        },
+        {
+            "name": "pair_string_metadata_value",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "string"
+                },
+                {
+                    "name": "value",
+                    "type": "metadata_value"
+                }
+            ]
+        },
+        {
+            "name": "remowner",
+            "base": "",
+            "fields": [
+                {
+                    "name": "authorized_owner",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "setmetadata",
+            "base": "",
+            "fields": [
+                {
+                    "name": "metric_name",
+                    "type": "name"
+                },
+                {
+                    "name": "key",
+                    "type": "string"
+                },
+                {
+                    "name": "value",
+                    "type": "metadata_value"
+                }
+            ]
+        },
+        {
+            "name": "setowners",
+            "base": "",
+            "fields": [
+                {
+                    "name": "authorized_owners",
+                    "type": "name[]"
+                }
+            ]
+        },
+        {
+            "name": "setvalue",
+            "base": "",
+            "fields": [
+                {
+                    "name": "metric_name",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "metric_value"
+                }
+            ]
+        },
+        {
+            "name": "toggletrack",
+            "base": "",
+            "fields": [
+                {
+                    "name": "metric_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "track",
+            "base": "",
+            "fields": [
+                {
+                    "name": "metric_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "untrack",
+            "base": "",
+            "fields": [
+                {
+                    "name": "metric_name",
+                    "type": "name"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "add",
+            "type": "add",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "addowner",
+            "type": "addowner",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "addowners",
+            "type": "addowners",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "annotate",
+            "type": "annotate",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "event",
+            "type": "event",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "increment",
+            "type": "increment",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "newmetric",
+            "type": "newmetric",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "remowner",
+            "type": "remowner",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setmetadata",
+            "type": "setmetadata",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setowners",
+            "type": "setowners",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setvalue",
+            "type": "setvalue",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "toggletrack",
+            "type": "toggletrack",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "track",
+            "type": "track",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "untrack",
+            "type": "untrack",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "config",
+            "type": "Config",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "metrics",
+            "type": "Metric",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "timeseries",
+            "type": "TimeSeries",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": [
+        {
+            "name": "variant_int64_asset",
+            "types": ["int64","asset"]
+        },
+        {
+            "name": "variant_name_string_asset_time_point_int64",
+            "types": ["name","string","asset","time_point","int64"]
+        }
+    ]
+}

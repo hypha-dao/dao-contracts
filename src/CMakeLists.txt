@@ -7,6 +7,7 @@ add_contract( dao dao
                 dao.cpp
                 #bank.cpp
                 util.cpp 
+                period.cpp
                 #calculation.cpp 
                 member.cpp
                 proposals/proposal.cpp

@@ -1,0 +1,244 @@
+info  2020-12-03T19:56:10.747 thread-0  chain_plugin.cpp:628          plugin_initialize    ] initializing chain plugin
+info  2020-12-03T19:56:10.748 thread-0  chain_plugin.cpp:459          operator()           ] Support for builtin protocol feature 'PREACTIVATE_FEATURE' (with digest of '0ec7e080177b2c02b278d5088611686b49d739925a92d9bfcacd7fc6b74053bd') is enabled without activation restrictions
+info  2020-12-03T19:56:10.748 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'ONLY_LINK_TO_EXISTING_PERMISSION' (with digest of '1a99a59d87e06e09ec5b028a9cbb7749b4a5ad8819004365d02dc4379a8b7241') is enabled with preactivation required
+info  2020-12-03T19:56:10.748 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'FORWARD_SETCODE' (with digest of '2652f5f96006294109b3dd0bbde63693f55324af452b799ee137a81a905eed25') is enabled with preactivation required
+info  2020-12-03T19:56:10.748 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'WTMSIG_BLOCK_SIGNATURES' (with digest of '299dcb6af692324b899b39f16d5a530a33062804e41f09dc97e9f156b4476707') is enabled with preactivation required
+info  2020-12-03T19:56:10.748 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'REPLACE_DEFERRED' (with digest of 'ef43112c6543b88db2283a2e077278c315ae2c84719a8b25f25cc88565fbea99') is enabled with preactivation required
+info  2020-12-03T19:56:10.748 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'NO_DUPLICATE_DEFERRED_ID' (with digest of '4a90c00d55454dc5b059055ca213579c6ea856967712a56017487886a4d4cc0f') is enabled with preactivation required
+info  2020-12-03T19:56:10.748 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'RAM_RESTRICTIONS' (with digest of '4e7bf348da00a945489b2a681749eb56f5de00b900014e137ddae39f48f69d67') is enabled with preactivation required
+info  2020-12-03T19:56:10.748 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'WEBAUTHN_KEY' (with digest of '4fca8bd82bbd181e714e283f83e1b45d95ca5af40fb89ad3977b653c448f78c2') is enabled with preactivation required
+info  2020-12-03T19:56:10.748 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'DISALLOW_EMPTY_PRODUCER_SCHEDULE' (with digest of '68dcaa34c0517d19666e6b33add67351d8c5f69e999ca1e37931bc410a297428') is enabled with preactivation required
+info  2020-12-03T19:56:10.748 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'ONLY_BILL_FIRST_AUTHORIZER' (with digest of '8ba52fe7a3956c5cd3a656a3174b931d3bb2abb45578befc59f283ecd816a405') is enabled with preactivation required
+info  2020-12-03T19:56:10.749 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'RESTRICT_ACTION_TO_SELF' (with digest of 'ad9e3d8f650687709fd68f4b90b41f7d825a365b02c23a636cef88ac2ac00c43') is enabled with preactivation required
+info  2020-12-03T19:56:10.749 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'FIX_LINKAUTH_RESTRICTION' (with digest of 'e0fb64b1085cc5538970158d05a009c24e276fb94e1a0bf6a528b48fbc4ff526') is enabled with preactivation required
+info  2020-12-03T19:56:10.749 thread-0  chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'GET_SENDER' (with digest of 'f0af56d2c5a48d60a4a5b5c903edfb7db3a736a94ed589d0b797df33ff9d3e1d') is enabled with preactivation required
+info  2020-12-03T19:56:10.749 thread-0  chain_plugin.cpp:830          plugin_initialize    ] Deleting state database and blocks
+info  2020-12-03T19:56:10.751 thread-0  chain_plugin.cpp:1025         plugin_initialize    ] Starting fresh blockchain state using default genesis state.
+info  2020-12-03T19:56:11.210 thread-0  platform_timer_accurac:62     compute_and_print_ti ] Checktime timer accuracy: min:3us max:103us mean:26us stddev:25us
+info  2020-12-03T19:56:11.211 thread-0  http_plugin.cpp:715           plugin_initialize    ] configured http to listen on 127.0.0.1:8888
+warn  2020-12-03T19:56:11.211 thread-0  history_plugin.cpp:317        plugin_initialize    ] --filter-on * enabled. This can fill shared_mem, causing nodeos to stop.
+info  2020-12-03T19:56:11.212 thread-0  main.cpp:106                  main                 ] nodeos version v2.0.7 v2.0.7-0d87dff8bee56179aa01472dd00a089b2aa7b9fa
+info  2020-12-03T19:56:11.212 thread-0  main.cpp:107                  main                 ] nodeos using configuration file /Users/max/Library/Application Support/eosio/nodeos/config/config.ini
+info  2020-12-03T19:56:11.212 thread-0  main.cpp:108                  main                 ] nodeos data directory is /Users/max/Library/Application Support/eosio/nodeos/data
+warn  2020-12-03T19:56:11.212 thread-0  controller.cpp:580            startup              ] No existing chain state or fork database. Initializing fresh blockchain state and resetting fork database.
+warn  2020-12-03T19:56:11.212 thread-0  controller.cpp:450            initialize_blockchai ] Initializing new blockchain with genesis state
+info  2020-12-03T19:56:11.235 thread-0  chain_plugin.cpp:1166         plugin_startup       ] starting chain in read/write mode
+info  2020-12-03T19:56:11.235 thread-0  chain_plugin.cpp:1171         plugin_startup       ] Blockchain started; head block is #1, genesis timestamp is 2018-06-01T12:00:00.000
+info  2020-12-03T19:56:11.235 thread-0  producer_plugin.cpp:978       plugin_startup       ] producer plugin:  plugin_startup() begin
+info  2020-12-03T19:56:11.235 thread-0  producer_plugin.cpp:1003      plugin_startup       ] Launching block production for 1 producers at 2020-12-03T19:56:11.235.
+info  2020-12-03T19:56:11.235 thread-0  producer_plugin.cpp:1014      plugin_startup       ] producer plugin:  plugin_startup() end
+info  2020-12-03T19:56:11.235 thread-0  producer_api_plugin.cp:89     plugin_startup       ] starting producer_api_plugin
+info  2020-12-03T19:56:11.235 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/add_greylist_accounts
+info  2020-12-03T19:56:11.235 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/create_snapshot
+info  2020-12-03T19:56:11.235 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/get_account_ram_corrections
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/get_greylist
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/get_integrity_hash
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/get_runtime_options
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/get_scheduled_protocol_feature_activations
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/get_supported_protocol_features
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/get_whitelist_blacklist
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/pause
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/paused
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/remove_greylist_accounts
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/resume
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/schedule_protocol_feature_activations
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/set_whitelist_blacklist
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/producer/update_runtime_options
+info  2020-12-03T19:56:11.236 thread-0  chain_api_plugin.cpp:105      plugin_startup       ] starting chain_api_plugin
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_info
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/abi_bin_to_json
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/abi_json_to_bin
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_abi
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_account
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_activated_protocol_features
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_block
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_block_header_state
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_code
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_code_hash
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_currency_balance
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_currency_stats
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_producer_schedule
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_producers
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_raw_abi
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_raw_code_and_abi
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_required_keys
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_scheduled_transactions
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_table_by_scope
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_table_rows
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/get_transaction_id
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/push_block
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/push_transaction
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/push_transactions
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/chain/send_transaction
+info  2020-12-03T19:56:11.236 thread-0  history_api_plugin.cpp:34     plugin_startup       ] starting history_api_plugin
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/history/get_actions
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/history/get_controlled_accounts
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/history/get_key_accounts
+info  2020-12-03T19:56:11.236 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/history/get_transaction
+info  2020-12-03T19:56:11.236 thread-0  net_plugin.cpp:3414           plugin_startup       ] my node_id is aeb0d9fb65d4b67ee18eb543c05f56323d11ed93a860a14e33127c844da3bf4f
+info  2020-12-03T19:56:11.236 thread-0  net_plugin.cpp:3470           plugin_startup       ] starting listener, max clients is 25
+info  2020-12-03T19:56:11.237 thread-0  http_plugin.cpp:794           operator()           ] start listening for http requests
+info  2020-12-03T19:56:11.237 thread-0  http_plugin.cpp:895           add_handler          ] add api url: /v1/node/get_supported_apis
+info  2020-12-03T19:56:11.301 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block e9828fc00c4420a4... #2 @ 2020-12-03T19:56:11.500 signed by eosio [trxs: 0, lib: 1, confirmed: 0]
+info  2020-12-03T19:56:11.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block b7cc83ba205336c6... #3 @ 2020-12-03T19:56:12.000 signed by eosio [trxs: 21, lib: 2, confirmed: 0]
+info  2020-12-03T19:56:12.403 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block d3d98776ce07c1cb... #4 @ 2020-12-03T19:56:12.500 signed by eosio [trxs: 4, lib: 3, confirmed: 0]
+info  2020-12-03T19:56:12.903 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block d5c560665942c5d5... #5 @ 2020-12-03T19:56:13.000 signed by eosio [trxs: 0, lib: 4, confirmed: 0]
+info  2020-12-03T19:56:13.402 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block ff2a5ed17e8c2902... #6 @ 2020-12-03T19:56:13.500 signed by eosio [trxs: 1, lib: 5, confirmed: 0]
+info  2020-12-03T19:56:13.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 6fdde410eeb4425f... #7 @ 2020-12-03T19:56:14.000 signed by eosio [trxs: 30, lib: 6, confirmed: 0]
+info  2020-12-03T19:56:14.402 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block fd5fcbc24799e405... #8 @ 2020-12-03T19:56:14.500 signed by eosio [trxs: 48, lib: 7, confirmed: 0]
+info  2020-12-03T19:56:14.902 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block d00107debc3bb8a0... #9 @ 2020-12-03T19:56:15.000 signed by eosio [trxs: 12, lib: 8, confirmed: 0]
+info  2020-12-03T19:56:15.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 28cc2438aa2fb88c... #10 @ 2020-12-03T19:56:15.500 signed by eosio [trxs: 0, lib: 9, confirmed: 0]
+info  2020-12-03T19:56:15.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 550dc45452532f57... #11 @ 2020-12-03T19:56:16.000 signed by eosio [trxs: 0, lib: 10, confirmed: 0]
+info  2020-12-03T19:56:16.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 0cefa19d3bb3abfd... #12 @ 2020-12-03T19:56:16.500 signed by eosio [trxs: 0, lib: 11, confirmed: 0]
+info  2020-12-03T19:56:16.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 63cf6eecfa192022... #13 @ 2020-12-03T19:56:17.000 signed by eosio [trxs: 0, lib: 12, confirmed: 0]
+info  2020-12-03T19:56:17.301 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 0d190775a30b54ab... #14 @ 2020-12-03T19:56:17.500 signed by eosio [trxs: 0, lib: 13, confirmed: 0]
+info  2020-12-03T19:56:17.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block d953a1dc4a36f106... #15 @ 2020-12-03T19:56:18.000 signed by eosio [trxs: 0, lib: 14, confirmed: 0]
+info  2020-12-03T19:56:18.407 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 536d982b5bfcc74c... #16 @ 2020-12-03T19:56:18.500 signed by eosio [trxs: 0, lib: 15, confirmed: 0]
+info  2020-12-03T19:56:18.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block f6f31d74406cabc7... #17 @ 2020-12-03T19:56:19.000 signed by eosio [trxs: 1, lib: 16, confirmed: 0]
+info  2020-12-03T19:56:19.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 83070017c3863f65... #18 @ 2020-12-03T19:56:19.500 signed by eosio [trxs: 0, lib: 17, confirmed: 0]
+info  2020-12-03T19:56:19.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block cdfb95a71688e922... #19 @ 2020-12-03T19:56:20.000 signed by eosio [trxs: 0, lib: 18, confirmed: 0]
+info  2020-12-03T19:56:20.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 6eb4574b7e5d628c... #20 @ 2020-12-03T19:56:20.500 signed by eosio [trxs: 0, lib: 19, confirmed: 0]
+info  2020-12-03T19:56:20.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block cfe81afe4b70426e... #21 @ 2020-12-03T19:56:21.000 signed by eosio [trxs: 0, lib: 20, confirmed: 0]
+info  2020-12-03T19:56:21.402 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 4c6f97f36a12cd72... #22 @ 2020-12-03T19:56:21.500 signed by eosio [trxs: 0, lib: 21, confirmed: 0]
+info  2020-12-03T19:56:21.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 582c97a960409ff1... #23 @ 2020-12-03T19:56:22.000 signed by eosio [trxs: 0, lib: 22, confirmed: 0]
+info  2020-12-03T19:56:22.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 63a03d950d9ee060... #24 @ 2020-12-03T19:56:22.500 signed by eosio [trxs: 0, lib: 23, confirmed: 0]
+info  2020-12-03T19:56:22.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 833167e1ec6baade... #25 @ 2020-12-03T19:56:23.000 signed by eosio [trxs: 0, lib: 24, confirmed: 0]
+info  2020-12-03T19:56:23.301 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block f5f066737b6381be... #26 @ 2020-12-03T19:56:23.500 signed by eosio [trxs: 0, lib: 25, confirmed: 0]
+info  2020-12-03T19:56:23.902 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 0613ab87762f94d3... #27 @ 2020-12-03T19:56:24.000 signed by eosio [trxs: 0, lib: 26, confirmed: 0]
+info  2020-12-03T19:56:24.402 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block ed6a7b6f2b2b5f9d... #28 @ 2020-12-03T19:56:24.500 signed by eosio [trxs: 0, lib: 27, confirmed: 0]
+info  2020-12-03T19:56:24.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 529b77992df1732e... #29 @ 2020-12-03T19:56:25.000 signed by eosio [trxs: 0, lib: 28, confirmed: 0]
+info  2020-12-03T19:56:25.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block e8d699e2a53a3c1e... #30 @ 2020-12-03T19:56:25.500 signed by eosio [trxs: 0, lib: 29, confirmed: 0]
+info  2020-12-03T19:56:25.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block b9725ba9f4bc7a46... #31 @ 2020-12-03T19:56:26.000 signed by eosio [trxs: 0, lib: 30, confirmed: 0]
+info  2020-12-03T19:56:26.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 652c4a58f7f9e853... #32 @ 2020-12-03T19:56:26.500 signed by eosio [trxs: 0, lib: 31, confirmed: 0]
+info  2020-12-03T19:56:26.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 9841d2e07e372e9f... #33 @ 2020-12-03T19:56:27.000 signed by eosio [trxs: 0, lib: 32, confirmed: 0]
+info  2020-12-03T19:56:27.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 57397e0aa0cd5614... #34 @ 2020-12-03T19:56:27.500 signed by eosio [trxs: 0, lib: 33, confirmed: 0]
+info  2020-12-03T19:56:27.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block daa35dabacbaec8e... #35 @ 2020-12-03T19:56:28.000 signed by eosio [trxs: 0, lib: 34, confirmed: 0]
+info  2020-12-03T19:56:28.406 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block b58ba685850abdfc... #36 @ 2020-12-03T19:56:28.500 signed by eosio [trxs: 0, lib: 35, confirmed: 0]
+info  2020-12-03T19:56:28.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 3e75dcefe8c39a13... #37 @ 2020-12-03T19:56:29.000 signed by eosio [trxs: 0, lib: 36, confirmed: 0]
+info  2020-12-03T19:56:29.300 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block f04b822575c58258... #38 @ 2020-12-03T19:56:29.500 signed by eosio [trxs: 0, lib: 37, confirmed: 0]
+info  2020-12-03T19:56:29.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block ae73048d735a3c1b... #39 @ 2020-12-03T19:56:30.000 signed by eosio [trxs: 0, lib: 38, confirmed: 0]
+info  2020-12-03T19:56:30.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block cf93299de7ec87a9... #40 @ 2020-12-03T19:56:30.500 signed by eosio [trxs: 0, lib: 39, confirmed: 0]
+info  2020-12-03T19:56:30.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block a3da967c65bac92b... #41 @ 2020-12-03T19:56:31.000 signed by eosio [trxs: 0, lib: 40, confirmed: 0]
+info  2020-12-03T19:56:31.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 332acef818f052fd... #42 @ 2020-12-03T19:56:31.500 signed by eosio [trxs: 0, lib: 41, confirmed: 0]
+info  2020-12-03T19:56:31.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 623397a2ece649b1... #43 @ 2020-12-03T19:56:32.000 signed by eosio [trxs: 0, lib: 42, confirmed: 0]
+info  2020-12-03T19:56:32.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block bd256f7c70b38c3e... #44 @ 2020-12-03T19:56:32.500 signed by eosio [trxs: 0, lib: 43, confirmed: 0]
+info  2020-12-03T19:56:32.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 19e0af6c2a96969d... #45 @ 2020-12-03T19:56:33.000 signed by eosio [trxs: 0, lib: 44, confirmed: 0]
+info  2020-12-03T19:56:33.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 713ef5a6658d1e7e... #46 @ 2020-12-03T19:56:33.500 signed by eosio [trxs: 0, lib: 45, confirmed: 0]
+info  2020-12-03T19:56:33.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 526ebb5775f3aa92... #47 @ 2020-12-03T19:56:34.000 signed by eosio [trxs: 0, lib: 46, confirmed: 0]
+info  2020-12-03T19:56:34.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block a4da7e2155f37d96... #48 @ 2020-12-03T19:56:34.500 signed by eosio [trxs: 0, lib: 47, confirmed: 0]
+info  2020-12-03T19:56:34.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block cbaf9c9391b1c704... #49 @ 2020-12-03T19:56:35.000 signed by eosio [trxs: 0, lib: 48, confirmed: 0]
+info  2020-12-03T19:56:35.301 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 2f20a20dea9d4bc0... #50 @ 2020-12-03T19:56:35.500 signed by eosio [trxs: 0, lib: 49, confirmed: 0]
+info  2020-12-03T19:56:35.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 1ebff06b69aa01c8... #51 @ 2020-12-03T19:56:36.000 signed by eosio [trxs: 0, lib: 50, confirmed: 0]
+info  2020-12-03T19:56:36.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 9dcaf08b76cd53b0... #52 @ 2020-12-03T19:56:36.500 signed by eosio [trxs: 0, lib: 51, confirmed: 0]
+info  2020-12-03T19:56:36.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block a412f36f53e86f1d... #53 @ 2020-12-03T19:56:37.000 signed by eosio [trxs: 0, lib: 52, confirmed: 0]
+info  2020-12-03T19:56:37.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block f4c788aa7c16e628... #54 @ 2020-12-03T19:56:37.500 signed by eosio [trxs: 0, lib: 53, confirmed: 0]
+info  2020-12-03T19:56:37.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 3a25251790eb8973... #55 @ 2020-12-03T19:56:38.000 signed by eosio [trxs: 0, lib: 54, confirmed: 0]
+info  2020-12-03T19:56:38.415 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 84e4a8b7f1d00314... #56 @ 2020-12-03T19:56:38.500 signed by eosio [trxs: 0, lib: 55, confirmed: 0]
+info  2020-12-03T19:56:38.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 75b698d4054da758... #57 @ 2020-12-03T19:56:39.000 signed by eosio [trxs: 0, lib: 56, confirmed: 0]
+info  2020-12-03T19:56:39.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 08789ccc7208624b... #58 @ 2020-12-03T19:56:39.500 signed by eosio [trxs: 0, lib: 57, confirmed: 0]
+info  2020-12-03T19:56:39.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 6634ac3925b390e7... #59 @ 2020-12-03T19:56:40.000 signed by eosio [trxs: 0, lib: 58, confirmed: 0]
+info  2020-12-03T19:56:40.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 3fcc7327c965d16b... #60 @ 2020-12-03T19:56:40.500 signed by eosio [trxs: 0, lib: 59, confirmed: 0]
+info  2020-12-03T19:56:40.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 16c5685efdf51dc3... #61 @ 2020-12-03T19:56:41.000 signed by eosio [trxs: 0, lib: 60, confirmed: 0]
+info  2020-12-03T19:56:41.301 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 3d796e636197c829... #62 @ 2020-12-03T19:56:41.500 signed by eosio [trxs: 0, lib: 61, confirmed: 0]
+info  2020-12-03T19:56:41.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block b90c330fcd5bf8e3... #63 @ 2020-12-03T19:56:42.000 signed by eosio [trxs: 0, lib: 62, confirmed: 0]
+info  2020-12-03T19:56:42.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 919f8f9192cbc7e9... #64 @ 2020-12-03T19:56:42.500 signed by eosio [trxs: 0, lib: 63, confirmed: 0]
+info  2020-12-03T19:56:42.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 734723eb116b3daf... #65 @ 2020-12-03T19:56:43.000 signed by eosio [trxs: 0, lib: 64, confirmed: 0]
+info  2020-12-03T19:56:43.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block be23a7f82ea96b73... #66 @ 2020-12-03T19:56:43.500 signed by eosio [trxs: 0, lib: 65, confirmed: 0]
+info  2020-12-03T19:56:43.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 8e4c35b7a82bc6f3... #67 @ 2020-12-03T19:56:44.000 signed by eosio [trxs: 0, lib: 66, confirmed: 0]
+info  2020-12-03T19:56:44.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block f1289d4e1ef9f8c7... #68 @ 2020-12-03T19:56:44.500 signed by eosio [trxs: 0, lib: 67, confirmed: 0]
+info  2020-12-03T19:56:44.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 5c241e354336cd5a... #69 @ 2020-12-03T19:56:45.000 signed by eosio [trxs: 0, lib: 68, confirmed: 0]
+info  2020-12-03T19:56:45.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block c2306cb3939f6245... #70 @ 2020-12-03T19:56:45.500 signed by eosio [trxs: 0, lib: 69, confirmed: 0]
+info  2020-12-03T19:56:45.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 4805444399fad976... #71 @ 2020-12-03T19:56:46.000 signed by eosio [trxs: 0, lib: 70, confirmed: 0]
+info  2020-12-03T19:56:46.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 03a0233ebea6e0f7... #72 @ 2020-12-03T19:56:46.500 signed by eosio [trxs: 0, lib: 71, confirmed: 0]
+info  2020-12-03T19:56:46.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 56ba7c58eac7cda0... #73 @ 2020-12-03T19:56:47.000 signed by eosio [trxs: 0, lib: 72, confirmed: 0]
+info  2020-12-03T19:56:47.300 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 5dfb2a6988a52c4e... #74 @ 2020-12-03T19:56:47.500 signed by eosio [trxs: 0, lib: 73, confirmed: 0]
+info  2020-12-03T19:56:47.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 3ec813d72005a790... #75 @ 2020-12-03T19:56:48.000 signed by eosio [trxs: 0, lib: 74, confirmed: 0]
+info  2020-12-03T19:56:48.410 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block d82dabf86f02d679... #76 @ 2020-12-03T19:56:48.500 signed by eosio [trxs: 0, lib: 75, confirmed: 0]
+info  2020-12-03T19:56:48.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 6c2780aab7714d36... #77 @ 2020-12-03T19:56:49.000 signed by eosio [trxs: 0, lib: 76, confirmed: 0]
+info  2020-12-03T19:56:49.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 9b35d45ba1be50a8... #78 @ 2020-12-03T19:56:49.500 signed by eosio [trxs: 0, lib: 77, confirmed: 0]
+info  2020-12-03T19:56:49.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 1f7fe361f87b5b60... #79 @ 2020-12-03T19:56:50.000 signed by eosio [trxs: 0, lib: 78, confirmed: 0]
+info  2020-12-03T19:56:50.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 9efab1c5f62c0d15... #80 @ 2020-12-03T19:56:50.500 signed by eosio [trxs: 0, lib: 79, confirmed: 0]
+info  2020-12-03T19:56:50.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 575df0c0922c7c33... #81 @ 2020-12-03T19:56:51.000 signed by eosio [trxs: 0, lib: 80, confirmed: 0]
+info  2020-12-03T19:56:51.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 1b685ca62591c4a5... #82 @ 2020-12-03T19:56:51.500 signed by eosio [trxs: 0, lib: 81, confirmed: 0]
+info  2020-12-03T19:56:51.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 788ad116414eb057... #83 @ 2020-12-03T19:56:52.000 signed by eosio [trxs: 0, lib: 82, confirmed: 0]
+info  2020-12-03T19:56:52.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 65c8240d29573198... #84 @ 2020-12-03T19:56:52.500 signed by eosio [trxs: 0, lib: 83, confirmed: 0]
+info  2020-12-03T19:56:52.902 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block fb07c50e10013d96... #85 @ 2020-12-03T19:56:53.000 signed by eosio [trxs: 0, lib: 84, confirmed: 0]
+info  2020-12-03T19:56:53.300 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block b75e21ddc70dcb05... #86 @ 2020-12-03T19:56:53.500 signed by eosio [trxs: 0, lib: 85, confirmed: 0]
+info  2020-12-03T19:56:53.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 50a3cbd873236f79... #87 @ 2020-12-03T19:56:54.000 signed by eosio [trxs: 0, lib: 86, confirmed: 0]
+info  2020-12-03T19:56:54.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 038d5bc7bcf5737c... #88 @ 2020-12-03T19:56:54.500 signed by eosio [trxs: 0, lib: 87, confirmed: 0]
+info  2020-12-03T19:56:54.902 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block b876724cd9728a1a... #89 @ 2020-12-03T19:56:55.000 signed by eosio [trxs: 0, lib: 88, confirmed: 0]
+info  2020-12-03T19:56:55.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block afd692cb8728f8df... #90 @ 2020-12-03T19:56:55.500 signed by eosio [trxs: 0, lib: 89, confirmed: 0]
+info  2020-12-03T19:56:55.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block c7b5ef75cbd68acc... #91 @ 2020-12-03T19:56:56.000 signed by eosio [trxs: 0, lib: 90, confirmed: 0]
+info  2020-12-03T19:56:56.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block de5b5b830fdb837c... #92 @ 2020-12-03T19:56:56.500 signed by eosio [trxs: 0, lib: 91, confirmed: 0]
+info  2020-12-03T19:56:56.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 46fdeae398a4384b... #93 @ 2020-12-03T19:56:57.000 signed by eosio [trxs: 0, lib: 92, confirmed: 0]
+info  2020-12-03T19:56:57.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 4a7f649699e63029... #94 @ 2020-12-03T19:56:57.500 signed by eosio [trxs: 0, lib: 93, confirmed: 0]
+info  2020-12-03T19:56:57.902 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 65ff10826ea7d618... #95 @ 2020-12-03T19:56:58.000 signed by eosio [trxs: 0, lib: 94, confirmed: 0]
+info  2020-12-03T19:56:58.409 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block e2174b3890c0f648... #96 @ 2020-12-03T19:56:58.500 signed by eosio [trxs: 0, lib: 95, confirmed: 0]
+info  2020-12-03T19:56:58.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 717ecb53e92736c6... #97 @ 2020-12-03T19:56:59.000 signed by eosio [trxs: 0, lib: 96, confirmed: 0]
+info  2020-12-03T19:56:59.300 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 03e316114f637d92... #98 @ 2020-12-03T19:56:59.500 signed by eosio [trxs: 0, lib: 97, confirmed: 0]
+info  2020-12-03T19:56:59.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 3452002dcb8f7fc1... #99 @ 2020-12-03T19:57:00.000 signed by eosio [trxs: 0, lib: 98, confirmed: 0]
+info  2020-12-03T19:57:00.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 9b34b340289bb1de... #100 @ 2020-12-03T19:57:00.500 signed by eosio [trxs: 0, lib: 99, confirmed: 0]
+info  2020-12-03T19:57:00.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 9a4950d0f8914a2e... #101 @ 2020-12-03T19:57:01.000 signed by eosio [trxs: 0, lib: 100, confirmed: 0]
+info  2020-12-03T19:57:01.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 14cf648fbe21c3ac... #102 @ 2020-12-03T19:57:01.500 signed by eosio [trxs: 0, lib: 101, confirmed: 0]
+info  2020-12-03T19:57:01.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 841272035d03e2ad... #103 @ 2020-12-03T19:57:02.000 signed by eosio [trxs: 0, lib: 102, confirmed: 0]
+info  2020-12-03T19:57:02.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 870609fcad268a99... #104 @ 2020-12-03T19:57:02.500 signed by eosio [trxs: 0, lib: 103, confirmed: 0]
+info  2020-12-03T19:57:02.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 7a1d60ea75055d6d... #105 @ 2020-12-03T19:57:03.000 signed by eosio [trxs: 0, lib: 104, confirmed: 0]
+info  2020-12-03T19:57:03.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 1ff87fe7254f120e... #106 @ 2020-12-03T19:57:03.500 signed by eosio [trxs: 0, lib: 105, confirmed: 0]
+info  2020-12-03T19:57:03.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block e565d65358835fc7... #107 @ 2020-12-03T19:57:04.000 signed by eosio [trxs: 0, lib: 106, confirmed: 0]
+info  2020-12-03T19:57:04.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block e6fa64833e78f783... #108 @ 2020-12-03T19:57:04.500 signed by eosio [trxs: 0, lib: 107, confirmed: 0]
+info  2020-12-03T19:57:04.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block b50417f9af5bb3e9... #109 @ 2020-12-03T19:57:05.000 signed by eosio [trxs: 0, lib: 108, confirmed: 0]
+info  2020-12-03T19:57:05.300 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 3c05cc4bb39176ed... #110 @ 2020-12-03T19:57:05.500 signed by eosio [trxs: 0, lib: 109, confirmed: 0]
+info  2020-12-03T19:57:05.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 0611af43d442fea6... #111 @ 2020-12-03T19:57:06.000 signed by eosio [trxs: 0, lib: 110, confirmed: 0]
+info  2020-12-03T19:57:06.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block c9e075fac665130e... #112 @ 2020-12-03T19:57:06.500 signed by eosio [trxs: 0, lib: 111, confirmed: 0]
+info  2020-12-03T19:57:06.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 9399dd36fb7846c4... #113 @ 2020-12-03T19:57:07.000 signed by eosio [trxs: 0, lib: 112, confirmed: 0]
+info  2020-12-03T19:57:07.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block ad6f0c67ca403535... #114 @ 2020-12-03T19:57:07.500 signed by eosio [trxs: 0, lib: 113, confirmed: 0]
+info  2020-12-03T19:57:07.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 9887cd6739662d26... #115 @ 2020-12-03T19:57:08.000 signed by eosio [trxs: 0, lib: 114, confirmed: 0]
+info  2020-12-03T19:57:08.409 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 9264454f00beb050... #116 @ 2020-12-03T19:57:08.500 signed by eosio [trxs: 0, lib: 115, confirmed: 0]
+info  2020-12-03T19:57:08.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 093f3ebc026d54aa... #117 @ 2020-12-03T19:57:09.000 signed by eosio [trxs: 0, lib: 116, confirmed: 0]
+info  2020-12-03T19:57:09.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block db9301a6c40579e4... #118 @ 2020-12-03T19:57:09.500 signed by eosio [trxs: 0, lib: 117, confirmed: 0]
+info  2020-12-03T19:57:09.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 1a8eb101daf109c9... #119 @ 2020-12-03T19:57:10.000 signed by eosio [trxs: 0, lib: 118, confirmed: 0]
+info  2020-12-03T19:57:10.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 8b766587149a9641... #120 @ 2020-12-03T19:57:10.500 signed by eosio [trxs: 0, lib: 119, confirmed: 0]
+info  2020-12-03T19:57:10.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block f8150d81ae901070... #121 @ 2020-12-03T19:57:11.000 signed by eosio [trxs: 0, lib: 120, confirmed: 0]
+info  2020-12-03T19:57:11.300 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block fc479809c248b652... #122 @ 2020-12-03T19:57:11.500 signed by eosio [trxs: 0, lib: 121, confirmed: 0]
+info  2020-12-03T19:57:11.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block ee76c670c1623e56... #123 @ 2020-12-03T19:57:12.000 signed by eosio [trxs: 0, lib: 122, confirmed: 0]
+info  2020-12-03T19:57:12.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 58234e1a3e1bc63c... #124 @ 2020-12-03T19:57:12.500 signed by eosio [trxs: 0, lib: 123, confirmed: 0]
+info  2020-12-03T19:57:12.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 32228a4befa54079... #125 @ 2020-12-03T19:57:13.000 signed by eosio [trxs: 0, lib: 124, confirmed: 0]
+info  2020-12-03T19:57:13.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 497d0ffd848961c1... #126 @ 2020-12-03T19:57:13.500 signed by eosio [trxs: 0, lib: 125, confirmed: 0]
+info  2020-12-03T19:57:13.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 4584b6086c238f3a... #127 @ 2020-12-03T19:57:14.000 signed by eosio [trxs: 0, lib: 126, confirmed: 0]
+info  2020-12-03T19:57:14.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block fdf8609159390bcc... #128 @ 2020-12-03T19:57:14.500 signed by eosio [trxs: 0, lib: 127, confirmed: 0]
+info  2020-12-03T19:57:14.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 10b92c4db4c81747... #129 @ 2020-12-03T19:57:15.000 signed by eosio [trxs: 0, lib: 128, confirmed: 0]
+info  2020-12-03T19:57:15.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 71540495daa74fae... #130 @ 2020-12-03T19:57:15.500 signed by eosio [trxs: 0, lib: 129, confirmed: 0]
+info  2020-12-03T19:57:15.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 969eedc02fbf3bf0... #131 @ 2020-12-03T19:57:16.000 signed by eosio [trxs: 0, lib: 130, confirmed: 0]
+info  2020-12-03T19:57:16.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block fd74ac3b40378812... #132 @ 2020-12-03T19:57:16.500 signed by eosio [trxs: 0, lib: 131, confirmed: 0]
+info  2020-12-03T19:57:16.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 4a899f4724d1ce99... #133 @ 2020-12-03T19:57:17.000 signed by eosio [trxs: 0, lib: 132, confirmed: 0]
+info  2020-12-03T19:57:17.301 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block e4906af671459d31... #134 @ 2020-12-03T19:57:17.500 signed by eosio [trxs: 0, lib: 133, confirmed: 0]
+info  2020-12-03T19:57:17.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 93b8aff79642f86a... #135 @ 2020-12-03T19:57:18.000 signed by eosio [trxs: 0, lib: 134, confirmed: 0]
+info  2020-12-03T19:57:18.409 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block b0a1b3aa939707ee... #136 @ 2020-12-03T19:57:18.500 signed by eosio [trxs: 0, lib: 135, confirmed: 0]
+info  2020-12-03T19:57:18.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 6ef9b99f5f790a69... #137 @ 2020-12-03T19:57:19.000 signed by eosio [trxs: 0, lib: 136, confirmed: 0]
+info  2020-12-03T19:57:19.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 6cfd720aad090812... #138 @ 2020-12-03T19:57:19.500 signed by eosio [trxs: 0, lib: 137, confirmed: 0]
+info  2020-12-03T19:57:19.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 52e323d49e4a0c02... #139 @ 2020-12-03T19:57:20.000 signed by eosio [trxs: 0, lib: 138, confirmed: 0]
+info  2020-12-03T19:57:20.402 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block c978b72e2763e0f4... #140 @ 2020-12-03T19:57:20.500 signed by eosio [trxs: 0, lib: 139, confirmed: 0]
+info  2020-12-03T19:57:20.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block cbfdefb52e0816e4... #141 @ 2020-12-03T19:57:21.000 signed by eosio [trxs: 0, lib: 140, confirmed: 0]
+info  2020-12-03T19:57:21.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block de43cadac1b7ead6... #142 @ 2020-12-03T19:57:21.500 signed by eosio [trxs: 0, lib: 141, confirmed: 0]
+info  2020-12-03T19:57:21.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 119d9b94f340b48a... #143 @ 2020-12-03T19:57:22.000 signed by eosio [trxs: 0, lib: 142, confirmed: 0]
+info  2020-12-03T19:57:22.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 6ec5bceea65f4c26... #144 @ 2020-12-03T19:57:22.500 signed by eosio [trxs: 0, lib: 143, confirmed: 0]
+info  2020-12-03T19:57:22.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block d9a40fb3c039c14d... #145 @ 2020-12-03T19:57:23.000 signed by eosio [trxs: 0, lib: 144, confirmed: 0]
+info  2020-12-03T19:57:23.300 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 7ee39aa60941a430... #146 @ 2020-12-03T19:57:23.500 signed by eosio [trxs: 0, lib: 145, confirmed: 0]
+info  2020-12-03T19:57:23.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 1a5178c0250e31df... #147 @ 2020-12-03T19:57:24.000 signed by eosio [trxs: 0, lib: 146, confirmed: 0]
+info  2020-12-03T19:57:24.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block a172ca3898c464b3... #148 @ 2020-12-03T19:57:24.500 signed by eosio [trxs: 0, lib: 147, confirmed: 0]
+info  2020-12-03T19:57:24.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 3360e79cd625456c... #149 @ 2020-12-03T19:57:25.000 signed by eosio [trxs: 0, lib: 148, confirmed: 0]
+info  2020-12-03T19:57:25.400 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 4c887034949cc4f6... #150 @ 2020-12-03T19:57:25.500 signed by eosio [trxs: 0, lib: 149, confirmed: 0]
+info  2020-12-03T19:57:25.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 7c6e96719483d75c... #151 @ 2020-12-03T19:57:26.000 signed by eosio [trxs: 0, lib: 150, confirmed: 0]
+info  2020-12-03T19:57:26.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 8ccd11c5d2438a82... #152 @ 2020-12-03T19:57:26.500 signed by eosio [trxs: 0, lib: 151, confirmed: 0]
+info  2020-12-03T19:57:26.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block dd9164004305c7b2... #153 @ 2020-12-03T19:57:27.000 signed by eosio [trxs: 0, lib: 152, confirmed: 0]
+info  2020-12-03T19:57:27.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 441a580675729ee5... #154 @ 2020-12-03T19:57:27.500 signed by eosio [trxs: 0, lib: 153, confirmed: 0]
+info  2020-12-03T19:57:27.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block c22fb47a8eb45d40... #155 @ 2020-12-03T19:57:28.000 signed by eosio [trxs: 0, lib: 154, confirmed: 0]
+info  2020-12-03T19:57:28.417 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block b1194ba0d0f70348... #156 @ 2020-12-03T19:57:28.500 signed by eosio [trxs: 0, lib: 155, confirmed: 0]
+info  2020-12-03T19:57:28.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 4d5b16c2e7bcd55f... #157 @ 2020-12-03T19:57:29.000 signed by eosio [trxs: 0, lib: 156, confirmed: 0]
+info  2020-12-03T19:57:29.301 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 55a659eda7a09d59... #158 @ 2020-12-03T19:57:29.500 signed by eosio [trxs: 0, lib: 157, confirmed: 0]
+info  2020-12-03T19:57:29.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 5216006a96b94eeb... #159 @ 2020-12-03T19:57:30.000 signed by eosio [trxs: 0, lib: 158, confirmed: 0]
+info  2020-12-03T19:57:30.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block fbb8d9f4d85ef1e4... #160 @ 2020-12-03T19:57:30.500 signed by eosio [trxs: 0, lib: 159, confirmed: 0]
+info  2020-12-03T19:57:30.900 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 0310000b26ce78f2... #161 @ 2020-12-03T19:57:31.000 signed by eosio [trxs: 0, lib: 160, confirmed: 0]
+info  2020-12-03T19:57:31.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 3b54d2d6204e67c9... #162 @ 2020-12-03T19:57:31.500 signed by eosio [trxs: 0, lib: 161, confirmed: 0]
+info  2020-12-03T19:57:31.901 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 5149cf8e1217213f... #163 @ 2020-12-03T19:57:32.000 signed by eosio [trxs: 0, lib: 162, confirmed: 0]
+info  2020-12-03T19:57:32.401 thread-0  producer_plugin.cpp:2134      produce_block        ] Produced block 981984f5869aba10... #164 @ 2020-12-03T19:57:32.500 signed by eosio [trxs: 0, lib: 163, confirmed: 0]

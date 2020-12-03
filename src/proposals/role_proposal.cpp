@@ -16,7 +16,8 @@ namespace hypha
 
         eosio::asset annual_usd_salary = ContentWrapper::getContent (content_groups, common::DETAILS, common::ANNUAL_USD_SALARY).getAs<eosio::asset>();
         eosio::check (annual_usd_salary.amount > 0, common::ANNUAL_USD_SALARY + " must be greater than zero. You submitted: " + annual_usd_salary.to_string());
-        
+        eosio::print ("RoleProposal::propose_impl - salary: " + annual_usd_salary.to_string() + "\n");
+
         return content_groups;
     }
 
