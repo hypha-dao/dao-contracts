@@ -22,12 +22,18 @@ namespace hypha
         // start_period and end_period must be valid, no more than X periods in between
 
         // assignment proposal must link to a valid role
+        // eosio::checksum256 roleHash = ;
+        // eosio::print ("roleHash : " + readableHash(roleHash) + "\n");
+
         Document roleDocument(m_dao.get_self(), assignment.getContent(common::DETAILS, common::ROLE_STRING).getAs<eosio::checksum256>());
         ContentWrapper role(roleDocument.getContentGroups());
 
+        // eosio::name roleType = ;
+        // eosio::print ("roleType : " + roleType.to_string() + "\n");
+
         // role in the proposal must be of type: role
-        eosio::check (role.getContent(common::SYSTEM, common::TYPE).getAs<eosio::name>() != common::ROLE_NAME, 
-            "role document getHash() provided in assignment proposal is not of type: role");
+        eosio::check (role.getContent(common::SYSTEM, common::TYPE).getAs<eosio::name>() == common::ROLE_NAME, 
+            "role document hash provided in assignment proposal is not of type: role");
 
         // time_share_x100 is required and must be greater than zero and less than 100%
         int64_t time_share = assignment.getContent(common::DETAILS, common::TIME_SHARE).getAs<int64_t>();
@@ -100,7 +106,7 @@ namespace hypha
         memberAssignedEdge.emplace();
 
         //  role_assignment ---- assignee           ---->   member
-        Edge assignmentAssigneeEdge(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNED);
+        Edge assignmentAssigneeEdge(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
         assignmentAssigneeEdge.emplace();
 
         //  role_assignment ---- role               ----> role
