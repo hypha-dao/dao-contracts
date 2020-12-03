@@ -14,3 +14,4 @@ node_modules
 eosc-vault.json
 **/*_project-prefix*
 **/test_results
+dao-go/nodeos.log
