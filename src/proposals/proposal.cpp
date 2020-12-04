@@ -22,7 +22,6 @@ namespace hypha
     {
         verify_membership(proposer);
         ContentWrapper proposalContent(contentGroups);
-
         propose_impl(proposer, proposalContent);
 
         contentGroups.push_back(create_system_group(proposer,
@@ -37,13 +36,13 @@ namespace hypha
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
         // the proposer OWNS the proposal; this creates the graph EDGE
-        Edge::write (m_dao.get_self(), proposer, memberHash, proposalNode.getHash(), common::OWNS);
+        Edge::write(m_dao.get_self(), proposer, memberHash, proposalNode.getHash(), common::OWNS);
 
         // the proposal was PROPOSED_BY proposer; this creates the graph EDGE
-        Edge::write (m_dao.get_self(), proposer, proposalNode.getHash(), memberHash, common::OWNED_BY);
+        Edge::write(m_dao.get_self(), proposer, proposalNode.getHash(), memberHash, common::OWNED_BY);
 
         // the DHO also links to the document as a proposal, another graph EDGE
-        Edge::write (m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
+        Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
 
         return proposalNode;
     }
@@ -142,10 +141,7 @@ namespace hypha
 
         // increment the ballot_id
         name ballotId = name(m_dao.getSettingOrFail<eosio::name>(common::LAST_BALLOT_ID).value + 1);
-        eosio::print("register_ballot: ballotId: " + ballotId.to_string() + "\n");
-
         m_dao.set_setting(common::LAST_BALLOT_ID, ballotId);
-        eosio::print("register_ballot: after set setting: " + ballotId.to_string() + "\n");
 
         name trailContract = m_dao.getSettingOrFail<eosio::name>(common::TELOS_DECIDE_CONTRACT);
 
@@ -158,8 +154,6 @@ namespace hypha
         options.push_back(name("fail"));
         options.push_back(name("abstain"));
 
-        eosio::print("register_ballot: before newballot: m_dao.get_self(): " + m_dao.get_self().to_string() + "\n");
-
         action(
             permission_level{m_dao.get_self(), name("active")},
             trailContract, name("newballot"),
@@ -171,15 +165,6 @@ namespace hypha
                 name("1token1vote"),
                 options))
             .send();
-
-        eosio::print("register_ballot: after newballot: " + ballotId.to_string() + "\n");
-
-        //	  // default is to vote all tokens, not just staked tokens
-        //    action (
-        //       permission_level{m_dao._document_graph.contract, "active"_n},
-        //       c.telos_decide_contract, "togglebal"_n,
-        //       std::make_tuple(new_ballot_id, "votestake"_n))
-        //    .send();
 
         action(
             permission_level{m_dao.get_self(), name("active")},

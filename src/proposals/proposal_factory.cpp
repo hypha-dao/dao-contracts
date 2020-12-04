@@ -10,7 +10,6 @@ namespace hypha
 {
     Proposal* ProposalFactory::Factory(dao& dao, const name &proposal_type)
     {
-        eosio::print ("Factory: " + proposal_type.to_string() + "\n");
         switch (proposal_type.value)
         {
         case common::BADGE_NAME.value:

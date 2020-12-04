@@ -21,7 +21,6 @@ namespace hypha
       eosio::name self = get_self();
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, proposal_type));
       proposal->propose(proposer, content_groups);
-      // delete proposal;
    }
 
    void dao::closedocprop(const checksum256 &proposal_hash)
@@ -33,7 +32,6 @@ namespace hypha
 
       Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
       proposal->close(docprop);
-      // delete proposal;
    }
 
    void dao::apply(const eosio::name &applicant, const std::string &content)
@@ -55,12 +53,8 @@ namespace hypha
    Document dao::getSettingsDocument()
    {
       auto root = getRoot(get_self());
-
       auto edges = m_documentGraph.getEdgesFromOrFail(root, common::SETTINGS_EDGE);
-
       eosio::check(edges.size() == 1, "There should only exists only 1 settings edge from root node");
-
-      eosio::print("getSettingsDocument::retrieving settings document: " + readableHash(edges[0].to_node) + "\n");
       return Document(get_self(), edges[0].to_node);
    }
 
@@ -73,23 +67,16 @@ namespace hypha
    void dao::set_setting(const string &key, const Content::FlexValue &value)
    {
       auto document = getSettingsDocument();
-
       auto oldHash = document.getHash();
-
       auto settingContent = Content(key, value);
-
       auto updateDateContent = Content(common::UPDATED_DATE, eosio::current_time_point());
 
       //Might want to return by & instead of const &
       auto contentGroups = document.getContentGroups();
-
       auto &settingsGroup = contentGroups[0];
 
       ContentWrapper::insertOrReplace(settingsGroup, settingContent);
       ContentWrapper::insertOrReplace(settingsGroup, updateDateContent);
-
-      //We could to change ContentWrapper to store a regulare reference instead of a constant
-      //Maybe also a ref to Document so we can rehashContents on data changes
 
       m_documentGraph.updateDocument(get_self(), oldHash, std::move(contentGroups));
    }
@@ -103,11 +90,8 @@ namespace hypha
    void dao::remove_setting(const string &key)
    {
       auto document = getSettingsDocument();
-
       auto oldHash = document.getHash();
-
       auto contentGroups = document.getContentGroups();
-
       auto &settingsGroup = contentGroups[0];
 
       auto isKey = [&key](auto &c) {
@@ -116,19 +100,15 @@ namespace hypha
 
       //First let's check if key exists
       auto contentItr = std::find_if(settingsGroup.begin(), settingsGroup.end(), isKey);
-
       if (contentItr != settingsGroup.end())
       {
          settingsGroup.erase(contentItr);
-
          auto updateDateContent = Content(common::UPDATED_DATE, eosio::current_time_point());
-
          ContentWrapper::insertOrReplace(settingsGroup, updateDateContent);
-
          m_documentGraph.updateDocument(get_self(), oldHash, std::move(contentGroups));
       }
       //Should we assert if setting doesn't exits ?
-      eosio::check(false, "The specified setting doesn't exits: " + key);
+      eosio::check(false, "The specified setting does not exist: " + key);
    }
 
    void dao::addperiod(const eosio::time_point &start_time, const eosio::time_point &end_time, const string &label)
