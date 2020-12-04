@@ -21,15 +21,8 @@ namespace hypha
         // TODO: Additional input cleansing
         // start_period and end_period must be valid, no more than X periods in between
 
-        // assignment proposal must link to a valid role
-        // eosio::checksum256 roleHash = ;
-        // eosio::print ("roleHash : " + readableHash(roleHash) + "\n");
-
         Document roleDocument(m_dao.get_self(), assignment.getContent(common::DETAILS, common::ROLE_STRING).getAs<eosio::checksum256>());
         ContentWrapper role(roleDocument.getContentGroups());
-
-        // eosio::name roleType = ;
-        // eosio::print ("roleType : " + roleType.to_string() + "\n");
 
         // role in the proposal must be of type: role
         eosio::check (role.getContent(common::SYSTEM, common::TYPE).getAs<eosio::name>() == common::ROLE_NAME, 
@@ -75,13 +68,19 @@ namespace hypha
         // need to implement the pass by reference logic
         //**************************
 
-        // // add the USD period pay amount (this is used to calculate SEEDS at time of salary claim)
-        // details.push_back(m_dao._document_graph.new_content(common::USD_SALARY_PER_PERIOD, adjustAsset(annual_usd_salary, common::PHASE_TO_YEAR_RATIO)));
+        // add the USD period pay amount (this is used to calculate SEEDS at time of salary claim)
+        Content usdSalaryPerPeriod (common::USD_SALARY_PER_PERIOD, adjustAsset(annual_usd_salary, common::PHASE_TO_YEAR_RATIO));
+        
+        // add remaining derived per period salary amounts to this document
+        Content husdSalaryPerPeriod (common::HUSD_SALARY_PER_PERIOD, calculateHusd(annual_usd_salary, time_share, deferred));
+        Content hyphaSalaryPerPeriod (common::HYPHA_SALARY_PER_PERIOD, calculateHypha(annual_usd_salary, time_share, deferred));
+        Content hvoiceSalaryPerPeriod (common::HVOICE_SALARY_PER_PERIOD, calculateHvoice(annual_usd_salary, time_share));
 
-        // // add remaining derived per period salary amounts to this document
-        // details.push_back(m_dao._document_graph.new_content(common::HUSD_SALARY_PER_PERIOD, calculateHusd(annual_usd_salary, time_share, deferred)));
-        // details.push_back(m_dao._document_graph.new_content(common::HYPHA_SALARY_PER_PERIOD, calculateHypha(annual_usd_salary, time_share, deferred)));
-        // details.push_back(m_dao._document_graph.new_content(common::HVOICE_SALARY_PER_PERIOD, calculateHvoice(annual_usd_salary, time_share)));
+        auto detailsGroup = assignment.getGroup(common::DETAILS);
+        ContentWrapper::insertOrReplace(detailsGroup, usdSalaryPerPeriod);
+        ContentWrapper::insertOrReplace(detailsGroup, husdSalaryPerPeriod);
+        ContentWrapper::insertOrReplace(detailsGroup, hyphaSalaryPerPeriod);
+        ContentWrapper::insertOrReplace(detailsGroup, hvoiceSalaryPerPeriod);
 
         return contentGroups;
     }
