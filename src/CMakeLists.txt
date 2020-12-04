@@ -18,7 +18,7 @@ add_contract( dao dao
                 proposals/proposal_factory.cpp
                 ../document-graph/src/document_graph/document_graph.cpp 
                 ../document-graph/src/document_graph/document.cpp 
-                ../document-graph/src/document_graph/content_group.cpp
+                ../document-graph/src/document_graph/content_wrapper.cpp
                 ../document-graph/src/document_graph/content.cpp
                 ../document-graph/src/document_graph/edge.cpp
                 ../document-graph/src/document_graph/util.cpp 

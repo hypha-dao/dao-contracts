@@ -1,11 +1,12 @@
+#include <eosio/action.hpp>
+
 #include <proposals/proposal.hpp>
-#include <document_graph/content_group.hpp>
+#include <document_graph/content_wrapper.hpp>
 #include <document_graph/content.hpp>
 #include <document_graph/document.hpp>
 #include <member.hpp>
 #include <common.hpp>
 #include <document_graph/edge.hpp>
-#include <eosio/action.hpp>
 #include <dao.hpp>
 #include <trail.hpp>
 #include <util.hpp>
@@ -20,60 +21,53 @@ namespace hypha
     Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups)
     {
         verify_membership(proposer);
-        contentGroups = propose_impl(proposer, contentGroups);
+        ContentWrapper proposalContent(contentGroups);
 
-        eosio::print ("Proposal::propose - proposer: " + proposer.to_string() + "\n");
+        propose_impl(proposer, proposalContent);
 
         contentGroups.push_back(create_system_group(proposer,
                                                     GetProposalType(),
-                                                    ContentWrapper::getContent(contentGroups, common::DETAILS, common::TITLE).getAs<std::string>(),
-                                                    ContentWrapper::getContent(contentGroups, common::DETAILS, common::DESCRIPTION).getAs<std::string>(),
-                                                    GetBallotContent(contentGroups)));
+                                                    proposalContent.getOrFail(common::DETAILS, common::TITLE)->getAs<std::string>(),
+                                                    proposalContent.getOrFail(common::DETAILS, common::DESCRIPTION)->getAs<std::string>(),
+                                                    GetBallotContent(proposalContent)));
 
         // creates the document, or the graph NODE
-        auto memberHash = Member::getHash(proposer);
-
+        eosio::checksum256 memberHash = Member::getHash(proposer);
         eosio::checksum256 root = getRoot(m_dao.get_self());
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
-        eosio::print ("Proposal::propose - proposer: " + proposer.to_string() + "\n");
         // the proposer OWNS the proposal; this creates the graph EDGE
-        Edge memberProposalEdge(m_dao.get_self(), proposer, memberHash, proposalNode.getHash(), common::OWNS);
-        memberProposalEdge.emplace();
+        Edge::write (m_dao.get_self(), proposer, memberHash, proposalNode.getHash(), common::OWNS);
 
         // the proposal was PROPOSED_BY proposer; this creates the graph EDGE
-        Edge proposalMemberEdge(m_dao.get_self(), proposer, proposalNode.getHash(), memberHash, common::OWNED_BY);
-        proposalMemberEdge.emplace();
+        Edge::write (m_dao.get_self(), proposer, proposalNode.getHash(), memberHash, common::OWNED_BY);
 
         // the DHO also links to the document as a proposal, another graph EDGE
-        Edge rootProposalEdge(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
-        rootProposalEdge.emplace();
+        Edge::write (m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
 
         return proposalNode;
     }
 
-    void Proposal::close(Document proposal)
+    void Proposal::close(Document &proposal)
     {
         eosio::checksum256 root = getRoot(m_dao.get_self());
 
         Edge edge = Edge::get(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL);
         edge.erase();
 
-        name ballot_id = ContentWrapper::getContent(proposal.getContentGroups(), common::SYSTEM, common::BALLOT_ID).getAs<eosio::name>();
+        name ballot_id = proposal.getContentWrapper().getOrFail(common::SYSTEM, common::BALLOT_ID)->getAs<eosio::name>();
         if (did_pass(ballot_id))
         {
             // INVOKE child class close logic
             pass_impl(proposal);
 
             // if proposal passes, create an edge for PASSED_PROPS
-            Edge rootPassedProposal(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::PASSED_PROPS);
-            rootPassedProposal.emplace();
+            Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::PASSED_PROPS);
         }
         else
         {
             // create edge for FAILED_PROPS
-            Edge rootFailedProposal(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::FAILED_PROPS);
-            rootFailedProposal.emplace();
+            Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::FAILED_PROPS);
         }
 
         eosio::action(
@@ -105,14 +99,10 @@ namespace hypha
 
     void Proposal::verify_membership(const name &member)
     {
-        // create hash to represent this member account
         auto memberHash = Member::getHash(member);
-        ContentGroups rootCgs = Document::rollup(Content(common::ROOT_NODE, m_dao.get_self()));
-        auto rootNode = Document::hashContents(rootCgs);
 
-        Edge::get(m_dao.get_self(), rootNode, memberHash, common::MEMBER);
-
-        //check(itr != e_t.end(), "account: " + member.to_string() + " is not a member of " + document_graph::readable_hash(root_hash));
+        // this will fail if the edge does not exist
+        Edge::get(m_dao.get_self(), getRoot(m_dao.get_self()), memberHash, common::MEMBER);
     }
 
     bool Proposal::did_pass(const name &ballot_id)
@@ -148,16 +138,14 @@ namespace hypha
                                    const string &title, const string &description, const string &content)
     {
         check(has_auth(proposer) || has_auth(m_dao.get_self()), "Authentication failed. Must have authority from proposer: " +
-                                                              proposer.to_string() + "@active or " + m_dao.get_self().to_string() + "@active.");
+                                                                    proposer.to_string() + "@active or " + m_dao.get_self().to_string() + "@active.");
 
         // increment the ballot_id
-        eosio::print ("register_ballot: retrieving : " + common::LAST_BALLOT_ID + "\n");
-
         name ballotId = name(m_dao.getSettingOrFail<eosio::name>(common::LAST_BALLOT_ID).value + 1);
-        eosio::print ("register_ballot: ballotId: " + ballotId.to_string() + "\n");
+        eosio::print("register_ballot: ballotId: " + ballotId.to_string() + "\n");
 
         m_dao.set_setting(common::LAST_BALLOT_ID, ballotId);
-        eosio::print ("register_ballot: after set setting: " + ballotId.to_string() + "\n");
+        eosio::print("register_ballot: after set setting: " + ballotId.to_string() + "\n");
 
         name trailContract = m_dao.getSettingOrFail<eosio::name>(common::TELOS_DECIDE_CONTRACT);
 
@@ -170,7 +158,7 @@ namespace hypha
         options.push_back(name("fail"));
         options.push_back(name("abstain"));
 
-        eosio::print ("register_ballot: before newballot: m_dao.get_self(): " + m_dao.get_self().to_string() + "\n");
+        eosio::print("register_ballot: before newballot: m_dao.get_self(): " + m_dao.get_self().to_string() + "\n");
 
         action(
             permission_level{m_dao.get_self(), name("active")},
@@ -184,7 +172,7 @@ namespace hypha
                 options))
             .send();
 
-        eosio::print ("register_ballot: after newballot: " + ballotId.to_string() + "\n");
+        eosio::print("register_ballot: after newballot: " + ballotId.to_string() + "\n");
 
         //	  // default is to vote all tokens, not just staked tokens
         //    action (

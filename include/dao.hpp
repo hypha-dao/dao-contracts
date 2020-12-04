@@ -6,9 +6,11 @@
 #include <eosio/crypto.hpp>
 #include <eosio/multi_index.hpp>
 #include <eosio/singleton.hpp>
+
 #include <document_graph/document_graph.hpp>
-#include <common.hpp>
 #include <document_graph/util.hpp>
+
+#include <common.hpp>
 
 using eosio::checksum256;
 using eosio::multi_index;
@@ -77,28 +79,16 @@ namespace hypha
       T getSettingOrFail(const std::string &setting)
       {
          auto settings = getSettingsDocument();
-
-         eosio::print ("getSettingOrFail:: Settings document: " + readableHash(settings.getHash()) + "\n");
-
-         auto wrapper = ContentWrapper(settings.getContentGroups());
-
-         //TODO: Add getContent function which only receives the content label
-         auto content = wrapper.getContent(common::SETTINGS, setting);
-
-         return std::get<T>(content.value);
+         auto content = settings.getContentWrapper().getOrFail(common::SETTINGS, setting, "setting " + setting + " does not exist");
+         return std::get<T>(content->value);
       }
 
       template <class T>
       std::optional<T> getSettingOpt(const string &setting)
       {
          auto settings = getSettingsDocument();
-
-         auto wrapper = ContentWrapper(settings.getContentGroups());
-
-         //TODO: Add getGroupOpt or not cheking version
-         auto content = wrapper.getContent(common::SETTINGS, setting);
-
-         if (auto p = std::get_if<T>(&content.value))
+         auto [idx, content] = settings.getContentWrapper().get(common::SETTINGS, setting);
+         if (auto p = std::get_if<T>(&content->value))
          {
             return *p;
          }
@@ -119,7 +109,6 @@ namespace hypha
 
       // ADMIN/SETUP only
       ACTION createroot (const std::string &notes);
-
       void set_setting(const string &key, const Content::FlexValue &value);
 
    private:

@@ -2,7 +2,7 @@
 
 #include <eosio/name.hpp>
 #include <document_graph/document.hpp>
-#include <document_graph/content_group.hpp>
+#include <document_graph/content_wrapper.hpp>
 #include "proposal.hpp"
 
 namespace hypha {
@@ -13,14 +13,14 @@ namespace hypha {
     public:
         using Proposal::Proposal;
 
-        Document propose(const name &proposer, ContentGroups &content_groups);
-        void close(Document proposal);
+        Document propose(const name &proposer, ContentGroups &contentGroups);
+        void close(Document &proposal);
 
     protected:
         
-        ContentGroups propose_impl(const name &proposer, ContentGroups &content_groups) override;
-        Document pass_impl(Document proposal) override;
-        string GetBallotContent (ContentGroups contentGroups) override;
+        void propose_impl(const name &proposer, ContentWrapper &contentWrapper) override;
+        void pass_impl(Document &proposal) override;
+        string GetBallotContent (ContentWrapper &contentWrapper) override;
         name GetProposalType () override;
     };
 }

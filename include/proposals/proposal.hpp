@@ -1,6 +1,7 @@
 #pragma once
 #include <eosio/name.hpp>
 #include <document_graph/document_graph.hpp>
+#include <document_graph/content_wrapper.hpp>
 #include <dao.hpp>
 
 using eosio::asset;
@@ -10,12 +11,6 @@ using std::string;
 namespace hypha
 {
 
-    // class dao;
-    // {
-    // public:
-    //     eosio::name get_self();
-    // };
-
     class Proposal
     {
 
@@ -23,19 +18,19 @@ namespace hypha
         Proposal(dao &contract);
         virtual ~Proposal();
 
-        Document propose(const eosio::name &proposer, ContentGroups &content_groups);
+        Document propose(const eosio::name &proposer, ContentGroups &contentGroups);
 
-        void close(Document proposal);
+        void close(Document &proposal);
 
         dao &m_dao;
 
     protected:
-        virtual ContentGroups propose_impl(const eosio::name &proposer,
-                                           ContentGroups &content_groups) = 0;
+        virtual void propose_impl(const eosio::name &proposer,
+                                  ContentWrapper &contentWrapper) = 0;
 
-        virtual Document pass_impl(Document proposal) = 0;
+        virtual void pass_impl(Document &proposal) = 0;
 
-        virtual string GetBallotContent(ContentGroups contentGroups) = 0;
+        virtual string GetBallotContent(ContentWrapper &contentWrapper) = 0;
 
         virtual name GetProposalType() = 0;
 

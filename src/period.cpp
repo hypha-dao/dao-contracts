@@ -35,13 +35,10 @@ namespace hypha
         // TODO: We should have some input cleansing to make sure this period is mutually exclusive
         // to other periods.  Also, they should be sequential and we rely on the oracle to enforce this. 
 
-        // m_document.emplace();
-
         // TODO: make this multi-member, it may not be "root"
         eosio::checksum256 root = getRoot(m_dao.get_self());
 
-        Edge rootPeriodEdge (m_dao.get_self(), m_dao.get_self(), root, m_document.getHash(), common::PERIOD);
-        rootPeriodEdge.emplace();
+        Edge::write (m_dao.get_self(), m_dao.get_self(), root, m_document.getHash(), common::PERIOD);
 
         dao::period_table period_t(m_dao.get_self(), m_dao.get_self().value);
 		period_t.emplace(m_dao.get_self(), [&](auto &p) {

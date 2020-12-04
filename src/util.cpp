@@ -1,7 +1,7 @@
 #include <util.hpp>
 #include <eosio/crypto.hpp>
 #include <document_graph/document.hpp>
-#include <document_graph/content_group.hpp>
+#include <document_graph/content_wrapper.hpp>
 #include <common.hpp>
 
 namespace hypha {
