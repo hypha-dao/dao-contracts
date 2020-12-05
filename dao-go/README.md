@@ -40,7 +40,7 @@ cmake .
 make
 cd ..
 
-git clone https://github.com/hypha-dao/dao-go
+git clone https://github.com/hypha-dao/dao-contracts/dao-go
 cd dao-go
 go test -v -timeout 0
 ```

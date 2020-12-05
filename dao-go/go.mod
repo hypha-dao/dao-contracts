@@ -1,4 +1,4 @@
-module github.com/hypha-dao/dao-go
+module github.com/hypha-dao/dao-contracts/dao-go
 
 go 1.15
 

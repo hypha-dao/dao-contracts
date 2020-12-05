@@ -13,7 +13,7 @@ import (
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
 	"github.com/eoscanada/eos-go/system"
-	"github.com/hypha-dao/dao-go"
+	"github.com/hypha-dao/dao-contracts/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"gotest.tools/assert"
 )
@@ -99,20 +99,10 @@ func (e *Environment) String() string {
 
 func SetupEnvironment(t *testing.T) *Environment {
 
-	// home, exists := os.LookupEnv("HOME")
-	// if exists {
-	// 	devHome = home
-	// } else {
-	// 	devHome = "."
-	// }
-	// devHome = devHome + "/dev"
-
 	daoHome := ".."
-
 	daoPrefix := daoHome + "/build/dao/dao."
 
 	artifactsHome := "artifacts"
-	// tokenHome := artifactsHome + "/token"
 	decidePrefix := artifactsHome + "/decide/decide."
 	treasuryPrefix := artifactsHome + "/treasury/treasury."
 	monitorPrefix := artifactsHome + "/monitor/monitor."

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/eoscanada/eos-go"
-	"github.com/hypha-dao/dao-go"
+	"github.com/hypha-dao/dao-contracts/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"gotest.tools/assert"
 )

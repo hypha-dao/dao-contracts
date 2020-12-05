@@ -8,7 +8,7 @@ import (
 
 	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
-	"github.com/hypha-dao/dao-go"
+	"github.com/hypha-dao/dao-contracts/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"github.com/k0kubun/go-ansi"
 	progressbar "github.com/schollz/progressbar/v3"
