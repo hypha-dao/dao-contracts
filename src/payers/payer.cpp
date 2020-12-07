@@ -7,7 +7,7 @@ namespace hypha
     Payer::Payer(dao &dao) : m_dao(dao) {}
     Payer::~Payer() {}
 
-    Document *Payer::pay(const eosio::name &recipient,
+    Document Payer::pay(const eosio::name &recipient,
                          const eosio::asset &quantity,
                          const string &memo)
 

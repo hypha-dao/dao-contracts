@@ -10,9 +10,9 @@
 namespace hypha
 {
 
-    Document *HvoicePayer::payImpl(const eosio::name &recipient,
-                                   const eosio::asset &quantity,
-                                   const string &memo)
+    Document HvoicePayer::payImpl(const eosio::name &recipient,
+                                  const eosio::asset &quantity,
+                                  const string &memo)
     {
         eosio::action(
             eosio::permission_level{m_dao.get_self(), eosio::name("active")},
@@ -26,8 +26,7 @@ namespace hypha
              Content(common::AMOUNT, quantity),
              Content(common::MEMO, memo)}};
 
-        Document receipt(m_dao.get_self(), m_dao.get_self(), recieptCgs);
-        return &receipt;
+        return Document(m_dao.get_self(), m_dao.get_self(), recieptCgs);
     }
 
 } // namespace hypha

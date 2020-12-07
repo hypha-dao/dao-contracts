@@ -15,12 +15,12 @@ namespace hypha
     public:
         using Payer::Payer;
 
-        Document *pay(const eosio::name &recipient,
+        Document pay(const eosio::name &recipient,
                       const eosio::asset &quantity,
                       const string &memo);
 
     protected:
-        Document *payImpl(const eosio::name &recipient,
+        Document payImpl(const eosio::name &recipient,
                           const eosio::asset &quantity,
                           const string &memo) override;
     };

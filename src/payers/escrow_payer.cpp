@@ -10,9 +10,9 @@
 namespace hypha
 {
 
-    Document *EscrowPayer::payImpl(const eosio::name &recipient,
-                                   const eosio::asset &quantity,
-                                   const string &memo)
+    Document EscrowPayer::payImpl(const eosio::name &recipient,
+                                  const eosio::asset &quantity,
+                                  const string &memo)
     {
 
         eosio::action(
@@ -44,8 +44,7 @@ namespace hypha
              Content(common::PAYMENT_TYPE, common::ESCROW_SEEDS_AMOUNT),
              Content(common::EVENT, eosio::name("golive"))}};
 
-        Document receipt(m_dao.get_self(), m_dao.get_self(), recieptCgs);
-        return &receipt;
+        return Document(m_dao.get_self(), m_dao.get_self(), recieptCgs);
     }
 
 } // namespace hypha

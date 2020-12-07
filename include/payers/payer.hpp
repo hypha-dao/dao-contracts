@@ -16,12 +16,12 @@ namespace hypha
         Payer(dao &dao);
         virtual ~Payer();
 
-        Document *pay(const eosio::name &recipient,
+        Document pay(const eosio::name &recipient,
                       const eosio::asset &quantity,
                       const string &memo);
 
     protected:
-        virtual Document *payImpl(const eosio::name &recipient,
+        virtual Document payImpl(const eosio::name &recipient,
                                   const eosio::asset &quantity,
                                   const string &memo) = 0;
 

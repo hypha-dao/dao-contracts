@@ -10,7 +10,7 @@
 namespace hypha
 {
 
-    Document *SeedsPayer::payImpl(const eosio::name &recipient,
+    Document SeedsPayer::payImpl(const eosio::name &recipient,
                                   const eosio::asset &quantity,
                                   const string &memo)
     {
@@ -27,8 +27,7 @@ namespace hypha
              Content(common::AMOUNT, quantity),
              Content(common::MEMO, memo)}};
 
-        Document receipt(m_dao.get_self(), m_dao.get_self(), recieptCgs);
-        return &receipt;
+        return Document (m_dao.get_self(), m_dao.get_self(), recieptCgs);
     }
 
 } // namespace hypha
