@@ -13,7 +13,7 @@ namespace hypha
     {
         // assignee must exist and be a DHO member
         name assignee = badgeAssignment.getOrFail(common::DETAILS, common::ASSIGNEE)->getAs<eosio::name>();
-        verify_membership(assignee);
+        eosio::check(Member::isMember(m_dao.get_self(), assignee), "only members can be earn badges " + assignee.to_string());
 
         // TODO: Additional input cleansing
         // start_period and end_period must be valid, no more than X periods in between

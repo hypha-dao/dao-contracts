@@ -20,7 +20,7 @@ namespace hypha
 
     Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups)
     {
-        verify_membership(proposer);
+        eosio::check(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
         propose_impl(proposer, proposalContent);
 
@@ -94,14 +94,6 @@ namespace hypha
         // system_cg.push_back(Content(common::OWNED_BY, proposer));
         system_cg.push_back(Content(common::TYPE, proposal_type));
         return system_cg;
-    }
-
-    void Proposal::verify_membership(const name &member)
-    {
-        auto memberHash = Member::getHash(member);
-
-        // this will fail if the edge does not exist
-        Edge::get(m_dao.get_self(), getRoot(m_dao.get_self()), memberHash, common::MEMBER);
     }
 
     bool Proposal::did_pass(const name &ballot_id)
@@ -194,11 +186,6 @@ namespace hypha
                                strings.at(common::TITLE),
                                strings.at(common::DESCRIPTION),
                                strings.at(common::CONTENT));
-    }
-
-    asset Proposal::adjustAsset(const asset &originalAsset, const float &adjustment)
-    {
-        return asset{static_cast<int64_t>(originalAsset.amount * adjustment), originalAsset.symbol};
     }
 
 } // namespace hypha

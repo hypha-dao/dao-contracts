@@ -40,8 +40,6 @@ namespace hypha
                                          const string &decide_desc,
                                          const string &decide_content);
 
-        void verify_membership(const name &member);
-
         bool did_pass(const name &ballot_id);
 
         name register_ballot(const name &proposer,
@@ -50,6 +48,5 @@ namespace hypha
         name register_ballot(const name &proposer,
                              const string &title, const string &description, const string &content);
 
-        asset adjustAsset(const asset &originalAsset, const float &adjustment);
     };
 } // namespace hypha

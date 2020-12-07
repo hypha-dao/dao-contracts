@@ -11,8 +11,8 @@ namespace hypha
     {
         // Content id {};
         
-        Content startDate (common::BEGIN_DATE, start_time);
-        Content endDate (common::end_time, end_time);
+        Content startDate (common::START_TIME, start_time);
+        Content endDate (common::END_TIME, end_time);
         Content labelContent (common::LABEL, label);
 
         ContentGroup cg {};

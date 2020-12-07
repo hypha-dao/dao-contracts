@@ -6,6 +6,7 @@
 #include <member.hpp>
 #include <common.hpp>
 #include <dao.hpp>
+#include <util.hpp>
 
 namespace hypha
 {
@@ -14,7 +15,7 @@ namespace hypha
     {
         // assignee must exist and be a DHO member
         name assignee = assignment.getOrFail(common::DETAILS, common::ASSIGNEE)->getAs<eosio::name>();
-        verify_membership(assignee);
+        eosio::check(Member::isMember(m_dao.get_self(), assignee), "only members can be assigned to assignments " + assignee.to_string());
 
         // TODO: Additional input cleansing
         // start_period and end_period must be valid, no more than X periods in between
@@ -96,7 +97,6 @@ namespace hypha
         //  role_assignment ---- assignee           ---->   member
         //  role_assignment ---- role               ---->   role
         //  role            ---- role_assignment    ---->   role_assignment
-
         Edge::write (m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGNED);
         Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
         Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), role.getHash(), common::ROLE_NAME);

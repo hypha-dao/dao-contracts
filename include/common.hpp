@@ -12,10 +12,10 @@ using std::string;
 //TODO: Refacto into a Lazy load system to avoid allocating many strings that are not actually used
 namespace common {
 
-    static const symbol         S_HYPHA                         ("HYPHA", 2);
-    static const symbol         S_HVOICE                        ("HVOICE", 2);
-    static const symbol         S_SEEDS                         ("SEEDS", 4);
-    static const symbol         S_HUSD                          ("HUSD", 2);
+    static constexpr symbol         S_HYPHA                         ("HYPHA", 2);
+    static constexpr symbol         S_HVOICE                        ("HVOICE", 2);
+    static constexpr symbol         S_SEEDS                         ("SEEDS", 4);
+    static constexpr symbol         S_HUSD                          ("HUSD", 2);
 
     static const asset          RAM_ALLOWANCE                   = asset (20000, symbol("TLOS", 4));
 
@@ -41,8 +41,8 @@ namespace common {
     static const string         START_PERIOD                = string ("start_period");
     static const string         END_PERIOD                  = string ("end_period");
 
-    static const string         BEGIN_DATE                  = string ("begin_date");
-    static const string         end_time                    = string ("end_time");
+    static const string         START_TIME                  = string ("start_time");
+    static const string         END_TIME                    = string ("end_time");
     static const string         LABEL                       = string ("label");
 
     static const string         HYPHA_COEFFICIENT           = string ("hypha_coefficient_x10000");
@@ -55,6 +55,7 @@ namespace common {
     static const string         TYPE                        = string ("type");
     static const string         ASSIGNEE                    = string ("assignee");
     static const string         MEMBER_STRING               = string ("member");
+    static const string         ASSIGNMENT_STRING           = string ("assignment");
     static const string         SYSTEM                      = string ("system");
     static const string         BALLOT_ID                   = string ("ballot_id");
     static const string         BALLOT_TYPE                 = string ("ballot_type");
@@ -78,6 +79,22 @@ namespace common {
     static const string         PUBLISHER_CONTRACT          = string ("publisher_contract");
     static const string         PAUSED                      = string ("paused");
     static const string         ROLE_STRING                 = string ("role");
+
+    // payment related
+    static const string         PAYMENT_PERIOD              = string ("payment_period");
+    static const string         ASSETS_PAID                 = string ("assets_paid");
+    static const string         HYPHA_AMOUNT                = string ("hypha_amount");
+    static const string         ESCROW_SEEDS_AMOUNT         = string ("escrow_seeds_amount");
+    static const string         HVOICE_AMOUNT               = string ("hvoice_amount");
+    static const string         HUSD_AMOUNT                 = string ("husd_amount");
+    static const string         AMOUNT                      = string ("amount");
+    static const string         REFERENCE                   = string ("reference");
+    static const string         RECIPIENT                   = string ("recipient");
+    static const string         MEMO                        = string ("memo");
+    static const string         PAYMENT_TYPE                = string ("payment_type");
+
+    static constexpr name       ESCROW                      = name ("escrow");
+    static const string         EVENT                       = string ("event");
 
     static const string         FULL_TIME_CAPACITY          = string ("fulltime_capacity_x100");
     static const string         ANNUAL_USD_SALARY           = string ("annual_usd_salary");
@@ -110,6 +127,7 @@ namespace common {
     static constexpr name       ASSIGNED                    = name ("assigned");
     static constexpr name       ASSIGNEE_NAME               = name ("assignee");
     static constexpr name       PERIOD                      = name ("period");
+    static constexpr name       PAYMENT                     = name ("payment");
 
     
     // graph edges hanging off of primary DHO node
