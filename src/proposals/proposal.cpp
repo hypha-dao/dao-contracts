@@ -26,8 +26,8 @@ namespace hypha
 
         contentGroups.push_back(create_system_group(proposer,
                                                     GetProposalType(),
-                                                    proposalContent.getOrFail(common::DETAILS, common::TITLE)->getAs<std::string>(),
-                                                    proposalContent.getOrFail(common::DETAILS, common::DESCRIPTION)->getAs<std::string>(),
+                                                    proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>(),
+                                                    proposalContent.getOrFail(DETAILS, DESCRIPTION)->getAs<std::string>(),
                                                     GetBallotContent(proposalContent)));
 
         // creates the document, or the graph NODE
@@ -54,7 +54,7 @@ namespace hypha
         Edge edge = Edge::get(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL);
         edge.erase();
 
-        name ballot_id = proposal.getContentWrapper().getOrFail(common::SYSTEM, common::BALLOT_ID)->getAs<eosio::name>();
+        name ballot_id = proposal.getContentWrapper().getOrFail(SYSTEM, BALLOT_ID)->getAs<eosio::name>();
         if (did_pass(ballot_id))
         {
             // INVOKE child class close logic
@@ -71,7 +71,7 @@ namespace hypha
 
         eosio::action(
             eosio::permission_level{m_dao.get_self(), name("active")},
-            m_dao.getSettingOrFail<eosio::name>(common::TELOS_DECIDE_CONTRACT), name("closevoting"),
+            m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT), name("closevoting"),
             std::make_tuple(ballot_id, true))
             .send();
     }
@@ -87,18 +87,18 @@ namespace hypha
         name ballot_id = register_ballot(proposer, decide_title, decide_desc, decide_content);
 
         ContentGroup system_cg = ContentGroup{};
-        system_cg.push_back(Content(CONTENT_GROUP_LABEL, common::SYSTEM));
-        system_cg.push_back(Content(common::CLIENT_VERSION, ""));   // TODO: call get_setting
-        system_cg.push_back(Content(common::CONTRACT_VERSION, "")); // TODO call get_setting
-        system_cg.push_back(Content(common::BALLOT_ID, ballot_id));
-        // system_cg.push_back(Content(common::OWNED_BY, proposer));
-        system_cg.push_back(Content(common::TYPE, proposal_type));
+        system_cg.push_back(Content(CONTENT_GROUP_LABEL, SYSTEM));
+        system_cg.push_back(Content(CLIENT_VERSION, ""));   // TODO: call get_setting
+        system_cg.push_back(Content(CONTRACT_VERSION, "")); // TODO call get_setting
+        system_cg.push_back(Content(BALLOT_ID, ballot_id));
+        // system_cg.push_back(Content(OWNED_BY, proposer));
+        system_cg.push_back(Content(TYPE, proposal_type));
         return system_cg;
     }
 
     bool Proposal::did_pass(const name &ballot_id)
     {
-        name trailContract = m_dao.getSettingOrFail<eosio::name>(common::TELOS_DECIDE_CONTRACT);
+        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
         trailservice::trail::ballots_table b_t(trailContract, trailContract.value);
         auto b_itr = b_t.find(ballot_id.value);
         check(b_itr != b_t.end(), "ballot_id: " + ballot_id.to_string() + " not found.");
@@ -132,10 +132,10 @@ namespace hypha
                                                                     proposer.to_string() + "@active or " + m_dao.get_self().to_string() + "@active.");
 
         // increment the ballot_id
-        name ballotId = name(m_dao.getSettingOrFail<eosio::name>(common::LAST_BALLOT_ID).value + 1);
-        m_dao.set_setting(common::LAST_BALLOT_ID, ballotId);
+        name ballotId = name(m_dao.getSettingOrFail<eosio::name>(LAST_BALLOT_ID).value + 1);
+        m_dao.set_setting(LAST_BALLOT_ID, ballotId);
 
-        name trailContract = m_dao.getSettingOrFail<eosio::name>(common::TELOS_DECIDE_CONTRACT);
+        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
 
         trailservice::trail::ballots_table b_t(trailContract, trailContract.value);
         auto b_itr = b_t.find(ballotId.value);
@@ -168,7 +168,7 @@ namespace hypha
                 content))
             .send();
 
-        auto expiration = time_point_sec(current_time_point()) + m_dao.getSettingOrFail<int64_t>(common::VOTING_DURATION_SEC);
+        auto expiration = time_point_sec(current_time_point()) + m_dao.getSettingOrFail<int64_t>(VOTING_DURATION_SEC);
 
         action(
             permission_level{m_dao.get_self(), name("active")},
@@ -183,9 +183,9 @@ namespace hypha
                                    const map<string, string> &strings)
     {
         return register_ballot(proposer,
-                               strings.at(common::TITLE),
-                               strings.at(common::DESCRIPTION),
-                               strings.at(common::CONTENT));
+                               strings.at(TITLE),
+                               strings.at(DESCRIPTION),
+                               strings.at(CONTENT));
     }
 
 } // namespace hypha

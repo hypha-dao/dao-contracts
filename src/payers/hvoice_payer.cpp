@@ -16,15 +16,15 @@ namespace hypha
     {
         eosio::action(
             eosio::permission_level{m_dao.get_self(), eosio::name("active")},
-            m_dao.getSettingOrFail<name>(common::TELOS_DECIDE_CONTRACT), eosio::name("mint"),
+            m_dao.getSettingOrFail<name>(TELOS_DECIDE_CONTRACT), eosio::name("mint"),
             std::make_tuple(recipient, quantity, memo))
             .send();
 
         ContentGroups recieptCgs{
-            {Content(CONTENT_GROUP_LABEL, common::DETAILS),
-             Content(common::RECIPIENT, recipient),
-             Content(common::AMOUNT, quantity),
-             Content(common::MEMO, memo)}};
+            {Content(CONTENT_GROUP_LABEL, DETAILS),
+             Content(RECIPIENT, recipient),
+             Content(AMOUNT, quantity),
+             Content(MEMO, memo)}};
 
         return Document(m_dao.get_self(), m_dao.get_self(), recieptCgs);
     }

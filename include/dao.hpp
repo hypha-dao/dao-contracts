@@ -57,7 +57,7 @@ namespace hypha
       T getSettingOrFail(const std::string &setting)
       {
          auto settings = getSettingsDocument();
-         auto content = settings.getContentWrapper().getOrFail(common::SETTINGS, setting, "setting " + setting + " does not exist");
+         auto content = settings.getContentWrapper().getOrFail(SETTINGS, setting, "setting " + setting + " does not exist");
          return std::get<T>(content->value);
       }
 
@@ -65,7 +65,7 @@ namespace hypha
       std::optional<T> getSettingOpt(const string &setting)
       {
          auto settings = getSettingsDocument();
-         auto [idx, content] = settings.getContentWrapper().get(common::SETTINGS, setting);
+         auto [idx, content] = settings.getContentWrapper().get(SETTINGS, setting);
          if (auto p = std::get_if<T>(&content->value))
          {
             return *p;

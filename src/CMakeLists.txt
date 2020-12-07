@@ -5,10 +5,8 @@ find_package(eosio.cdt)
 
 add_contract( dao dao 
                 dao.cpp
-                #bank.cpp
                 util.cpp 
                 period.cpp
-                #calculation.cpp 
                 member.cpp
                 payers/payer.cpp
                 payers/escrow_payer.cpp

@@ -12,18 +12,18 @@ namespace hypha
     void BadgeAssignmentProposal::propose_impl(const name &proposer, ContentWrapper &badgeAssignment)
     {
         // assignee must exist and be a DHO member
-        name assignee = badgeAssignment.getOrFail(common::DETAILS, common::ASSIGNEE)->getAs<eosio::name>();
+        name assignee = badgeAssignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
         eosio::check(Member::isMember(m_dao.get_self(), assignee), "only members can be earn badges " + assignee.to_string());
 
         // TODO: Additional input cleansing
         // start_period and end_period must be valid, no more than X periods in between
 
         // badge assignment proposal must link to a valid badge
-        Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(common::DETAILS, common::BADGE_STRING)->getAs<eosio::checksum256>());
+        Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
         auto badge = badgeDocument.getContentWrapper();
 
         // badge in the proposal must be of type: badge
-        eosio::check(badge.getOrFail(common::SYSTEM, common::TYPE)->getAs<eosio::name>() == common::BADGE_NAME,
+        eosio::check(badge.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::BADGE_NAME,
                      "badge document hash provided in assignment proposal is not of type badge");
     }
 
@@ -31,8 +31,8 @@ namespace hypha
     {
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
-        eosio::checksum256 assignee = Member::getHash((contentWrapper.getOrFail(common::DETAILS, common::ASSIGNEE)->getAs<eosio::name>()));
-        Document badge(m_dao.get_self(), contentWrapper.getOrFail(common::DETAILS, common::BADGE_STRING)->getAs<eosio::checksum256>());
+        eosio::checksum256 assignee = Member::getHash((contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>()));
+        Document badge(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
 
         // update graph edges:
         //    member            ---- holdsbadge     ---->   badge
@@ -51,7 +51,7 @@ namespace hypha
 
     std::string BadgeAssignmentProposal::GetBallotContent(ContentWrapper &contentWrapper)
     {
-        return contentWrapper.getOrFail(common::DETAILS, common::TITLE)->getAs<std::string>();
+        return contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>();
     }
 
     name BadgeAssignmentProposal::GetProposalType()

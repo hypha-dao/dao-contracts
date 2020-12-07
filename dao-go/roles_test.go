@@ -87,18 +87,18 @@ const role1_document = `{
                 ]
             },
             {
-                      "label": "end_period",
-                      "value": [
-                          "int64",
-                          9
-                      ]
+                "label": "end_period",
+                "value": [
+                  "int64",
+                  9
+                ]
             },
             {
-                      "label": "fulltime_capacity_x100",
-                      "value": [
-                          "int64",
-                          100
-                      ]
+                "label": "fulltime_capacity_x100",
+                "value": [
+                  "int64",
+                  100
+                ]
             },
             {
                 "label": "min_deferred_x100",
