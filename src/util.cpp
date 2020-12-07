@@ -11,7 +11,7 @@ namespace hypha
 
     eosio::checksum256 getRoot(const eosio::name &contract)
     {
-        ContentGroups cgs = Document::rollup(Content(common::ROOT_NODE, contract));
+        ContentGroups cgs = Document::rollup(Content(ROOT_NODE, contract));
         return Document::hashContents(cgs);
     }
 

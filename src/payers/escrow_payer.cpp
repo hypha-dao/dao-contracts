@@ -17,14 +17,14 @@ namespace hypha
 
         eosio::action(
             eosio::permission_level{m_dao.get_self(), name("active")},
-            m_dao.getSettingOrFail<name>(common::SEEDS_TOKEN_CONTRACT),
+            m_dao.getSettingOrFail<name>(SEEDS_TOKEN_CONTRACT),
             eosio::name("transfer"),
-            std::make_tuple(m_dao.get_self(), m_dao.getSettingOrFail<eosio::name>(common::SEEDS_ESCROW_CONTRACT), quantity, memo))
+            std::make_tuple(m_dao.get_self(), m_dao.getSettingOrFail<eosio::name>(SEEDS_ESCROW_CONTRACT), quantity, memo))
             .send();
 
         eosio::action(
             eosio::permission_level{m_dao.get_self(), name("active")},
-            m_dao.getSettingOrFail<eosio::name>(common::SEEDS_ESCROW_CONTRACT), name("lock"),
+            m_dao.getSettingOrFail<eosio::name>(SEEDS_ESCROW_CONTRACT), name("lock"),
             std::make_tuple(eosio::name("event"),
                             m_dao.get_self(),
                             recipient,
@@ -37,12 +37,12 @@ namespace hypha
             .send();
 
         ContentGroups recieptCgs{
-            {Content(CONTENT_GROUP_LABEL, common::DETAILS),
-             Content(common::RECIPIENT, recipient),
-             Content(common::AMOUNT, quantity),
-             Content(common::MEMO, memo),
-             Content(common::PAYMENT_TYPE, common::ESCROW_SEEDS_AMOUNT),
-             Content(common::EVENT, eosio::name("golive"))}};
+            {Content(CONTENT_GROUP_LABEL, DETAILS),
+             Content(RECIPIENT, recipient),
+             Content(AMOUNT, quantity),
+             Content(MEMO, memo),
+             Content(PAYMENT_TYPE, ESCROW_SEEDS_AMOUNT),
+             Content(EVENT, eosio::name("golive"))}};
 
         return Document(m_dao.get_self(), m_dao.get_self(), recieptCgs);
     }

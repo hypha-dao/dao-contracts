@@ -15,8 +15,8 @@ namespace hypha
         // int64_t capacity = std::get<int64_t>(m_dao._document_graph.get_content(details, common::FULL_TIME_CAPACITY, true));
         // check(capacity > 0, "fulltime_capacity_x100 must be greater than zero. You submitted: " + std::to_string(capacity));
 
-        eosio::asset annual_usd_salary = contentWrapper.getOrFail(common::DETAILS, common::ANNUAL_USD_SALARY)->getAs<eosio::asset>();
-        eosio::check (annual_usd_salary.amount > 0, common::ANNUAL_USD_SALARY + " must be greater than zero. You submitted: " + annual_usd_salary.to_string());
+        eosio::asset annual_usd_salary = contentWrapper.getOrFail(DETAILS, ANNUAL_USD_SALARY)->getAs<eosio::asset>();
+        eosio::check (annual_usd_salary.amount > 0, ANNUAL_USD_SALARY + string(" must be greater than zero. You submitted: ") + annual_usd_salary.to_string());
     }
 
     void RoleProposal::pass_impl(Document &proposal)
@@ -27,7 +27,7 @@ namespace hypha
 
     std::string RoleProposal::GetBallotContent (ContentWrapper &contentWrapper)
     {
-        return contentWrapper.getOrFail(common::DETAILS, common::TITLE)->getAs<std::string>();
+        return contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>();
     }
     
     name RoleProposal::GetProposalType () 

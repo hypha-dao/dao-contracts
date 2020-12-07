@@ -16,7 +16,7 @@ namespace hypha
 
     const eosio::checksum256 Member::getHash(const eosio::name &member)
     {
-        ContentGroups contentGroups = Document::rollup(Content(common::MEMBER_STRING, member));
+        ContentGroups contentGroups = Document::rollup(Content(MEMBER_STRING, member));
         return Document::hashContents(contentGroups);
     }
 
@@ -29,7 +29,7 @@ namespace hypha
 
     Document Member::getOrNew(eosio::name contract, const eosio::name &creator, const eosio::name &member)
     {
-        return Document::getOrNew(contract, creator, Document::rollup(Content(common::MEMBER_STRING, member)));
+        return Document::getOrNew(contract, creator, Document::rollup(Content(MEMBER_STRING, member)));
     }
 
     void Member::apply(const eosio::checksum256 &applyTo, const std::string content)

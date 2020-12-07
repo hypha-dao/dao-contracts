@@ -9,12 +9,12 @@ add_contract( dao dao
                 period.cpp
                 member.cpp
                 payers/payer.cpp
-                #payers/escrow_payer.cpp
-                #payers/husd_payer.cpp
-                #payers/hvoice_payer.cpp
-                #payers/hypha_payer.cpp
-                #payers/seeds_payer.cpp 
-                #payers/payer_factory.cpp
+                payers/escrow_payer.cpp
+                payers/husd_payer.cpp
+                payers/hvoice_payer.cpp
+                payers/hypha_payer.cpp
+                payers/seeds_payer.cpp 
+                payers/payer_factory.cpp
                 proposals/proposal.cpp
                 proposals/role_proposal.cpp
                 proposals/badge_proposal.cpp

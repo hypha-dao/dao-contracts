@@ -29,7 +29,7 @@ namespace hypha
       eosio::check(!is_paused(), "Contract is paused for maintenance. Please try again later.");
 
       Document docprop(get_self(), proposal_hash);
-      name proposal_type = docprop.getContentWrapper().getOrFail(common::SYSTEM, common::TYPE)->getAs<eosio::name>();
+      name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
       Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
       proposal->close(docprop);
@@ -42,7 +42,7 @@ namespace hypha
       Document assignmentDocument(get_self(), hash);
       ContentWrapper assignment = assignmentDocument.getContentWrapper();
 
-      name assignee = assignment.getOrFail(common::DETAILS, common::ASSIGNEE)->getAs<eosio::name>();
+      name assignee = assignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
 
       // assignee must still be a DHO member
       eosio::check(Member::isMember(get_self(), assignee), "assignee must be a current member to claim pay: " + assignee.to_string());
@@ -71,8 +71,8 @@ namespace hypha
                    "Cannot make payment to assignment. Assignment was not approved before this period.");
 
       // Check that pay period is between (inclusive) the start and end period of the assignment
-      auto startPeriod = assignment.getOrFail(common::DETAILS, common::START_PERIOD)->getAs<int64_t>();
-      auto endPeriod = assignment.getOrFail(common::DETAILS, common::END_PERIOD)->getAs<int64_t>();
+      auto startPeriod = assignment.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>();
+      auto endPeriod = assignment.getOrFail(DETAILS, END_PERIOD)->getAs<int64_t>();
       eosio::check(startPeriod <= period_id &&
                        endPeriod >= period_id,
                    "For assignment, period ID must be between " +
@@ -97,29 +97,29 @@ namespace hypha
       /******   DEFERRED SEEDS     */
       // If there is an explicit ESCROW SEEDS salary amount, support sending it; else it should be calculated
       eosio::asset deferredSeeds = asset{0, common::S_SEEDS};
-      if (auto [idx, seedsEscrowSalary] = assignment.get(common::DETAILS, "seeds_escrow_salary_per_phase"); seedsEscrowSalary)
+      if (auto [idx, seedsEscrowSalary] = assignment.get(DETAILS, "seeds_escrow_salary_per_phase"); seedsEscrowSalary)
       {
          eosio::check(std::holds_alternative<eosio::asset>(seedsEscrowSalary->value), "fatal error: expected token type must be an asset value type: " + seedsEscrowSalary->label);
          deferredSeeds = std::get<eosio::asset>(seedsEscrowSalary->value);
       }
-      else if (auto [idx, usdSalaryValue] = assignment.get(common::DETAILS, common::USD_SALARY_PER_PERIOD); usdSalaryValue)
+      else if (auto [idx, usdSalaryValue] = assignment.get(DETAILS, USD_SALARY_PER_PERIOD); usdSalaryValue)
       {
          eosio::check(std::holds_alternative<eosio::asset>(usdSalaryValue->value), "fatal error: expected token type must be an asset value type: " + usdSalaryValue->label);
 
          // Dynamically calculate the SEEDS amount based on the price at the end of the period being claimed
          deferredSeeds = getSeedsAmount(usdSalaryValue->getAs<eosio::asset>(),
                                         p_itr->end_time,
-                                        (float)(assignment.getOrFail(common::DETAILS, common::TIME_SHARE)->getAs<int64_t>() / (float)100),
-                                        (float)(assignment.getOrFail(common::DETAILS, common::DEFERRED)->getAs<int64_t>() / (float)100));
+                                        (float)(assignment.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>() / (float)100),
+                                        (float)(assignment.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>() / (float)100));
       }
       deferredSeeds = adjustAsset(deferredSeeds, first_phase_ratio_calc);
 
       // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
       // If there is an explicit INSTANT SEEDS amount, support sending it
       asset instantSeeds = getProRatedAsset(&assignment, common::S_SEEDS, "seeds_instant_salary_per_phase", first_phase_ratio_calc);
-      asset husd = getProRatedAsset(&assignment, common::S_HUSD, common::HUSD_SALARY_PER_PERIOD, first_phase_ratio_calc);
-      asset hvoice = getProRatedAsset(&assignment, common::S_HVOICE, common::HVOICE_SALARY_PER_PERIOD, first_phase_ratio_calc);
-      asset hypha = getProRatedAsset(&assignment, common::S_HYPHA, common::HYPHA_SALARY_PER_PERIOD, first_phase_ratio_calc);
+      asset husd = getProRatedAsset(&assignment, common::S_HUSD, HUSD_SALARY_PER_PERIOD, first_phase_ratio_calc);
+      asset hvoice = getProRatedAsset(&assignment, common::S_HVOICE, HVOICE_SALARY_PER_PERIOD, first_phase_ratio_calc);
+      asset hypha = getProRatedAsset(&assignment, common::S_HYPHA, HYPHA_SALARY_PER_PERIOD, first_phase_ratio_calc);
 
       string memo = "Payment for assignment " + readableHash(assignmentDocument.getHash()) + "; Period ID: " + std::to_string(period_id);
 
@@ -135,10 +135,10 @@ namespace hypha
 
       // Create the content groups for the Assignment Payment document, representing the
       // composite payment made to the member for this assignment for this period
-      ContentGroups assignmentPaymentCgs{{Content(CONTENT_GROUP_LABEL, common::DETAILS),
+      ContentGroups assignmentPaymentCgs{{Content(CONTENT_GROUP_LABEL, DETAILS),
                                           Content(common::ASSIGNMENT.to_string(), assignmentDocument.getHash()),
-                                          Content(common::RECIPIENT, assignee),
-                                          Content(common::PAYMENT_PERIOD, period_id)}};
+                                          Content(RECIPIENT, assignee),
+                                          Content(PAYMENT_PERIOD, period_id)}};
 
       Document assignmentPayment(get_self(), get_self(), assignmentPaymentCgs);
 
@@ -152,7 +152,7 @@ namespace hypha
    asset dao::getProRatedAsset(ContentWrapper *assignment, const symbol &symbol, const string &key, const float &proration)
    {
       asset assetToPay = asset{0, symbol};
-      if (auto [idx, assetContent] = assignment->get(common::DETAILS, key); assetContent)
+      if (auto [idx, assetContent] = assignment->get(DETAILS, key); assetContent)
       {
          eosio::check(std::holds_alternative<eosio::asset>(assetContent->value), "fatal error: expected token type must be an asset value type: " + assetContent->label);
          assetToPay = std::get<eosio::asset>(assetContent->value);
@@ -166,7 +166,7 @@ namespace hypha
                                     const float &deferred_perc)
    {
       asset adjusted_usd_amount = adjustAsset(adjustAsset(usd_amount, deferred_perc), time_share);
-      float seeds_deferral_coeff = (float)getSettingOrFail<int64_t>(common::SEEDS_DEFERRAL_FACTOR_X100) / (float)100;
+      float seeds_deferral_coeff = (float)getSettingOrFail<int64_t>(SEEDS_DEFERRAL_FACTOR_X100) / (float)100;
       float seeds_price = getSeedsPriceUsd(price_time_point);
       return adjustAsset(asset{static_cast<int64_t>(adjusted_usd_amount.amount * (float)100 * (float)seeds_deferral_coeff),
                                common::S_SEEDS},
@@ -181,8 +181,8 @@ namespace hypha
       {
          Document badgeAssignmentDoc(get_self(), e.getToNode());
          auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
-         int64_t start_period = badgeAssignment.getOrFail(common::DETAILS, common::START_PERIOD)->getAs<int64_t>();
-         int64_t end_period = badgeAssignment.getOrFail(common::DETAILS, common::END_PERIOD)->getAs<int64_t>();
+         int64_t start_period = badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>();
+         int64_t end_period = badgeAssignment.getOrFail(DETAILS, END_PERIOD)->getAs<int64_t>();
 
          // check that period_id falls within start_period and end_period
          if (period_id >= start_period && period_id <= end_period)
@@ -197,7 +197,7 @@ namespace hypha
 
    eosio::asset dao::applyCoefficient(ContentWrapper &badge, const eosio::asset &base, const std::string &key)
    {
-      if (auto [idx, coefficient] = badge.get(common::DETAILS, key); coefficient)
+      if (auto [idx, coefficient] = badge.get(DETAILS, key); coefficient)
       {
          if (std::holds_alternative<std::monostate>(coefficient->value))
          {
@@ -223,11 +223,11 @@ namespace hypha
       for (auto &badge : badges)
       {
          ContentWrapper badgeCW = badge.getContentWrapper();
-         applied_assets.hypha = applied_assets.hypha + applyCoefficient(badgeCW, ab.hypha, common::HYPHA_COEFFICIENT);
-         applied_assets.husd = applied_assets.husd + applyCoefficient(badgeCW, ab.husd, common::HUSD_COEFFICIENT);
-         applied_assets.voice = applied_assets.voice + applyCoefficient(badgeCW, ab.voice, common::HVOICE_COEFFICIENT);
-         applied_assets.seeds = applied_assets.seeds + applyCoefficient(badgeCW, ab.seeds, common::SEEDS_COEFFICIENT);
-         applied_assets.d_seeds = applied_assets.d_seeds + applyCoefficient(badgeCW, ab.d_seeds, common::SEEDS_COEFFICIENT);
+         applied_assets.hypha = applied_assets.hypha + applyCoefficient(badgeCW, ab.hypha, HYPHA_COEFFICIENT);
+         applied_assets.husd = applied_assets.husd + applyCoefficient(badgeCW, ab.husd, HUSD_COEFFICIENT);
+         applied_assets.voice = applied_assets.voice + applyCoefficient(badgeCW, ab.voice, HVOICE_COEFFICIENT);
+         applied_assets.seeds = applied_assets.seeds + applyCoefficient(badgeCW, ab.seeds, SEEDS_COEFFICIENT);
+         applied_assets.d_seeds = applied_assets.d_seeds + applyCoefficient(badgeCW, ab.d_seeds, SEEDS_COEFFICIENT);
       }
 
       return applied_assets;
@@ -283,7 +283,7 @@ namespace hypha
       auto document = getSettingsDocument();
       auto oldHash = document.getHash();
       auto settingContent = Content(key, value);
-      auto updateDateContent = Content(common::UPDATED_DATE, eosio::current_time_point());
+      auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
       //Might want to return by & instead of const &
       auto contentGroups = document.getContentGroups();
@@ -317,7 +317,7 @@ namespace hypha
       if (contentItr != settingsGroup.end())
       {
          settingsGroup.erase(contentItr);
-         auto updateDateContent = Content(common::UPDATED_DATE, eosio::current_time_point());
+         auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
          ContentWrapper::insertOrReplace(settingsGroup, updateDateContent);
          m_documentGraph.updateDocument(get_self(), oldHash, std::move(contentGroups));
       }
@@ -336,11 +336,11 @@ namespace hypha
    {
       require_auth(get_self());
 
-      Document rootDoc(get_self(), get_self(), Content(common::ROOT_NODE, get_self()));
+      Document rootDoc(get_self(), get_self(), Content(ROOT_NODE, get_self()));
 
       //Create the settings document as well and add an edge to it
-      ContentGroups settingCgs{{Content(CONTENT_GROUP_LABEL, common::SETTINGS),
-                                Content(common::ROOT_NODE, readableHash(rootDoc.getHash()))}};
+      ContentGroups settingCgs{{Content(CONTENT_GROUP_LABEL, SETTINGS),
+                                Content(ROOT_NODE, readableHash(rootDoc.getHash()))}};
 
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), rootDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
