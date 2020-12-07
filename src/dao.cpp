@@ -244,8 +244,8 @@ namespace hypha
          return;
       }
 
-      std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, quantity.symbol, paymentType));
-      Edge::write(get_self(), get_self(), fromNode, payer->pay(recipient, quantity, memo).getHash(), common::PAYMENT);
+      //std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, quantity.symbol, paymentType));
+      //Edge::write(get_self(), get_self(), fromNode, payer->pay(recipient, quantity, memo).getHash(), common::PAYMENT);
    }
 
    void dao::apply(const eosio::name &applicant, const std::string &content)

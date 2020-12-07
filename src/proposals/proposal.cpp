@@ -88,8 +88,8 @@ namespace hypha
 
         ContentGroup system_cg = ContentGroup{};
         system_cg.push_back(Content(CONTENT_GROUP_LABEL, common::SYSTEM));
-        system_cg.push_back(Content(common::CLIENT_VERSION, ""));   // TODO: call get_setting
-        system_cg.push_back(Content(common::CONTRACT_VERSION, "")); // TODO call get_setting
+        // system_cg.push_back(Content(common::CLIENT_VERSION, ""));   // TODO: call get_setting
+        system_cg.push_back(Content("contract", "")); // TODO call get_setting
         system_cg.push_back(Content(common::BALLOT_ID, ballot_id));
         // system_cg.push_back(Content(common::OWNED_BY, proposer));
         system_cg.push_back(Content(common::TYPE, proposal_type));
