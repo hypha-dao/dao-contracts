@@ -39,25 +39,23 @@ namespace hypha
    {
       eosio::check(!is_paused(), "Contract is paused for maintenance. Please try again later.");
 
+      // check to see if this period has already been claimed for this assignment
+      Document periodPayClaim = Document::getOrNew(get_self(), get_self(), PAYMENT_PERIOD, period_id);
+      eosio::check (!Edge::exists(get_self(), hash, periodPayClaim.getHash(), common::CLAIM), 
+         "Assignment " + readableHash(hash) + " has already been claimed for period: " + std::to_string(period_id));
+
       Document assignmentDocument(get_self(), hash);
       ContentWrapper assignment = assignmentDocument.getContentWrapper();
-
       name assignee = assignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
+
+      //  member          ---- claim        ---->   payment_claim
+		//  role_assignment ---- claim        ---->   payment_claim
+      Edge::write(get_self(), get_self(), assignmentDocument.getHash(), periodPayClaim.getHash(), common::CLAIM);
+      Edge::write(get_self(), get_self(), Member::getHash(assignee), periodPayClaim.getHash(), common::CLAIM);
 
       // assignee must still be a DHO member
       eosio::check(Member::isMember(get_self(), assignee), "assignee must be a current member to claim pay: " + assignee.to_string());
       require_auth(assignee);
-
-      // Check that the assignment has not been paid for this period yet
-      // asspay_table asspay_t(get_self(), get_self().value);
-      // auto period_index = asspay_t.get_index<name("byperiod")>();
-      // auto per_itr = period_index.find(period_id);
-      // while (per_itr->period_id == period_id && per_itr != period_index.end())
-      // {
-      //    check(per_itr->assignment_id != assignment_id, "Assignment ID has already been paid for this period. Period ID: " +
-      //                                                       std::to_string(period_id) + "; Assignment ID: " + std::to_string(assignment_id));
-      //    per_itr++;
-      // }
 
       // Check that the period has elapsed
       period_table period_t(get_self(), get_self().value);
@@ -133,20 +131,11 @@ namespace hypha
 
       ab = applyBadgeCoefficients(period_id, assignee, ab);
 
-      // Create the content groups for the Assignment Payment document, representing the
-      // composite payment made to the member for this assignment for this period
-      ContentGroups assignmentPaymentCgs{{Content(CONTENT_GROUP_LABEL, DETAILS),
-                                          Content(common::ASSIGNMENT.to_string(), assignmentDocument.getHash()),
-                                          Content(RECIPIENT, assignee),
-                                          Content(PAYMENT_PERIOD, period_id)}};
-
-      Document assignmentPayment(get_self(), get_self(), assignmentPaymentCgs);
-
-      makePayment(assignmentPayment.getHash(), assignee, ab.hypha, memo, eosio::name{0});
-      makePayment(assignmentPayment.getHash(), assignee, ab.d_seeds, memo, common::ESCROW);
-      makePayment(assignmentPayment.getHash(), assignee, ab.seeds, memo, eosio::name{0});
-      makePayment(assignmentPayment.getHash(), assignee, ab.voice, memo, eosio::name{0});
-      makePayment(assignmentPayment.getHash(), assignee, ab.husd, memo, eosio::name{0});
+      makePayment(periodPayClaim.getHash(), assignee, ab.hypha, memo, eosio::name{0});
+      makePayment(periodPayClaim.getHash(), assignee, ab.d_seeds, memo, common::ESCROW);
+      makePayment(periodPayClaim.getHash(), assignee, ab.seeds, memo, eosio::name{0});
+      makePayment(periodPayClaim.getHash(), assignee, ab.voice, memo, eosio::name{0});
+      makePayment(periodPayClaim.getHash(), assignee, ab.husd, memo, eosio::name{0});
    }
 
    asset dao::getProRatedAsset(ContentWrapper *assignment, const symbol &symbol, const string &key, const float &proration)
@@ -244,8 +233,10 @@ namespace hypha
          return;
       }
 
-      //std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, quantity.symbol, paymentType));
-      //Edge::write(get_self(), get_self(), fromNode, payer->pay(recipient, quantity, memo).getHash(), common::PAYMENT);
+      std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, quantity.symbol, paymentType));
+      Document paymentReceipt = payer->pay(recipient, quantity, memo);
+      Edge::write(get_self(), get_self(), fromNode, paymentReceipt.getHash(), common::PAYMENT);
+      Edge::write(get_self(), get_self(), Member::getHash(recipient), paymentReceipt.getHash(), common::PAID);
    }
 
    void dao::apply(const eosio::name &applicant, const std::string &content)

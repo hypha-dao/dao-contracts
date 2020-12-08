@@ -210,22 +210,22 @@ func CreateRoot(ctx context.Context, api *eos.API, contract eos.AccountName) (st
 }
 
 type claim struct {
-	AssignmentID uint64 `json:"assignment_id"`
-	PeriodID     uint64 `json:"period_id"`
+	AssignmentHash eos.Checksum256 `json:"hash"`
+	PeriodID       uint64          `json:"period_id"`
 }
 
 // ClaimPay claims a period of pay for an assignment
-func ClaimPay(ctx context.Context, api *eos.API, contract, claimer eos.AccountName, assignmentID, periodID uint64) (string, error) {
+func ClaimPay(ctx context.Context, api *eos.API, contract, claimer eos.AccountName, assignmentHash eos.Checksum256, periodID uint64) (string, error) {
 
 	actions := []*eos.Action{{
 		Account: contract,
-		Name:    eos.ActN("payassign"),
+		Name:    eos.ActN("claimpay"),
 		Authorization: []eos.PermissionLevel{
 			{Actor: claimer, Permission: eos.PN("active")},
 		},
 		ActionData: eos.NewActionData(claim{
-			AssignmentID: assignmentID,
-			PeriodID:     periodID,
+			AssignmentHash: assignmentHash,
+			PeriodID:       periodID,
 		}),
 	}}
 	return eostest.ExecTrx(ctx, api, actions)

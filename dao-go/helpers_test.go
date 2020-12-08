@@ -49,11 +49,10 @@ func NewBalance() Balance {
 	seedsEscrow, _ := eos.NewAssetFromString("0.0000 SEEDS")
 	return Balance{
 		SnapshotTime: time.Now(),
-		// Period:       0,
-		Hypha:       hypha,
-		Hvoice:      hvoice,
-		Husd:        husd,
-		SeedsEscrow: seedsEscrow,
+		Hypha:        hypha,
+		Hvoice:       hvoice,
+		Husd:         husd,
+		SeedsEscrow:  seedsEscrow,
 	}
 }
 
@@ -61,10 +60,10 @@ func CalcLastPayment(t *testing.T, env *Environment, prevBal Balance, acct eos.A
 	currentBalance := GetBalance(t, env, acct)
 	return Balance{
 		SnapshotTime: time.Now(),
-		// Period:       p,
-		Hypha:       currentBalance.Hypha.Sub(prevBal.Hypha),
-		SeedsEscrow: currentBalance.SeedsEscrow.Sub(prevBal.SeedsEscrow),
-		Husd:        currentBalance.Husd.Sub(prevBal.Husd),
+		Hypha:        currentBalance.Hypha.Sub(prevBal.Hypha),
+		SeedsEscrow:  currentBalance.SeedsEscrow.Sub(prevBal.SeedsEscrow),
+		Husd:         currentBalance.Husd.Sub(prevBal.Husd),
+		Hvoice:       currentBalance.Hvoice.Sub(prevBal.Hvoice),
 	}
 }
 
@@ -72,10 +71,10 @@ func GetBalance(t *testing.T, env *Environment, acct eos.AccountName) Balance {
 
 	return Balance{
 		SnapshotTime: time.Now(),
-		// Period:       p,
-		Hypha:       dao.GetBalance(env.ctx, &env.api, string(env.HyphaToken), string(acct)),
-		Husd:        dao.GetBalance(env.ctx, &env.api, string(env.HusdToken), string(acct)),
-		SeedsEscrow: dao.GetEscrowBalance(env.ctx, &env.api, string(env.SeedsEscrow), string(acct)),
+		Hypha:        dao.GetBalance(env.ctx, &env.api, string(env.HyphaToken), string(acct)),
+		Husd:         dao.GetBalance(env.ctx, &env.api, string(env.HusdToken), string(acct)),
+		Hvoice:       dao.GetVotingPower(env.ctx, &env.api, env.TelosDecide, acct),
+		SeedsEscrow:  dao.GetEscrowBalance(env.ctx, &env.api, string(env.SeedsEscrow), string(acct)),
 	}
 }
 
@@ -90,45 +89,35 @@ func IsClaimed(periodID uint64, payments []dao.AssignmentPay) bool {
 }
 
 // ClaimNextPeriod claims a period of pay for an assignment
-// func ClaimNextPeriod(t *testing.T, env *Environment, claimer eos.AccountName, assignment dao.V1Object) (string, error) {
+func ClaimNextPeriod(t *testing.T, env *Environment, claimer eos.AccountName, assignment docgraph.Document) (string, error) {
 
-// 	var payments []dao.AssignmentPay
-// 	var request eos.GetTableRowsRequest
-// 	request.Code = string(env.DAO)
-// 	request.Scope = string(env.DAO)
-// 	request.Table = "payments"
-// 	request.Index = "4"
-// 	request.KeyType = "i64"
-// 	request.Limit = 1000
-// 	request.LowerBound = strconv.Itoa(int(assignment.ID))
-// 	request.UpperBound = strconv.Itoa(int(assignment.ID))
-// 	request.JSON = true
-// 	response, _ := env.api.GetTableRows(env.ctx, request)
-// 	response.JSONToStructs(&payments)
+	periodClaimEdges, err := docgraph.GetEdgesFromDocumentWithEdge(env.ctx, &env.api, env.DAO, assignment, eos.Name("claim"))
+	assert.NilError(t, err)
 
-// 	periods, err := dao.LoadPeriods(&env.api, true, true)
-// 	assert.NilError(t, err)
+	maxPeriod := int64(0)
+	for _, edge := range periodClaimEdges {
+		periodClaim, err := docgraph.LoadDocument(env.ctx, &env.api, env.DAO, edge.ToNode.String())
+		assert.NilError(t, err)
 
-// 	periodIndex := assignment.Ints["start_period"]
+		periodID, err := periodClaim.GetContent("payment_period")
+		assert.NilError(t, err)
 
-// 	// t.Log("Assignment Created Date	: ", assignment.CreatedDate.Time.String())
+		if periodID.Impl.(int64) > maxPeriod {
+			maxPeriod = periodID.Impl.(int64)
+		}
+	}
 
-// 	for periodIndex <= assignment.Ints["end_period"] {
-// 		// t.Log("Period: ", periodIndex, " Start Time: ", periods[periodIndex].StartTime.Time.String())
-// 		if assignment.CreatedDate.Time.After(periods[periodIndex].StartTime.Time) || IsClaimed(periodIndex, payments) {
-// 			periodIndex++
-// 			continue
-// 		}
-// 		break
-// 	}
+	maxPeriod = maxPeriod + 1
+	periods, err := dao.LoadPeriods(&env.api, true, true)
+	assert.NilError(t, err)
 
-// 	if time.Now().Before(periods[periodIndex].EndTime.Time) {
-// 		t.Log("Waiting for a period to lapse...")
-// 		pause(t, env.PeriodPause, "", "Waiting...")
-// 	}
+	if time.Now().Before(periods[maxPeriod].EndTime.Time) {
+		t.Log("Waiting for a period to lapse...")
+		pause(t, env.PeriodPause, "", "Waiting...")
+	}
 
-// 	return dao.ClaimPay(env.ctx, &env.api, env.DAO, claimer, assignment.ID, periodIndex)
-// }
+	return dao.ClaimPay(env.ctx, &env.api, env.DAO, claimer, assignment.Hash, uint64(maxPeriod))
+}
 
 func pause(t *testing.T, seconds time.Duration, headline, prefix string) {
 	if headline != "" {
@@ -164,9 +153,6 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, title, 
 
 	// retrieve the document we just created
 	role, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
-	t.Log("role hash: ", role.Hash.String())
-	t.Log("root hash: ", env.Root.Hash.String())
-
 	assert.NilError(t, err)
 	assert.Equal(t, role.Creator, proposer.Member)
 

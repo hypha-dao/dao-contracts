@@ -17,6 +17,31 @@ type fee struct {
 	FeeAmount eos.Asset
 }
 
+type voters struct {
+	Liquid         eos.Asset          `json:"liquid"`
+	Staked         eos.Asset          `json:"staked"`
+	StakedTime     eos.BlockTimestamp `json:"staked_time"`
+	Delegated      eos.Asset          `json:"delegated"`
+	DelegatedTo    eos.Name           `json:"delegated_to"`
+	DelegationTime eos.BlockTimestamp `json:"delegation_time"`
+}
+
+// GetVotingPower ...
+func GetVotingPower(ctx context.Context, api *eos.API, telosDecide, voter eos.AccountName) eos.Asset {
+
+	var voters []voters
+	var request eos.GetTableRowsRequest
+	request.Code = string(telosDecide)
+	request.Scope = string(voter)
+	request.Table = "voters"
+	request.Limit = 1
+	request.JSON = true
+	response, _ := api.GetTableRows(ctx, request)
+	response.JSONToStructs(&voters)
+
+	return voters[0].Liquid
+}
+
 // InitTD ...
 func InitTD(ctx context.Context, api *eos.API, telosDecide eos.AccountName) (string, error) {
 	actions := []*eos.Action{{

@@ -13,7 +13,6 @@ func TestRoleProposalDocument(t *testing.T) {
 
 	// roles
 	proposer := env.Members[0]
-	// assignee := env.Members[1]
 	closer := env.Members[2]
 
 	t.Run("Configuring the DAO environment: ", func(t *testing.T) {
@@ -31,7 +30,7 @@ func TestRoleProposalDocument(t *testing.T) {
 			{
 				name:  "Basketweaver",
 				title: "Underwater Basketweaver",
-				role:  role1_document,
+				role:  role1,
 			},
 		}
 
@@ -48,7 +47,7 @@ func TestRoleProposalDocument(t *testing.T) {
 	})
 }
 
-const role1_document = `{
+const role1 = `{
     "content_groups": [
         [
             {
@@ -101,10 +100,157 @@ const role1_document = `{
                 ]
             },
             {
+                "label": "min_time_share_x100",
+                "value": [
+                  "int64",
+                  100
+                ]
+            },
+            {
                 "label": "min_deferred_x100",
                 "value": [
                     "int64",
                     50
+                ]
+            }
+        ]
+    ]
+}`
+
+const role2 = `{
+    "content_groups": [
+        [
+            {
+                "label": "content_group_label",
+                "value": [
+                    "string",
+                    "details"
+                ]
+            },
+            {
+                "label": "title",
+                "value": [
+                    "string",
+                    "Underwater Basketweaver"
+                ]
+            },
+            {
+                "label": "description",
+                "value": [
+                    "string",
+                    "Weave baskets at the bottom of the sea"
+                ]
+            },
+            {
+                "label": "annual_usd_salary",
+                "value": [
+                    "asset",
+                    "75000.00 USD"
+                ]
+            },
+            {
+                "label": "start_period",
+                "value": [
+                    "int64",
+                    0
+                ]
+            },
+            {
+                "label": "end_period",
+                "value": [
+                  "int64",
+                  9
+                ]
+            },
+            {
+                "label": "min_time_share_x100",
+                "value": [
+                  "int64",
+                  75
+                ]
+            },
+            {
+                "label": "fulltime_capacity_x100",
+                "value": [
+                  "int64",
+                  100
+                ]
+            },
+            {
+                "label": "min_deferred_x100",
+                "value": [
+                    "int64",
+                    50
+                ]
+            }
+        ]
+    ]
+}`
+
+const role3 = `{
+    "content_groups": [
+        [
+            {
+                "label": "content_group_label",
+                "value": [
+                    "string",
+                    "details"
+                ]
+            },
+            {
+                "label": "title",
+                "value": [
+                    "string",
+                    "Underwater Basketweaver"
+                ]
+            },
+            {
+                "label": "description",
+                "value": [
+                    "string",
+                    "Weave baskets at the bottom of the sea"
+                ]
+            },
+            {
+                "label": "annual_usd_salary",
+                "value": [
+                    "asset",
+                    "175000.00 USD"
+                ]
+            },
+            {
+                "label": "start_period",
+                "value": [
+                    "int64",
+                    0
+                ]
+            },
+            {
+                "label": "end_period",
+                "value": [
+                  "int64",
+                  9
+                ]
+            },
+            {
+                "label": "min_time_share_x100",
+                "value": [
+                  "int64",
+                  10
+                ]
+            },
+            {
+                "label": "fulltime_capacity_x100",
+                "value": [
+                  "int64",
+                  100
+                ]
+            },
+            {
+                "label": "min_deferred_x100",
+                "value": [
+                    "int64",
+                    0
                 ]
             }
         ]

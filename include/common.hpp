@@ -45,6 +45,8 @@ namespace common
     static constexpr name ASSIGNEE_NAME = name("assignee");
     static constexpr name PERIOD = name("period");
     static constexpr name PAYMENT = name("payment");
+    static constexpr name PAID = name ("paid");
+    static constexpr name CLAIM = name ("claim");
 
     // graph edges hanging off of primary DHO node
     static constexpr name BADGE_NAME = name("badge");
