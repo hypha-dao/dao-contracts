@@ -41,7 +41,7 @@ func TestRoleProposalDocument(t *testing.T) {
 		for _, test := range tests {
 
 			t.Log("\n\nStarting test: ", test.name)
-			CreateRole(t, env, proposer, closer, test.title, test.role)
+			CreateRole(t, env, proposer, closer, test.role)
 
 		}
 	})

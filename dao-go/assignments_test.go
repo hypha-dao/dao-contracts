@@ -118,15 +118,10 @@ func TestAssignmentProposalDocument(t *testing.T) {
 			},
 		}
 
-		// call propose with a role proposal
-		// vote on the proposal
-		// close the proposal
-		// ensure that the proposal closed and the appropriate edges exist
-
 		for _, test := range tests {
 
 			t.Log("\n\nStarting test: ", test.name)
-			role := CreateRole(t, env, proposer, closer, test.roleTitle, test.role)
+			role := CreateRole(t, env, proposer, closer, test.role)
 
 			trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, test.assignment)
 			t.Log("Assignment proposed: ", trxID)
@@ -246,7 +241,7 @@ func TestAssignmentPayClaim(t *testing.T) {
 		for _, test := range tests {
 
 			t.Log("\n\nStarting test: ", test.name)
-			role := CreateRole(t, env, proposer, closer, test.roleTitle, test.role)
+			role := CreateRole(t, env, proposer, closer, test.role)
 
 			trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, test.assignment)
 			t.Log("Assignment proposed: ", trxID)

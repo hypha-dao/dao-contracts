@@ -2,7 +2,6 @@ package dao_test
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 
 type Balance struct {
 	SnapshotTime time.Time
-	Period       uint64
 	Hypha        eos.Asset
 	Hvoice       eos.Asset
 	SeedsEscrow  eos.Asset
@@ -26,7 +24,6 @@ type Balance struct {
 
 func (b *Balance) String() string {
 	s := "\n"
-	s += "Period:		" + strconv.Itoa(int(b.Period)) + "\n"
 	s += "Time: 		" + b.SnapshotTime.String() + "\n"
 	s += "Hypha: 		" + b.Hypha.String() + "\n"
 	s += "Husd: 		" + b.Husd.String() + "\n"
@@ -147,7 +144,53 @@ func pause(t *testing.T, seconds time.Duration, headline, prefix string) {
 	fmt.Println()
 }
 
-func CreateRole(t *testing.T, env *Environment, proposer, closer Member, title, content string) docgraph.Document {
+func CreateAssignment(t *testing.T, env *Environment, role *docgraph.Document,
+	proposer, closer, assignee Member, content string) docgraph.Document {
+
+	trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, content)
+	t.Log("Assignment proposed: ", trxID)
+	assert.NilError(t, err)
+
+	// retrieve the document we just created
+	assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
+	assert.NilError(t, err)
+	assert.Equal(t, assignment.Creator, proposer.Member)
+
+	// verify that the edges are created correctly
+	// Graph structure post creating proposal:
+	// root 		---proposal---> 	propDocument
+	// member 		---owns-------> 	propDocument
+	// propDocument ---ownedby----> 	member
+	checkEdge(t, env, env.Root, assignment, eos.Name("proposal"))
+	checkEdge(t, env, proposer.Doc, assignment, eos.Name("owns"))
+	checkEdge(t, env, assignment, proposer.Doc, eos.Name("ownedby"))
+
+	ballot, err := assignment.GetContent("ballot_id")
+	assert.NilError(t, err)
+	voteToPassTD(t, env, ballot.Impl.(eos.Name))
+
+	t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
+	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
+	assert.NilError(t, err)
+
+	// verify that the edges are created correctly
+	// Graph structure post creating proposal:
+	// update graph edges:
+	//  member          ---- assigned           ---->   role_assignment
+	//  role_assignment ---- assignee           ---->   member
+	//  role_assignment ---- role               ---->   role
+	//  role            ---- role_assignment    ---->   role_assignment
+	checkEdge(t, env, assignee.Doc, assignment, eos.Name("assigned"))
+	checkEdge(t, env, assignment, assignee.Doc, eos.Name("assignee"))
+	checkEdge(t, env, assignment, *role, eos.Name("role"))
+	checkEdge(t, env, *role, assignment, eos.Name("assignment"))
+
+	//  root ---- passedprops        ---->   role_assignment
+	checkEdge(t, env, env.Root, assignment, eos.Name("passedprops"))
+	return assignment
+}
+
+func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content string) docgraph.Document {
 	_, err := dao.ProposeRole(env.ctx, &env.api, env.DAO, proposer.Member, content)
 	assert.NilError(t, err)
 
@@ -155,10 +198,6 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, title, 
 	role, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
 	assert.NilError(t, err)
 	assert.Equal(t, role.Creator, proposer.Member)
-
-	fv, err := role.GetContent("title")
-	assert.NilError(t, err)
-	assert.Equal(t, fv.String(), title)
 
 	// verify that the edges are created correctly
 	// Graph structure post creating proposal:

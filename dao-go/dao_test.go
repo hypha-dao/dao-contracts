@@ -14,8 +14,6 @@ var env *Environment
 var payments []Balance
 var balances []Balance
 
-// var claimedPeriods uint64
-
 func setupTestCase(t *testing.T) func(t *testing.T) {
 	t.Log("Bootstrapping testing environment ...")
 
