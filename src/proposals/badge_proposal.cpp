@@ -4,7 +4,7 @@
 
 namespace hypha
 {
-    void BadgeProposal::propose_impl(const name &proposer, ContentWrapper &badge)
+    void BadgeProposal::proposeImpl(const name &proposer, ContentWrapper &badge)
     {
         // check coefficients
         // TODO: move coeffecient thresholds to be configuration values
@@ -14,7 +14,7 @@ namespace hypha
         checkCoefficient(badge, SEEDS_COEFFICIENT);
     }
 
-    void BadgeProposal::pass_impl(Document &proposal)
+    void BadgeProposal::passImpl(Document &proposal)
     {
         Edge::write(m_dao.get_self(), m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::BADGE_NAME);
     }
@@ -30,12 +30,12 @@ namespace hypha
         }
     }
 
-    std::string BadgeProposal::GetBallotContent(ContentWrapper &contentWrapper)
+    std::string BadgeProposal::getBallotContent(ContentWrapper &contentWrapper)
     {
         return contentWrapper.getOrFail(DETAILS, ICON)->getAs<std::string>();
     }
 
-    name BadgeProposal::GetProposalType()
+    name BadgeProposal::getProposalType()
     {
         return common::BADGE_NAME;
     }

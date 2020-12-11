@@ -37,7 +37,7 @@ namespace hypha
          // EOSLIB_SERIALIZE(Period, (id)(start_time)(end_time)(label))
       };
 
-      typedef eosio::multi_index<eosio::name("periods"), PeriodRecord> period_table;
+      typedef eosio::multi_index<eosio::name("periods"), PeriodRecord> PeriodTable;
 
       ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION closedocprop(const checksum256 &proposal_hash);
@@ -87,7 +87,7 @@ namespace hypha
 
       // ADMIN/SETUP only
       ACTION createroot(const std::string &notes);
-      void set_setting(const string &key, const Content::FlexValue &value);
+      void setSetting(const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,
                            const eosio::time_point &price_time_point,
@@ -101,7 +101,7 @@ namespace hypha
    private:
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
-      void remove_setting(const string &key);
+      void removeSetting(const string &key);
       
       asset getProRatedAsset(ContentWrapper *assignment, const symbol &symbol, 
                              const string &key, const float &proration);
@@ -119,7 +119,7 @@ namespace hypha
       AssetBatch applyBadgeCoefficients(const uint64_t &period_id, const eosio::name &member, AssetBatch &ab);
       std::vector<Document> getCurrentBadges(const uint64_t &period_id, const eosio::name &member);
 
-      bool is_paused();
+      bool isPaused();
 
    };
 } // namespace hypha

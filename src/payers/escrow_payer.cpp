@@ -17,9 +17,9 @@ namespace hypha
 
         // if the DSEEDS symbol is used, convert it to SEEDS
         eosio::asset updatedQuantity = quantity;
-        if (quantity.symbol.code().raw() == common::S_DSEEDS.code().raw()) 
+        if (quantity.symbol.code().raw() == common::S_DSEEDS.code().raw())
         {
-            updatedQuantity = eosio::asset { quantity.amount, common::S_SEEDS };
+            updatedQuantity = eosio::asset{quantity.amount, common::S_SEEDS};
         }
 
         eosio::action(

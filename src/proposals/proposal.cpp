@@ -22,13 +22,13 @@ namespace hypha
     {
         eosio::check(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
-        propose_impl(proposer, proposalContent);
+        proposeImpl(proposer, proposalContent);
 
-        contentGroups.push_back(create_system_group(proposer,
-                                                    GetProposalType(),
+        contentGroups.push_back(createSystemGroup(proposer,
+                                                    getProposalType(),
                                                     proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>(),
                                                     proposalContent.getOrFail(DETAILS, DESCRIPTION)->getAs<std::string>(),
-                                                    GetBallotContent(proposalContent)));
+                                                    getBallotContent(proposalContent)));
 
         // creates the document, or the graph NODE
         eosio::checksum256 memberHash = Member::getHash(proposer);
@@ -44,8 +44,12 @@ namespace hypha
         // the DHO also links to the document as a proposal, another graph EDGE
         Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
 
+        postProposeImpl (proposalNode);
+
         return proposalNode;
     }
+
+    void Proposal::postProposeImpl (Document &proposal) {}
 
     void Proposal::close(Document &proposal)
     {
@@ -55,10 +59,10 @@ namespace hypha
         edge.erase();
 
         name ballot_id = proposal.getContentWrapper().getOrFail(SYSTEM, BALLOT_ID)->getAs<eosio::name>();
-        if (did_pass(ballot_id))
+        if (didPass(ballot_id))
         {
             // INVOKE child class close logic
-            pass_impl(proposal);
+            passImpl(proposal);
 
             // if proposal passes, create an edge for PASSED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::PASSED_PROPS);
@@ -76,7 +80,7 @@ namespace hypha
             .send();
     }
 
-    ContentGroup Proposal::create_system_group(const name &proposer,
+    ContentGroup Proposal::createSystemGroup(const name &proposer,
                                                const name &proposal_type,
                                                const string &decide_title,
                                                const string &decide_desc,
@@ -84,7 +88,7 @@ namespace hypha
 
     {
         // create the system content_group and populate with system details
-        name ballot_id = register_ballot(proposer, decide_title, decide_desc, decide_content);
+        name ballot_id = registerBallot(proposer, decide_title, decide_desc, decide_content);
 
         ContentGroup system_cg = ContentGroup{};
         system_cg.push_back(Content(CONTENT_GROUP_LABEL, SYSTEM));
@@ -96,7 +100,7 @@ namespace hypha
         return system_cg;
     }
 
-    bool Proposal::did_pass(const name &ballot_id)
+    bool Proposal::didPass(const name &ballot_id)
     {
         name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
         trailservice::trail::ballots_table b_t(trailContract, trailContract.value);
@@ -125,7 +129,7 @@ namespace hypha
         }
     }
 
-    name Proposal::register_ballot(const name &proposer,
+    name Proposal::registerBallot(const name &proposer,
                                    const string &title, const string &description, const string &content)
     {
         check(has_auth(proposer) || has_auth(m_dao.get_self()), "Authentication failed. Must have authority from proposer: " +
@@ -133,7 +137,7 @@ namespace hypha
 
         // increment the ballot_id
         name ballotId = name(m_dao.getSettingOrFail<eosio::name>(LAST_BALLOT_ID).value + 1);
-        m_dao.set_setting(LAST_BALLOT_ID, ballotId);
+        m_dao.setSetting(LAST_BALLOT_ID, ballotId);
 
         name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
 
@@ -179,10 +183,10 @@ namespace hypha
         return ballotId;
     }
 
-    name Proposal::register_ballot(const name &proposer,
+    name Proposal::registerBallot(const name &proposer,
                                    const map<string, string> &strings)
     {
-        return register_ballot(proposer,
+        return registerBallot(proposer,
                                strings.at(TITLE),
                                strings.at(DESCRIPTION),
                                strings.at(CONTENT));

@@ -11,7 +11,7 @@
 namespace hypha
 {
 
-    void AssignmentProposal::propose_impl(const name &proposer, ContentWrapper &assignment)
+    void AssignmentProposal::proposeImpl(const name &proposer, ContentWrapper &assignment)
     {
         // assignee must exist and be a DHO member
         name assignee = assignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
@@ -85,7 +85,7 @@ namespace hypha
         ContentWrapper::insertOrReplace(*detailsGroup, hvoiceSalaryPerPeriod);
     }
 
-    void AssignmentProposal::pass_impl(Document &proposal)
+    void AssignmentProposal::passImpl(Document &proposal)
     {
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
@@ -105,12 +105,12 @@ namespace hypha
         // TODO: what about periods?
     }
 
-    std::string AssignmentProposal::GetBallotContent (ContentWrapper &contentWrapper)
+    std::string AssignmentProposal::getBallotContent (ContentWrapper &contentWrapper)
     {
         return contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>();
     }
 
-    name AssignmentProposal::GetProposalType()
+    name AssignmentProposal::getProposalType()
     {
         return common::ASSIGNMENT;
     }

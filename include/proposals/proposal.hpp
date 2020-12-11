@@ -25,28 +25,29 @@ namespace hypha
         dao &m_dao;
 
     protected:
-        virtual void propose_impl(const eosio::name &proposer,
-                                  ContentWrapper &contentWrapper) = 0;
+        virtual void proposeImpl(const eosio::name &proposer,
+                                 ContentWrapper &contentWrapper) = 0;
 
-        virtual void pass_impl(Document &proposal) = 0;
+        void postProposeImpl(Document &proposal);
 
-        virtual string GetBallotContent(ContentWrapper &contentWrapper) = 0;
+        virtual void passImpl(Document &proposal) = 0;
 
-        virtual name GetProposalType() = 0;
+        virtual string getBallotContent(ContentWrapper &contentWrapper) = 0;
 
-        ContentGroup create_system_group(const name &proposer,
-                                         const name &proposal_type,
-                                         const string &decide_title,
-                                         const string &decide_desc,
-                                         const string &decide_content);
+        virtual name getProposalType() = 0;
 
-        bool did_pass(const name &ballot_id);
+        ContentGroup createSystemGroup(const name &proposer,
+                                       const name &proposal_type,
+                                       const string &decide_title,
+                                       const string &decide_desc,
+                                       const string &decide_content);
 
-        name register_ballot(const name &proposer,
-                             const std::map<string, string> &strings);
+        bool didPass(const name &ballot_id);
 
-        name register_ballot(const name &proposer,
-                             const string &title, const string &description, const string &content);
+        name registerBallot(const name &proposer,
+                            const std::map<string, string> &strings);
 
+        name registerBallot(const name &proposer,
+                            const string &title, const string &description, const string &content);
     };
 } // namespace hypha

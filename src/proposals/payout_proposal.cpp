@@ -11,7 +11,7 @@
 namespace hypha
 {
 
-    void PayoutProposal::propose_impl(const name &proposer, ContentWrapper &contentWrapper)
+    void PayoutProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     {
 
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
@@ -27,7 +27,7 @@ namespace hypha
                          "fatal error: expected to be a uint64_t type: " + endPeriod->label);
             int64_t periodID = std::get<int64_t>(endPeriod->value);
 
-            dao::period_table period_t(m_dao.get_self(), m_dao.get_self().value);
+            dao::PeriodTable period_t(m_dao.get_self(), m_dao.get_self().value);
             auto p_itr = period_t.find((uint64_t)periodID);
             eosio::check(p_itr != period_t.end(), "period_id is not found: " + std::to_string(periodID));
             seedsPriceTimePoint = p_itr->end_time;
@@ -77,7 +77,7 @@ namespace hypha
         // }
     }
 
-    void PayoutProposal::pass_impl(Document &proposal)
+    void PayoutProposal::passImpl(Document &proposal)
     {
         // Graph updates:
         //  dho     ---- payout ---->   payout
@@ -112,12 +112,12 @@ namespace hypha
         }
     }
 
-    std::string PayoutProposal::GetBallotContent(ContentWrapper &contentWrapper)
+    std::string PayoutProposal::getBallotContent(ContentWrapper &contentWrapper)
     {
         return contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>();
     }
 
-    name PayoutProposal::GetProposalType()
+    name PayoutProposal::getProposalType()
     {
         return common::PAYOUT;
     }

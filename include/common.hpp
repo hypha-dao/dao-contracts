@@ -43,6 +43,9 @@ namespace common
     static constexpr name ASSIGNMENT = name("assignment");
     static constexpr name ROLE_NAME = name("role");
     static constexpr name PAYOUT = name("payout");
+    static constexpr name ATTESTATION = name("attestation");
+    static constexpr name EDIT = name("edit");
+    static constexpr name ORIGINAL = name("original");
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
@@ -79,7 +82,9 @@ namespace common
 #define START_TIME "start_time"
 #define END_TIME "end_time"
 #define LABEL "label"
+#define NODE_LABEL "node_label"
 
+#define ORIGINAL_DOCUMENT "original_document"
 #define HYPHA_COEFFICIENT "hypha_coefficient_x10000"
 #define HVOICE_COEFFICIENT "hvoice_coefficient_x10000"
 #define SEEDS_COEFFICIENT "seeds_coefficient_x10000"

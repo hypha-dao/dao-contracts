@@ -40,7 +40,7 @@ namespace hypha
 
         Edge::write (m_dao.get_self(), m_dao.get_self(), root, m_document.getHash(), common::PERIOD);
 
-        dao::period_table period_t(m_dao.get_self(), m_dao.get_self().value);
+        dao::PeriodTable period_t(m_dao.get_self(), m_dao.get_self().value);
 		period_t.emplace(m_dao.get_self(), [&](auto &p) {
 			p.id = period_t.available_primary_key();
             p.start_time = start_time;

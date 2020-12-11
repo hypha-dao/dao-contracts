@@ -9,7 +9,7 @@
 namespace hypha
 {
 
-    void RoleProposal::propose_impl(const name &proposer, ContentWrapper &contentWrapper)
+    void RoleProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     {
         // capacity is no longer enforced; commenting check
         // int64_t capacity = std::get<int64_t>(m_dao._document_graph.get_content(details, common::FULL_TIME_CAPACITY, true));
@@ -19,18 +19,18 @@ namespace hypha
         eosio::check (annual_usd_salary.amount > 0, ANNUAL_USD_SALARY + string(" must be greater than zero. You submitted: ") + annual_usd_salary.to_string());
     }
 
-    void RoleProposal::pass_impl(Document &proposal)
+    void RoleProposal::passImpl(Document &proposal)
     {
         // eosio::checksum256 rootNode = ;
         Edge::write (m_dao.get_self(), m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::ROLE_NAME);
     }
 
-    std::string RoleProposal::GetBallotContent (ContentWrapper &contentWrapper)
+    std::string RoleProposal::getBallotContent (ContentWrapper &contentWrapper)
     {
         return contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>();
     }
     
-    name RoleProposal::GetProposalType () 
+    name RoleProposal::getProposalType () 
     {
         return common::ROLE_NAME;
     }

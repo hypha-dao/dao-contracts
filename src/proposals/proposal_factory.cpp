@@ -5,6 +5,7 @@
 #include <proposals/role_proposal.hpp>
 #include <proposals/payout_proposal.hpp>
 #include <proposals/assignment_proposal.hpp>
+#include <proposals/attestation_proposal.hpp>
 #include <common.hpp>
 
 namespace hypha
@@ -27,6 +28,9 @@ namespace hypha
 
         case common::PAYOUT.value:
             return new PayoutProposal(dao);
+
+        case common::ATTESTATION.value:
+            return new AttestationProposal(dao);
         }
 
         eosio::check(false, "Unknown proposal_type");

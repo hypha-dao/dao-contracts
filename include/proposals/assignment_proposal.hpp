@@ -19,10 +19,10 @@ namespace hypha {
 
     protected:
 
-        void propose_impl(const name &proposer, ContentWrapper &contentWrapper) override;
-        void pass_impl(Document &proposal) override;
-        string GetBallotContent (ContentWrapper &contentWrapper) override;
-        name GetProposalType () override;
+        void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;
+        void passImpl(Document &proposal) override;
+        string getBallotContent (ContentWrapper &contentWrapper) override;
+        name getProposalType () override;
 
     private: 
 

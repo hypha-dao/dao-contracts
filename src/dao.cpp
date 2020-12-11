@@ -18,7 +18,7 @@ namespace hypha
                      const name &proposal_type,
                      ContentGroups &content_groups)
    {
-      eosio::check(!is_paused(), "Contract is paused for maintenance. Please try again later.");
+      eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, proposal_type));
       proposal->propose(proposer, content_groups);
@@ -26,7 +26,7 @@ namespace hypha
 
    void dao::closedocprop(const checksum256 &proposal_hash)
    {
-      eosio::check(!is_paused(), "Contract is paused for maintenance. Please try again later.");
+      eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       Document docprop(get_self(), proposal_hash);
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
@@ -37,7 +37,7 @@ namespace hypha
 
    void dao::claimpay(const eosio::checksum256 &hash, const uint64_t &period_id)
    {
-      eosio::check(!is_paused(), "Contract is paused for maintenance. Please try again later.");
+      eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       // check to see if this period has already been claimed for this assignment
       Document periodPayClaim = Document::getOrNew(get_self(), get_self(), PAYMENT_PERIOD, period_id);
@@ -58,7 +58,7 @@ namespace hypha
       require_auth(assignee);
 
       // Check that the period has elapsed
-      period_table period_t(get_self(), get_self().value);
+      PeriodTable period_t(get_self(), get_self().value);
       auto p_itr = period_t.find(period_id);
       eosio::check(p_itr != period_t.end(), "Cannot make payment. Period ID not found: " + std::to_string(period_id));
       eosio::check(p_itr->end_time.sec_since_epoch() < eosio::current_block_time().to_time_point().sec_since_epoch(),
@@ -254,7 +254,7 @@ namespace hypha
       member.enroll(enroller, content);
    }
 
-   bool dao::is_paused() { return false; }
+   bool dao::isPaused() { return false; }
 
    Document dao::getSettingsDocument()
    {
@@ -267,10 +267,10 @@ namespace hypha
    void dao::setsetting(const string &key, const Content::FlexValue &value)
    {
       require_auth(get_self());
-      set_setting(key, value);
+      setSetting(key, value);
    }
 
-   void dao::set_setting(const string &key, const Content::FlexValue &value)
+   void dao::setSetting(const string &key, const Content::FlexValue &value)
    {
       auto document = getSettingsDocument();
       auto oldHash = document.getHash();
@@ -290,10 +290,10 @@ namespace hypha
    void dao::remsetting(const string &key)
    {
       require_auth(get_self());
-      remove_setting(key);
+      removeSetting(key);
    }
 
-   void dao::remove_setting(const string &key)
+   void dao::removeSetting(const string &key)
    {
       auto document = getSettingsDocument();
       auto oldHash = document.getHash();

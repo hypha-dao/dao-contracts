@@ -20,10 +20,10 @@ namespace hypha {
         void close(Document &proposal);
 
     protected:
-        void propose_impl(const eosio::name &proposer, ContentWrapper &contentWrapper) override;
-        void pass_impl(Document &proposal) override;
-        std::string GetBallotContent (ContentWrapper &contentWrapper) override;
-        eosio::name GetProposalType () override;
+        void proposeImpl(const eosio::name &proposer, ContentWrapper &contentWrapper) override;
+        void passImpl(Document &proposal) override;
+        std::string getBallotContent (ContentWrapper &contentWrapper) override;
+        eosio::name getProposalType () override;
 
     private:
         void checkCoefficient(ContentWrapper &badge, const std::string &key);

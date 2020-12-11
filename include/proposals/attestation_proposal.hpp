@@ -1,15 +1,14 @@
-#pragma once
+#pragma once 
 
 #include <eosio/name.hpp>
 
 #include "proposal.hpp"
 
-namespace hypha
-{
+namespace hypha {
 
-    class PayoutProposal : public Proposal
+    class AttestationProposal : public Proposal
     {
-
+    
     public:
         using Proposal::Proposal;
 
@@ -17,13 +16,11 @@ namespace hypha
         void close(Document &proposal);
 
     protected:
+
         void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;
         void passImpl(Document &proposal) override;
-        string getBallotContent(ContentWrapper &contentWrapper) override;
-        name getProposalType() override;
+        string getBallotContent (ContentWrapper &contentWrapper) override;
+        name getProposalType () override;
 
-    private:
-        asset calculateHusd(const asset &usd, const int64_t &deferred);
-        asset calculateHypha(const asset &usd, const int64_t &deferred);
     };
-} // namespace hypha
+}

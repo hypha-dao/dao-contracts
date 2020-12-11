@@ -9,7 +9,7 @@
 namespace hypha
 {
 
-    void BadgeAssignmentProposal::propose_impl(const name &proposer, ContentWrapper &badgeAssignment)
+    void BadgeAssignmentProposal::proposeImpl(const name &proposer, ContentWrapper &badgeAssignment)
     {
         // assignee must exist and be a DHO member
         name assignee = badgeAssignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
@@ -27,7 +27,7 @@ namespace hypha
                      "badge document hash provided in assignment proposal is not of type badge");
     }
 
-    void BadgeAssignmentProposal::pass_impl(Document &proposal)
+    void BadgeAssignmentProposal::passImpl(Document &proposal)
     {
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
@@ -49,12 +49,12 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), badge.getHash(), common::BADGE_NAME);
     }
 
-    std::string BadgeAssignmentProposal::GetBallotContent(ContentWrapper &contentWrapper)
+    std::string BadgeAssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)
     {
         return contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>();
     }
 
-    name BadgeAssignmentProposal::GetProposalType()
+    name BadgeAssignmentProposal::getProposalType()
     {
         return common::ASSIGN_BADGE;
     }
