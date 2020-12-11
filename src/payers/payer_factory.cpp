@@ -12,7 +12,7 @@ namespace hypha
 
     Payer *PayerFactory::Factory(dao &dao, const eosio::symbol &symbol, const eosio::name &paymentType)
     {
-        if (paymentType == common::ESCROW)
+        if (paymentType == common::ESCROW || symbol.code().raw() == common::S_DSEEDS.code().raw())
         {
             return new EscrowPayer(dao);
         }
@@ -32,7 +32,7 @@ namespace hypha
             return new SeedsPayer(dao);
         }
 
-        eosio::check(false, "Unknown symbol or payment type");
+        eosio::check(false, "Unknown - symbol: " + symbol.code().to_string() + " payment type: " + paymentType.to_string());
         return nullptr;
     }
 } // namespace hypha

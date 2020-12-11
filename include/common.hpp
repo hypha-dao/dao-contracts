@@ -15,7 +15,9 @@ namespace common
     static constexpr symbol S_HYPHA("HYPHA", 2);
     static constexpr symbol S_HVOICE("HVOICE", 2);
     static constexpr symbol S_SEEDS("SEEDS", 4);
+    static constexpr symbol S_DSEEDS("DSEEDS", 4);
     static constexpr symbol S_HUSD("HUSD", 2);
+    static constexpr symbol S_USD("USD", 2);
 
     static const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
 
@@ -40,6 +42,7 @@ namespace common
     static constexpr name VOTE_TALLY = name("votetally");
     static constexpr name ASSIGNMENT = name("assignment");
     static constexpr name ROLE_NAME = name("role");
+    static constexpr name PAYOUT = name("payout");
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
@@ -131,6 +134,7 @@ namespace common
 #define MIN_DEFERRED "min_deferred_x100"
 #define DEFERRED "deferred_perc_x100"
 
+#define USD_AMOUNT "usd_amount"
 #define USD_SALARY_PER_PERIOD "usd_salary_value_per_phase"
 #define HYPHA_SALARY_PER_PERIOD "hypha_salary_per_phase"
 #define HUSD_SALARY_PER_PERIOD "husd_salary_per_phase"

@@ -87,7 +87,7 @@ func TestBadgeProposals(t *testing.T) {
 			t.Run(test.name, func(t *testing.T) {
 
 				t.Log("\nStarting test: ", test.name)
-				_, err := dao.ProposeBadgeFromFile(env.ctx, &env.api, env.DAO, proposer.Member, test.badge)
+				_, err := dao.ProposeBadge(env.ctx, &env.api, env.DAO, proposer.Member, test.badge)
 				assert.NilError(t, err)
 
 				// retrieve the document we just created
@@ -267,7 +267,7 @@ func TestBadgeProposals(t *testing.T) {
 // 			t.Run(test.name, func(t *testing.T) {
 
 // 				t.Log("\n\nStarting test: ", test.name)
-// 				_, err := dao.ProposeBadgeFromFile(env.ctx, &env.api, env.DAO, proposer.Member, test.badge)
+// 				_, err := dao.ProposeBadge(env.ctx, &env.api, env.DAO, proposer.Member, test.badge)
 // 				assert.NilError(t, err)
 
 // 				// retrieve the document we just created

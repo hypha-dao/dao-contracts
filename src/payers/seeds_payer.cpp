@@ -15,11 +15,12 @@ namespace hypha
                                  const string &memo)
     {
 
-        issueToken(m_dao.getSettingOrFail<eosio::name>(SEEDS_TOKEN_CONTRACT),
-                   m_dao.get_self(),
-                   recipient,
-                   quantity,
-                   memo);
+        eosio::action(
+            eosio::permission_level{m_dao.get_self(), name("active")},
+            m_dao.getSettingOrFail<name>(SEEDS_TOKEN_CONTRACT),
+            eosio::name("transfer"),
+            std::make_tuple(m_dao.get_self(), recipient, quantity, memo))
+            .send();
 
         ContentGroups recieptCgs{
             {Content(CONTENT_GROUP_LABEL, DETAILS),

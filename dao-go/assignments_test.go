@@ -13,18 +13,14 @@ func TestAssignmentProposalDocument(t *testing.T) {
 	teardownTestCase := setupTestCase(t)
 	defer teardownTestCase(t)
 
-	// var env Environment
 	env = SetupEnvironment(t)
+	t.Log(env.String())
+	t.Log("\nDAO Environment Setup complete\n")
 
 	// roles
 	proposer := env.Members[0]
 	assignee := env.Members[1]
 	closer := env.Members[2]
-
-	t.Run("Configuring the DAO environment: ", func(t *testing.T) {
-		t.Log(env.String())
-		t.Log("\nDAO Environment Setup complete\n")
-	})
 
 	t.Run("Test Assignment Document Proposal", func(t *testing.T) {
 
@@ -197,8 +193,9 @@ func TestAssignmentPayClaim(t *testing.T) {
 	teardownTestCase := setupTestCase(t)
 	defer teardownTestCase(t)
 
-	// var env Environment
 	env = SetupEnvironment(t)
+	t.Log(env.String())
+	t.Log("\nDAO Environment Setup complete\n")
 
 	balances = append(balances, NewBalance())
 
@@ -206,11 +203,6 @@ func TestAssignmentPayClaim(t *testing.T) {
 	proposer := env.Members[0]
 	assignee := env.Members[1]
 	closer := env.Members[2]
-
-	t.Run("Configuring the DAO environment: ", func(t *testing.T) {
-		t.Log(env.String())
-		t.Log("\nDAO Environment Setup complete\n")
-	})
 
 	t.Run("Test Assignment Document Proposal", func(t *testing.T) {
 

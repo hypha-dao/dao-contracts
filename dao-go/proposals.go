@@ -30,23 +30,6 @@ type Proposal struct {
 }
 
 // Propose ...
-// func Propose(ctx context.Context, api *eos.API, contract, proposer eos.AccountName, proposalType eos.Name, content string) (string, error) {
-
-// 	action := eos.ActN("propose")
-
-// 	actions := []*eos.Action{{
-// 		Account: contract,
-// 		Name:    action,
-// 		Authorization: []eos.PermissionLevel{
-// 			{Actor: proposer, Permission: eos.PN("active")},
-// 		},
-// 		ActionData: eos.NewActionData()),
-// 	}}
-
-// 	return eostest.ExecTrx(ctx, api, actions)
-// }
-
-// Propose ...
 func Propose(ctx context.Context, api *eos.API,
 	contract, proposer eos.AccountName, proposal Proposal) (string, error) {
 	action := eos.ActN("propose")
@@ -59,6 +42,54 @@ func Propose(ctx context.Context, api *eos.API,
 		ActionData: eos.NewActionData(proposal)}}
 
 	return eostest.ExecTrx(ctx, api, actions)
+}
+
+// ProposePayout creates a proposal for an new payout/contribution
+func ProposePayout(ctx context.Context, api *eos.API,
+	contract, proposer, recipient eos.AccountName,
+	usdAmount eos.Asset, deferred int64, payout string) (string, error) {
+
+	var payoutDoc docgraph.Document
+	err := json.Unmarshal([]byte(payout), &payoutDoc)
+	if err != nil {
+		return "error", fmt.Errorf("ProposePayout unmarshal : %v", err)
+	}
+
+	// inject the assignee in the first content group of the document
+	payoutDoc.ContentGroups[0] = append(payoutDoc.ContentGroups[0], docgraph.ContentItem{
+		Label: "recipient",
+		Value: &docgraph.FlexValue{
+			BaseVariant: eos.BaseVariant{
+				TypeID: docgraph.GetVariants().TypeID("name"),
+				Impl:   recipient,
+			}},
+	})
+
+	// inject the assignee in the first content group of the document
+	payoutDoc.ContentGroups[0] = append(payoutDoc.ContentGroups[0], docgraph.ContentItem{
+		Label: "usd_amount",
+		Value: &docgraph.FlexValue{
+			BaseVariant: eos.BaseVariant{
+				TypeID: docgraph.GetVariants().TypeID("asset"),
+				Impl:   usdAmount,
+			}},
+	})
+
+	// inject the assignee in the first content group of the document
+	payoutDoc.ContentGroups[0] = append(payoutDoc.ContentGroups[0], docgraph.ContentItem{
+		Label: "deferred_perc_x100",
+		Value: &docgraph.FlexValue{
+			BaseVariant: eos.BaseVariant{
+				TypeID: docgraph.GetVariants().TypeID("int64"),
+				Impl:   deferred,
+			}},
+	})
+
+	return Propose(ctx, api, contract, proposer, Proposal{
+		Proposer:      proposer,
+		ProposalType:  eos.Name("payout"),
+		ContentGroups: payoutDoc.ContentGroups,
+	})
 }
 
 // ProposeRole creates a proposal for an new assignment
@@ -116,15 +147,15 @@ func ProposeAssignment(ctx context.Context, api *eos.API,
 	})
 }
 
-// ProposeBadgeFromFile proposes the badge to the specified DAO contract
-func ProposeBadgeFromFile(ctx context.Context, api *eos.API, contract, proposer eos.AccountName, content string) (string, error) {
+// ProposeBadge proposes the badge to the specified DAO contract
+func ProposeBadge(ctx context.Context, api *eos.API, contract, proposer eos.AccountName, content string) (string, error) {
 
 	action := eos.ActN("propose")
 
 	var dump map[string]interface{}
 	err := json.Unmarshal([]byte(content), &dump)
 	if err != nil {
-		return "error", fmt.Errorf("ProposeBadgeFromFile : %v", err)
+		return "error", fmt.Errorf("ProposeBadge : %v", err)
 	}
 
 	dump["proposer"] = proposer
@@ -148,15 +179,6 @@ func ProposeBadgeFromFile(ctx context.Context, api *eos.API, contract, proposer 
 func ProposeBadgeAssignment(ctx context.Context, api *eos.API,
 	contract, proposer, assignee eos.AccountName,
 	badgeHash eos.Checksum256, assignment string) (string, error) {
-
-	// data, err := ioutil.ReadFile(fileName)
-	// if err != nil {
-	// 	return "error", fmt.Errorf("ProposeBadgeAssignment : %v", err)
-	// }
-
-	// var roleProposal dao.RawObject
-	// err := json.Unmarshal([]byte(assignment), &roleProposal)
-	// assert.NilError(t, err)
 
 	var badgeAssignmentDoc docgraph.Document
 	err := json.Unmarshal([]byte(assignment), &badgeAssignmentDoc)

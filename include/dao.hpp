@@ -89,14 +89,20 @@ namespace hypha
       ACTION createroot(const std::string &notes);
       void set_setting(const string &key, const Content::FlexValue &value);
 
-   private:
-      DocumentGraph m_documentGraph = DocumentGraph(get_self());
+      asset getSeedsAmount(const eosio::asset &usd_amount,
+                           const eosio::time_point &price_time_point,
+                           const float &time_share,
+                           const float &deferred_perc);
 
-      void remove_setting(const string &key);
       void makePayment(const eosio::checksum256 &fromNode, const eosio::name &recipient,
                        const eosio::asset &quantity, const string &memo,
                        const eosio::name &paymentType);
 
+   private:
+      DocumentGraph m_documentGraph = DocumentGraph(get_self());
+
+      void remove_setting(const string &key);
+      
       asset getProRatedAsset(ContentWrapper *assignment, const symbol &symbol, 
                              const string &key, const float &proration);
 
@@ -115,9 +121,5 @@ namespace hypha
 
       bool is_paused();
 
-      asset getSeedsAmount(const eosio::asset &usd_amount,
-                           const eosio::time_point &price_time_point,
-                           const float &time_share,
-                           const float &deferred_perc);
    };
 } // namespace hypha

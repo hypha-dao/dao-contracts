@@ -228,7 +228,8 @@ namespace hypha
                          const string &memo,
                          const eosio::name &paymentType)
    {
-      if (quantity.amount == 0)
+      // nothing to do if quantity is zero of symbol is USD, a known placeholder
+      if (quantity.amount == 0 || quantity.symbol == common::S_USD)
       {
          return;
       }

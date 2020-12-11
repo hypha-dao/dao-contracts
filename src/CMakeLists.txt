@@ -20,6 +20,7 @@ add_contract( dao dao
                 proposals/badge_proposal.cpp
                 proposals/badge_assignment_proposal.cpp
                 proposals/assignment_proposal.cpp
+                proposals/payout_proposal.cpp
                 proposals/proposal_factory.cpp
                 ../document-graph/src/document_graph/document_graph.cpp 
                 ../document-graph/src/document_graph/document.cpp 
