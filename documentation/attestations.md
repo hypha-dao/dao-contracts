@@ -1,14 +1,14 @@
-# Attestations
+# Attestation Proposals
 Attestations represent any general purpose statement, policy, or assertion made by the HVOICE token holders. It creates a document on chain containing the attestation, for historical record keeping.  
 
 Attestations can be edited, and the new content is merged into the existing document, adding new elements and overwriting existing ones.  
 
 ## Example: Hypha Policy
-### Hardware Wallet Threshold Policy
-As an example, here's a proposed policy to set the threshold for treasurers to use hardware wallets as a value of 50 million SEEDS. Of course, multisignature is used for all treasuries, but hardware signers should be required for high values. So any specific treasury (crypto wallet) holding an equivalent value of this many SEEDS should use hardware, and then the example also edits this value as a subsequent policy.
+### Treasurer Hardware Wallet Threshold Policy
+As an example, here's a proposed policy to set the threshold for treasurers to use hardware wallets as a value of 50 million SEEDS. Of course, multisignature is used for all treasuries, but hardware signers should be required for high values. In other words, any specific treasury (crypto wallet) holding an equivalent value of this many SEEDS should use hardware. Then, the example edits this value as a subsequent policy update.
 
 #### Original
-An attestation can be any number of ```content``` items in any number of ```content_groups```.  
+An attestation can be any number of variant-type ```label-value``` pairs in any number of ```content_groups```.  
 
 The only required fields are:
 - ```content_group_label``` indicating the ```details``` group
@@ -200,7 +200,7 @@ After the Edit proposal is passed, the resulting document will be the merged con
                     "asset",
                     "25000000.0000 SEEDS"
                 ]
-			}
+            }
         ]
     ]
 }
