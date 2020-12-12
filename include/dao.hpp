@@ -50,6 +50,15 @@ namespace hypha
       ACTION apply(const eosio::name &applicant, const std::string &content);
       ACTION enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content);
 
+      // migration only
+      ACTION createobj(const uint64_t &id,
+                       const name &scope,
+                       std::map<string, name> names,
+                       std::map<string, string> strings,
+                       std::map<string, asset> assets,
+                       std::map<string, eosio::time_point> time_points,
+                       std::map<string, uint64_t> ints);
+
       DocumentGraph &getGraph();
       Document getSettingsDocument();
 
@@ -102,8 +111,8 @@ namespace hypha
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
       void removeSetting(const string &key);
-      
-      asset getProRatedAsset(ContentWrapper *assignment, const symbol &symbol, 
+
+      asset getProRatedAsset(ContentWrapper * assignment, const symbol &symbol,
                              const string &key, const float &proration);
 
       struct AssetBatch
@@ -115,11 +124,10 @@ namespace hypha
          eosio::asset husd = eosio::asset{0, common::S_HUSD};
       };
 
-      eosio::asset applyCoefficient(ContentWrapper &badge, const eosio::asset &base, const std::string &key);
+      eosio::asset applyCoefficient(ContentWrapper & badge, const eosio::asset &base, const std::string &key);
       AssetBatch applyBadgeCoefficients(const uint64_t &period_id, const eosio::name &member, AssetBatch &ab);
       std::vector<Document> getCurrentBadges(const uint64_t &period_id, const eosio::name &member);
 
       bool isPaused();
-
    };
 } // namespace hypha

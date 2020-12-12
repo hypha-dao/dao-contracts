@@ -7,9 +7,9 @@
 
 #include <dao.hpp>
 #include <common.hpp>
-
 #include <util.hpp>
 #include <member.hpp>
+#include <migration.hpp>
 #include <period.hpp>
 
 namespace hypha
@@ -41,15 +41,15 @@ namespace hypha
 
       // check to see if this period has already been claimed for this assignment
       Document periodPayClaim = Document::getOrNew(get_self(), get_self(), PAYMENT_PERIOD, period_id);
-      eosio::check (!Edge::exists(get_self(), hash, periodPayClaim.getHash(), common::CLAIM), 
-         "Assignment " + readableHash(hash) + " has already been claimed for period: " + std::to_string(period_id));
+      eosio::check(!Edge::exists(get_self(), hash, periodPayClaim.getHash(), common::CLAIM),
+                   "Assignment " + readableHash(hash) + " has already been claimed for period: " + std::to_string(period_id));
 
       Document assignmentDocument(get_self(), hash);
       ContentWrapper assignment = assignmentDocument.getContentWrapper();
       name assignee = assignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
 
       //  member          ---- claim        ---->   payment_claim
-		//  role_assignment ---- claim        ---->   payment_claim
+      //  role_assignment ---- claim        ---->   payment_claim
       Edge::write(get_self(), get_self(), assignmentDocument.getHash(), periodPayClaim.getHash(), common::CLAIM);
       Edge::write(get_self(), get_self(), Member::getHash(assignee), periodPayClaim.getHash(), common::CLAIM);
 
@@ -338,8 +338,20 @@ namespace hypha
       Edge::write(get_self(), get_self(), rootDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
    }
 
-   DocumentGraph& dao::getGraph() 
+   DocumentGraph &dao::getGraph()
    {
       return m_documentGraph;
+   }
+
+   void dao::createobj(const uint64_t &id,
+                       const name &scope,
+                       std::map<string, name> names,
+                       std::map<string, string> strings,
+                       std::map<string, asset> assets,
+                       std::map<string, eosio::time_point> time_points,
+                       std::map<string, uint64_t> ints)
+   {
+      Migration migration(get_self());
+      migration.newObject(id, scope, names, strings, assets, time_points, ints);
    }
 } // namespace hypha

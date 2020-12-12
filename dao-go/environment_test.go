@@ -195,6 +195,7 @@ func SetupEnvironment(t *testing.T) *Environment {
 	_, err = eostest.SetContract(env.ctx, &env.api, env.SeedsExchange, exchangeWasm, exchangeAbi)
 	assert.NilError(t, err)
 	loadSeedsTablesFromProd(t, &env, "https://api.telos.kitchen")
+	loadObjectsFromProd(t, &env, "role", "https://api.telos.kitchen")
 
 	t.Log("Deploying Events contract to 		: ", env.Events)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.Events, monitorPrefix+"wasm", monitorPrefix+"abi")

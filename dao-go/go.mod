@@ -13,6 +13,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/ryanuber/columnize v2.1.2+incompatible // indirect
 	github.com/schollz/progressbar/v3 v3.7.2
+	github.com/spf13/viper v1.3.1
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/sjson v1.1.2 // indirect
 	go.uber.org/multierr v1.6.0 // indirect

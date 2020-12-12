@@ -143,8 +143,7 @@ namespace hypha
         for (time_point_itr = time_points.begin(); time_point_itr != time_points.end(); ++time_point_itr)
         {
             Content content{time_point_itr->first, time_point_itr->second};
-            if (time_point_itr->first == "object_id" ||
-                time_point_itr->first == "prior_id")
+            if (true)
             {
                 // skip
             }
@@ -164,6 +163,27 @@ namespace hypha
         contentGroups.push_back(detailsContentGroup);
 
         return Document(m_contract, m_contract, contentGroups);
+    }
+
+    void Migration::newObject(const uint64_t &id,
+                              const name &scope,
+                              map<string, name> names,
+                              map<string, string> strings,
+                              map<string, asset> assets,
+                              map<string, time_point> time_points,
+                              map<string, uint64_t> ints)
+    {
+
+        eosio::print ("writing new object: " + std::to_string(id));
+        Migration::object_table o_t(m_contract, scope.value);
+        o_t.emplace(m_contract, [&](auto &o) {
+            o.id = id;
+            o.names = names;
+            o.strings = strings;
+            o.assets = assets;
+            o.time_points = time_points;
+            o.ints = ints;
+        });
     }
 
 } // namespace hypha

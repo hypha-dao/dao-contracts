@@ -73,6 +73,14 @@ namespace hypha
 
         void migrateRole(const uint64_t &roleId);
 
+        void newObject(const uint64_t &id,
+                       const name &scope,
+                       map<string, name> names,
+                       map<string, string> strings,
+                       map<string, asset> assets,
+                       map<string, time_point> time_points,
+                       map<string, uint64_t> ints);
+
     private:
         Document newDocument(const uint64_t id,
                              const name scope,
