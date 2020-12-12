@@ -56,7 +56,7 @@ In this example, adding the specific field for ```clause_hardware_threshold``` i
                     "Hardware wallets should be used for any treasury over the value of 50 million Seeds"
                 ]
             },
-			{
+            {
                 "label": "clause_hardware_threshold",
                 "value": [
                     "asset",
