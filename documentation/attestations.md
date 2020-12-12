@@ -55,14 +55,14 @@ In this example, adding the specific field for ```clause_hardware_threshold``` i
                     "string",
                     "Hardware wallets should be used for any treasury over the value of 50 million Seeds"
                 ]
-			},
+            },
 			{
                 "label": "clause_hardware_threshold",
                 "value": [
                     "asset",
                     "50000000.0000 SEEDS"
                 ]
-			}
+            }
         ]
     ]
 }
@@ -98,13 +98,13 @@ Now, let's propose an edit to the above attestation.  Let's decrease the thresho
                     "3f84d079a9a002b36c7f02e50ca8f45629533eccebc804de0d8d1d072608aa19"
                 ]
             },
-			{
+            {
                 "label": "ballot_title",
                 "value": [
                     "string",
                     "Update hardware threshold"
                 ]
-			},
+            },
 			{
                 "label": "ballot_description",
                 "value": [
@@ -118,14 +118,14 @@ Now, let's propose an edit to the above attestation.  Let's decrease the thresho
                     "string",
                     "Hardware wallets should be used for any treasury over the value of 25 million Seeds"
                 ]
-			},
-			{
+            },
+            {
                 "label": "clause_hardware_threshold",
                 "value": [
                     "asset",
                     "25000000.0000 SEEDS"
                 ]
-			}
+            }
         ]
     ]
 }
@@ -151,8 +151,8 @@ After the Edit proposal is passed, the resulting document will be the merged con
                     "string",
                     "Security specs for Hypha treasuries"
                 ]
-			},
-			{
+            },
+            {
                 "label": "description",
                 "value": [
                     "string",
@@ -179,8 +179,8 @@ After the Edit proposal is passed, the resulting document will be the merged con
                     "string",
                     "Update hardware threshold"
                 ]
-			},
-			{
+            },
+            {
                 "label": "ballot_description",
                 "value": [
                     "string",
@@ -193,8 +193,8 @@ After the Edit proposal is passed, the resulting document will be the merged con
                     "string",
                     "Hardware wallets should be used for any treasury over the value of 25 million Seeds"
                 ]
-			},
-			{
+            },
+            {
                 "label": "clause_hardware_threshold",
                 "value": [
                     "asset",
