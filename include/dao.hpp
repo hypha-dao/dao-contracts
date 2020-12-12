@@ -50,7 +50,7 @@ namespace hypha
       ACTION apply(const eosio::name &applicant, const std::string &content);
       ACTION enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content);
 
-      DocumentGraph getGraph();
+      DocumentGraph &getGraph();
       Document getSettingsDocument();
 
       template <class T>

@@ -338,4 +338,8 @@ namespace hypha
       Edge::write(get_self(), get_self(), rootDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
    }
 
+   DocumentGraph& dao::getGraph() 
+   {
+      return m_documentGraph;
+   }
 } // namespace hypha

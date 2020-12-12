@@ -92,6 +92,33 @@ func ProposePayout(ctx context.Context, api *eos.API,
 	})
 }
 
+// ProposeEdit creates an edit proposal
+func ProposeEdit(ctx context.Context, api *eos.API,
+	contract, proposer eos.AccountName, original docgraph.Document, edit string) (string, error) {
+
+	var editDoc docgraph.Document
+	err := json.Unmarshal([]byte(edit), &editDoc)
+	if err != nil {
+		return "error", fmt.Errorf("ProposeEdit unmarshal : %v", err)
+	}
+
+	// inject the assignee in the first content group of the document
+	editDoc.ContentGroups[0] = append(editDoc.ContentGroups[0], docgraph.ContentItem{
+		Label: "original_document",
+		Value: &docgraph.FlexValue{
+			BaseVariant: eos.BaseVariant{
+				TypeID: docgraph.GetVariants().TypeID("checksum256"),
+				Impl:   original.Hash,
+			}},
+	})
+
+	return Propose(ctx, api, contract, proposer, Proposal{
+		Proposer:      proposer,
+		ProposalType:  eos.Name("edit"),
+		ContentGroups: editDoc.ContentGroups,
+	})
+}
+
 // ProposeRole creates a proposal for an new assignment
 func ProposeRole(ctx context.Context, api *eos.API,
 	contract, proposer eos.AccountName, role string) (string, error) {

@@ -6,6 +6,7 @@
 #include <proposals/payout_proposal.hpp>
 #include <proposals/assignment_proposal.hpp>
 #include <proposals/attestation_proposal.hpp>
+#include <proposals/edit_proposal.hpp>
 #include <common.hpp>
 
 namespace hypha
@@ -31,9 +32,12 @@ namespace hypha
 
         case common::ATTESTATION.value:
             return new AttestationProposal(dao);
+
+        case common::EDIT.value:
+            return new EditProposal(dao);
         }
 
-        eosio::check(false, "Unknown proposal_type");
+        eosio::check(false, "Unknown proposal_type: " + proposal_type.to_string());
         return nullptr;
     }
 } // namespace hypha
