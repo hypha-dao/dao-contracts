@@ -17,7 +17,7 @@ The only required fields are:
 
 In this example, adding the specific field for ```clause_hardware_threshold``` is certainly not required. However, it's potentially helpful if there are later APIs that want to read this policy and take some action, such as our treasury wallet or apps. 
 
-``` json
+``` yaml
 {
     "content_groups": [
         [
@@ -80,7 +80,7 @@ Now, let's propose an edit to the above attestation.  Let's decrease the thresho
 
 > NOTE: we are using ```ballot_title``` and ```ballot_description``` so that we provide descriptors to put on the ballot and proposal card, but they will not overwrite the original title and description.
 
-``` json
+``` yaml
 {
     "content_groups": [
         [
@@ -134,7 +134,7 @@ Now, let's propose an edit to the above attestation.  Let's decrease the thresho
 ### Post Edit
 After the Edit proposal is passed, the resulting document will be the merged content and all existing graph edges will be updated to point to the latest document.
 
-``` json
+``` yaml
 {
     "content_groups": [
         [
