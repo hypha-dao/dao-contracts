@@ -20,8 +20,7 @@ In this example, adding the specific field for ```clause_hardware_threshold``` i
 ``` yaml
 {
     "content_groups": [
-        [
-            {
+        [{
                 "label": "content_group_label",
                 "value": [
                     "string",
@@ -34,8 +33,8 @@ In this example, adding the specific field for ```clause_hardware_threshold``` i
                     "string",
                     "Security specs for Hypha treasuries"
                 ]
-			},
-			{
+            },
+            {
                 "label": "description",
                 "value": [
                     "string",
@@ -83,8 +82,7 @@ Now, let's propose an edit to the above attestation.  Let's decrease the thresho
 ``` yaml
 {
     "content_groups": [
-        [
-            {
+        [{
                 "label": "content_group_label",
                 "value": [
                     "string",
@@ -105,13 +103,13 @@ Now, let's propose an edit to the above attestation.  Let's decrease the thresho
                     "Update hardware threshold"
                 ]
             },
-			{
+            {
                 "label": "ballot_description",
                 "value": [
                     "string",
                     "This proposal updates the hardware requirement threshold from 50 million to 25 million"
                 ]
-            },            
+            },
             {
                 "label": "clause_hardware",
                 "value": [
@@ -137,15 +135,14 @@ After the Edit proposal is passed, the resulting document will be the merged con
 ``` yaml
 {
     "content_groups": [
-        [
-            {
+        [{
                 "label": "content_group_label",
                 "value": [
                     "string",
                     "details"
                 ]
             },
-             {
+            {
                 "label": "title",
                 "value": [
                     "string",
@@ -173,7 +170,7 @@ After the Edit proposal is passed, the resulting document will be the merged con
                     "3f84d079a9a002b36c7f02e50ca8f45629533eccebc804de0d8d1d072608aa19"
                 ]
             },
-			{
+            {
                 "label": "ballot_title",
                 "value": [
                     "string",
@@ -186,7 +183,7 @@ After the Edit proposal is passed, the resulting document will be the merged con
                     "string",
                     "This proposal updates the hardware requirement threshold from 50 million to 25 million"
                 ]
-            },            
+            },
             {
                 "label": "clause_hardware",
                 "value": [
