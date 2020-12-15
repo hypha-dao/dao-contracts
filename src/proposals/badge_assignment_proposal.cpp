@@ -15,8 +15,9 @@ namespace hypha
         name assignee = badgeAssignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
         eosio::check(Member::isMember(m_dao.get_self(), assignee), "only members can be earn badges " + assignee.to_string());
 
-        // TODO: Additional input cleansing
-        // start_period and end_period must be valid, no more than X periods in between
+        Document startPeriod(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+        int64_t numPeriods = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
+        eosio::check(numPeriods < 26, PERIOD_COUNT + string(" must be less than 26. You submitted: ") + std::to_string(numPeriods));
 
         // badge assignment proposal must link to a valid badge
         Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
@@ -40,6 +41,7 @@ namespace hypha
         //    badge             ---- heldby         ---->   member
         //    badge             ---- assignment     ---->   badge_assignment
         //    badge_assignment  ---- badge          ---->   badge
+        //    badge_assignment  ---- start          ---->   period
 
         // the assignee now HOLDS this badge, non-strict in case the member already has the badge
         Edge::write(m_dao.get_self(), m_dao.get_self(), assignee, badge.getHash(), common::HOLDS_BADGE);
@@ -47,6 +49,9 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getHash(), assignee, common::HELD_BY);
         Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getHash(), proposal.getHash(), common::ASSIGNMENT);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), badge.getHash(), common::BADGE_NAME);
+
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(),
+                    contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>(), common::START);
     }
 
     std::string BadgeAssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)

@@ -50,9 +50,11 @@ namespace common
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
     static constexpr name PERIOD = name("period");
+    static constexpr name START = name ("start");
+    static constexpr name NEXT = name ("next");
     static constexpr name PAYMENT = name("payment");
     static constexpr name PAID = name ("paid");
-    static constexpr name CLAIM = name ("claim");
+    static constexpr name CLAIMED = name ("claimed");
 
     // graph edges hanging off of primary DHO node
     static constexpr name BADGE_NAME = name("badge");
@@ -79,6 +81,7 @@ namespace common
 
 #define START_PERIOD "start_period"
 #define END_PERIOD "end_period"
+#define PERIOD_COUNT "period_count"
 #define START_TIME "start_time"
 #define END_TIME "end_time"
 #define LABEL "label"
@@ -119,6 +122,7 @@ namespace common
 
 // payment related
 #define PAYMENT_PERIOD "payment_period"
+#define PERIOD_COUNT "period_count"
 #define ASSETS_PAID "assets_paid"
 #define HYPHA_AMOUNT "hypha_amount"
 #define ESCROW_SEEDS_AMOUNT "escrow_seeds_amount"

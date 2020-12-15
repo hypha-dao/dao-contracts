@@ -2,6 +2,7 @@
 #include <eosio/name.hpp>
 #include <eosio/crypto.hpp>
 
+#include <dao.hpp>
 #include <document_graph/document.hpp>
 
 using eosio::asset;
@@ -14,7 +15,7 @@ namespace hypha
     class Migration
     {
     public:
-        Migration(const eosio::name contract);
+        Migration(dao &dao);
 
         struct [[eosio::table, eosio::contract("dao")]] Object
         {
@@ -81,6 +82,8 @@ namespace hypha
                        map<string, time_point> time_points,
                        map<string, uint64_t> ints);
 
+        void reset4test (); 
+
     private:
         Document newDocument(const uint64_t id,
                              const name scope,
@@ -91,6 +94,6 @@ namespace hypha
                              const map<string, time_point> time_points,
                              const map<string, uint64_t> ints);
 
-        const eosio::name m_contract;
+        dao &m_dao;
     };
 } // namespace hypha

@@ -17,9 +17,6 @@ namespace hypha
         name assignee = assignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
         eosio::check(Member::isMember(m_dao.get_self(), assignee), "only members can be assigned to assignments " + assignee.to_string());
 
-        // TODO: Additional input cleansing
-        // start_period and end_period must be valid, no more than X periods in between
-
         Document roleDocument(m_dao.get_self(), assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
         auto role = roleDocument.getContentWrapper();
 
@@ -54,21 +51,11 @@ namespace hypha
                 MIN_DEFERRED + " is " + std::to_string(minDeferred->getAs<int64_t>()) + ", and you submitted: " + std::to_string(deferred));
         }
 
-        // start_period and end_period are required and must be greater than or equal to zero, and end_period >= start_period
-        int64_t start_period = assignment.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>();
-        eosio::check(start_period >= 0, START_PERIOD + string(" must be greater than or equal to zero. You submitted: ") + std::to_string(start_period));
-        int64_t end_period = assignment.getOrFail(DETAILS, END_PERIOD)->getAs<int64_t>();
-        eosio::check(end_period >= 0, END_PERIOD + string(" must be greater than or equal to zero. You submitted: ") + std::to_string(end_period));
-        eosio::check(end_period >= start_period, END_PERIOD + string(" must be greater than or equal to ") + START_PERIOD +
-                                              ". You submitted: " + START_PERIOD + ": " + std::to_string(start_period) +
-                                              " and " + END_PERIOD + ": " + std::to_string(end_period));
+        Document startPeriod (m_dao.get_self(), assignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+        int64_t numPeriods = assignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
+        eosio::check(numPeriods < 26, PERIOD_COUNT + string(" must be less than 26. You submitted: ") + std::to_string(numPeriods));
 
         asset annual_usd_salary = role.getOrFail(DETAILS, ANNUAL_USD_SALARY)->getAs<eosio::asset>();
-
-        //**************************
-        // we must add calculations into the contentGroups for this assignment proposal
-        // need to implement the pass by reference logic
-        //**************************
 
         // add the USD period pay amount (this is used to calculate SEEDS at time of salary claim)
         Content usdSalaryPerPeriod (USD_SALARY_PER_PERIOD, adjustAsset(annual_usd_salary, common::PHASE_TO_YEAR_RATIO));
@@ -92,6 +79,9 @@ namespace hypha
         eosio::checksum256 assignee = Member::getHash(contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>());
         Document role(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
 
+        // Document startPeriod (m_dao.get_self(), contentWrapper.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
+        // Document endPeriod (m_dao.get_self(), contentWrapper.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
+
         // update graph edges:
         //  member          ---- assigned           ---->   role_assignment
         //  role_assignment ---- assignee           ---->   member
@@ -101,8 +91,6 @@ namespace hypha
         Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
         Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), role.getHash(), common::ROLE_NAME);
         Edge::write (m_dao.get_self(), m_dao.get_self(), role.getHash(), proposal.getHash(), common::ASSIGNMENT);
-
-        // TODO: what about periods?
     }
 
     std::string AssignmentProposal::getBallotContent (ContentWrapper &contentWrapper)

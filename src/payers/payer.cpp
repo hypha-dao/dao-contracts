@@ -1,5 +1,6 @@
 
 #include <payers/payer.hpp>
+#include <member.hpp>
 
 namespace hypha
 {

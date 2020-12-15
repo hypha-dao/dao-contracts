@@ -4,24 +4,35 @@
 
 #include <document_graph/document.hpp>
 
-#include <dao.hpp>
+// #include <dao.hpp>
 
 namespace hypha
 {
-    class Period
+    class dao;
+
+    class Period : Document
     {
     public:
+        // Period(dao &dao);
+
         Period(dao &dao,
                const eosio::time_point &start_time,
-               const eosio::time_point &end_time,
                const std::string &label);
 
-        void emplace();
+        Period(dao &dao, const eosio::checksum256 &hash);
+
+        eosio::time_point getStartTime();
+        std::optional<eosio::time_point> getEndTime();
+        std::string getLabel();
+
+        const eosio::checksum256 &getHash();
+
+        Period createNext(const eosio::time_point &nextPeriodStart,
+                          const std::string &label);
+
+        std::optional<Period> next();
 
         dao &m_dao;
-        const eosio::time_point &start_time;
-        const eosio::time_point &end_time;
-        const std::string &label;
-        Document m_document;
+        // Period* nextPeriod;
     };
 } // namespace hypha

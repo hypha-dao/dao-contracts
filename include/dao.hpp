@@ -11,6 +11,7 @@
 #include <document_graph/util.hpp>
 
 #include <common.hpp>
+#include <period.hpp>
 
 using eosio::checksum256;
 using eosio::multi_index;
@@ -43,9 +44,9 @@ namespace hypha
       ACTION closedocprop(const checksum256 &proposal_hash);
       ACTION setsetting(const string &key, const Content::FlexValue &value);
       ACTION remsetting(const string &key);
-      ACTION addperiod(const eosio::time_point &start_time, const eosio::time_point &end_time, const string &label);
+      ACTION addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
 
-      ACTION claimpay(const eosio::checksum256 &hash, const uint64_t &period_id);
+      ACTION claimpay(const eosio::checksum256 &hash);
 
       ACTION apply(const eosio::name &applicant, const std::string &content);
       ACTION enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content);
@@ -125,8 +126,8 @@ namespace hypha
       };
 
       eosio::asset applyCoefficient(ContentWrapper & badge, const eosio::asset &base, const std::string &key);
-      AssetBatch applyBadgeCoefficients(const uint64_t &period_id, const eosio::name &member, AssetBatch &ab);
-      std::vector<Document> getCurrentBadges(const uint64_t &period_id, const eosio::name &member);
+      AssetBatch applyBadgeCoefficients(Period &period, const eosio::name &member, AssetBatch &ab);
+      std::vector<Document> getCurrentBadges(Period &period, const eosio::name &member);
 
       bool isPaused();
    };

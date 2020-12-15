@@ -9,13 +9,13 @@
 
 namespace hypha
 {
-    Migration::Migration(const eosio::name contract) : m_contract{contract} {}
+    Migration::Migration(dao &dao) : m_dao{dao} {}
 
     void Migration::migrateRole(const uint64_t &roleId)
     {
         eosio::name scope = eosio::name("role");
 
-        Migration::object_table o_t_role(m_contract, scope.value);
+        Migration::object_table o_t_role(m_dao.get_self(), scope.value);
         auto o_itr_role = o_t_role.find(roleId);
         eosio::check(o_itr_role != o_t_role.end(), "roleId does not exist: " + std::to_string(roleId));
 
@@ -31,12 +31,12 @@ namespace hypha
 
         //  member          ---- owns       ---->   roleDocument
         //  roleDocument    ---- ownedBy    ---->   member
-        Edge::write(m_contract, m_contract, Member::getHash(o_itr_role->names.at("owner")), roleDocument.getHash(), common::OWNS);
-        Edge::write(m_contract, m_contract, roleDocument.getHash(), Member::getHash(o_itr_role->names.at("owner")), common::OWNED_BY);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), Member::getHash(o_itr_role->names.at("owner")), roleDocument.getHash(), common::OWNS);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), roleDocument.getHash(), Member::getHash(o_itr_role->names.at("owner")), common::OWNED_BY);
 
         // add the cross-reference to our temporary migration lookup table
-        XReferenceTable xrt(m_contract, m_contract.value);
-        xrt.emplace(m_contract, [&](auto &x) {
+        XReferenceTable xrt(m_dao.get_self(), m_dao.get_self().value);
+        xrt.emplace(m_dao.get_self(), [&](auto &x) {
             x.id = xrt.available_primary_key();
             x.object_scope = scope;
             x.object_id = o_itr_role->id;
@@ -45,6 +45,24 @@ namespace hypha
 
         // erase the table record
         o_t_role.erase(o_itr_role);
+    }
+
+    void Migration::reset4test () 
+    {
+        eosio::require_auth (m_dao.get_self());
+
+
+        Document::document_table d_t (m_dao.get_self(), m_dao.get_self().value);
+        auto d_itr = d_t.begin();
+        while (d_itr != d_t.end()) {
+            d_itr = d_t.erase(d_itr);
+        }
+
+        Edge::edge_table e_t (m_dao.get_self(), m_dao.get_self().value);
+        auto e_itr = e_t.begin();
+        while (e_itr != e_t.end()) {
+            e_itr = e_t.erase(e_itr);
+        }
     }
 
     Document Migration::newDocument(const uint64_t id,
@@ -162,7 +180,7 @@ namespace hypha
         contentGroups.push_back(systemContentGroup);
         contentGroups.push_back(detailsContentGroup);
 
-        return Document(m_contract, m_contract, contentGroups);
+        return Document(m_dao.get_self(), m_dao.get_self(), contentGroups);
     }
 
     void Migration::newObject(const uint64_t &id,
@@ -175,8 +193,8 @@ namespace hypha
     {
 
         eosio::print ("writing new object: " + std::to_string(id));
-        Migration::object_table o_t(m_contract, scope.value);
-        o_t.emplace(m_contract, [&](auto &o) {
+        Migration::object_table o_t(m_dao.get_self(), scope.value);
+        o_t.emplace(m_dao.get_self(), [&](auto &o) {
             o.id = id;
             o.names = names;
             o.strings = strings;
