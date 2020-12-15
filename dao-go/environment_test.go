@@ -56,6 +56,7 @@ type Environment struct {
 	ChainResponsePause time.Duration
 
 	Members []Member
+	Periods []docgraph.Document
 }
 
 func envHeader() *simpletable.Header {
@@ -128,7 +129,7 @@ func SetupEnvironment(t *testing.T) *Environment {
 	env.HyphaDeferralFactor = 25
 
 	env.PeriodDuration, _ = time.ParseDuration("6s")
-	env.NumPeriods = 10
+	env.NumPeriods = 20
 
 	// pauses
 	env.ChainResponsePause = time.Second
@@ -195,6 +196,7 @@ func SetupEnvironment(t *testing.T) *Environment {
 	_, err = eostest.SetContract(env.ctx, &env.api, env.SeedsExchange, exchangeWasm, exchangeAbi)
 	assert.NilError(t, err)
 	loadSeedsTablesFromProd(t, &env, "https://api.telos.kitchen")
+
 	loadObjectsFromProd(t, &env, "role", "https://api.telos.kitchen")
 
 	t.Log("Deploying Events contract to 		: ", env.Events)
@@ -249,7 +251,7 @@ func SetupEnvironment(t *testing.T) *Environment {
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "last_ballot_id", "hypha......1")
 
 	t.Log("Adding "+strconv.Itoa(env.NumPeriods)+" periods with duration 		: ", env.PeriodDuration)
-	_, err = dao.AddPeriods(env.ctx, &env.api, env.DAO, env.NumPeriods, env.PeriodDuration)
+	env.Periods, err = dao.AddPeriods(env.ctx, &env.api, env.DAO, env.Root.Hash, env.NumPeriods, env.PeriodDuration)
 	assert.NilError(t, err)
 
 	// setup TLOS system contract

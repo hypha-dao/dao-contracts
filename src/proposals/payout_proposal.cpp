@@ -20,20 +20,14 @@ namespace hypha
         // default the timepoint to now
         eosio::time_point seedsPriceTimePoint = eosio::current_block_time();
 
-        // TODO: need to confirm about usage of period_id vs hash
         if (auto [idx, endPeriod] = contentWrapper.get(DETAILS, END_PERIOD); endPeriod)
         {
-            eosio::check(std::holds_alternative<int64_t>(endPeriod->value),
-                         "fatal error: expected to be a uint64_t type: " + endPeriod->label);
-            int64_t periodID = std::get<int64_t>(endPeriod->value);
+            eosio::check(std::holds_alternative<eosio::checksum256>(endPeriod->value),
+                         "fatal error: expected to be a checksum256 type: " + endPeriod->label);
 
-            dao::PeriodTable period_t(m_dao.get_self(), m_dao.get_self().value);
-            auto p_itr = period_t.find((uint64_t)periodID);
-            eosio::check(p_itr != period_t.end(), "period_id is not found: " + std::to_string(periodID));
-            seedsPriceTimePoint = p_itr->end_time;
+            Period period (&m_dao, std::get<eosio::checksum256>(endPeriod->value));
+            seedsPriceTimePoint = period.getEndTime().value_or(eosio::current_time_point());
         }
-
-       // eosio::print ("completed processing of optional end period");
 
         // if usd_amount is provided in the DETAILS section, convert that to token components
         //  (deferred_perc_x100 will be required)

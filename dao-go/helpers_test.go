@@ -76,44 +76,59 @@ func GetBalance(t *testing.T, env *Environment, acct eos.AccountName) Balance {
 }
 
 // IsClaimed ...
-func IsClaimed(periodID uint64, payments []dao.AssignmentPay) bool {
-	for _, payment := range payments {
-		if payment.PeriodID == periodID {
-			return true
-		}
+func IsClaimed(env *Environment, assignment docgraph.Document, periodHash eos.Checksum256) bool {
+
+	periodClaim, err := docgraph.LoadDocument(env.ctx, &env.api, env.DAO, periodHash.String())
+	if err != nil {
+		return false
+	}
+
+	exists, _ := docgraph.EdgeExists(env.ctx, &env.api, env.DAO, assignment, periodClaim, eos.Name("claimed"))
+	if exists {
+		return true
 	}
 	return false
+}
+
+type claimNext struct {
+	AssignmentHash eos.Checksum256 `json:"assignment_hash"`
 }
 
 // ClaimNextPeriod claims a period of pay for an assignment
 func ClaimNextPeriod(t *testing.T, env *Environment, claimer eos.AccountName, assignment docgraph.Document) (string, error) {
 
-	periodClaimEdges, err := docgraph.GetEdgesFromDocumentWithEdge(env.ctx, &env.api, env.DAO, assignment, eos.Name("claim"))
-	assert.NilError(t, err)
+	actions := []*eos.Action{{
+		Account: env.DAO,
+		Name:    eos.ActN("claimnextper"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: claimer, Permission: eos.PN("active")},
+		},
+		// ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
+		ActionData: eos.NewActionData(claimNext{
+			AssignmentHash: assignment.Hash,
+		}),
+	}}
 
-	maxPeriod := int64(0)
-	for _, edge := range periodClaimEdges {
-		periodClaim, err := docgraph.LoadDocument(env.ctx, &env.api, env.DAO, edge.ToNode.String())
-		assert.NilError(t, err)
+	trxID, err := eostest.ExecTrx(env.ctx, &env.api, actions)
 
-		periodID, err := periodClaim.GetContent("payment_period")
-		assert.NilError(t, err)
-
-		if periodID.Impl.(int64) > maxPeriod {
-			maxPeriod = periodID.Impl.(int64)
-		}
-	}
-
-	maxPeriod = maxPeriod + 1
-	periods, err := dao.LoadPeriods(&env.api, true, true)
-	assert.NilError(t, err)
-
-	if time.Now().Before(periods[maxPeriod].EndTime.Time) {
+	if err != nil {
 		t.Log("Waiting for a period to lapse...")
 		pause(t, env.PeriodPause, "", "Waiting...")
+		actions := []*eos.Action{{
+			Account: env.DAO,
+			Name:    eos.ActN("claimnextper"),
+			Authorization: []eos.PermissionLevel{
+				{Actor: claimer, Permission: eos.PN("active")},
+			},
+			ActionData: eos.NewActionData(claimNext{
+				AssignmentHash: assignment.Hash,
+			}),
+		}}
+
+		trxID, err = eostest.ExecTrx(env.ctx, &env.api, actions)
 	}
 
-	return dao.ClaimPay(env.ctx, &env.api, env.DAO, claimer, assignment.Hash, uint64(maxPeriod))
+	return trxID, err
 }
 
 func pause(t *testing.T, seconds time.Duration, headline, prefix string) {
@@ -147,7 +162,7 @@ func pause(t *testing.T, seconds time.Duration, headline, prefix string) {
 func CreateAssignment(t *testing.T, env *Environment, role *docgraph.Document,
 	proposer, closer, assignee Member, content string) docgraph.Document {
 
-	trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, content)
+	trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, env.Periods[0].Hash, content)
 	t.Log("Assignment proposed: ", trxID)
 	assert.NilError(t, err)
 

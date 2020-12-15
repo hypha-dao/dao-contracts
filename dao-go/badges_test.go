@@ -124,7 +124,7 @@ func TestBadgeProposals(t *testing.T) {
 				t.Log("Member: ", proposer.Member, " is submitting badge assignment proposal for	: "+string(assignee.Member)+"; badge: "+badgeDoc.Hash.String())
 				pause(t, env.ChainResponsePause, "", "")
 
-				_, err = dao.ProposeBadgeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, badgeDoc.Hash, test.badge_assignment)
+				_, err = dao.ProposeBadgeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, badgeDoc.Hash, env.Periods[0].Hash, test.badge_assignment)
 				assert.NilError(t, err)
 
 				badgeAssignmentDoc, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
@@ -448,17 +448,10 @@ const enroller_badge_assignment = `{
                 ]
             },
             {
-                "label": "start_period",
+                "label": "period_count",
                 "value": [
                     "int64",
-                    2
-                ]
-            },
-            {
-                "label": "end_period",
-                "value": [
-                    "int64",
-                    9
+                    18
                 ]
             }
         ]
@@ -553,17 +546,10 @@ const librarian_badge_assignment = `{
                 ]
             },
             {
-                "label": "start_period",
+                "label": "period_count",
                 "value": [
                     "int64",
-                    2
-                ]
-            },
-            {
-                "label": "end_period",
-                "value": [
-                    "int64",
-                    9
+                    18
                 ]
             }
         ]
@@ -637,17 +623,10 @@ const single_coeff_assignment = `{
                 ]
             },
             {
-                "label": "start_period",
+                "label": "period_count",
                 "value": [
                     "int64",
-                    2
-                ]
-            },
-            {
-                "label": "end_period",
-                "value": [
-                    "int64",
-                    9
+                    18
                 ]
             }
         ]

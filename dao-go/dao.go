@@ -79,22 +79,22 @@ func SetIntSetting(ctx context.Context, api *eos.API, contract eos.AccountName, 
 }
 
 type addPeriod struct {
-	StartTime eos.TimePoint `json:"start_time"`
-	EndTime   eos.TimePoint `json:"end_time"`
-	Phase     string        `json:"phase"`
+	Predecessor eos.Checksum256 `json:"predecessor"`
+	StartTime   eos.TimePoint   `json:"start_time"`
+	Label       string          `json:"label"`
 }
 
 // AddPeriods adds the number of periods with the corresponding duration to the DAO
-func AddPeriods(ctx context.Context, api *eos.API, daoContract eos.AccountName, numPeriods int, periodDuration time.Duration) (string, error) {
+func AddPeriods(ctx context.Context, api *eos.API, daoContract eos.AccountName,
+	predecessor eos.Checksum256,
+	numPeriods int, periodDuration time.Duration) ([]docgraph.Document, error) {
 
 	marker := time.Now()
-	// startTime := eos.TimePoint(marker.UnixNano() / 1000)
-	// endTime := eos.TimePoint(marker.Add(periodDuration).UnixNano() / 1000)
+	startTime := eos.TimePoint(marker.UnixNano() / 1000)
+	periods := make([]docgraph.Document, numPeriods)
 
-	var periods []*eos.Action
 	for i := 0; i < numPeriods; i++ {
-		startTime := eos.TimePoint((marker.UnixNano() / 1000) + 1)
-		endTime := eos.TimePoint(marker.Add(periodDuration).UnixNano() / 1000)
+		startTime = eos.TimePoint((marker.UnixNano() / 1000) + 1)
 		addPeriodAction := eos.Action{
 			Account: daoContract,
 			Name:    eos.ActN("addperiod"),
@@ -102,16 +102,25 @@ func AddPeriods(ctx context.Context, api *eos.API, daoContract eos.AccountName, 
 				{Actor: daoContract, Permission: eos.PN("active")},
 			},
 			ActionData: eos.NewActionData(addPeriod{
-				StartTime: startTime,
-				EndTime:   endTime,
-				Phase:     "test phase",
+				Predecessor: predecessor,
+				StartTime:   startTime,
+				Label:       "test phase",
 			}),
 		}
+
+		startTime = eos.TimePoint(marker.Add(periodDuration).UnixNano() / 1000)
 		marker = marker.Add(periodDuration).Add(time.Millisecond)
-		periods = append(periods, &addPeriodAction)
+
+		_, err := eostest.ExecTrx(ctx, api, []*eos.Action{&addPeriodAction})
+		if err != nil {
+			return periods, fmt.Errorf("cannot add period: %v", err)
+		}
+
+		periods[i], _ = docgraph.GetLastDocument(ctx, api, daoContract)
+		predecessor = periods[i].Hash
 	}
 
-	return eostest.ExecTrx(ctx, api, periods)
+	return periods, nil
 }
 
 // // Period represents a period of time aligning to a payroll period, typically a week
@@ -231,15 +240,14 @@ func ClaimPay(ctx context.Context, api *eos.API, contract, claimer eos.AccountNa
 	return eostest.ExecTrx(ctx, api, actions)
 }
 
-// AssignmentPay represents a reimbursement on a redemption request
-type AssignmentPay struct {
-	ID           uint64             `json:"ass_payment_id"`
-	AssignmentID uint64             `json:"assignment_id"`
-	PeriodID     uint64             `json:"period_id"`
-	Recipient    eos.Name           `json:"recipient"`
-	Payments     []eos.Asset        `json:"payments"`
-	PaymentDate  eos.BlockTimestamp `json:"payment_date"`
-}
+// type AssignmentPay struct {
+// 	ID           uint64             `json:"ass_payment_id"`
+// 	AssignmentID uint64             `json:"assignment_id"`
+// 	PeriodID     uint64             `json:"period_id"`
+// 	Recipient    eos.Name           `json:"recipient"`
+// 	Payments     []eos.Asset        `json:"payments"`
+// 	PaymentDate  eos.BlockTimestamp `json:"payment_date"`
+// }
 
 type balance struct {
 	Balance eos.Asset `json:"balance"`

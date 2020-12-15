@@ -119,7 +119,7 @@ func TestAssignmentProposalDocument(t *testing.T) {
 			t.Log("\n\nStarting test: ", test.name)
 			role := CreateRole(t, env, proposer, closer, test.role)
 
-			trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, test.assignment)
+			trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, env.Periods[0].Hash, test.assignment)
 			t.Log("Assignment proposed: ", trxID)
 			assert.NilError(t, err)
 
@@ -235,7 +235,7 @@ func TestAssignmentPayClaim(t *testing.T) {
 			t.Log("\n\nStarting test: ", test.name)
 			role := CreateRole(t, env, proposer, closer, test.role)
 
-			trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, test.assignment)
+			trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, env.Periods[0].Hash, test.assignment)
 			t.Log("Assignment proposed: ", trxID)
 			assert.NilError(t, err)
 
@@ -363,14 +363,7 @@ const assignment1 = `{
                 ]
             },
             {
-                "label": "start_period",
-                "value": [
-                    "int64",
-                    0
-                ]
-            },
-            {
-                "label": "end_period",
+                "label": "period_count",
                 "value": [
                     "int64",
                     9
@@ -419,14 +412,7 @@ const assignment2 = `{
                 ]
             },
             {
-                "label": "start_period",
-                "value": [
-                    "int64",
-                    0
-                ]
-            },
-            {
-                "label": "end_period",
+                "label": "period_count",
                 "value": [
                     "int64",
                     9
@@ -475,14 +461,7 @@ const assignment3 = `{
                 ]
             },
             {
-                "label": "start_period",
-                "value": [
-                    "int64",
-                    0
-                ]
-            },
-            {
-                "label": "end_period",
+                "label": "period_count",
                 "value": [
                     "int64",
                     9
@@ -531,14 +510,7 @@ const assignment4 = `{
                 ]
             },
             {
-                "label": "start_period",
-                "value": [
-                    "int64",
-                    0
-                ]
-            },
-            {
-                "label": "end_period",
+                "label": "period_count",
                 "value": [
                     "int64",
                     9
@@ -587,14 +559,7 @@ const assignment5 = `{
                 ]
             },
             {
-                "label": "start_period",
-                "value": [
-                    "int64",
-                    0
-                ]
-            },
-            {
-                "label": "end_period",
+                "label": "period_count",
                 "value": [
                     "int64",
                     9
@@ -643,14 +608,7 @@ const assignment6 = `{
                 ]
             },
             {
-                "label": "start_period",
-                "value": [
-                    "int64",
-                    0
-                ]
-            },
-            {
-                "label": "end_period",
+                "label": "period_count",
                 "value": [
                     "int64",
                     9
@@ -699,14 +657,7 @@ const assignment7 = `{
                 ]
             },
             {
-                "label": "start_period",
-                "value": [
-                    "int64",
-                    0
-                ]
-            },
-            {
-                "label": "end_period",
+                "label": "period_count",
                 "value": [
                     "int64",
                     9
