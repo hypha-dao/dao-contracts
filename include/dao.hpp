@@ -46,8 +46,8 @@ namespace hypha
       ACTION remsetting(const string &key);
       ACTION addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
 
-      ACTION claimpay(const eosio::checksum256 &hash);
-      ACTION claimpayper(const eosio::checksum256 &assignment_hash, const eosio::checksum256 &period_hash);
+      // ACTION claimpay(const eosio::checksum256 &hash);
+      // ACTION claimpayper(const eosio::checksum256 &assignment_hash, const eosio::checksum256 &period_hash);
       ACTION claimnextper(const eosio::checksum256 &assignment_hash);
 
       ACTION apply(const eosio::name &applicant, const std::string &content);

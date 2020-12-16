@@ -46,7 +46,7 @@ func TestPayoutProposal(t *testing.T) {
 				expectedHusd:        "2500.00 HUSD",
 				expectedHvoice:      "10001.00 HVOICE", // member has one HVOICE to start
 				expectedHypha:       "1875.00 HYPHA",
-				expectedSeedsEscrow: "405566.9760 SEEDS",
+				expectedSeedsEscrow: "380069.2480 SEEDS",
 			},
 			{
 				name:                "payout1 - small amount",
@@ -58,7 +58,7 @@ func TestPayoutProposal(t *testing.T) {
 				expectedHusd:        "3.26 HUSD",
 				expectedHvoice:      "8.25 HVOICE", // member has one HVOICE to start
 				expectedHypha:       "0.99 HYPHA",
-				expectedSeedsEscrow: "215.2208 SEEDS",
+				expectedSeedsEscrow: "201.6900 SEEDS",
 			},
 			{
 				name:                "payout1 - no deferred",

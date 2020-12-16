@@ -9,6 +9,7 @@ add_contract( dao dao
                 period.cpp
                 member.cpp
                 migration.cpp
+                assignment.cpp
                 payers/payer.cpp
                 payers/escrow_payer.cpp
                 payers/husd_payer.cpp

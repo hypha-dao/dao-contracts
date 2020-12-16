@@ -23,7 +23,7 @@ namespace hypha
     }
 
     Period::Period(dao *dao, const eosio::checksum256 &hash) : Document(dao->get_self(), hash), m_dao{dao}
-    {        
+    {
     }
 
     eosio::time_point Period::getStartTime()
@@ -31,15 +31,9 @@ namespace hypha
         return getContentWrapper().getOrFail(DETAILS, START_TIME)->getAs<eosio::time_point>();
     }
 
-    std::optional<eosio::time_point> Period::getEndTime()
+    eosio::time_point Period::getEndTime()
     {
-        auto nextPeriod = next();
-        if (nextPeriod == std::nullopt)
-        {
-            // eosio::print ("getEndTime(): next period does NOT exists");
-            return std::nullopt;
-        }
-        return std::optional<eosio::time_point>(nextPeriod.value().getStartTime());
+        return next().getStartTime();
     }
 
     Period Period::createNext(const eosio::time_point &nextPeriodStart,
@@ -50,16 +44,18 @@ namespace hypha
         return nextPeriod;
     }
 
-    std::optional<Period> Period::next()
+    bool Period::isEnd()
     {
-        // eosio::print (" check if edge exists: " + readableHash(getHash()) + "\n");
         auto [exists, period] = Edge::getIfExists(m_dao->get_self(), getHash(), common::NEXT);
         if (exists)
-        {
-            // eosio::print ("next period exists: " + readableHash(period.to_node) + "\n");
-            return std::optional<Period>{Period(m_dao, period.to_node)};
-        }
-        // eosio::print ("next(): next period does NOT exists");
-        return std::nullopt;
+            return true;
+        return false;
+    }
+
+    Period Period::next()
+    {
+        auto [exists, period] = Edge::getIfExists(m_dao->get_self(), getHash(), common::NEXT);
+        eosio::check(exists, "End of calendar has been reached. Contact administrator to add more time periods.");
+        return Period(m_dao, period.getToNode());
     }
 } // namespace hypha

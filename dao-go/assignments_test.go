@@ -223,10 +223,10 @@ func TestAssignmentPayClaim(t *testing.T) {
 				title:      "Underwater Basketweaver - Atlantic",
 				role:       role2,
 				assignment: assignment2,
-				husd:       "455.85 HUSD",
-				hypha:      "265.91 HYPHA",
-				hvoice:     "3039.00 HVOICE",
-				usd:        "1519.50 USD",
+				// husd:       "455.85 HUSD",
+				// hypha:      "265.91 HYPHA",
+				// hvoice:     "3039.00 HVOICE",
+				// usd:        "1519.50 USD",
 			},
 		}
 
@@ -303,7 +303,9 @@ func TestAssignmentPayClaim(t *testing.T) {
 			balances = append(balances, GetBalance(t, env, assignee.Member))
 			assert.Assert(t, hypha.Impl.(*eos.Asset).Amount >= payments[len(payments)-1].Hypha.Amount)
 			assert.Assert(t, husd.Impl.(*eos.Asset).Amount >= payments[len(payments)-1].Husd.Amount)
-			assert.Assert(t, hvoice.Impl.(*eos.Asset).Amount >= payments[len(payments)-1].Hvoice.Amount)
+			t.Log("Hvoice from payment      : ", payments[len(payments)-1].Hvoice.String())
+			t.Log("Hvoice from assignment   : ", hvoice.Impl.(*eos.Asset).String())
+			assert.Assert(t, hvoice.Impl.(*eos.Asset).Amount+1 >= payments[len(payments)-1].Hvoice.Amount)
 			assert.Assert(t, payments[len(payments)-1].SeedsEscrow.Amount > 0)
 
 			t.Log("Waiting for a period to lapse...")

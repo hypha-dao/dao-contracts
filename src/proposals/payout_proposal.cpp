@@ -13,7 +13,6 @@ namespace hypha
 
     void PayoutProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     {
-
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
 
         // if end_period is provided, use that for the price timestamp, but
@@ -25,8 +24,8 @@ namespace hypha
             eosio::check(std::holds_alternative<eosio::checksum256>(endPeriod->value),
                          "fatal error: expected to be a checksum256 type: " + endPeriod->label);
 
-            Period period (&m_dao, std::get<eosio::checksum256>(endPeriod->value));
-            seedsPriceTimePoint = period.getEndTime().value_or(eosio::current_time_point());
+            Period period(&m_dao, std::get<eosio::checksum256>(endPeriod->value));
+            seedsPriceTimePoint = period.getEndTime();
         }
 
         // if usd_amount is provided in the DETAILS section, convert that to token components
@@ -45,10 +44,11 @@ namespace hypha
             Content husd(HUSD_AMOUNT, calculateHusd(usd, deferred));
             Content hypha(HYPHA_AMOUNT, calculateHypha(usd, deferred));
             Content hvoice(HVOICE_AMOUNT, asset{usd.amount, common::S_HVOICE});
-            Content seeds(ESCROW_SEEDS_AMOUNT, m_dao.getSeedsAmount(usd,
-                                                                    seedsPriceTimePoint,
-                                                                    (float)1.00000000,
-                                                                    (float)deferred / (float)100));
+            Content seeds(ESCROW_SEEDS_AMOUNT, getSeedsAmount(m_dao.getSettingOrFail<int64_t>(SEEDS_DEFERRAL_FACTOR_X100), 
+                                                              usd,
+                                                              seedsPriceTimePoint,
+                                                              (float)1.00000000,
+                                                              (float)deferred / (float)100));
 
             ContentWrapper::insertOrReplace(*detailsGroup, husd);
             ContentWrapper::insertOrReplace(*detailsGroup, hypha);
@@ -75,9 +75,8 @@ namespace hypha
     {
         // Graph updates:
         //  dho     ---- payout ---->   payout
-        //  member  ---- payout ---->   payout 
+        //  member  ---- payout ---->   payout
         //  makePayment also creates edges from payout and the member to the individual payments
-
         Edge::write(m_dao.get_self(), m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::PAYOUT);
 
         ContentWrapper contentWrapper = proposal.getContentWrapper();
@@ -86,7 +85,7 @@ namespace hypha
         name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
         eosio::check(Member::isMember(m_dao.get_self(), recipient), "only members are eligible for payouts: " + recipient.to_string());
 
-        Edge::write(m_dao.get_self(), m_dao.get_self(), Member::getHash(recipient), proposal.getHash(), common::PAYOUT);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), Member::calcHash(recipient), proposal.getHash(), common::PAYOUT);
 
         std::string memo{"one-time payment on proposal: " + readableHash(proposal.getHash())};
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);

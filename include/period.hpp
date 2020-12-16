@@ -18,13 +18,14 @@ namespace hypha
         Period(dao *dao, const eosio::checksum256 &hash);
 
         eosio::time_point getStartTime();
-        std::optional<eosio::time_point> getEndTime();
+        eosio::time_point getEndTime();
         std::string getLabel();
 
         Period createNext(const eosio::time_point &nextPeriodStart,
                           const std::string &label);
 
-        std::optional<Period> next();
+        Period next();
+        bool isEnd();
 
         dao *m_dao;
     };

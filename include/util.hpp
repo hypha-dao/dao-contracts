@@ -12,6 +12,11 @@ namespace hypha
     eosio::asset adjustAsset(const eosio::asset &originalAsset, const float &adjustment);
     float getSeedsPriceUsd(const eosio::time_point &price_time_point);
     float getSeedsPriceUsd();
+    eosio::asset getSeedsAmount(int64_t deferralFactor,
+                                const eosio::asset &usd_amount,
+                                const eosio::time_point &price_time_point,
+                                const float &time_share,
+                                const float &deferred_perc);
 
     // configtable is usued to read the Seeds price
     struct [[eosio::table, eosio::contract("dao")]] configtable
