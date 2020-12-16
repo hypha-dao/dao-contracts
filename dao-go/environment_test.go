@@ -129,7 +129,7 @@ func SetupEnvironment(t *testing.T) *Environment {
 	env.HyphaDeferralFactor = 25
 
 	env.PeriodDuration, _ = time.ParseDuration("6s")
-	env.NumPeriods = 20
+	env.NumPeriods = 100
 
 	// pauses
 	env.ChainResponsePause = time.Second

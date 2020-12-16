@@ -149,31 +149,10 @@ const role2 = `{
                 ]
             },
             {
-                "label": "start_period",
-                "value": [
-                    "int64",
-                    0
-                ]
-            },
-            {
-                "label": "end_period",
-                "value": [
-                  "int64",
-                  9
-                ]
-            },
-            {
                 "label": "min_time_share_x100",
                 "value": [
                   "int64",
                   75
-                ]
-            },
-            {
-                "label": "fulltime_capacity_x100",
-                "value": [
-                  "int64",
-                  100
                 ]
             },
             {

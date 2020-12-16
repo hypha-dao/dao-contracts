@@ -14,6 +14,11 @@ var env *Environment
 var payments []Balance
 var balances []Balance
 
+// func TestMain(m *testing.M) {
+// 	log.SetOutput(ansi.NewAnsiStdout())
+// 	os.Exit(m.Run())
+// }
+
 func setupTestCase(t *testing.T) func(t *testing.T) {
 	t.Log("Bootstrapping testing environment ...")
 

@@ -21,11 +21,12 @@ namespace hypha
     {
     }
 
-    Member::Member(const eosio::name contract, const eosio::checksum256 &hash) : Document(contract, hash)
+    Member::Member(const eosio::name contract, const eosio::checksum256 &hash)
+        : Document(contract, hash)
     {
     }
 
-    Member Member::get (const eosio::name &contract, const eosio::name &member)
+    Member Member::get(const eosio::name &contract, const eosio::name &member)
     {
         return Member(contract, Member::calcHash(member));
     }
