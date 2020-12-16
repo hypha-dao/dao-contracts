@@ -11,6 +11,7 @@
 #include <member.hpp>
 #include <migration.hpp>
 #include <period.hpp>
+#include <assignment.hpp>
 
 namespace hypha
 {
@@ -35,102 +36,60 @@ namespace hypha
       proposal->close(docprop);
    }
 
-   void dao::claimpay(const eosio::checksum256 &hash)
+   void dao::claimnextper(const eosio::checksum256 &assignment_hash)
    {
       eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      Document assignmentDocument(get_self(), hash);
-      ContentWrapper assignment = assignmentDocument.getContentWrapper();
-
-      eosio::check(assignment.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::ASSIGNMENT,
-                   "claim pay must be made on an assignment document: " + readableHash(hash));
+      Assignment assignment (this, assignment_hash);
+      eosio::name assignee = assignment.getAssignee().getAccount();
 
       // assignee must still be a DHO member
-      name assignee = assignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
       eosio::check(Member::isMember(get_self(), assignee), "assignee must be a current member to claim pay: " + assignee.to_string());
       require_auth(assignee);
 
-      // Check that pay period is between (inclusive) the start and end period of the assignment
-      Period startPeriod(*this, assignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
-      int64_t periodCount = assignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
-      int64_t claimedPeriods = 0;
-      std::optional<Period> seeker = std::optional<Period>{startPeriod};
-      while (seeker.has_value() && claimedPeriods < periodCount)
+      std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
+      eosio::check (periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
+      
+      // Valid claim identified - start process
+      // process this claim
+      Edge::write(get_self(), get_self(), assignment.getHash(), periodToClaim.value().getHash(), common::CLAIMED);
+      int64_t assignmentApprovedDateSec = assignment.getApprovedTime().sec_since_epoch();
+      int64_t periodStartSec = periodToClaim.value().getStartTime().sec_since_epoch();
+      int64_t periodEndSec = periodToClaim.value().next().getEndTime().sec_since_epoch();
+
+      // Pro-rate the payment if the assignment was created during the period being claimed
+      float first_phase_ratio_calc = 1; // pro-rate based on elapsed % of the first phase
+      if (assignmentApprovedDateSec > periodStartSec)
       {
-         if (Edge::exists(get_self(), assignmentDocument.getHash(), startPeriod.getHash(), common::CLAIMED))
-         {
-            claimedPeriods++;
-         }
-         else
-         {
-            std::optional<eosio::time_point> periodEndTime = seeker.value().getEndTime();
-            eosio::check (periodEndTime != std::nullopt, "End of calendar has been reached. Contact administrator to add more time periods.");               
-
-            // fastforward the seeker, ensure we are past the beginning of the next period
-            if (periodEndTime.value().sec_since_epoch() < eosio::current_time_point().sec_since_epoch())
-            {
-               // process this claim
-               Edge::write(get_self(), get_self(), assignmentDocument.getHash(), seeker->getHash(), common::CLAIMED);
-
-               // Pro-rate the payment if the assignment was created during the period being claimed
-               float first_phase_ratio_calc = 1; // pro-rate based on elapsed % of the first phase
-               if (assignmentDocument.getCreated().sec_since_epoch() > seeker->getStartTime().sec_since_epoch())
-               {
-                  auto elapsed_sec = periodEndTime.value().sec_since_epoch() - assignmentDocument.getCreated().sec_since_epoch();
-                  auto period_sec = periodEndTime.value().sec_since_epoch() - seeker->getStartTime().sec_since_epoch();
-                  first_phase_ratio_calc = (float)elapsed_sec / (float)period_sec;
-               }
-
-               /******   DEFERRED SEEDS     */
-               // If there is an explicit ESCROW SEEDS salary amount, support sending it; else it should be calculated
-               eosio::asset deferredSeeds = asset{0, common::S_SEEDS};
-               if (auto [idx, seedsEscrowSalary] = assignment.get(DETAILS, "seeds_escrow_salary_per_phase"); seedsEscrowSalary)
-               {
-                  eosio::check(std::holds_alternative<eosio::asset>(seedsEscrowSalary->value), "fatal error: expected token type must be an asset value type: " + seedsEscrowSalary->label);
-                  deferredSeeds = std::get<eosio::asset>(seedsEscrowSalary->value);
-               }
-               else if (auto [idx, usdSalaryValue] = assignment.get(DETAILS, USD_SALARY_PER_PERIOD); usdSalaryValue)
-               {
-                  eosio::check(std::holds_alternative<eosio::asset>(usdSalaryValue->value), "fatal error: expected token type must be an asset value type: " + usdSalaryValue->label);
-
-                  // Dynamically calculate the SEEDS amount based on the price at the end of the period being claimed
-                  deferredSeeds = getSeedsAmount(usdSalaryValue->getAs<eosio::asset>(),
-                                                 periodEndTime.value(),
-                                                 (float)(assignment.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>() / (float)100),
-                                                 (float)(assignment.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>() / (float)100));
-               }
-               deferredSeeds = adjustAsset(deferredSeeds, first_phase_ratio_calc);
-
-               // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
-               // If there is an explicit INSTANT SEEDS amount, support sending it
-               asset instantSeeds = getProRatedAsset(&assignment, common::S_SEEDS, "seeds_instant_salary_per_phase", first_phase_ratio_calc);
-               asset husd = getProRatedAsset(&assignment, common::S_HUSD, HUSD_SALARY_PER_PERIOD, first_phase_ratio_calc);
-               asset hvoice = getProRatedAsset(&assignment, common::S_HVOICE, HVOICE_SALARY_PER_PERIOD, first_phase_ratio_calc);
-               asset hypha = getProRatedAsset(&assignment, common::S_HYPHA, HYPHA_SALARY_PER_PERIOD, first_phase_ratio_calc);
-
-               string memo = "Payment for assignment " + readableHash(assignmentDocument.getHash()) + "; Period: " + readableHash(seeker->getHash());
-
-               // creating a single struct improves performance for table queries here
-               AssetBatch ab{};
-               ab.d_seeds = deferredSeeds;
-               ab.hypha = hypha;
-               ab.seeds = instantSeeds;
-               ab.voice = hvoice;
-               ab.husd = husd;
-
-               ab = applyBadgeCoefficients(*seeker, assignee, ab);
-
-               makePayment(seeker->getHash(), assignee, ab.hypha, memo, eosio::name{0});
-               makePayment(seeker->getHash(), assignee, ab.d_seeds, memo, common::ESCROW);
-               makePayment(seeker->getHash(), assignee, ab.seeds, memo, eosio::name{0});
-               makePayment(seeker->getHash(), assignee, ab.voice, memo, eosio::name{0});
-               makePayment(seeker->getHash(), assignee, ab.husd, memo, eosio::name{0});
-            }
-         }
-         seeker = seeker.value().next();
+         int64_t elapsed_sec = periodEndSec - assignmentApprovedDateSec;
+         int64_t period_sec = periodEndSec - periodStartSec;
+         first_phase_ratio_calc = (float)elapsed_sec / (float)period_sec;
       }
+      eosio::check (first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
+      
+      asset deferredSeeds = adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc);
 
-      eosio::check(claimedPeriods <= periodCount, "Maximum number of periods have been claimed on this assignment; period count: " + std::to_string(periodCount));
+      // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
+      // If there is an explicit INSTANT SEEDS amount, support sending it
+      asset husd = adjustAsset(assignment.getSalaryAmount(&common::S_HUSD), first_phase_ratio_calc);
+      asset hvoice = adjustAsset(assignment.getSalaryAmount(&common::S_HVOICE), first_phase_ratio_calc);
+      asset hypha = adjustAsset(assignment.getSalaryAmount(&common::S_HYPHA), first_phase_ratio_calc);
+
+      string memo = "Payment for assignment " + readableHash(assignment.getHash()) + "; Period: " + readableHash(periodToClaim.value().getHash());
+
+      // creating a single struct improves performance for table queries here
+      AssetBatch ab{};
+      ab.d_seeds = deferredSeeds;
+      ab.hypha = hypha;
+      ab.voice = hvoice;
+      ab.husd = husd;
+
+      ab = applyBadgeCoefficients(periodToClaim.value(), assignee, ab);
+
+      makePayment(periodToClaim.value().getHash(), assignee, ab.hypha, memo, eosio::name{0});
+      makePayment(periodToClaim.value().getHash(), assignee, ab.d_seeds, memo, common::ESCROW);
+      makePayment(periodToClaim.value().getHash(), assignee, ab.voice, memo, eosio::name{0});
+      makePayment(periodToClaim.value().getHash(), assignee, ab.husd, memo, eosio::name{0});
    }
 
    asset dao::getProRatedAsset(ContentWrapper *assignment, const symbol &symbol, const string &key, const float &proration)
@@ -144,49 +103,47 @@ namespace hypha
       return adjustAsset(assetToPay, proration);
    }
 
-   eosio::asset dao::getSeedsAmount(const eosio::asset &usd_amount,
-                                    const eosio::time_point &price_time_point,
-                                    const float &time_share,
-                                    const float &deferred_perc)
-   {
-      asset adjusted_usd_amount = adjustAsset(adjustAsset(usd_amount, deferred_perc), time_share);
-      float seeds_deferral_coeff = (float)getSettingOrFail<int64_t>(SEEDS_DEFERRAL_FACTOR_X100) / (float)100;
-      float seeds_price = getSeedsPriceUsd(price_time_point);
-      return adjustAsset(asset{static_cast<int64_t>(adjusted_usd_amount.amount * (float)100 * (float)seeds_deferral_coeff),
-                               common::S_SEEDS},
-                         (float)1 / (float)seeds_price);
-   }
-
    std::vector<Document> dao::getCurrentBadges(Period &period, const name &member)
    {
       std::vector<Document> current_badges;
-      std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(Member::getHash(member), common::ASSIGN_BADGE);
+      std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(Member::calcHash(member), common::ASSIGN_BADGE);
+      // eosio::print ("getting badges    : " + std::to_string(badge_assignment_edges.size()) + "\n");
       for (Edge e : badge_assignment_edges)
       {
          Document badgeAssignmentDoc(get_self(), e.getToNode());
          auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
+         Edge badge_edge = Edge::get(get_self(), badgeAssignmentDoc.getHash(), common::BADGE_NAME);
+         Document badge(get_self(), badge_edge.getToNode());
+         current_badges.push_back(badge);
 
          // fast forward to duration end (TODO: probably need a duration class)
+         // Period startPeriod(this, badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+         // eosio::print (" badge assignment start period: " + readableHash(startPeriod.getHash()) + "\n");
 
-         Period startPeriod(*this, badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
-         int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
-         int64_t counter = 0;
-         std::optional<Period> seeker = std::optional<Period>{startPeriod};
-         while (seeker.has_value() && counter <= periodCount)
-         {
-            seeker = seeker.value().next();
-            counter++;
-         }
+         // int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
+         // int64_t counter = 0;
+         // std::optional<Period> seeker = std::optional<Period>{startPeriod};
+         // eosio::print (" periodCount   : " + std::to_string(periodCount) + "\n");
+         // while (seeker.has_value() && counter <= periodCount)
+         // {
+         //    eosio::print (" counter : " + std::to_string(counter) + "\n");
+         //    seeker = seeker.value().next();
+         //    counter++;
+         // }
 
-         std::optional<eosio::time_point> periodEndTime = seeker.value().getEndTime();
-         eosio::check (periodEndTime != std::nullopt, "End of calendar has been reached. Contact administrator to add more time periods.");  
+         // eosio::print (" checking expiration time of last period ");
+         // std::optional<eosio::time_point> periodEndTime = seeker.value().getEndTime();
+         // eosio::print (" got end time ");
 
-         if (periodEndTime.value().sec_since_epoch() < eosio::current_time_point().sec_since_epoch())
-         {
-            Edge badge_edge = Edge::get(get_self(), badgeAssignmentDoc.getHash(), common::BADGE_NAME);
-            Document badge(get_self(), badge_edge.getToNode());
-            current_badges.push_back(badge);
-         }
+         // eosio::check(periodEndTime != std::nullopt, "End of calendar has been reached. Contact administrator to add more time periods.");
+         
+         // int64_t badgeAssignmentExpiration = periodEndTime.value().sec_since_epoch();
+         // eosio::print (" badge assignment expiration: " + std::to_string(badgeAssignmentExpiration) + "\n");
+
+         // if (badgeAssignmentExpiration > eosio::current_time_point().sec_since_epoch())
+         // {
+         
+         // }
       }
       return current_badges;
    }
@@ -244,7 +201,7 @@ namespace hypha
       std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, quantity.symbol, paymentType));
       Document paymentReceipt = payer->pay(recipient, quantity, memo);
       Edge::write(get_self(), get_self(), fromNode, paymentReceipt.getHash(), common::PAYMENT);
-      Edge::write(get_self(), get_self(), Member::getHash(recipient), paymentReceipt.getHash(), common::PAID);
+      Edge::write(get_self(), get_self(), Member::calcHash(recipient), paymentReceipt.getHash(), common::PAID);
    }
 
    void dao::apply(const eosio::name &applicant, const std::string &content)
@@ -257,7 +214,7 @@ namespace hypha
    void dao::enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content)
    {
       require_auth(enroller);
-      Member member(get_self(), enroller, applicant);
+      Member member = Member::get(get_self(), applicant);
       member.enroll(enroller, content);
    }
 
@@ -328,7 +285,7 @@ namespace hypha
    {
       require_auth(get_self());
 
-      Period newPeriod = Period(*this, start_time, label);
+      Period newPeriod(this, start_time, label);
 
       // check that predecessor exists
       Document previous(get_self(), predecessor);

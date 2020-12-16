@@ -32,7 +32,7 @@ namespace hypha
     {
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
-        eosio::checksum256 assignee = Member::getHash((contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>()));
+        eosio::checksum256 assignee = Member::calcHash((contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>()));
         Document badge(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
 
         // update graph edges:

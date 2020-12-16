@@ -46,7 +46,7 @@ func TestPayoutProposal(t *testing.T) {
 				expectedHusd:        "2500.00 HUSD",
 				expectedHvoice:      "10001.00 HVOICE", // member has one HVOICE to start
 				expectedHypha:       "1875.00 HYPHA",
-				expectedSeedsEscrow: "405566.9760 SEEDS",
+				expectedSeedsEscrow: "380069.2480 SEEDS",
 			},
 			{
 				name:                "payout1 - small amount",
@@ -58,7 +58,7 @@ func TestPayoutProposal(t *testing.T) {
 				expectedHusd:        "3.26 HUSD",
 				expectedHvoice:      "8.25 HVOICE", // member has one HVOICE to start
 				expectedHypha:       "0.99 HYPHA",
-				expectedSeedsEscrow: "215.2208 SEEDS",
+				expectedSeedsEscrow: "201.6900 SEEDS",
 			},
 			{
 				name:                "payout1 - no deferred",
@@ -179,7 +179,7 @@ func TestPayoutHistoricalPeriod(t *testing.T) {
 				expectedHusd:        "2500.00 HUSD",
 				expectedHvoice:      "10001.00 HVOICE", // member has one HVOICE to start
 				expectedHypha:       "1875.00 HYPHA",
-				expectedSeedsEscrow: "405566.9760 SEEDS",
+				expectedSeedsEscrow: "380069.2480 SEEDS",
 			},
 		}
 
@@ -188,9 +188,8 @@ func TestPayoutHistoricalPeriod(t *testing.T) {
 			t.Log("\n\nStarting test: ", test.name)
 
 			proposalAmount, _ := eos.NewAssetFromString(test.usdAmount)
-			trxID, err := dao.ProposePayout(env.ctx, &env.api, env.DAO, proposer.Member,
-				test.recipient.Member, proposalAmount, test.deferred, test.payout)
-			t.Log("Payout proposed: ", trxID)
+			_, err := dao.ProposePayoutWithPeriod(env.ctx, &env.api, env.DAO, proposer.Member,
+				test.recipient.Member, env.Periods[0].Hash, proposalAmount, test.deferred, test.payout)
 			assert.NilError(t, err)
 
 			// retrieve the document we just created
@@ -588,13 +587,6 @@ const payout_historical = `{
                 "value": [
                     "string",
                     "I am going to purchase the farm to grow vegetables to sell for Seeds"
-                ]
-			},
-			{
-                "label": "end_period",
-                "value": [
-                    "int64",
-                    0
                 ]
 			}
         ]

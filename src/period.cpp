@@ -6,61 +6,56 @@
 
 namespace hypha
 {
-    // Period::Period(dao &dao) : m_dao{dao} {}
-
-    Period::Period(dao &dao, 
+    Period::Period(dao *dao,
                    const eosio::time_point &start_time,
                    const std::string &label)
-        : m_dao{dao}
+        : Document(dao->get_self(), dao->get_self(),
+                   ContentGroups{
+                       ContentGroup{
+                           Content(CONTENT_GROUP_LABEL, DETAILS),
+                           Content(START_TIME, start_time),
+                           Content(LABEL, label)},
+                       ContentGroup{
+                           Content(CONTENT_GROUP_LABEL, SYSTEM),
+                           Content(TYPE, common::PERIOD)}}),
+          m_dao{dao}
     {
-        Content startDate(START_TIME, start_time);
-        Content labelContent(LABEL, label);
-
-        ContentGroup cg{};
-        cg.push_back(startDate);
-        cg.push_back(labelContent);
-
-        ContentGroups cgs{};
-        cgs.push_back(cg);
-
-        Document(m_dao.get_self(), m_dao.get_self(), cgs);
     }
 
-    Period::Period(dao &dao, const eosio::checksum256 &hash) : m_dao{dao}
+    Period::Period(dao *dao, const eosio::checksum256 &hash) : Document(dao->get_self(), hash), m_dao{dao}
     {
-        Document (m_dao.get_self(), hash);
     }
 
-    eosio::time_point Period::getStartTime() 
+    eosio::time_point Period::getStartTime()
     {
         return getContentWrapper().getOrFail(DETAILS, START_TIME)->getAs<eosio::time_point>();
     }
 
-    std::optional<eosio::time_point> Period::getEndTime() 
+    eosio::time_point Period::getEndTime()
     {
-        auto nextPeriod = next();
-        if (nextPeriod == std::nullopt)
-        {
-            return std::nullopt;
-        }        
-        return std::optional<eosio::time_point>(nextPeriod->getStartTime());
-    }   
+        return next().getStartTime();
+    }
 
     Period Period::createNext(const eosio::time_point &nextPeriodStart,
-                               const std::string &label)
+                              const std::string &label)
     {
         Period nextPeriod(m_dao, nextPeriodStart, label);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), getHash(), nextPeriod.getHash(), common::NEXT);
+        Edge::write(m_dao->get_self(), m_dao->get_self(), getHash(), nextPeriod.getHash(), common::NEXT);
         return nextPeriod;
     }
 
-    std::optional<Period> Period::next()
+    bool Period::isEnd()
     {
-        auto [exists, period] = Edge::getIfExists(m_dao.get_self(), getHash(), common::NEXT);
+        auto [exists, period] = Edge::getIfExists(m_dao->get_self(), getHash(), common::NEXT);
         if (exists)
-        {
-            return std::optional<Period>{Period(m_dao, period.to_node)};
-        }
-        return std::nullopt;
+            return true;
+        return false;
+    }
+
+    Period Period::next()
+    {
+        auto [exists, period] = Edge::getIfExists(m_dao->get_self(), getHash(), common::NEXT);
+        eosio::check(exists, "End of calendar has been reached. Contact administrator to add more time periods.");
+        return Period(m_dao, period.getToNode());
     }
 } // namespace hypha

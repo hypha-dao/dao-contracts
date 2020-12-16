@@ -49,4 +49,18 @@ namespace hypha
         return (float)1 / ((float)config_t.seeds_per_usd.amount / (float)config_t.seeds_per_usd.symbol.precision());
     }
 
+    eosio::asset getSeedsAmount(int64_t deferralFactor,
+                                const eosio::asset &usd_amount,
+                                const eosio::time_point &price_time_point,
+                                const float &time_share,
+                                const float &deferred_perc)
+    {
+        asset adjusted_usd_amount = adjustAsset(adjustAsset(usd_amount, deferred_perc), time_share);
+        float seeds_deferral_coeff = (float) deferralFactor / (float)100;
+        float seeds_price = getSeedsPriceUsd(price_time_point);
+        return adjustAsset(asset{static_cast<int64_t>(adjusted_usd_amount.amount * (float)100 * (float)seeds_deferral_coeff),
+                                 common::S_SEEDS},
+                           (float)1 / (float)seeds_price);
+    }
+
 } // namespace hypha

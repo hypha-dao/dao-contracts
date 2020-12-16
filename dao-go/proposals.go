@@ -44,7 +44,7 @@ func Propose(ctx context.Context, api *eos.API,
 	return eostest.ExecTrx(ctx, api, actions)
 }
 
-// ProposePayout creates a proposal for an new payout/contribution
+// ProposePayout ...
 func ProposePayout(ctx context.Context, api *eos.API,
 	contract, proposer, recipient eos.AccountName,
 	usdAmount eos.Asset, deferred int64, payout string) (string, error) {
@@ -82,6 +82,64 @@ func ProposePayout(ctx context.Context, api *eos.API,
 			BaseVariant: eos.BaseVariant{
 				TypeID: docgraph.GetVariants().TypeID("int64"),
 				Impl:   deferred,
+			}},
+	})
+
+	return Propose(ctx, api, contract, proposer, Proposal{
+		Proposer:      proposer,
+		ProposalType:  eos.Name("payout"),
+		ContentGroups: payoutDoc.ContentGroups,
+	})
+}
+
+// ProposePayoutWithPeriod creates a proposal for an new payout/contribution
+func ProposePayoutWithPeriod(ctx context.Context, api *eos.API,
+	contract, proposer, recipient eos.AccountName, endPeriod eos.Checksum256,
+	usdAmount eos.Asset, deferred int64, payout string) (string, error) {
+
+	var payoutDoc docgraph.Document
+	err := json.Unmarshal([]byte(payout), &payoutDoc)
+	if err != nil {
+		return "error", fmt.Errorf("ProposePayout unmarshal : %v", err)
+	}
+
+	// inject the assignee in the first content group of the document
+	payoutDoc.ContentGroups[0] = append(payoutDoc.ContentGroups[0], docgraph.ContentItem{
+		Label: "recipient",
+		Value: &docgraph.FlexValue{
+			BaseVariant: eos.BaseVariant{
+				TypeID: docgraph.GetVariants().TypeID("name"),
+				Impl:   recipient,
+			}},
+	})
+
+	// inject the assignee in the first content group of the document
+	payoutDoc.ContentGroups[0] = append(payoutDoc.ContentGroups[0], docgraph.ContentItem{
+		Label: "usd_amount",
+		Value: &docgraph.FlexValue{
+			BaseVariant: eos.BaseVariant{
+				TypeID: docgraph.GetVariants().TypeID("asset"),
+				Impl:   usdAmount,
+			}},
+	})
+
+	// inject the assignee in the first content group of the document
+	payoutDoc.ContentGroups[0] = append(payoutDoc.ContentGroups[0], docgraph.ContentItem{
+		Label: "deferred_perc_x100",
+		Value: &docgraph.FlexValue{
+			BaseVariant: eos.BaseVariant{
+				TypeID: docgraph.GetVariants().TypeID("int64"),
+				Impl:   deferred,
+			}},
+	})
+
+	// inject the assignee in the first content group of the document
+	payoutDoc.ContentGroups[0] = append(payoutDoc.ContentGroups[0], docgraph.ContentItem{
+		Label: "end_period",
+		Value: &docgraph.FlexValue{
+			BaseVariant: eos.BaseVariant{
+				TypeID: docgraph.GetVariants().TypeID("checksum256"),
+				Impl:   endPeriod,
 			}},
 	})
 
@@ -139,7 +197,7 @@ func ProposeRole(ctx context.Context, api *eos.API,
 // ProposeAssignment creates a proposal for an new assignment
 func ProposeAssignment(ctx context.Context, api *eos.API,
 	contract, proposer, assignee eos.AccountName,
-	roleHash eos.Checksum256, assignment string) (string, error) {
+	roleHash, startPeriod eos.Checksum256, assignment string) (string, error) {
 
 	var assignmentDoc docgraph.Document
 	err := json.Unmarshal([]byte(assignment), &assignmentDoc)
@@ -154,6 +212,16 @@ func ProposeAssignment(ctx context.Context, api *eos.API,
 			BaseVariant: eos.BaseVariant{
 				TypeID: docgraph.GetVariants().TypeID("checksum256"),
 				Impl:   roleHash,
+			}},
+	})
+
+	// inject the period hash in the first content group of the document
+	assignmentDoc.ContentGroups[0] = append(assignmentDoc.ContentGroups[0], docgraph.ContentItem{
+		Label: "start_period",
+		Value: &docgraph.FlexValue{
+			BaseVariant: eos.BaseVariant{
+				TypeID: docgraph.GetVariants().TypeID("checksum256"),
+				Impl:   startPeriod,
 			}},
 	})
 
@@ -205,7 +273,7 @@ func ProposeBadge(ctx context.Context, api *eos.API, contract, proposer eos.Acco
 // ProposeBadgeAssignment proposes the badge assignment to the specified DAO contract
 func ProposeBadgeAssignment(ctx context.Context, api *eos.API,
 	contract, proposer, assignee eos.AccountName,
-	badgeHash eos.Checksum256, assignment string) (string, error) {
+	badgeHash, startPeriod eos.Checksum256, assignment string) (string, error) {
 
 	var badgeAssignmentDoc docgraph.Document
 	err := json.Unmarshal([]byte(assignment), &badgeAssignmentDoc)
@@ -222,6 +290,16 @@ func ProposeBadgeAssignment(ctx context.Context, api *eos.API,
 			BaseVariant: eos.BaseVariant{
 				TypeID: docgraph.GetVariants().TypeID("checksum256"),
 				Impl:   badgeHash,
+			}},
+	})
+
+	// inject the period hash in the first content group of the document
+	badgeAssignmentDoc.ContentGroups[0] = append(badgeAssignmentDoc.ContentGroups[0], docgraph.ContentItem{
+		Label: "start_period",
+		Value: &docgraph.FlexValue{
+			BaseVariant: eos.BaseVariant{
+				TypeID: docgraph.GetVariants().TypeID("checksum256"),
+				Impl:   startPeriod,
 			}},
 	})
 

@@ -31,8 +31,8 @@ namespace hypha
 
         //  member          ---- owns       ---->   roleDocument
         //  roleDocument    ---- ownedBy    ---->   member
-        Edge::write(m_dao.get_self(), m_dao.get_self(), Member::getHash(o_itr_role->names.at("owner")), roleDocument.getHash(), common::OWNS);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), roleDocument.getHash(), Member::getHash(o_itr_role->names.at("owner")), common::OWNED_BY);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), Member::calcHash(o_itr_role->names.at("owner")), roleDocument.getHash(), common::OWNS);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), roleDocument.getHash(), Member::calcHash(o_itr_role->names.at("owner")), common::OWNED_BY);
 
         // add the cross-reference to our temporary migration lookup table
         XReferenceTable xrt(m_dao.get_self(), m_dao.get_self().value);

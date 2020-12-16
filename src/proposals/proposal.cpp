@@ -31,7 +31,7 @@ namespace hypha
                                                     getBallotContent(proposalContent)));
 
         // creates the document, or the graph NODE
-        eosio::checksum256 memberHash = Member::getHash(proposer);
+        eosio::checksum256 memberHash = Member::calcHash(proposer);
         eosio::checksum256 root = getRoot(m_dao.get_self());
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
