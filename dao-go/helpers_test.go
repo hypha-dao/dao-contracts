@@ -251,55 +251,6 @@ type Object struct {
 	Ints       []dao.IntKV       `json:"ints"`
 }
 
-func loadObjectsFromProd(t *testing.T, env *Environment, scope, prodEndpoint string) {
-	prodApi := *eos.New(prodEndpoint)
-
-	var objects []Object
-	var request eos.GetTableRowsRequest
-	request.Code = "dao.hypha"
-	request.Scope = scope
-	request.Table = "objects"
-	request.Limit = 10000
-	request.JSON = true
-	response, _ := prodApi.GetTableRows(env.ctx, request)
-	response.JSONToStructs(&objects)
-
-	t.Log("Copying objects in production for 	: " + string(scope))
-	for _, object := range objects {
-		object.Scope = eos.Name(scope)
-
-		// var dump map[string]interface{}
-		// jsonO, err := json.Marshal(object)
-		// if err != nil {
-		// 	fmt.Println("Unable to marshal json: ", err)
-		// 	return
-		// }
-
-		// fmt.Println(string(jsonO))
-		// err = json.Unmarshal(jsonO, &dump)
-		// if err != nil {
-		// 	fmt.Println("Unable to unmarshal json: ", err)
-		// 	return
-		// }
-
-		// actionBinary, err := prodApi.ABIJSONToBin(env.ctx, env.DAO, eos.Name("createobj"), dump)
-
-		actions := []*eos.Action{{
-			Account: env.DAO,
-			Name:    eos.ActN("createobj"),
-			Authorization: []eos.PermissionLevel{
-				{Actor: env.DAO, Permission: eos.PN("active")},
-			},
-			// ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
-			ActionData: eos.NewActionData(object),
-		}}
-
-		trxID, err := eostest.ExecTrx(env.ctx, &env.api, actions)
-		t.Log("Transaction: " + trxID)
-		assert.NilError(t, err)
-	}
-}
-
 func loadSeedsTablesFromProd(t *testing.T, env *Environment, prodEndpoint string) {
 	prodApi := *eos.New(prodEndpoint)
 

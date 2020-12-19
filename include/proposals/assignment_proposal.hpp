@@ -24,6 +24,8 @@ namespace hypha {
         string getBallotContent (ContentWrapper &contentWrapper) override;
         name getProposalType () override;
 
+        void postProposeImpl(Document &proposal) override;
+        
     private: 
 
         asset calculateTimeShareUsdPerPeriod(const asset &annualUsd, const int64_t &timeShare);

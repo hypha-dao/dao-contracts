@@ -10,14 +10,7 @@
 namespace hypha
 {
     Member::Member(const eosio::name contract, const eosio::name &creator, const eosio::name &member)
-        : Document(contract, contract,
-                   ContentGroups{
-                       ContentGroup{
-                           Content(CONTENT_GROUP_LABEL, DETAILS),
-                           Content(MEMBER_STRING, member)},
-                       ContentGroup{
-                           Content(CONTENT_GROUP_LABEL, SYSTEM),
-                           Content(TYPE, common::MEMBER)}})
+        : Document(contract, contract, defaultContent(member))
     {
     }
 
@@ -31,16 +24,22 @@ namespace hypha
         return Member(contract, Member::calcHash(member));
     }
 
-    const eosio::checksum256 Member::calcHash(const eosio::name &member)
+    ContentGroups Member::defaultContent(const eosio::name &member)
     {
-        ContentGroups contentGroups = ContentGroups{
+        return ContentGroups{
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, DETAILS),
                 Content(MEMBER_STRING, member)},
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, SYSTEM),
-                Content(TYPE, common::MEMBER)}};
-        return Document::hashContents(contentGroups);
+                Content(TYPE, common::MEMBER),
+                Content(NODE_LABEL, member.to_string())}};
+    }
+
+    const eosio::checksum256 Member::calcHash(const eosio::name &member)
+    {
+        auto cgs = Member::defaultContent(member);
+        return Document::hashContents(cgs);
     }
 
     const bool Member::isMember(const eosio::name &rootNode, const eosio::name &member)

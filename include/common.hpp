@@ -62,6 +62,7 @@ namespace common
     static constexpr name FAILED_PROPS = name("failedprops");
     static constexpr name PASSED_PROPS = name("passedprops");
     static constexpr name MEMBER = name("member");
+    static constexpr name DHO = name ("dho");
 
     static constexpr name BALLOT_TYPE_OPTIONS = name("options");
     static constexpr name BALLOT_TYPE_TELOS_DECIDE = name("telosdecide");
@@ -74,6 +75,7 @@ namespace common
 #define HYPHA_DEFERRAL_FACTOR "hypha_deferral_factor_x100"
 #define CLIENT_VERSION "client_version"
 #define CONTRACT_VERSION "contract_version"
+#define DEFAULT_VERSION "un-versioned"
 #define TITLE "title"
 #define DESCRIPTION "description"
 #define CONTENT "content"

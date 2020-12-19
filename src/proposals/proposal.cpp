@@ -25,10 +25,10 @@ namespace hypha
         proposeImpl(proposer, proposalContent);
 
         contentGroups.push_back(createSystemGroup(proposer,
-                                                    getProposalType(),
-                                                    proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>(),
-                                                    proposalContent.getOrFail(DETAILS, DESCRIPTION)->getAs<std::string>(),
-                                                    getBallotContent(proposalContent)));
+                                                  getProposalType(),
+                                                  proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>(),
+                                                  proposalContent.getOrFail(DETAILS, DESCRIPTION)->getAs<std::string>(),
+                                                  getBallotContent(proposalContent)));
 
         // creates the document, or the graph NODE
         eosio::checksum256 memberHash = Member::calcHash(proposer);
@@ -44,12 +44,12 @@ namespace hypha
         // the DHO also links to the document as a proposal, another graph EDGE
         Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
 
-        postProposeImpl (proposalNode);
+        postProposeImpl(proposalNode);
 
         return proposalNode;
     }
 
-    void Proposal::postProposeImpl (Document &proposal) {}
+    void Proposal::postProposeImpl(Document &proposal) {}
 
     void Proposal::close(Document &proposal)
     {
@@ -81,10 +81,10 @@ namespace hypha
     }
 
     ContentGroup Proposal::createSystemGroup(const name &proposer,
-                                               const name &proposal_type,
-                                               const string &decide_title,
-                                               const string &decide_desc,
-                                               const string &decide_content)
+                                             const name &proposal_type,
+                                             const string &decide_title,
+                                             const string &decide_desc,
+                                             const string &decide_content)
 
     {
         // create the system content_group and populate with system details
@@ -92,10 +92,10 @@ namespace hypha
 
         ContentGroup system_cg = ContentGroup{};
         system_cg.push_back(Content(CONTENT_GROUP_LABEL, SYSTEM));
-        system_cg.push_back(Content(CLIENT_VERSION, ""));   // TODO: call get_setting
-        system_cg.push_back(Content(CONTRACT_VERSION, "")); // TODO call get_setting
+        system_cg.push_back(Content(CLIENT_VERSION, m_dao.getSettingOrDefault<std::string>(CLIENT_VERSION, DEFAULT_VERSION)));
+        system_cg.push_back(Content(CONTRACT_VERSION, m_dao.getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)));
         system_cg.push_back(Content(BALLOT_ID, ballot_id));
-        // system_cg.push_back(Content(OWNED_BY, proposer));
+        system_cg.push_back(Content(NODE_LABEL, decide_title));
         system_cg.push_back(Content(TYPE, proposal_type));
         return system_cg;
     }
@@ -130,7 +130,7 @@ namespace hypha
     }
 
     name Proposal::registerBallot(const name &proposer,
-                                   const string &title, const string &description, const string &content)
+                                  const string &title, const string &description, const string &content)
     {
         check(has_auth(proposer) || has_auth(m_dao.get_self()), "Authentication failed. Must have authority from proposer: " +
                                                                     proposer.to_string() + "@active or " + m_dao.get_self().to_string() + "@active.");
@@ -184,12 +184,12 @@ namespace hypha
     }
 
     name Proposal::registerBallot(const name &proposer,
-                                   const map<string, string> &strings)
+                                  const map<string, string> &strings)
     {
         return registerBallot(proposer,
-                               strings.at(TITLE),
-                               strings.at(DESCRIPTION),
-                               strings.at(CONTENT));
+                              strings.at(TITLE),
+                              strings.at(DESCRIPTION),
+                              strings.at(CONTENT));
     }
 
 } // namespace hypha

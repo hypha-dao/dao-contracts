@@ -40,7 +40,7 @@ namespace hypha
    {
       eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      Assignment assignment (this, assignment_hash);
+      Assignment assignment(this, assignment_hash);
       eosio::name assignee = assignment.getAssignee().getAccount();
 
       // assignee must still be a DHO member
@@ -48,8 +48,8 @@ namespace hypha
       require_auth(assignee);
 
       std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
-      eosio::check (periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
-      
+      eosio::check(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
+
       // Valid claim identified - start process
       // process this claim
       Edge::write(get_self(), get_self(), assignment.getHash(), periodToClaim.value().getHash(), common::CLAIMED);
@@ -65,8 +65,8 @@ namespace hypha
          int64_t period_sec = periodEndSec - periodStartSec;
          first_phase_ratio_calc = (float)elapsed_sec / (float)period_sec;
       }
-      eosio::check (first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
-      
+      eosio::check(first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
+
       asset deferredSeeds = adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc);
 
       // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
@@ -136,13 +136,13 @@ namespace hypha
          // eosio::print (" got end time ");
 
          // eosio::check(periodEndTime != std::nullopt, "End of calendar has been reached. Contact administrator to add more time periods.");
-         
+
          // int64_t badgeAssignmentExpiration = periodEndTime.value().sec_since_epoch();
          // eosio::print (" badge assignment expiration: " + std::to_string(badgeAssignmentExpiration) + "\n");
 
          // if (badgeAssignmentExpiration > eosio::current_time_point().sec_since_epoch())
          // {
-         
+
          // }
       }
       return current_badges;
@@ -313,15 +313,39 @@ namespace hypha
    {
       require_auth(get_self());
 
-      Document rootDoc(get_self(), get_self(), Content(ROOT_NODE, get_self()));
+      Document rootDoc(get_self(), get_self(), ContentGroups{
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, DETAILS),
+                Content(ROOT_NODE, get_self())},
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, SYSTEM),
+                Content(TYPE, common::DHO),
+                Content(NODE_LABEL, "Hypha DHO Root")}});
+      
 
-      //Create the settings document as well and add an edge to it
+      // Create the settings document as well and add an edge to it
       ContentGroups settingCgs{{Content(CONTENT_GROUP_LABEL, SETTINGS),
                                 Content(ROOT_NODE, readableHash(rootDoc.getHash()))}};
 
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), rootDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
    }
+
+   void dao::migrate(const eosio::name &scope, const uint64_t &id)
+   {
+      if (scope == common::ROLE_NAME)
+      {
+         Migration migration(*this);
+         migration.migrateRole(id);
+      }
+   }
+
+    void dao::reset4test(const std::string &notes)
+   {
+      Migration migration(*this);
+      migration.reset4test();
+   }
+
 
    DocumentGraph &dao::getGraph()
    {

@@ -6,6 +6,7 @@
 #include <document_graph/util.hpp>
 #include <migration.hpp>
 #include <member.hpp>
+#include <util.hpp>
 
 namespace hypha
 {
@@ -33,6 +34,7 @@ namespace hypha
         //  roleDocument    ---- ownedBy    ---->   member
         Edge::write(m_dao.get_self(), m_dao.get_self(), Member::calcHash(o_itr_role->names.at("owner")), roleDocument.getHash(), common::OWNS);
         Edge::write(m_dao.get_self(), m_dao.get_self(), roleDocument.getHash(), Member::calcHash(o_itr_role->names.at("owner")), common::OWNED_BY);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), getRoot(m_dao.get_self()), roleDocument.getHash(), common::ROLE_NAME);
 
         // add the cross-reference to our temporary migration lookup table
         XReferenceTable xrt(m_dao.get_self(), m_dao.get_self().value);
@@ -47,22 +49,38 @@ namespace hypha
         o_t_role.erase(o_itr_role);
     }
 
-    void Migration::reset4test () 
+    void Migration::reset4test()
     {
-        eosio::require_auth (m_dao.get_self());
+        eosio::require_auth(m_dao.get_self());
 
+        Document settingsDocument = m_dao.getSettingsDocument();
 
-        Document::document_table d_t (m_dao.get_self(), m_dao.get_self().value);
+        Document::document_table d_t(m_dao.get_self(), m_dao.get_self().value);
         auto d_itr = d_t.begin();
-        while (d_itr != d_t.end()) {
+        while (d_itr != d_t.end())
+        {
             d_itr = d_t.erase(d_itr);
         }
 
-        Edge::edge_table e_t (m_dao.get_self(), m_dao.get_self().value);
+        Edge::edge_table e_t(m_dao.get_self(), m_dao.get_self().value);
         auto e_itr = e_t.begin();
-        while (e_itr != e_t.end()) {
+        while (e_itr != e_t.end())
+        {
             e_itr = e_t.erase(e_itr);
         }
+
+        Document rootDocument(m_dao.get_self(), m_dao.get_self(), 
+            ContentGroups{
+                ContentGroup{
+                    Content(CONTENT_GROUP_LABEL, DETAILS), 
+                    Content(ROOT_NODE, m_dao.get_self())}, 
+                ContentGroup{
+                    Content(CONTENT_GROUP_LABEL, SYSTEM), 
+                    Content(TYPE, common::DHO), 
+                    Content(NODE_LABEL, "Hypha DHO Root")}});
+
+        settingsDocument.emplace();
+        Edge::write(m_dao.get_self(), m_dao.get_self(), rootDocument.getHash(), settingsDocument.getHash(), common::SETTINGS_EDGE);
     }
 
     Document Migration::newDocument(const uint64_t id,
@@ -192,7 +210,7 @@ namespace hypha
                               map<string, uint64_t> ints)
     {
 
-        eosio::print ("writing new object: " + std::to_string(id));
+        eosio::print("writing new object: " + std::to_string(id));
         Migration::object_table o_t(m_dao.get_self(), scope.value);
         o_t.emplace(m_dao.get_self(), [&](auto &o) {
             o.id = id;

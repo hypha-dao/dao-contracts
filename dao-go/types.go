@@ -40,8 +40,8 @@ type SeedsPriceHistory struct {
 
 // Period represents a period of time aligning to a payroll period, typically a week
 type Period struct {
-	PeriodID  uint64             `json:"period_id"`
-	StartTime eos.BlockTimestamp `json:"start_time"`
-	EndTime   eos.BlockTimestamp `json:"end_time"`
-	Phase     string             `json:"phase"`
+	PeriodID  uint64        `json:"period_id"`
+	StartTime eos.TimePoint `json:"start_time"`
+	EndTime   eos.TimePoint `json:"end_time"`
+	Phase     string        `json:"phase"`
 }

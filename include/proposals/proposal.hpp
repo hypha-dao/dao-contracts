@@ -28,7 +28,7 @@ namespace hypha
         virtual void proposeImpl(const eosio::name &proposer,
                                  ContentWrapper &contentWrapper) = 0;
 
-        void postProposeImpl(Document &proposal);
+        virtual void postProposeImpl(Document &proposal);
 
         virtual void passImpl(Document &proposal) = 0;
 

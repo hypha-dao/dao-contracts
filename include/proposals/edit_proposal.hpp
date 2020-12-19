@@ -18,7 +18,7 @@ namespace hypha {
     protected:
 
         void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;
-        void postProposeImpl (Document &proposal);
+        void postProposeImpl (Document &proposal) override;
 
         void passImpl(Document &proposal) override;
         string getBallotContent (ContentWrapper &contentWrapper) override;

@@ -22,5 +22,8 @@ namespace hypha
         void apply (const eosio::checksum256& applyTo, const std::string content);
         void enroll (const eosio::name &enroller, const std::string &content);
 
+    private: 
+        static ContentGroups defaultContent (const eosio::name &member);
+
     };
 } // namespace hypha

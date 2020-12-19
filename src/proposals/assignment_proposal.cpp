@@ -21,8 +21,8 @@ namespace hypha
         auto role = roleDocument.getContentWrapper();
 
         // role in the proposal must be of type: role
-        eosio::check (role.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::ROLE_NAME, 
-            "role document hash provided in assignment proposal is not of type: role");
+        eosio::check(role.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::ROLE_NAME,
+                     "role document hash provided in assignment proposal is not of type: role");
 
         // time_share_x100 is required and must be greater than zero and less than 100%
         int64_t timeShare = assignment.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
@@ -30,12 +30,12 @@ namespace hypha
         eosio::check(timeShare <= 10000, TIME_SHARE + string(" must be less than or equal to 10000 (=100%). You submitted: ") + std::to_string(timeShare));
 
         // retrieve the minimum time_share from the role, if it exists, and check the assignment against it
-        if (auto [idx, minTimeShare] = role.get(DETAILS, MIN_TIME_SHARE); minTimeShare) 
+        if (auto [idx, minTimeShare] = role.get(DETAILS, MIN_TIME_SHARE); minTimeShare)
         {
-            eosio::check(timeShare >= minTimeShare->getAs<int64_t>(), 
-                TIME_SHARE + string(" must be greater than or equal to the role configuration. Role value for ") + 
-                MIN_TIME_SHARE + " is " + std::to_string(minTimeShare->getAs<int64_t>()) + 
-                ", and you submitted: " + std::to_string(timeShare));
+            eosio::check(timeShare >= minTimeShare->getAs<int64_t>(),
+                         TIME_SHARE + string(" must be greater than or equal to the role configuration. Role value for ") +
+                             MIN_TIME_SHARE + " is " + std::to_string(minTimeShare->getAs<int64_t>()) +
+                             ", and you submitted: " + std::to_string(timeShare));
         }
 
         // deferred_x100 is required and must be greater than or equal to zero and less than or equal to 10000
@@ -44,26 +44,26 @@ namespace hypha
         eosio::check(deferred <= 10000, DEFERRED + string(" must be less than or equal to 10000 (=100%). You submitted: ") + std::to_string(deferred));
 
         // retrieve the minimum deferred from the role, if it exists, and check the assignment against it
-        if (auto [idx, minDeferred] = role.get(DETAILS, MIN_DEFERRED); minDeferred)         
+        if (auto [idx, minDeferred] = role.get(DETAILS, MIN_DEFERRED); minDeferred)
         {
-            eosio::check(deferred >= minDeferred->getAs<int64_t>(), 
-                DEFERRED + string(" must be greater than or equal to the role configuration. Role value for ") + 
-                MIN_DEFERRED + " is " + std::to_string(minDeferred->getAs<int64_t>()) + ", and you submitted: " + std::to_string(deferred));
+            eosio::check(deferred >= minDeferred->getAs<int64_t>(),
+                         DEFERRED + string(" must be greater than or equal to the role configuration. Role value for ") +
+                             MIN_DEFERRED + " is " + std::to_string(minDeferred->getAs<int64_t>()) + ", and you submitted: " + std::to_string(deferred));
         }
 
-        Document startPeriod (m_dao.get_self(), assignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+        Document startPeriod(m_dao.get_self(), assignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
         int64_t numPeriods = assignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
         eosio::check(numPeriods < 26, PERIOD_COUNT + string(" must be less than 26. You submitted: ") + std::to_string(numPeriods));
 
         asset annual_usd_salary = role.getOrFail(DETAILS, ANNUAL_USD_SALARY)->getAs<eosio::asset>();
 
         // add the USD period pay amount (this is used to calculate SEEDS at time of salary claim)
-        Content usdSalaryPerPeriod (USD_SALARY_PER_PERIOD, adjustAsset(annual_usd_salary, common::PHASE_TO_YEAR_RATIO));
-        
+        Content usdSalaryPerPeriod(USD_SALARY_PER_PERIOD, adjustAsset(annual_usd_salary, common::PHASE_TO_YEAR_RATIO));
+
         // add remaining derived per period salary amounts to this document
-        Content husdSalaryPerPeriod (HUSD_SALARY_PER_PERIOD, calculateHusd(annual_usd_salary, timeShare, deferred));
-        Content hyphaSalaryPerPeriod (HYPHA_SALARY_PER_PERIOD, calculateHypha(annual_usd_salary, timeShare, deferred));
-        Content hvoiceSalaryPerPeriod (HVOICE_SALARY_PER_PERIOD, calculateHvoice(annual_usd_salary, timeShare));
+        Content husdSalaryPerPeriod(HUSD_SALARY_PER_PERIOD, calculateHusd(annual_usd_salary, timeShare, deferred));
+        Content hyphaSalaryPerPeriod(HYPHA_SALARY_PER_PERIOD, calculateHypha(annual_usd_salary, timeShare, deferred));
+        Content hvoiceSalaryPerPeriod(HVOICE_SALARY_PER_PERIOD, calculateHvoice(annual_usd_salary, timeShare));
 
         auto detailsGroup = assignment.getGroupOrFail(DETAILS);
         ContentWrapper::insertOrReplace(*detailsGroup, usdSalaryPerPeriod);
@@ -72,28 +72,30 @@ namespace hypha
         ContentWrapper::insertOrReplace(*detailsGroup, hvoiceSalaryPerPeriod);
     }
 
+    void AssignmentProposal::postProposeImpl(Document &proposal)
+    {
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(),
+                    proposal.getContentWrapper().getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>(),
+                    common::ROLE_NAME);
+    }
+
     void AssignmentProposal::passImpl(Document &proposal)
     {
         ContentWrapper contentWrapper = proposal.getContentWrapper();
-
         eosio::checksum256 assignee = Member::calcHash(contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>());
         Document role(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
-
-        // Document startPeriod (m_dao.get_self(), contentWrapper.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
-        // Document endPeriod (m_dao.get_self(), contentWrapper.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
 
         // update graph edges:
         //  member          ---- assigned           ---->   role_assignment
         //  role_assignment ---- assignee           ---->   member
         //  role_assignment ---- role               ---->   role
         //  role            ---- role_assignment    ---->   role_assignment
-        Edge::write (m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGNED);
-        Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
-        Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), role.getHash(), common::ROLE_NAME);
-        Edge::write (m_dao.get_self(), m_dao.get_self(), role.getHash(), proposal.getHash(), common::ASSIGNMENT);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGNED);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), role.getHash(), proposal.getHash(), common::ASSIGNMENT);
     }
 
-    std::string AssignmentProposal::getBallotContent (ContentWrapper &contentWrapper)
+    std::string AssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)
     {
         return contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>();
     }
@@ -126,7 +128,7 @@ namespace hypha
         // calculate HYPHA phase salary amount
         asset deferredTimeShareAdjUsdPerPeriod = adjustAsset(calculateTimeShareUsdPerPeriod(annualUsd, timeShare), (float)(float)deferred / (float)100);
 
-        float hypha_deferral_coeff = (float) m_dao.getSettingOrFail<int64_t>(HYPHA_DEFERRAL_FACTOR) / (float) 100;
+        float hypha_deferral_coeff = (float)m_dao.getSettingOrFail<int64_t>(HYPHA_DEFERRAL_FACTOR) / (float)100;
 
         return adjustAsset(asset{deferredTimeShareAdjUsdPerPeriod.amount, common::S_HYPHA}, hypha_deferral_coeff);
     }

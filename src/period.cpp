@@ -17,7 +17,8 @@ namespace hypha
                            Content(LABEL, label)},
                        ContentGroup{
                            Content(CONTENT_GROUP_LABEL, SYSTEM),
-                           Content(TYPE, common::PERIOD)}}),
+                           Content(TYPE, common::PERIOD),
+                           Content(NODE_LABEL, "Period: " + label)}}),
           m_dao{dao}
     {
     }

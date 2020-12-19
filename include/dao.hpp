@@ -62,6 +62,8 @@ namespace hypha
                        std::map<string, eosio::time_point> time_points,
                        std::map<string, uint64_t> ints);
 
+      ACTION migrate (const eosio::name& scope, const uint64_t& id);
+
       DocumentGraph &getGraph();
       Document getSettingsDocument();
 
@@ -99,6 +101,7 @@ namespace hypha
 
       // ADMIN/SETUP only
       ACTION createroot(const std::string &notes);
+      ACTION reset4test (const std::string &notes);
       void setSetting(const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,
