@@ -11,8 +11,22 @@ namespace hypha
 
     eosio::checksum256 getRoot(const eosio::name &contract)
     {
-        ContentGroups cgs = Document::rollup(Content(ROOT_NODE, contract));
+        std::vector<ContentGroup> cgs = getRootContent (contract);
         return Document::hashContents(cgs);
+    }
+
+    std::vector<ContentGroup> getRootContent(const eosio::name &contract)
+    {
+        std::vector<ContentGroup> cgs ({
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, DETAILS), 
+                Content(ROOT_NODE, contract)}, 
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, SYSTEM), 
+                Content(TYPE, common::DHO), 
+                Content(NODE_LABEL, "Hypha DHO Root")}});
+
+        return std::move(cgs);
     }
 
     eosio::asset adjustAsset(const asset &originalAsset, const float &adjustment)

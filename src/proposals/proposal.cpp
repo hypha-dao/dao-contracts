@@ -18,7 +18,7 @@ namespace hypha
     Proposal::Proposal(dao &contract) : m_dao{contract} {}
     Proposal::~Proposal() {}
 
-    Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups)
+    Document Proposal::propose(const eosio::name &proposer, std::vector<ContentGroup> &contentGroups)
     {
         eosio::check(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);

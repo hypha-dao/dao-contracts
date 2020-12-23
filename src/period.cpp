@@ -10,15 +10,15 @@ namespace hypha
                    const eosio::time_point &start_time,
                    const std::string &label)
         : Document(dao->get_self(), dao->get_self(),
-                   ContentGroups{
+                   std::vector<ContentGroup>{
                        ContentGroup{
                            Content(CONTENT_GROUP_LABEL, DETAILS),
                            Content(START_TIME, start_time),
-                           Content(LABEL, label)},
+                           Content(LABEL, label)}, 
                        ContentGroup{
                            Content(CONTENT_GROUP_LABEL, SYSTEM),
                            Content(TYPE, common::PERIOD),
-                           Content(NODE_LABEL, "Period: " + label)}}),
+                           Content(NODE_LABEL, label)}}),
           m_dao{dao}
     {
     }
@@ -51,6 +51,21 @@ namespace hypha
         if (exists)
             return true;
         return false;
+    }
+
+    Period Period::current(dao *dao)
+    {
+        auto [exists, startEdge] = Edge::getIfExists(dao->get_self(), getRoot(dao->get_self()), common::START);
+        eosio::check(exists, "Root node does not have a 'start' edge.");
+        Period period (dao, startEdge.getToNode());
+
+        eosio::check(period.getStartTime() < eosio::current_time_point(), 
+            "start_period is in the future. No current period found.");
+
+        while (period.getEndTime() < eosio::current_time_point()) {
+            period = period.next();
+        }
+        return period;
     }
 
     Period Period::next()

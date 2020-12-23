@@ -18,7 +18,7 @@ namespace hypha
         Proposal(dao &contract);
         virtual ~Proposal();
 
-        Document propose(const eosio::name &proposer, ContentGroups &contentGroups);
+        Document propose(const eosio::name &proposer, std::vector<ContentGroup> &contentGroups);
 
         void close(Document &proposal);
 

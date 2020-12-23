@@ -49,11 +49,14 @@ namespace hypha
         o_t_role.erase(o_itr_role);
     }
 
-    void Migration::reset4test()
+    void Migration::eraseAll()
     {
-        eosio::require_auth(m_dao.get_self());
-
-        Document settingsDocument = m_dao.getSettingsDocument();
+        Edge::edge_table e_t(m_dao.get_self(), m_dao.get_self().value);
+        auto e_itr = e_t.begin();
+        while (e_itr != e_t.end())
+        {
+            e_itr = e_t.erase(e_itr);
+        }
 
         Document::document_table d_t(m_dao.get_self(), m_dao.get_self().value);
         auto d_itr = d_t.begin();
@@ -62,25 +65,38 @@ namespace hypha
             d_itr = d_t.erase(d_itr);
         }
 
-        Edge::edge_table e_t(m_dao.get_self(), m_dao.get_self().value);
-        auto e_itr = e_t.begin();
-        while (e_itr != e_t.end())
-        {
-            e_itr = e_t.erase(e_itr);
-        }
+        // dao::PeriodTable p_t(m_dao.get_self(), m_dao.get_self().value);
+        // auto p_itr = p_t.begin();
+        // while (p_itr != p_t.end())
+        // {
+        //     p_itr = p_t.erase(p_itr);
+        // }
+    }
 
-        Document rootDocument(m_dao.get_self(), m_dao.get_self(), 
-            ContentGroups{
-                ContentGroup{
-                    Content(CONTENT_GROUP_LABEL, DETAILS), 
-                    Content(ROOT_NODE, m_dao.get_self())}, 
-                ContentGroup{
-                    Content(CONTENT_GROUP_LABEL, SYSTEM), 
-                    Content(TYPE, common::DHO), 
-                    Content(NODE_LABEL, "Hypha DHO Root")}});
+    void Migration::reset4test()
+    {
+        eosio::require_auth(m_dao.get_self());
 
-        settingsDocument.emplace();
-        Edge::write(m_dao.get_self(), m_dao.get_self(), rootDocument.getHash(), settingsDocument.getHash(), common::SETTINGS_EDGE);
+        Document settingsDocument = m_dao.getSettingsDocument();
+        ContentWrapper cw = settingsDocument.getContentWrapper();
+        ContentGroup *settings = cw.getGroupOrFail("settings");
+
+        eraseAll();
+
+        std::vector<ContentGroup> newSettingsCGS {
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, SYSTEM),
+                Content(TYPE, common::SETTINGS_EDGE),
+                Content(NODE_LABEL, "Settings")
+            },
+            *settings
+        };
+
+        Document updatedSettings (m_dao.get_self(), m_dao.get_self(), newSettingsCGS);
+        Document rootDocument(m_dao.get_self(), m_dao.get_self(), getRootContent(m_dao.get_self()));
+        Edge::write(m_dao.get_self(), m_dao.get_self(), rootDocument.getHash(), updatedSettings.getHash(), common::SETTINGS_EDGE);
+
+        m_dao.setSetting(ROOT_NODE, rootDocument.getHash());
     }
 
     Document Migration::newDocument(const uint64_t id,
@@ -92,7 +108,7 @@ namespace hypha
                                     const map<string, time_point> time_points,
                                     const map<string, uint64_t> ints)
     {
-        ContentGroups contentGroups{};
+        std::vector<ContentGroup> contentGroups{};
 
         ContentGroup systemContentGroup{};
         systemContentGroup.push_back(Content(CONTENT_GROUP_LABEL, SYSTEM));

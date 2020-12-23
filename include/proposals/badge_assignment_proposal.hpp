@@ -13,7 +13,7 @@ namespace hypha {
     public:
         using Proposal::Proposal;
 
-        Document propose(const name &proposer, ContentGroups &contentGroups);
+        Document propose(const name &proposer, std::vector<ContentGroup> &contentGroups);
         void close(Document &proposal);
 
     protected:

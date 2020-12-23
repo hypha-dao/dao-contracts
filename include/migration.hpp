@@ -83,6 +83,7 @@ namespace hypha
                        map<string, uint64_t> ints);
 
         void reset4test (); 
+        void eraseAll ();
 
     private:
         Document newDocument(const uint64_t id,

@@ -129,7 +129,7 @@ func SetupEnvironment(t *testing.T) *Environment {
 	env.HyphaDeferralFactor = 25
 
 	env.PeriodDuration, _ = time.ParseDuration("6s")
-	env.NumPeriods = 100
+	env.NumPeriods = 20
 
 	// pauses
 	env.ChainResponsePause = time.Second
@@ -197,7 +197,7 @@ func SetupEnvironment(t *testing.T) *Environment {
 	assert.NilError(t, err)
 	loadSeedsTablesFromProd(t, &env, "https://api.telos.kitchen")
 
-	loadObjectsFromProd(t, &env, "role", "https://api.telos.kitchen")
+	// loadObjectsFromProd(t, &env, "role", "https://api.telos.kitchen")
 
 	t.Log("Deploying Events contract to 		: ", env.Events)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.Events, monitorPrefix+"wasm", monitorPrefix+"abi")
@@ -205,7 +205,7 @@ func SetupEnvironment(t *testing.T) *Environment {
 
 	_, err = dao.CreateRoot(env.ctx, &env.api, env.DAO)
 	assert.NilError(t, err)
-	env.Root, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, "d4ec74355830056924c83f20ffb1a22ad0c5145a96daddf6301897a092de951e")
+	env.Root, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, "52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91")
 	assert.NilError(t, err)
 
 	husdMaxSupply, _ := eos.NewAssetFromString("1000000000.00 HUSD")

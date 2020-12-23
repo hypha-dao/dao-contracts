@@ -17,7 +17,7 @@ namespace hypha
 {
    void dao::propose(const name &proposer,
                      const name &proposal_type,
-                     ContentGroups &content_groups)
+                     std::vector<ContentGroup> &content_groups)
    {
       eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
@@ -152,10 +152,10 @@ namespace hypha
    {
       if (auto [idx, coefficient] = badge.get(DETAILS, key); coefficient)
       {
-         if (std::holds_alternative<std::monostate>(coefficient->value))
-         {
-            return asset{0, base.symbol};
-         }
+         // if (std::holds_alternative<std::monostate>(coefficient->value))
+         // {
+         //    return asset{0, base.symbol};
+         // }
 
          eosio::check(std::holds_alternative<int64_t>(coefficient->value), "fatal error: coefficient must be an int64_t type: key: " + key);
 
@@ -241,14 +241,13 @@ namespace hypha
       auto settingContent = Content(key, value);
       auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
-      //Might want to return by & instead of const &
-      auto contentGroups = document.getContentGroups();
-      auto &settingsGroup = contentGroups[0];
+      ContentWrapper cw = document.getContentWrapper();
+      ContentGroup *settings = cw.getGroupOrFail("settings");
 
-      ContentWrapper::insertOrReplace(settingsGroup, settingContent);
-      ContentWrapper::insertOrReplace(settingsGroup, updateDateContent);
+      ContentWrapper::insertOrReplace(*settings, settingContent);
+      ContentWrapper::insertOrReplace(*settings, updateDateContent);
 
-      m_documentGraph.updateDocument(get_self(), oldHash, std::move(contentGroups));
+      m_documentGraph.updateDocument(get_self(), oldHash, document.getContentGroups());
    }
 
    void dao::remsetting(const string &key)
@@ -313,18 +312,10 @@ namespace hypha
    {
       require_auth(get_self());
 
-      Document rootDoc(get_self(), get_self(), ContentGroups{
-            ContentGroup{
-                Content(CONTENT_GROUP_LABEL, DETAILS),
-                Content(ROOT_NODE, get_self())},
-            ContentGroup{
-                Content(CONTENT_GROUP_LABEL, SYSTEM),
-                Content(TYPE, common::DHO),
-                Content(NODE_LABEL, "Hypha DHO Root")}});
-      
+      Document rootDoc(get_self(), get_self(), getRootContent(get_self()));
 
       // Create the settings document as well and add an edge to it
-      ContentGroups settingCgs{{Content(CONTENT_GROUP_LABEL, SETTINGS),
+      std::vector<ContentGroup> settingCgs{{Content(CONTENT_GROUP_LABEL, SETTINGS),
                                 Content(ROOT_NODE, readableHash(rootDoc.getHash()))}};
 
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
@@ -342,10 +333,17 @@ namespace hypha
 
     void dao::reset4test(const std::string &notes)
    {
+      require_auth (get_self());
       Migration migration(*this);
       migration.reset4test();
    }
 
+   void dao::eraseall(const std::string &notes)
+   {
+      require_auth (get_self());
+      Migration migration(*this);
+      migration.eraseAll();
+   }
 
    DocumentGraph &dao::getGraph()
    {

@@ -24,8 +24,8 @@ func TestAssignmentProposalDocument(t *testing.T) {
 	closer := env.Members[2]
 
 	role1Doc := CreateRole(t, env, proposer, closer, role1)
-	// role2Doc := CreateRole(t, env, proposer, closer, role2)
-	// role3Doc := CreateRole(t, env, proposer, closer, role3)
+	role2Doc := CreateRole(t, env, proposer, closer, role2)
+	role3Doc := CreateRole(t, env, proposer, closer, role3)
 
 	t.Run("Test Assignment Document Proposal", func(t *testing.T) {
 
@@ -51,72 +51,72 @@ func TestAssignmentProposalDocument(t *testing.T) {
 				hvoice:     "6078.02 HVOICE",
 				usd:        "3039.01 USD",
 			},
-			// {
-			// 	name:       "role2 - 100% commit, 70% deferred",
-			// 	roleTitle:  "Underwater Basketweaver",
-			// 	title:      "Underwater Basketweaver - Atlantic",
-			// 	role:       role2Doc,
-			// 	assignment: assignment2,
-			// 	husd:       "455.85 HUSD",
-			// 	hypha:      "265.91 HYPHA",
-			// 	hvoice:     "3039.00 HVOICE",
-			// 	usd:        "1519.50 USD",
-			// },
-			// {
-			// 	name:       "role2 - 75% commit, 50% deferred",
-			// 	roleTitle:  "Underwater Basketweaver",
-			// 	title:      "Underwater Basketweaver - Atlantic",
-			// 	role:       role2Doc,
-			// 	assignment: assignment3,
-			// 	husd:       "569.81 HUSD",
-			// 	hypha:      "142.45 HYPHA",
-			// 	hvoice:     "2279.26 HVOICE",
-			// 	usd:        "1519.50 USD",
-			// },
-			// {
-			// 	name:       "role3 - 51% commit, 100% deferred",
-			// 	roleTitle:  "Underwater Basketweaver",
-			// 	title:      "Underwater Basketweaver - Atlantic",
-			// 	role:       role3Doc,
-			// 	assignment: assignment4,
-			// 	husd:       "0.00 HUSD",
-			// 	hypha:      "452.05 HYPHA",
-			// 	hvoice:     "3616.42 HVOICE",
-			// 	usd:        "3545.51 USD",
-			// },
-			// {
-			// 	name:       "role3 - 25% commit, 50% deferred",
-			// 	roleTitle:  "Underwater Basketweaver",
-			// 	title:      "Underwater Basketweaver - Atlantic",
-			// 	role:       role3Doc,
-			// 	assignment: assignment5,
-			// 	husd:       "443.18 HUSD",
-			// 	hypha:      "110.79 HYPHA",
-			// 	hvoice:     "1772.74 HVOICE",
-			// 	usd:        "3545.51 USD",
-			// },
-			// {
-			// 	name:       "role3 - 100% commit, 15% deferred",
-			// 	roleTitle:  "Underwater Basketweaver",
-			// 	title:      "Underwater Basketweaver - Atlantic",
-			// 	role:       role3Doc,
-			// 	assignment: assignment6,
-			// 	husd:       "3013.68 HUSD",
-			// 	hypha:      "132.95 HYPHA",
-			// 	hvoice:     "7091.02 HVOICE",
-			// 	usd:        "3545.51 USD",
-			// },
-			// {
-			// 	name:       "role3 - 10% commit, 0% deferred",
-			// 	roleTitle:  "Underwater Basketweaver",
-			// 	title:      "Underwater Basketweaver - Atlantic",
-			// 	role:       role3Doc,
-			// 	assignment: assignment7,
-			// 	husd:       "354.55 HUSD",
-			// 	hypha:      "0.00 HYPHA",
-			// 	hvoice:     "709.10 HVOICE",
-			// 	usd:        "3545.51 USD",
-			// },
+			{
+				name:       "role2 - 100% commit, 70% deferred",
+				roleTitle:  "Underwater Basketweaver",
+				title:      "Underwater Basketweaver - Atlantic",
+				role:       role2Doc,
+				assignment: assignment2,
+				husd:       "455.85 HUSD",
+				hypha:      "265.91 HYPHA",
+				hvoice:     "3039.00 HVOICE",
+				usd:        "1519.50 USD",
+			},
+			{
+				name:       "role2 - 75% commit, 50% deferred",
+				roleTitle:  "Underwater Basketweaver",
+				title:      "Underwater Basketweaver - Atlantic",
+				role:       role2Doc,
+				assignment: assignment3,
+				husd:       "569.81 HUSD",
+				hypha:      "142.45 HYPHA",
+				hvoice:     "2279.26 HVOICE",
+				usd:        "1519.50 USD",
+			},
+			{
+				name:       "role3 - 51% commit, 100% deferred",
+				roleTitle:  "Underwater Basketweaver",
+				title:      "Underwater Basketweaver - Atlantic",
+				role:       role3Doc,
+				assignment: assignment4,
+				husd:       "0.00 HUSD",
+				hypha:      "452.05 HYPHA",
+				hvoice:     "3616.42 HVOICE",
+				usd:        "3545.51 USD",
+			},
+			{
+				name:       "role3 - 25% commit, 50% deferred",
+				roleTitle:  "Underwater Basketweaver",
+				title:      "Underwater Basketweaver - Atlantic",
+				role:       role3Doc,
+				assignment: assignment5,
+				husd:       "443.18 HUSD",
+				hypha:      "110.79 HYPHA",
+				hvoice:     "1772.74 HVOICE",
+				usd:        "3545.51 USD",
+			},
+			{
+				name:       "role3 - 100% commit, 15% deferred",
+				roleTitle:  "Underwater Basketweaver",
+				title:      "Underwater Basketweaver - Atlantic",
+				role:       role3Doc,
+				assignment: assignment6,
+				husd:       "3013.68 HUSD",
+				hypha:      "132.95 HYPHA",
+				hvoice:     "7091.02 HVOICE",
+				usd:        "3545.51 USD",
+			},
+			{
+				name:       "role3 - 10% commit, 0% deferred",
+				roleTitle:  "Underwater Basketweaver",
+				title:      "Underwater Basketweaver - Atlantic",
+				role:       role3Doc,
+				assignment: assignment7,
+				husd:       "354.55 HUSD",
+				hypha:      "0.00 HYPHA",
+				hvoice:     "709.10 HVOICE",
+				usd:        "3545.51 USD",
+			},
 		}
 
 		for _, test := range tests {
@@ -202,6 +202,62 @@ func TestAssignmentProposalDocument(t *testing.T) {
 			assert.NilError(t, err)
 			t.Log("test: ", test.name, ": usd: "+usd.String())
 			assert.Equal(t, usd.String(), test.usd)
+		}
+	})
+}
+
+func TestAssignmentDefaults(t *testing.T) {
+	teardownTestCase := setupTestCase(t)
+	defer teardownTestCase(t)
+
+	env = SetupEnvironment(t)
+	t.Log(env.String())
+	t.Log("\nDAO Environment Setup complete\n")
+
+	// roles
+	proposer := env.Members[0]
+	assignee := env.Members[1]
+	closer := env.Members[2]
+
+	role1Doc := CreateRole(t, env, proposer, closer, role1)
+
+	t.Run("Test Assignment Document Proposal", func(t *testing.T) {
+
+		tests := []struct {
+			name               string
+			roleTitle          string
+			title              string
+			role               docgraph.Document
+			assignment         string
+			defaultPeriodCount int64
+			hypha              string
+			hvoice             string
+			usd                string
+		}{
+			{
+				name:               "role1 - 100% 100%",
+				roleTitle:          "Underwater Basketweaver",
+				title:              "Underwater Basketweaver - Atlantic",
+				role:               role1Doc,
+				assignment:         assignment8,
+				defaultPeriodCount: 13,
+			},
+		}
+
+		for _, test := range tests {
+
+			t.Log("\n\nStarting test: ", test.name)
+			_, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, test.role.Hash, env.Periods[0].Hash, test.assignment)
+			assert.NilError(t, err)
+
+			// retrieve the document we just created
+			assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
+			assert.NilError(t, err)
+			assert.Equal(t, assignment.Creator, proposer.Member)
+
+			fv, err := assignment.GetContent("period_count")
+			assert.NilError(t, err)
+			assert.Equal(t, fv.Impl.(int64), test.defaultPeriodCount)
 		}
 	})
 }
@@ -694,6 +750,48 @@ const assignment7 = `{
                 "value": [
                     "int64",
                     0
+                ]
+            }
+        ]
+    ]
+}`
+
+const assignment8 = `{
+    "content_groups": [
+        [
+            {
+                "label": "content_group_label",
+                "value": [
+                    "string",
+                    "details"
+                ]
+            },
+            {
+                "label": "title",
+                "value": [
+                    "string",
+                    "Underwater Basketweaver - Atlantic"
+                ]
+            },
+            {
+                "label": "description",
+                "value": [
+                    "string",
+                    "Weave baskets at the bottom of the sea - Atlantic Ocean"
+                ]
+            },
+            {
+                "label": "time_share_x100",
+                "value": [
+                    "int64",
+                    100
+                ]
+            },
+            {
+                "label": "deferred_perc_x100",
+                "value": [
+                    "int64",
+                    100
                 ]
             }
         ]

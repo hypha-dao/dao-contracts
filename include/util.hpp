@@ -5,10 +5,12 @@
 #include <eosio/singleton.hpp>
 #include <eosio/multi_index.hpp>
 
+#include <document_graph/content_wrapper.hpp>
+
 namespace hypha
 {
-
     eosio::checksum256 getRoot(const eosio::name &contract);
+    std::vector<ContentGroup> getRootContent(const eosio::name &contract);
     eosio::asset adjustAsset(const eosio::asset &originalAsset, const float &adjustment);
     float getSeedsPriceUsd(const eosio::time_point &price_time_point);
     float getSeedsPriceUsd();
@@ -19,7 +21,7 @@ namespace hypha
                                 const float &deferred_perc);
 
     // configtable is usued to read the Seeds price
-    struct [[eosio::table, eosio::contract("dao")]] configtable
+    struct configtable
     {
         eosio::asset seeds_per_usd;
         eosio::asset tlos_per_usd;
@@ -32,7 +34,7 @@ namespace hypha
     typedef eosio::multi_index<eosio::name("config"), configtable> dump_for_config;
 
     // price history table is used to read the seeds price
-    struct [[eosio::table, eosio::contract("dao")]] price_history_table
+    struct price_history_table
     {
         uint64_t id;
         eosio::asset seeds_usd;

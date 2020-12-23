@@ -215,15 +215,15 @@ func ProposeAssignment(ctx context.Context, api *eos.API,
 			}},
 	})
 
-	// inject the period hash in the first content group of the document
-	assignmentDoc.ContentGroups[0] = append(assignmentDoc.ContentGroups[0], docgraph.ContentItem{
-		Label: "start_period",
-		Value: &docgraph.FlexValue{
-			BaseVariant: eos.BaseVariant{
-				TypeID: docgraph.GetVariants().TypeID("checksum256"),
-				Impl:   startPeriod,
-			}},
-	})
+	// // inject the period hash in the first content group of the document
+	// assignmentDoc.ContentGroups[0] = append(assignmentDoc.ContentGroups[0], docgraph.ContentItem{
+	// 	Label: "start_period",
+	// 	Value: &docgraph.FlexValue{
+	// 		BaseVariant: eos.BaseVariant{
+	// 			TypeID: docgraph.GetVariants().TypeID("checksum256"),
+	// 			Impl:   startPeriod,
+	// 		}},
+	// })
 
 	// inject the assignee in the first content group of the document
 	assignmentDoc.ContentGroups[0] = append(assignmentDoc.ContentGroups[0], docgraph.ContentItem{

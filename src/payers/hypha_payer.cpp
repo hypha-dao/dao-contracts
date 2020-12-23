@@ -21,7 +21,7 @@ namespace hypha
                    quantity,
                    memo);
 
-        ContentGroups recieptCgs{
+        std::vector<ContentGroup> recieptCgs{
             {Content(CONTENT_GROUP_LABEL, DETAILS),
              Content(RECIPIENT, recipient),
              Content(AMOUNT, quantity),

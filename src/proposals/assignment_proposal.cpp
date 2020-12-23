@@ -51,9 +51,33 @@ namespace hypha
                              MIN_DEFERRED + " is " + std::to_string(minDeferred->getAs<int64_t>()) + ", and you submitted: " + std::to_string(deferred));
         }
 
-        Document startPeriod(m_dao.get_self(), assignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
-        int64_t numPeriods = assignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
-        eosio::check(numPeriods < 26, PERIOD_COUNT + string(" must be less than 26. You submitted: ") + std::to_string(numPeriods));
+        // START_PERIOD - number of periods the assignment is valid for
+        auto detailsGroup = assignment.getGroupOrFail(DETAILS);
+        if (auto [idx, startPeriod] = assignment.get(DETAILS, START_PERIOD); startPeriod)
+        {
+            eosio::check(std::holds_alternative<eosio::checksum256>(startPeriod->value),
+                         "fatal error: expected to be a checksum256 type: " + startPeriod->label);
+
+            // verifies the period as valid
+            Period period(&m_dao, std::get<eosio::checksum256>(startPeriod->value));
+        } else {
+            // default START_PERIOD to next period
+            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao).next().getHash()});
+        }
+
+        // PERIOD_COUNT - number of periods the assignment is valid for
+        if (auto [idx, periodCount] = assignment.get(DETAILS, PERIOD_COUNT); periodCount)
+        {
+            eosio::check(std::holds_alternative<int64_t>(periodCount->value),
+                         "fatal error: expected to be an int64 type: " + periodCount->label);
+
+            eosio::check(std::get<int64_t>(periodCount->value) < 26, PERIOD_COUNT + 
+                string(" must be less than 26. You submitted: ") + std::to_string(std::get<int64_t>(periodCount->value)));
+
+        } else {
+            // default PERIOD_COUNT to 13
+            ContentWrapper::insertOrReplace(*detailsGroup, Content{PERIOD_COUNT, 13});
+        }
 
         asset annual_usd_salary = role.getOrFail(DETAILS, ANNUAL_USD_SALARY)->getAs<eosio::asset>();
 
@@ -65,7 +89,6 @@ namespace hypha
         Content hyphaSalaryPerPeriod(HYPHA_SALARY_PER_PERIOD, calculateHypha(annual_usd_salary, timeShare, deferred));
         Content hvoiceSalaryPerPeriod(HVOICE_SALARY_PER_PERIOD, calculateHvoice(annual_usd_salary, timeShare));
 
-        auto detailsGroup = assignment.getGroupOrFail(DETAILS);
         ContentWrapper::insertOrReplace(*detailsGroup, usdSalaryPerPeriod);
         ContentWrapper::insertOrReplace(*detailsGroup, husdSalaryPerPeriod);
         ContentWrapper::insertOrReplace(*detailsGroup, hyphaSalaryPerPeriod);

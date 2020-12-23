@@ -24,9 +24,9 @@ namespace hypha
         return Member(contract, Member::calcHash(member));
     }
 
-    ContentGroups Member::defaultContent(const eosio::name &member)
+    std::vector<ContentGroup> Member::defaultContent(const eosio::name &member)
     {
-        return ContentGroups{
+        return std::vector<ContentGroup>{
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, DETAILS),
                 Content(MEMBER_STRING, member)},

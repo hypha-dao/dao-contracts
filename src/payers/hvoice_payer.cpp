@@ -20,7 +20,7 @@ namespace hypha
             std::make_tuple(recipient, quantity, memo))
             .send();
 
-        ContentGroups recieptCgs{
+        std::vector<ContentGroup> recieptCgs{
             {Content(CONTENT_GROUP_LABEL, DETAILS),
              Content(RECIPIENT, recipient),
              Content(AMOUNT, quantity),

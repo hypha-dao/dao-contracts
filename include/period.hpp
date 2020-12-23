@@ -25,6 +25,8 @@ namespace hypha
                           const std::string &label);
 
         Period next();
+
+        static Period current(dao *dao);
         bool isEnd();
 
         dao *m_dao;

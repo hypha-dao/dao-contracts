@@ -26,21 +26,7 @@ namespace hypha
 
       DECLARE_DOCUMENT_GRAPH(dao)
 
-      struct [[eosio::table, eosio::contract("dao")]] PeriodRecord
-      {
-         // table columns
-         uint64_t id;
-         eosio::time_point start_time;
-         eosio::time_point end_time;
-         std::string label;
-
-         uint64_t primary_key() const { return id; }
-         // EOSLIB_SERIALIZE(Period, (id)(start_time)(end_time)(label))
-      };
-
-      typedef eosio::multi_index<eosio::name("periods"), PeriodRecord> PeriodTable;
-
-      ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
+      ACTION propose(const name &proposer, const name &proposal_type, std::vector<ContentGroup> &content_groups);
       ACTION closedocprop(const checksum256 &proposal_hash);
       ACTION setsetting(const string &key, const Content::FlexValue &value);
       ACTION remsetting(const string &key);
@@ -102,6 +88,7 @@ namespace hypha
       // ADMIN/SETUP only
       ACTION createroot(const std::string &notes);
       ACTION reset4test (const std::string &notes);
+      ACTION eraseall (const std::string &notes);
       void setSetting(const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,

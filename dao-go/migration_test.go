@@ -1,10 +1,14 @@
 package dao_test
 
 import (
+	"context"
+	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	eostest "github.com/digital-scarcity/eos-go-test"
+	"github.com/hypha-dao/dao-contracts/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"gotest.tools/assert"
 
@@ -183,5 +187,132 @@ func TestMigrateRoles(t *testing.T) {
 				assert.NilError(t, err)
 			}
 		}
+	})
+}
+
+func getProdPeriods() []dao.Period {
+	endpointAPI := *eos.New("https://api.telos.kitchen")
+
+	var objects []dao.Period
+	var request eos.GetTableRowsRequest
+	request.Code = "dao.hypha"
+	request.Scope = "dao.hypha"
+	request.Table = "periods"
+	request.Limit = 10000
+	request.JSON = true
+	response, _ := endpointAPI.GetTableRows(context.Background(), request)
+	response.JSONToStructs(&objects)
+	return objects
+}
+
+type addPeriodBTS struct {
+	Predecessor eos.Checksum256 `json:"predecessor"`
+	StartTime   eos.TimePoint   `json:"start_time"`
+	Label       string          `json:"label"`
+}
+
+type reset4test struct {
+	Notes string `json:"notes"`
+}
+
+func TestCopyPeriods(t *testing.T) {
+	teardownTestCase := setupTestCase(t)
+	defer teardownTestCase(t)
+
+	// var env Environment
+	env = SetupEnvironment(t)
+
+	actions := []*eos.Action{{
+		Account: env.DAO,
+		Name:    eos.ActN("reset4test"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: env.DAO, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionData(reset4test{
+			Notes: "notes",
+		}),
+	}}
+
+	trxID, err := eostest.ExecTrx(env.ctx, &env.api, actions)
+	assert.NilError(t, err)
+
+	t.Log("Reset successful: " + trxID)
+	pause(t, env.ChainResponsePause, "", "Waiting...")
+
+	t.Log(env.String())
+	t.Log("\nDAO Environment Setup complete\n")
+
+	t.Run("Copy periods", func(t *testing.T) {
+
+		periods := getProdPeriods()
+
+		predecessor := env.Root.Hash
+		var lastPeriod docgraph.Document
+
+		for _, period := range periods {
+
+			seconds := period.StartTime
+			fmt.Println("seconds (nano)		: ", strconv.Itoa(int(seconds.UnixNano())))
+
+			microSeconds := seconds.UnixNano() / 1000
+			fmt.Println("seconds (micro)	: ", strconv.Itoa(int(microSeconds)))
+
+			startTime := eos.TimePoint(microSeconds)
+
+			addPeriodAction := eos.Action{
+				Account: env.DAO,
+				Name:    eos.ActN("addperiod"),
+				Authorization: []eos.PermissionLevel{
+					{Actor: env.DAO, Permission: eos.PN("active")},
+				},
+				ActionData: eos.NewActionData(addPeriodBTS{
+					Predecessor: predecessor,
+					StartTime:   startTime,
+					Label:       period.Phase,
+				}),
+			}
+
+			_, err := eostest.ExecTrx(env.ctx, &env.api, []*eos.Action{&addPeriodAction})
+			assert.NilError(t, err)
+
+			pause(t, time.Second, "Build block...", "")
+
+			lastPeriod, err = docgraph.GetLastDocument(env.ctx, &env.api, env.DAO)
+			assert.NilError(t, err)
+
+			predecessor = lastPeriod.Hash
+		}
+	})
+}
+
+func TestReset(t *testing.T) {
+	teardownTestCase := setupTestCase(t)
+	defer teardownTestCase(t)
+
+	// var env Environment
+	env = SetupEnvironment(t)
+
+	pause(t, env.ChainResponsePause, "", "Waiting...")
+
+	t.Log(env.String())
+	t.Log("\nDAO Environment Setup complete\n")
+
+	t.Run("reset4test", func(t *testing.T) {
+
+		actions := []*eos.Action{{
+			Account: env.DAO,
+			Name:    eos.ActN("reset4test"),
+			Authorization: []eos.PermissionLevel{
+				{Actor: env.DAO, Permission: eos.PN("active")},
+			},
+			ActionData: eos.NewActionData(reset4test{
+				Notes: "notes",
+			}),
+		}}
+
+		trxID, err := eostest.ExecTrx(env.ctx, &env.api, actions)
+		assert.NilError(t, err)
+
+		t.Log("Reset successful: " + trxID)
 	})
 }
