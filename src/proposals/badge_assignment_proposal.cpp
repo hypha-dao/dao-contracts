@@ -15,17 +15,39 @@ namespace hypha
         name assignee = badgeAssignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
         eosio::check(Member::isMember(m_dao.get_self(), assignee), "only members can be earn badges " + assignee.to_string());
 
-        Document startPeriod(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
-        int64_t numPeriods = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
-        eosio::check(numPeriods < 26, PERIOD_COUNT + string(" must be less than 26. You submitted: ") + std::to_string(numPeriods));
-
-        // badge assignment proposal must link to a valid badge
+         // badge assignment proposal must link to a valid badge
         Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
         auto badge = badgeDocument.getContentWrapper();
-
-        // badge in the proposal must be of type: badge
         eosio::check(badge.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::BADGE_NAME,
                      "badge document hash provided in assignment proposal is not of type badge");
+
+        // START_PERIOD - number of periods the assignment is valid for
+        auto detailsGroup = badgeAssignment.getGroupOrFail(DETAILS);
+        if (auto [idx, startPeriod] = badgeAssignment.get(DETAILS, START_PERIOD); startPeriod)
+        {
+            eosio::check(std::holds_alternative<eosio::checksum256>(startPeriod->value),
+                         "fatal error: expected to be a checksum256 type: " + startPeriod->label);
+
+            // verifies the period as valid
+            Period period(&m_dao, std::get<eosio::checksum256>(startPeriod->value));
+        } else {
+            // default START_PERIOD to next period
+            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao).next().getHash()});
+        }
+
+        // PERIOD_COUNT - number of periods the assignment is valid for
+        if (auto [idx, periodCount] = badgeAssignment.get(DETAILS, PERIOD_COUNT); periodCount)
+        {
+            eosio::check(std::holds_alternative<int64_t>(periodCount->value),
+                         "fatal error: expected to be an int64 type: " + periodCount->label);
+
+            eosio::check(std::get<int64_t>(periodCount->value) < 26, PERIOD_COUNT + 
+                string(" must be less than 26. You submitted: ") + std::to_string(std::get<int64_t>(periodCount->value)));
+
+        } else {
+            // default PERIOD_COUNT to 13
+            ContentWrapper::insertOrReplace(*detailsGroup, Content{PERIOD_COUNT, 13});
+        }
     }
 
     void BadgeAssignmentProposal::passImpl(Document &proposal)

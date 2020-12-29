@@ -10,7 +10,7 @@
 namespace hypha
 {
     eosio::checksum256 getRoot(const eosio::name &contract);
-    std::vector<ContentGroup> getRootContent(const eosio::name &contract);
+    ContentGroups getRootContent(const eosio::name &contract);
     eosio::asset adjustAsset(const eosio::asset &originalAsset, const float &adjustment);
     float getSeedsPriceUsd(const eosio::time_point &price_time_point);
     float getSeedsPriceUsd();

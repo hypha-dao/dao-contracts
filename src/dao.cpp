@@ -17,7 +17,7 @@ namespace hypha
 {
    void dao::propose(const name &proposer,
                      const name &proposal_type,
-                     std::vector<ContentGroup> &content_groups)
+                     ContentGroups &content_groups)
    {
       eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
@@ -308,6 +308,30 @@ namespace hypha
       }
    }
 
+   void dao::addmember(const eosio::name &member)
+   {
+      eosio::require_auth(get_self());
+
+      Migration migration(*this);
+      migration.addMemberToTable(member);
+   }
+
+   void dao::migratemem(const eosio::name &member)
+   {
+      eosio::require_auth(get_self());
+
+      Migration migration(*this);
+      migration.migrateMember(member);
+   }
+
+   void dao::addapplicant(const eosio::name &applicant, const std::string content)
+   {
+      eosio::require_auth(get_self());
+
+      Migration migration(*this);
+      migration.addApplicant(applicant, content);
+   }
+
    void dao::createroot(const std::string &notes)
    {
       require_auth(get_self());
@@ -315,8 +339,17 @@ namespace hypha
       Document rootDoc(get_self(), get_self(), getRootContent(get_self()));
 
       // Create the settings document as well and add an edge to it
-      std::vector<ContentGroup> settingCgs{{Content(CONTENT_GROUP_LABEL, SETTINGS),
-                                Content(ROOT_NODE, readableHash(rootDoc.getHash()))}};
+      ContentGroups settingCgs{
+         ContentGroup {
+            Content(CONTENT_GROUP_LABEL, SETTINGS),
+            Content(ROOT_NODE, readableHash(rootDoc.getHash()))
+         },
+         ContentGroup {
+            Content(CONTENT_GROUP_LABEL, SYSTEM),
+            Content(TYPE, common::SETTINGS_EDGE),
+            Content(NODE_LABEL, "Settings")
+         }
+      };
 
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), rootDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
@@ -324,6 +357,8 @@ namespace hypha
 
    void dao::migrate(const eosio::name &scope, const uint64_t &id)
    {
+      require_auth(get_self());
+
       if (scope == common::ROLE_NAME)
       {
          Migration migration(*this);
@@ -331,18 +366,55 @@ namespace hypha
       }
    }
 
-    void dao::reset4test(const std::string &notes)
+   void dao::migrateconfig(const std::string &notes)
    {
-      require_auth (get_self());
+      require_auth(get_self());
+      Migration migration(*this);
+      migration.migrateConfig();
+   }
+
+   void dao::reset4test(const std::string &notes)
+   {
+      require_auth(get_self());
       Migration migration(*this);
       migration.reset4test();
    }
 
    void dao::eraseall(const std::string &notes)
    {
-      require_auth (get_self());
+      require_auth(get_self());
       Migration migration(*this);
-      migration.eraseAll();
+      migration.eraseAll(true);
+   }
+
+   void dao::eraseobjs(const eosio::name &scope)
+   {
+      require_auth(get_self());
+      Migration migration(*this);
+      migration.eraseAllObjects(scope);
+   }
+
+   void dao::setalert(const eosio::name &level, const std::string &content)
+   {
+      Document alert(get_self(), get_self(),
+                     ContentGroups{
+                         ContentGroup{
+                             Content(CONTENT_GROUP_LABEL, DETAILS),
+                             Content(LEVEL, level),
+                             Content(CONTENT, content)},
+                         ContentGroup{
+                             Content(CONTENT_GROUP_LABEL, SYSTEM),
+                             Content(TYPE, common::ALERT),
+                             Content(NODE_LABEL, "Alert : " + level.to_string())}});
+
+      Edge::write(get_self(), get_self(), getRoot(get_self()), alert.getHash(), common::ALERT);
+   }
+
+   void dao::remalert(const string &notes)
+   {
+      Edge alertEdge = Edge::get(get_self(), getRoot(get_self()), common::ALERT);
+      Document alert(get_self(), alertEdge.getToNode());
+      getGraph().eraseDocument(alert.getHash());
    }
 
    DocumentGraph &dao::getGraph()

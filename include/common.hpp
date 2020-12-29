@@ -56,6 +56,9 @@ namespace common
     static constexpr name PAID = name ("paid");
     static constexpr name CLAIMED = name ("claimed");
 
+    // document types
+    static constexpr name ALERT = name ("alert");
+
     // graph edges hanging off of primary DHO node
     static constexpr name BADGE_NAME = name("badge");
     static constexpr name PROPOSAL = name("proposal");
@@ -80,6 +83,7 @@ namespace common
 #define DESCRIPTION "description"
 #define CONTENT "content"
 #define ICON "icon"
+#define LEVEL "level"
 
 #define START_PERIOD "start_period"
 #define END_PERIOD "end_period"

@@ -24,9 +24,9 @@ namespace hypha
         return Member(contract, Member::calcHash(member));
     }
 
-    std::vector<ContentGroup> Member::defaultContent(const eosio::name &member)
+    ContentGroups Member::defaultContent(const eosio::name &member)
     {
-        return std::vector<ContentGroup>{
+        return ContentGroups{
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, DETAILS),
                 Content(MEMBER_STRING, member)},
@@ -75,6 +75,12 @@ namespace hypha
 
         Edge applicantRootEdge = Edge::get(getContract(), getHash(), root, common::APPLICANT_OF);
         applicantRootEdge.erase();
+
+        eosio::action(
+			eosio::permission_level{getContract(), name("active")},
+			name("eosio"), name("buyram"),
+			std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE))
+			.send();
     }
 
     eosio::name Member::getAccount()

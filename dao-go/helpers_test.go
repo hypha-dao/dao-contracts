@@ -240,17 +240,6 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content
 	return role
 }
 
-// Object struct
-type Object struct {
-	ID         uint64            `json:"id"`
-	Scope      eos.Name          `json:"scope"`
-	Names      []dao.NameKV      `json:"names"`
-	Strings    []dao.StringKV    `json:"strings"`
-	Assets     []dao.AssetKV     `json:"assets"`
-	TimePoints []dao.TimePointKV `json:"time_points"`
-	Ints       []dao.IntKV       `json:"ints"`
-}
-
 func loadSeedsTablesFromProd(t *testing.T, env *Environment, prodEndpoint string) {
 	prodApi := *eos.New(prodEndpoint)
 

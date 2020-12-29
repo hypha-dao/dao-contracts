@@ -293,16 +293,6 @@ func ProposeBadgeAssignment(ctx context.Context, api *eos.API,
 			}},
 	})
 
-	// inject the period hash in the first content group of the document
-	badgeAssignmentDoc.ContentGroups[0] = append(badgeAssignmentDoc.ContentGroups[0], docgraph.ContentItem{
-		Label: "start_period",
-		Value: &docgraph.FlexValue{
-			BaseVariant: eos.BaseVariant{
-				TypeID: docgraph.GetVariants().TypeID("checksum256"),
-				Impl:   startPeriod,
-			}},
-	})
-
 	// inject the assignee in the first content group of the document
 	badgeAssignmentDoc.ContentGroups[0] = append(badgeAssignmentDoc.ContentGroups[0], docgraph.ContentItem{
 		Label: "assignee",

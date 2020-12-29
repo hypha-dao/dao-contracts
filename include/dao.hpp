@@ -26,7 +26,7 @@ namespace hypha
 
       DECLARE_DOCUMENT_GRAPH(dao)
 
-      ACTION propose(const name &proposer, const name &proposal_type, std::vector<ContentGroup> &content_groups);
+      ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION closedocprop(const checksum256 &proposal_hash);
       ACTION setsetting(const string &key, const Content::FlexValue &value);
       ACTION remsetting(const string &key);
@@ -39,6 +39,11 @@ namespace hypha
       ACTION apply(const eosio::name &applicant, const std::string &content);
       ACTION enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content);
 
+      // ACTION suspend (const eosio::name &proposer, const eosio::checksum256 &hash);
+
+      ACTION setalert(const eosio::name &level, const std::string &content);
+      ACTION remalert(const std::string &notes);
+
       // migration only
       ACTION createobj(const uint64_t &id,
                        const name &scope,
@@ -47,8 +52,6 @@ namespace hypha
                        std::map<string, asset> assets,
                        std::map<string, eosio::time_point> time_points,
                        std::map<string, uint64_t> ints);
-
-      ACTION migrate (const eosio::name& scope, const uint64_t& id);
 
       DocumentGraph &getGraph();
       Document getSettingsDocument();
@@ -85,10 +88,19 @@ namespace hypha
          return def;
       }
 
-      // ADMIN/SETUP only
+      // migration actions
+      ACTION migrate (const eosio::name& scope, const uint64_t& id);
+      ACTION migrateconfig (const std::string &notes);
       ACTION createroot(const std::string &notes);
+      ACTION migratemem (const eosio::name &member);
+      
+      // test setup actions 
       ACTION reset4test (const std::string &notes);
       ACTION eraseall (const std::string &notes);
+      ACTION eraseobjs (const eosio::name &scope);
+      ACTION addmember (const eosio::name &member);
+      ACTION addapplicant (const eosio::name &applicant, const std::string content);
+
       void setSetting(const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,

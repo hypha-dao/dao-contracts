@@ -11,13 +11,13 @@ namespace hypha
 
     eosio::checksum256 getRoot(const eosio::name &contract)
     {
-        std::vector<ContentGroup> cgs = getRootContent (contract);
+        ContentGroups cgs = getRootContent (contract);
         return Document::hashContents(cgs);
     }
 
-    std::vector<ContentGroup> getRootContent(const eosio::name &contract)
+    ContentGroups getRootContent(const eosio::name &contract)
     {
-        std::vector<ContentGroup> cgs ({
+        ContentGroups cgs ({
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, DETAILS), 
                 Content(ROOT_NODE, contract)}, 

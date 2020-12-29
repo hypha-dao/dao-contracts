@@ -43,13 +43,17 @@ namespace hypha
                             memo))
             .send();
 
-        std::vector<ContentGroup> recieptCgs{
+        ContentGroups recieptCgs{
             {Content(CONTENT_GROUP_LABEL, DETAILS),
              Content(RECIPIENT, recipient),
              Content(AMOUNT, updatedQuantity),
              Content(MEMO, memo),
              Content(PAYMENT_TYPE, ESCROW_SEEDS_AMOUNT),
-             Content(EVENT, eosio::name("golive"))}};
+             Content(EVENT, eosio::name("golive"))},
+            {Content(CONTENT_GROUP_LABEL, SYSTEM),
+             Content(TYPE, common::PAYMENT),
+             Content(NODE_LABEL, "Escrow " + quantity.to_string() + " to " + recipient.to_string())}
+        };
 
         return Document(m_dao.get_self(), m_dao.get_self(), recieptCgs);
     }

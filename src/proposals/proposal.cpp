@@ -18,22 +18,23 @@ namespace hypha
     Proposal::Proposal(dao &contract) : m_dao{contract} {}
     Proposal::~Proposal() {}
 
-    Document Proposal::propose(const eosio::name &proposer, std::vector<ContentGroup> &contentGroups)
+    Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups)
     {
         eosio::check(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
-        contentGroups.push_back(createSystemGroup(proposer,
-                                                  getProposalType(),
-                                                  proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>(),
-                                                  proposalContent.getOrFail(DETAILS, DESCRIPTION)->getAs<std::string>(),
-                                                  getBallotContent(proposalContent)));
+        contentGroups.push_back(makeSystemGroup(proposer,
+                                                getProposalType(),
+                                                proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>(),
+                                                proposalContent.getOrFail(DETAILS, DESCRIPTION)->getAs<std::string>(),
+                                                getBallotContent(proposalContent)));
+
+        Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
         // creates the document, or the graph NODE
         eosio::checksum256 memberHash = Member::calcHash(proposer);
         eosio::checksum256 root = getRoot(m_dao.get_self());
-        Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
         // the proposer OWNS the proposal; this creates the graph EDGE
         Edge::write(m_dao.get_self(), proposer, memberHash, proposalNode.getHash(), common::OWNS);
@@ -80,24 +81,19 @@ namespace hypha
             .send();
     }
 
-    ContentGroup Proposal::createSystemGroup(const name &proposer,
-                                             const name &proposal_type,
-                                             const string &decide_title,
-                                             const string &decide_desc,
-                                             const string &decide_content)
-
+    ContentGroup Proposal::makeSystemGroup(const name &proposer,
+                                           const name &proposal_type,
+                                           const string &decide_title,
+                                           const string &decide_desc,
+                                           const string &decide_content)
     {
-        // create the system content_group and populate with system details
-        name ballot_id = registerBallot(proposer, decide_title, decide_desc, decide_content);
-
-        ContentGroup system_cg = ContentGroup{};
-        system_cg.push_back(Content(CONTENT_GROUP_LABEL, SYSTEM));
-        system_cg.push_back(Content(CLIENT_VERSION, m_dao.getSettingOrDefault<std::string>(CLIENT_VERSION, DEFAULT_VERSION)));
-        system_cg.push_back(Content(CONTRACT_VERSION, m_dao.getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)));
-        system_cg.push_back(Content(BALLOT_ID, ballot_id));
-        system_cg.push_back(Content(NODE_LABEL, decide_title));
-        system_cg.push_back(Content(TYPE, proposal_type));
-        return system_cg;
+        return ContentGroup{
+            Content(CONTENT_GROUP_LABEL, SYSTEM),
+            Content(CLIENT_VERSION, m_dao.getSettingOrDefault<std::string>(CLIENT_VERSION, DEFAULT_VERSION)),
+            Content(CONTRACT_VERSION, m_dao.getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)),
+            Content(BALLOT_ID, registerBallot(proposer, decide_title, decide_desc, decide_content)),
+            Content(NODE_LABEL, decide_title),
+            Content(TYPE, proposal_type)};
     }
 
     bool Proposal::didPass(const name &ballot_id)

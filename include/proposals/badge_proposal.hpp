@@ -16,7 +16,7 @@ namespace hypha {
     public:
         using Proposal::Proposal;
 
-        Document propose(const eosio::name &proposer, std::vector<ContentGroup> &contentGroups);
+        Document propose(const eosio::name &proposer, ContentGroups &contentGroups);
         void close(Document &proposal);
 
     protected:

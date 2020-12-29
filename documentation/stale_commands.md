@@ -1,4 +1,26 @@
+
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"paused", "value":["int64","0"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"seeds_token_contract", "value":["name","token.seeds"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"voting_duration_sec", "value":["int64",600]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"seeds_deferral_factor_x100", "value":["int64","100"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"telos_decide_contract", "value":["name","td1.hypha"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"husd_token_contract", "value":["name","husd.hypha"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"hypha_token_contract", "value":["name","token1.hypha"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"seeds_escrow_contract", "value":["name","escro1.hypha"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"publisher_contract", "value":["name","publs11.hypha"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"treasury_contract", "value":["name","bank1.hypha"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"last_ballot_id", "value":["name","hypha1.....1"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"hypha_deferral_factor_x100", "value":["int64","25"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"seeds_deferral_factor_x100", "value":["int64","100"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"client_version", "value":["string","0.2.0 pre-release"]}' -p dao1.hypha
+	// // eosc -u https://testnet.telos.caleos.io --vault-file ../eosc-testnet-vault.json tx create dao1.hypha setsetting '{"key":"contract_version", "value":["string","0.2.0 pre-release"]}' -p dao1.hypha
+
+
+
+
 # From telos-test.sh
+
+
 NEW TEST NET: 
 
 Private key: 5HwnoWBuuRmNdcqwBzd1LABFRKnTk2RY2kUMYKkZfF8tKodubtK

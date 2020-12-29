@@ -22,6 +22,17 @@ import (
 // 	Count uint64   `json:"count"`
 // }
 
+// Object struct
+type Object struct {
+	ID         uint64        `json:"id"`
+	Scope      eos.Name      `json:"scope"`
+	Names      []NameKV      `json:"names"`
+	Strings    []StringKV    `json:"strings"`
+	Assets     []AssetKV     `json:"assets"`
+	TimePoints []TimePointKV `json:"time_points"`
+	Ints       []IntKV       `json:"ints"`
+}
+
 // SeedsExchConfigTable ...
 type SeedsExchConfigTable struct {
 	SeedsPerUsd   eos.Asset `json:"seeds_per_usd"`

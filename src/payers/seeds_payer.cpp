@@ -22,13 +22,9 @@ namespace hypha
             std::make_tuple(m_dao.get_self(), recipient, quantity, memo))
             .send();
 
-        std::vector<ContentGroup> recieptCgs{
-            {Content(CONTENT_GROUP_LABEL, DETAILS),
-             Content(RECIPIENT, recipient),
-             Content(AMOUNT, quantity),
-             Content(MEMO, memo)}};
-
-        return Document(m_dao.get_self(), m_dao.get_self(), recieptCgs);
+        return Document(m_dao.get_self(),
+                        m_dao.get_self(),
+                        defaultReceipt(recipient, quantity, memo));
     }
 
 } // namespace hypha

@@ -32,8 +32,11 @@ namespace hypha
 
         //  member          ---- owns       ---->   roleDocument
         //  roleDocument    ---- ownedBy    ---->   member
-        Edge::write(m_dao.get_self(), m_dao.get_self(), Member::calcHash(o_itr_role->names.at("owner")), roleDocument.getHash(), common::OWNS);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), roleDocument.getHash(), Member::calcHash(o_itr_role->names.at("owner")), common::OWNED_BY);
+
+        auto owner = hypha::Member::get(m_dao.get_self(), o_itr_role->names.at("owner"));
+
+        Edge::write(m_dao.get_self(), m_dao.get_self(), owner.getHash(), roleDocument.getHash(), common::OWNS);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), roleDocument.getHash(), owner.getHash(), common::OWNED_BY);
         Edge::write(m_dao.get_self(), m_dao.get_self(), getRoot(m_dao.get_self()), roleDocument.getHash(), common::ROLE_NAME);
 
         // add the cross-reference to our temporary migration lookup table
@@ -49,8 +52,116 @@ namespace hypha
         o_t_role.erase(o_itr_role);
     }
 
-    void Migration::eraseAll()
+    void Migration::addMemberToTable(const eosio::name &member)
     {
+        Migration::member_table m_t(m_dao.get_self(), m_dao.get_self().value);
+        if (m_t.find(member.value) != m_t.end())
+        {
+            return;
+        }
+
+        m_t.emplace(m_dao.get_self(), [&](auto &m) {
+            m.member = member;
+        });
+    }
+
+    void Migration::addApplicant(const eosio::name &applicant, const std::string content)
+    {
+        Migration::applicant_table a_t(m_dao.get_self(), m_dao.get_self().value);
+        if (a_t.find(applicant.value) != a_t.end())
+        {
+            return;
+        }
+
+        a_t.emplace(m_dao.get_self(), [&](auto &a) {
+            a.applicant = applicant;
+            a.content = content;
+        });
+    }
+
+    int Migration::defSetSetting(const string &key, const Content::FlexValue &value, int senderId)
+    {
+        eosio::transaction out{};
+        out.actions.emplace_back(
+            eosio::permission_level{m_dao.get_self(), name("active")},
+            m_dao.get_self(), name("setsetting"),
+            make_tuple(key, value));
+
+        out.delay_sec = 1;
+        out.send(senderId, m_dao.get_self());
+        return senderId;
+    }
+
+    void Migration::migrateConfig()
+    {
+        config_table config_s(m_dao.get_self(), m_dao.get_self().value);
+        Config c = config_s.get_or_create(m_dao.get_self(), Config());
+        int senderId = eosio::current_time_point().sec_since_epoch();
+
+        std::map<string, name>::const_iterator name_itr;
+        for (name_itr = c.names.begin(); name_itr != c.names.end(); ++name_itr)
+        {
+            defSetSetting(name_itr->first, name_itr->second, ++senderId);
+        }
+
+        std::map<string, asset>::const_iterator asset_itr;
+        for (asset_itr = c.assets.begin(); asset_itr != c.assets.end(); ++asset_itr)
+        {
+            defSetSetting(asset_itr->first, asset_itr->second, ++senderId);
+        }
+
+        std::map<string, string>::const_iterator string_itr;
+        for (string_itr = c.strings.begin(); string_itr != c.strings.end(); ++string_itr)
+        {
+            defSetSetting(string_itr->first, string_itr->second, ++senderId);
+        }
+
+        std::map<string, uint64_t>::const_iterator int_itr;
+        for (int_itr = c.ints.begin(); int_itr != c.ints.end(); ++int_itr)
+        {
+            defSetSetting(int_itr->first, int_itr->second, ++senderId);
+        }
+
+        std::map<string, time_point>::const_iterator time_point_itr;
+        for (time_point_itr = c.time_points.begin(); time_point_itr != c.time_points.end(); ++time_point_itr)
+        {
+            defSetSetting(time_point_itr->first, time_point_itr->second, ++senderId);
+        }
+        config_s.remove();
+    }
+
+    void Migration::migrateMember(const eosio::name &memberName)
+    {
+        eosio::require_auth(m_dao.get_self());
+
+        // create the member document
+        hypha::Member member(m_dao.get_self(), m_dao.get_self(), memberName);
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+
+        // create the new member edges
+        Edge::write(m_dao.get_self(), m_dao.get_self(), root, member.getHash(), common::MEMBER);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), member.getHash(), root, common::MEMBER_OF);
+
+        Migration::member_table m_t(m_dao.get_self(), m_dao.get_self().value);
+        auto m_itr = m_t.find(memberName.value);
+        eosio::check(m_itr != m_t.end(), "member not in members table: " + memberName.to_string());
+        m_t.erase(m_itr);
+    }
+
+    void Migration::eraseAllObjects(const eosio::name &scope)
+    {
+        Migration::object_table o_t(m_dao.get_self(), scope.value);
+        auto o_itr = o_t.begin();
+        while (o_itr != o_t.end())
+        {
+            o_itr = o_t.erase(o_itr);
+        }
+    }
+
+    void Migration::eraseAll(bool skipPeriods)
+    {
+        eosio::require_auth(m_dao.get_self());
+
         Edge::edge_table e_t(m_dao.get_self(), m_dao.get_self().value);
         auto e_itr = e_t.begin();
         while (e_itr != e_t.end())
@@ -81,18 +192,16 @@ namespace hypha
         ContentWrapper cw = settingsDocument.getContentWrapper();
         ContentGroup *settings = cw.getGroupOrFail("settings");
 
-        eraseAll();
+        eraseAll(true);
 
-        std::vector<ContentGroup> newSettingsCGS {
+        ContentGroups newSettingsCGS{
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, SYSTEM),
                 Content(TYPE, common::SETTINGS_EDGE),
-                Content(NODE_LABEL, "Settings")
-            },
-            *settings
-        };
+                Content(NODE_LABEL, "Settings")},
+            *settings};
 
-        Document updatedSettings (m_dao.get_self(), m_dao.get_self(), newSettingsCGS);
+        Document updatedSettings(m_dao.get_self(), m_dao.get_self(), newSettingsCGS);
         Document rootDocument(m_dao.get_self(), m_dao.get_self(), getRootContent(m_dao.get_self()));
         Edge::write(m_dao.get_self(), m_dao.get_self(), rootDocument.getHash(), updatedSettings.getHash(), common::SETTINGS_EDGE);
 
@@ -108,7 +217,7 @@ namespace hypha
                                     const map<string, time_point> time_points,
                                     const map<string, uint64_t> ints)
     {
-        std::vector<ContentGroup> contentGroups{};
+        ContentGroups contentGroups{};
 
         ContentGroup systemContentGroup{};
         systemContentGroup.push_back(Content(CONTENT_GROUP_LABEL, SYSTEM));

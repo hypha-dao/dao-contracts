@@ -18,7 +18,7 @@ namespace hypha
         Proposal(dao &contract);
         virtual ~Proposal();
 
-        Document propose(const eosio::name &proposer, std::vector<ContentGroup> &contentGroups);
+        Document propose(const eosio::name &proposer, ContentGroups &contentGroups);
 
         void close(Document &proposal);
 
@@ -36,7 +36,7 @@ namespace hypha
 
         virtual name getProposalType() = 0;
 
-        ContentGroup createSystemGroup(const name &proposer,
+        ContentGroup makeSystemGroup(const name &proposer,
                                        const name &proposal_type,
                                        const string &decide_title,
                                        const string &decide_desc,

@@ -23,7 +23,7 @@ namespace hypha
         void enroll (const eosio::name &enroller, const std::string &content);
 
     private: 
-        static std::vector<ContentGroup> defaultContent (const eosio::name &member);
+        static ContentGroups defaultContent (const eosio::name &member);
 
     };
 } // namespace hypha

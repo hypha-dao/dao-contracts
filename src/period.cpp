@@ -10,7 +10,7 @@ namespace hypha
                    const eosio::time_point &start_time,
                    const std::string &label)
         : Document(dao->get_self(), dao->get_self(),
-                   std::vector<ContentGroup>{
+                   ContentGroups{
                        ContentGroup{
                            Content(CONTENT_GROUP_LABEL, DETAILS),
                            Content(START_TIME, start_time),
