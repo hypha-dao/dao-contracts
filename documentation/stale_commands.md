@@ -86,6 +86,16 @@ cleos -u https://test.telos.kitchen push action trailservice castvote '["johnnyh
 cleos -u https://test.telos.kitchen push action dao.hypha closeprop '["roles", 26]' -p haydenhypha1
 
 
+cleos -u https://testnet.telos.caleos.io push action trailservice regvoter '["mem1.hypha", "2,HVOICE", null]' -p mem1.hypha
+cleos -u https://testnet.telos.caleos.io push action trailservice regvoter '["mem2.hypha", "2,HVOICE", null]' -p mem2.hypha
+cleos -u https://testnet.telos.caleos.io push action trailservice regvoter '["mem3.hypha", "2,HVOICE", null]' -p mem3.hypha
+cleos -u https://testnet.telos.caleos.io push action trailservice regvoter '["mem4.hypha", "2,HVOICE", null]' -p mem4.hypha
+cleos -u https://testnet.telos.caleos.io push action trailservice regvoter '["mem5.hypha", "2,HVOICE", null]' -p mem5.hypha
+
+cleos -u https://testnet.telos.caleos.io push action dao.hypha apply '["johnnyhypha1", "Enroll me please"]' -p johnnyhypha1
+cleos -u https://testnet.telos.caleos.io push action dao.hypha enroll '["dao.hypha", "johnnyhypha1", "enrolled"]' -p dao.hypha
+
+
 # You can run these statements over and over because the commands end with the same state as the beginning
 # The applicant must run these two actions (preferably as the same transaction)
 cleos -u https://test.telos.kitchen push action trailservice regvoter '["hyphalondon2", "0,HVOICE", null]' -p hyphalondon2

@@ -1,23 +1,29 @@
 #pragma once
 #include <eosio/name.hpp>
 #include <eosio/crypto.hpp>
+#include <eosio/multi_index.hpp>
+#include <eosio/singleton.hpp>
 
-#include <dao.hpp>
+// #include <dao.hpp>
 #include <document_graph/document.hpp>
 
 using eosio::asset;
+using eosio::multi_index;
 using eosio::name;
+using eosio::singleton;
 using eosio::time_point;
 using std::map;
 
 namespace hypha
 {
+    class dao;
+
     class Migration
     {
     public:
-        Migration(dao &dao);
+        Migration(dao *dao);
 
-      typedef std::variant<name, string, asset, time_point, uint64_t> flexvalue1;
+        typedef std::variant<name, string, asset, time_point, uint64_t> flexvalue1;
 
         struct [[eosio::table, eosio::contract("dao")]] Object
         {
@@ -66,15 +72,15 @@ namespace hypha
             map<string, eosio::transaction> trxs;
             map<string, float> floats;
         };
-        typedef eosio::singleton<name("config"), Config> config_table;
+        typedef singleton<name("config"), Config> config_table;
         typedef multi_index<name("config"), Config> config_table_placeholder;
 
-        struct [[eosio::table, eosio::contract("dao")]] Member
+        struct [[eosio::table, eosio::contract("dao")]] MemberRecord
         {
             name member;
             uint64_t primary_key() const { return member.value; }
         };
-        typedef multi_index<name("members"), Member> member_table;
+        typedef multi_index<name("members"), MemberRecord> member_table;
 
         struct [[eosio::table, eosio::contract("dao")]] Applicant
         {
@@ -88,23 +94,19 @@ namespace hypha
         };
         typedef multi_index<name("applicants"), Applicant> applicant_table;
 
+        // scoped by scope from object_table
         struct [[eosio::table, eosio::contract("dao")]] XReference
         {
-            // table columns
             uint64_t id;
-            eosio::name object_scope;
-            uint64_t object_id;
-            eosio::checksum256 document_hash;
+            eosio::checksum256 hash;
 
             uint64_t primary_key() const { return id; }
-            uint64_t by_scope() const { return object_scope.value; }
-            uint64_t by_object() const { return object_id; }
-            eosio::checksum256 by_hash() const { return document_hash; }
+            eosio::checksum256 by_hash() const { return hash; }
         };
         typedef eosio::multi_index<eosio::name("xref"), XReference,
-                                   eosio::indexed_by<eosio::name("byhash"), eosio::const_mem_fun<XReference, eosio::checksum256, &XReference::by_hash>>,
-                                   eosio::indexed_by<eosio::name("byscope"), eosio::const_mem_fun<XReference, uint64_t, &XReference::by_scope>>,
-                                   eosio::indexed_by<eosio::name("byobjectid"), eosio::const_mem_fun<XReference, uint64_t, &XReference::by_object>>>
+                                   eosio::indexed_by<eosio::name("byhash"),
+                                                     eosio::const_mem_fun<XReference,
+                                                                          eosio::checksum256, &XReference::by_hash>>>
             XReferenceTable;
 
         struct [[eosio::table, eosio::contract("dao")]] AssignmentPayout
@@ -136,16 +138,18 @@ namespace hypha
         };
         typedef multi_index<name("debugs"), Debug> debug_table;
 
-        struct [[eosio::table, eosio::contract("dao")]] Period
+        struct [[eosio::table, eosio::contract("dao")]] PeriodRecord
         {
             uint64_t period_id;
             time_point start_date;
             time_point end_date;
             string phase;
+            string label;
+            string readable;
 
             uint64_t primary_key() const { return period_id; }
         };
-        typedef multi_index<name("periods"), Period> period_table;
+        typedef multi_index<name("periods"), PeriodRecord> period_table;
 
         struct [[eosio::table, eosio::contract("dao")]] Payment
         {
@@ -168,11 +172,16 @@ namespace hypha
                             eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
             payment_table;
 
-        void migrateConfig ();
+        void migrateConfig();
         int defSetSetting(const string &key, const Content::FlexValue &value, int senderId);
         void migrateRole(const uint64_t &roleId);
+        void migrateAssignment(const uint64_t &assignmentId);
         void migrateMember(const eosio::name &memberName);
+        void migratePeriod(const uint64_t &id);
+        void migrateAssPayout (const uint64_t &ass_payout_id);
+        ContentGroups newMemo(const std::string memo);
 
+        void newXRef(eosio::checksum256 hash, eosio::name scope, uint64_t id);
         void newObject(const uint64_t &id,
                        const name &scope,
                        map<string, name> names,
@@ -182,22 +191,43 @@ namespace hypha
                        map<string, uint64_t> ints);
 
         void addMemberToTable(const eosio::name &memberName);
+        void addPeriodToTable(const uint64_t &id,
+                              const time_point &start_date,
+                              const time_point &end_date,
+                              const string &phase,
+                              const string &readable,
+                              const string &label);
+
+        void addAssPayoutToTable(const uint64_t &ass_payment_id,
+                                 const uint64_t &assignment_id,
+                                 const name &recipient,
+                                 uint64_t period_id,
+                                 std::vector<eosio::asset> payments,
+                                 time_point payment_date);
+
         void addApplicant(const eosio::name &applicant, const std::string content);
 
         void reset4test();
-        void eraseAll(bool skipPeriods);
+        void eraseGraph();
+        void eraseAssPayouts();
+        void erasePeriods();
+        void eraseXRefs(const eosio::name &scope);
+        // void eraseAll(bool );
         void eraseAllObjects(const eosio::name &scope);
 
-    private:
-        Document newDocument(const uint64_t id,
-                             const name scope,
-                             const time_point createdDate,
-                             const map<string, name> names,
-                             const map<string, string> strings,
-                             const map<string, asset> assets,
-                             const map<string, time_point> time_points,
-                             const map<string, uint64_t> ints);
+        // void getObject (eosio::checksum256 hash);
+        eosio::checksum256 getXRef(eosio::name scope, uint64_t id);
 
-        dao &m_dao;
+        dao *m_dao;
+
+    private:
+        ContentGroups newContentGroups(const uint64_t id,
+                                       const name scope,
+                                       const time_point createdDate,
+                                       const map<string, name> names,
+                                       const map<string, string> strings,
+                                       const map<string, asset> assets,
+                                       const map<string, time_point> time_points,
+                                       const map<string, uint64_t> ints);
     };
 } // namespace hypha
