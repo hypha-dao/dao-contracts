@@ -299,17 +299,18 @@ cleos -u https://test.telos.kitchen push action hyphadaobal1 reset '[]' -p hypha
 cleos -u https://test.telos.kitchen push action hyphadaobali setconfig '["token.hypha", "token.hypha"]' -p hyphadaobali
 
 
-cleos -u https://api.telos.kitchen push action eosio updateauth '{
-    "account": "dao.hypha",
-    "permission": "enrollers",
-    "parent": "active",
+
+cleos -u https://eos.greymass.com push action eosio updateauth '{
+    "account": "thehyphabank",
+    "permission": "active",
+    "parent": "owner",
     "auth": {
         "keys": [],
-        "threshold": 1,
+        "threshold": 2,
         "accounts": [
             {
                 "permission": {
-                    "actor": "cometogether",
+                    "actor": "tchopeosacc1",
                     "permission": "active"
                 },
                 "weight": 1
@@ -321,23 +322,16 @@ cleos -u https://api.telos.kitchen push action eosio updateauth '{
                 },
                 "weight": 1
             },
-             {
+            {
                 "permission": {
-                    "actor": "joachimstroh",
+                    "actor": "illum1nation",
                     "permission": "active"
                 },
                 "weight": 1
             },
              {
                 "permission": {
-                    "actor": "illumination",
-                    "permission": "active"
-                },
-                "weight": 1
-            },
-             {
-                "permission": {
-                    "actor": "thealchemist",
+                    "actor": "onealchemist",
                     "permission": "active"
                 },
                 "weight": 1
@@ -345,7 +339,46 @@ cleos -u https://api.telos.kitchen push action eosio updateauth '{
         ],
         "waits": []
     }
-}' -p bank.hypha@owner
+}' -p thehyphabank@owner
+
+
+cleos -u https://node1.eosphere.io multisig propose sendeos '[
+        {
+                "actor": "amazonjungle",
+                "permission": "active"
+        },
+        {
+                "actor": "illum1nation",
+                "permission": "active"
+        },
+        {
+                "actor": "onealchemist",
+                "permission": "active"
+        },
+        {
+                "actor": "sevenflash42",
+                "permission": "active"
+        },
+        {
+                "actor": "tchopeosacc1",
+                "permission": "active"
+        },
+        {
+                "actor": "thehyphabank",
+                "permission": "active"
+        }
+        ]' '[
+        {
+                "actor": "thehyphabank",
+                "permission": "active"
+        }]' eosio.token transfer '
+                {
+                        "from":"thehyphabank",
+                        "to":"chrisaikieos",
+                        "quantity":"195.4225 EOS",
+                        "memo":"prop id #202 christelos55 USD 555.00 EOS 214.2857"
+        }' thehyphabank 72 -p thehyphabank@owner
+
 
 cleos -u https://test.telos.kitchen push action eosio updateauth '{
     "account": "varexrounds2",

@@ -10,12 +10,22 @@ import (
 	"github.com/eoscanada/eos-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"github.com/schollz/progressbar/v3"
+	"github.com/spf13/viper"
 )
 
 func defaultPause() time.Duration {
-	return time.Millisecond * 250
+	if viper.IsSet("pause") {
+		return viper.GetDuration("pause")
+	}
+	return time.Second
 }
 
+func defaultPeriodDuration() time.Duration {
+	if viper.IsSet("periodDuration") {
+		return viper.GetDuration("periodDuration")
+	}
+	return time.Second * 6
+}
 func getAssPayoutRange(ctx context.Context, api *eos.API, contract eos.AccountName, id, count int) ([]assPayoutIn, bool, error) {
 	var records []assPayoutIn
 	var request eos.GetTableRowsRequest
@@ -109,19 +119,51 @@ func pause(seconds time.Duration, headline, prefix string) {
 	fmt.Println()
 }
 
-// GetObjects ...
-func getLegacyObjects(ctx context.Context, api *eos.API, contract eos.AccountName, scope eos.Name) []Object {
+func getLegacyObjectsRange(ctx context.Context, api *eos.API, contract eos.AccountName, scope eos.Name, id, count int) ([]Object, bool, error) {
 
 	var objects []Object
 	var request eos.GetTableRowsRequest
+	request.LowerBound = strconv.Itoa(id)
 	request.Code = string(contract)
 	request.Scope = string(scope)
 	request.Table = "objects"
-	request.Limit = 10000
+	request.Limit = uint32(count)
 	request.JSON = true
-	response, _ := api.GetTableRows(ctx, request)
-	response.JSONToStructs(&objects)
-	return objects
+	response, err := api.GetTableRows(ctx, request)
+	if err != nil {
+		return []Object{}, false, fmt.Errorf("get table rows %v", err)
+	}
+
+	err = response.JSONToStructs(&objects)
+	if err != nil {
+		return []Object{}, false, fmt.Errorf("json to structs %v", err)
+	}
+	return objects, response.More, nil
+}
+
+func getLegacyObjects(ctx context.Context, api *eos.API, contract eos.AccountName, scope eos.Name) ([]Object, error) {
+
+	var allObjects []Object
+
+	cursor := 0
+	batchSize := 45
+
+	batch, more, err := getLegacyObjectsRange(ctx, api, contract, scope, cursor, batchSize)
+	if err != nil {
+		return []Object{}, fmt.Errorf("json to structs %v", err)
+	}
+	allObjects = append(allObjects, batch...)
+
+	for more {
+		cursor += batchSize
+		batch, more, err = getLegacyObjectsRange(ctx, api, contract, scope, cursor, batchSize)
+		if err != nil {
+			return []Object{}, fmt.Errorf("json to structs %v", err)
+		}
+		allObjects = append(allObjects, batch...)
+	}
+
+	return allObjects, nil
 }
 
 type memberRecord struct {
@@ -180,10 +222,11 @@ func EraseAllDocuments(ctx context.Context, api *eos.API, contract eos.AccountNa
 			_, err := eostest.ExecTrx(ctx, api, actions)
 			if err != nil {
 				// too many false positives
-				// fmt.Println("\nFailed to erase : ", document.Hash.String())
-				// fmt.Println(err)
+				fmt.Println("\nFailed to erase : ", document.Hash.String())
+				fmt.Println(err)
+			} else {
+				time.Sleep(defaultPause())
 			}
-			time.Sleep(defaultPause())
 		}
 		bar.Add(1)
 	}

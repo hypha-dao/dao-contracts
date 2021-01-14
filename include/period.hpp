@@ -27,6 +27,7 @@ namespace hypha
         eosio::time_point getEndTime();
         std::string getLabel();
         std::string getReadable();
+        std::string getReadableDate();
 
         std::string getNodeLabel();
 
@@ -35,6 +36,7 @@ namespace hypha
 
         Period next();
 
+        static Period asOf(dao *dao, eosio::time_point moment);
         static Period current(dao *dao);
         bool isEnd();
 

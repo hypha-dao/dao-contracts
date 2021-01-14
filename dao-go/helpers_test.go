@@ -307,7 +307,7 @@ func checkEdge(t *testing.T, env *Environment, fromEdge, toEdge docgraph.Documen
 func voteToPassTD(t *testing.T, env *Environment, ballot eos.Name) {
 	t.Log("Voting all members to 'pass' on ballot: " + ballot)
 
-	_, err := dao.TelosDecideVote(env.ctx, &env.api, env.TelosDecide, env.Whale.Member, ballot, eos.Name("pass"))
+	_, err := dao.TelosDecideVote(env.ctx, &env.api, env.TelosDecide, env.Alice.Member, ballot, eos.Name("pass"))
 	assert.NilError(t, err)
 
 	for _, member := range env.Members {

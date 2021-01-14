@@ -1,62 +1,25 @@
 ## Quick Start
-Currently, this repo is only used for unit and integration testing the DAO contracts.  
-
-### Dependencies
-
-#### TODO
-TODO: integrate contracts more cleanly as linked repositories or otherwise
+This folder/Go module is used for testing the DAO smart contracts and also serves as a primitive Go library for interacting with the DAO.
 
 Recommended setup:
 ```
 mkdir ~/dev/hypha && cd ~/dev/hypha
-git clone https://github.com/hypha-dao/eosio-contracts
-cd eosio-contracts
-cmake .
-make
-cd ..
-
-mkdir ~/dev/telosnetwork && cd ~/dev/telosnetwork
-git clone https://github.com/telosnetwork/telos-decide
-cd telos-decide/contracts
-cmake .
-make
-cd ../..
-
-git clone https://github.com/digital-scarcity/token
-cd token
-cmake .
-make 
-cd ..
-
-git clone https://github.com/hypha-dao/treasury-contracts
-cd treasury-contracts
-cmake .
-make
-cd ..
-
-git clone https://github.com/hypha-dao/monitor
-cd monitor
-cmake .
-make
-cd ..
-
-git clone https://github.com/hypha-dao/dao-contracts/dao-go
-cd dao-go
+git clone https://github.com/hypha-dao/dao-contracts
+cd dao-contracts
+mkdir build
+cmake ..
+make -j8s
+cd ../dao-go
 go test -v -timeout 0
 ```
+This file is used to start nodeos when running the Go tests. It should work if nodeos is in the path, but you should modify this to your environment.
 
-> NOTE: check lines 101-119 of ```environment_test.go``` to ensure paths seems accurate. This will be updated to be more developer friendly soon.
+```dao-go/nodeos.sh``` : current contents
 
-Update line 20 
-- Go 1.14+
-- eosio
-- Contracts: 
-    - https://github.com/hyphda-dao/eosio-contracts
-    - https://github.com/hypha-dao/treasury-contracts
-    - https://github.com/telosnetwork/telos-decide
-    - https://github.com/digital-scarcity/token
-    - https://github.com/hypha-dao/monitor
-
+```
+#!/bin/sh
+nodeos -e -p eosio --plugin eosio::producer_plugin  --max-transaction-time 300 --plugin eosio::producer_api_plugin --plugin eosio::chain_api_plugin --plugin eosio::http_plugin --plugin eosio::history_plugin --plugin eosio::history_api_plugin --filter-on='*' --access-control-allow-origin='*' --contracts-console --http-validate-host=false --verbose-http-errors --delete-all-blocks &> nodeos.log
+```
 
 ### Run tests
 

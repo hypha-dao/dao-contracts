@@ -133,8 +133,12 @@ namespace hypha
 
         while (counter < periodCount)
         {
+            eosio::print ("current time     : " + std::to_string(eosio::current_time_point().sec_since_epoch()) + "\n");
+            eosio::print ("start time       : " + std::to_string(period.getStartTime().sec_since_epoch()) + "\n");
+            eosio::print ("approved time    : " + std::to_string(getApprovedTime().sec_since_epoch()) + "\n");
+
             if (period.getStartTime().sec_since_epoch() >= getApprovedTime().sec_since_epoch() &&        // if period comes after assignment creation
-                period.getEndTime().sec_since_epoch() > eosio::current_time_point().sec_since_epoch() && // if period has lapsed
+                period.getEndTime().sec_since_epoch() <= eosio::current_time_point().sec_since_epoch() && // if period has lapsed
                 !isClaimed(&period))                                                                     // and not yet claimed
             {
                 return std::optional<Period>{period};

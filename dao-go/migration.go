@@ -46,8 +46,9 @@ func MigrateAssPayouts(ctx context.Context, api *eos.API, contract eos.AccountNa
 
 		_, err := eostest.ExecTrx(ctx, api, actions)
 		if err != nil {
-			fmt.Println("FAILED to migrate assignment pay: ", payoutIn.PaymentDate.Format("2006 Jan 02"), ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(payoutsIn)))
+			fmt.Println("\nFAILED to migrate assignment pay: ", payoutIn.PaymentDate.Format("2006 Jan 02"), ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(payoutsIn)))
 			fmt.Println(err)
+			fmt.Println()
 		}
 
 		bar.Add(1)
@@ -78,9 +79,10 @@ func MigratePeriods(ctx context.Context, api *eos.API, contract eos.AccountName)
 
 		_, err := eostest.ExecTrx(ctx, api, actions)
 		if err != nil {
-			panic(err)
+			fmt.Println("\nFAILED to migrate period: ", strconv.Itoa(int(period.PeriodID)))
+			fmt.Println(err)
+			fmt.Println()
 		}
-
 		bar.Add(1)
 		time.Sleep(defaultPause())
 	}
@@ -106,8 +108,9 @@ func MigrateMembers(ctx context.Context, api *eos.API, contract eos.AccountName)
 
 		_, err := eostest.ExecTrx(ctx, api, actions)
 		if err != nil {
-			fmt.Println("FAILED to migrate a member: ", memberRecord.MemberName, ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(memberRecords)))
+			fmt.Println("\n\nFAILED to migrate a member: ", memberRecord.MemberName, ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(memberRecords)))
 			fmt.Println(err)
+			fmt.Println()
 		}
 
 		bar.Add(1)
@@ -123,7 +126,7 @@ type migrate struct {
 // MigrateObjects ...
 func MigrateObjects(ctx context.Context, api *eos.API, contract eos.AccountName, scope eos.Name) {
 
-	objects := getLegacyObjects(ctx, api, contract, scope)
+	objects, _ := getLegacyObjects(ctx, api, contract, scope)
 
 	fmt.Println("\nMigrating " + string(scope) + " objects: " + strconv.Itoa(len(objects)))
 	bar := DefaultProgressBar(len(objects))
@@ -144,8 +147,9 @@ func MigrateObjects(ctx context.Context, api *eos.API, contract eos.AccountName,
 
 		_, err := eostest.ExecTrx(ctx, api, actions)
 		if err != nil {
-			fmt.Println("Failed to migrate : ", strconv.Itoa(int(object.ID)), ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(objects)))
+			fmt.Println("\n\nFailed to migrate : ", strconv.Itoa(int(object.ID)), ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(objects)))
 			fmt.Println(err)
+			fmt.Println()
 		}
 
 		bar.Add(1)

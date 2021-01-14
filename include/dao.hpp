@@ -51,7 +51,9 @@ namespace hypha
                        std::map<string, string> strings,
                        std::map<string, asset> assets,
                        std::map<string, eosio::time_point> time_points,
-                       std::map<string, uint64_t> ints);
+                       std::map<string, uint64_t> ints, 
+                       eosio::time_point created_date,
+                       eosio::time_point updated_date);
 
       DocumentGraph &getGraph();
       Document getSettingsDocument();
@@ -95,6 +97,7 @@ namespace hypha
       ACTION migratemem(const eosio::name &member);
       ACTION migrateper(const uint64_t id);
       ACTION migasspay(const uint64_t id);
+      ACTION cancel (const uint64_t senderid);
 
       // test setup actions
       ACTION reset4test(const std::string &notes);
@@ -102,7 +105,9 @@ namespace hypha
       ACTION erasepers(const std::string &notes);
       ACTION erasegraph(const std::string &notes);
       ACTION erasedoc (const eosio::checksum256 &hash);
-      ACTION eraseobjs(const eosio::name &scope);
+      ACTION eraseobj(const eosio::name &scope, const uint64_t &starting_id);
+      // ACTION eraseobjs(const eosio::name &scope);
+      ACTION eraseobjs(const eosio::name &scope, const uint64_t &starting_id, const uint64_t &batch_size, int senderId);
       ACTION addmember(const eosio::name &member);
       ACTION addapplicant(const eosio::name &applicant, const std::string content);
       ACTION addlegper(const uint64_t &id,

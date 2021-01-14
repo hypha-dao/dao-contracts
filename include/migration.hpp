@@ -174,38 +174,43 @@ namespace hypha
 
         void migrateConfig();
         int defSetSetting(const string &key, const Content::FlexValue &value, int senderId);
+        eosio::checksum256 getAccountHash (const eosio::name &account) ;
         void migrateRole(const uint64_t &roleId);
         void migrateAssignment(const uint64_t &assignmentId);
         void migrateMember(const eosio::name &memberName);
         void migratePeriod(const uint64_t &id);
         void migrateAssPayout (const uint64_t &ass_payout_id);
+        void migratePayout(const uint64_t &payoutId);
         ContentGroups newMemo(const std::string memo);
 
         void newXRef(eosio::checksum256 hash, eosio::name scope, uint64_t id);
-        void newObject(const uint64_t &id,
+        void addLegacyObject(const uint64_t &id,
                        const name &scope,
                        map<string, name> names,
                        map<string, string> strings,
                        map<string, asset> assets,
                        map<string, time_point> time_points,
-                       map<string, uint64_t> ints);
+                       map<string, uint64_t> ints, 
+                       time_point created_date, 
+                       time_point updated_date);
 
-        void addMemberToTable(const eosio::name &memberName);
-        void addPeriodToTable(const uint64_t &id,
+        void addLegacyMember(const eosio::name &memberName);
+        void addLegacyPeriod(const uint64_t &id,
                               const time_point &start_date,
                               const time_point &end_date,
                               const string &phase,
                               const string &readable,
                               const string &label);
 
-        void addAssPayoutToTable(const uint64_t &ass_payment_id,
+        void addLegacyAssPayout(const uint64_t &ass_payment_id,
                                  const uint64_t &assignment_id,
                                  const name &recipient,
                                  uint64_t period_id,
                                  std::vector<eosio::asset> payments,
                                  time_point payment_date);
 
-        void addApplicant(const eosio::name &applicant, const std::string content);
+        void migrateApplicant (const eosio::name &applicant);
+        void addLegacyApplicant(const eosio::name &applicant, const std::string content);
 
         void reset4test();
         void eraseGraph();

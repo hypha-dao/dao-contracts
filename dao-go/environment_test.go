@@ -41,7 +41,8 @@ type Environment struct {
 	SeedsExchange eos.AccountName
 	Events        eos.AccountName
 	TelosDecide   eos.AccountName
-	Whale         Member
+	Alice         Member
+	Bob           Member
 	Root          docgraph.Document
 
 	VotingDurationSeconds int64
@@ -82,7 +83,8 @@ func (e *Environment) String() string {
 	kvs["Escrow"] = string(e.SeedsEscrow)
 	kvs["Exchange"] = string(e.SeedsExchange)
 	kvs["Telos Decide"] = string(e.TelosDecide)
-	kvs["Whale"] = string(e.Whale.Member)
+	kvs["Alice"] = string(e.Alice.Member)
+	kvs["Bob"] = string(e.Bob.Member)
 	kvs["Voting Duration (s)"] = strconv.Itoa(int(e.VotingDurationSeconds))
 	kvs["HYPHA deferral X"] = strconv.Itoa(int(e.HyphaDeferralFactor))
 	kvs["SEEDS deferral X"] = strconv.Itoa(int(e.SeedsDeferralFactor))
@@ -99,6 +101,10 @@ func (e *Environment) String() string {
 }
 
 func SetupEnvironment(t *testing.T) *Environment {
+	return SetupEnvironmentWithFlags(t, true, true)
+}
+
+func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool) *Environment {
 
 	daoHome := ".."
 	daoPrefix := daoHome + "/build/dao/dao."
@@ -197,8 +203,6 @@ func SetupEnvironment(t *testing.T) *Environment {
 	assert.NilError(t, err)
 	loadSeedsTablesFromProd(t, &env, "https://api.telos.kitchen")
 
-	// loadObjectsFromProd(t, &env, "role", "https://api.telos.kitchen")
-
 	t.Log("Deploying Events contract to 		: ", env.Events)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.Events, monitorPrefix+"wasm", monitorPrefix+"abi")
 	assert.NilError(t, err)
@@ -250,9 +254,11 @@ func SetupEnvironment(t *testing.T) *Environment {
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "telos_decide_contract", env.TelosDecide)
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "last_ballot_id", "hypha......1")
 
-	t.Log("Adding "+strconv.Itoa(env.NumPeriods)+" periods with duration 		: ", env.PeriodDuration)
-	env.Periods, err = dao.AddPeriods(env.ctx, &env.api, env.DAO, env.Root.Hash, env.NumPeriods, env.PeriodDuration)
-	assert.NilError(t, err)
+	if addFakePeriods {
+		t.Log("Adding "+strconv.Itoa(env.NumPeriods)+" periods with duration 		: ", env.PeriodDuration)
+		env.Periods, err = dao.AddPeriods(env.ctx, &env.api, env.DAO, env.Root.Hash, env.NumPeriods, env.PeriodDuration)
+		assert.NilError(t, err)
+	}
 
 	// setup TLOS system contract
 	_, tlosToken, err := eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "eosio.token")
@@ -284,26 +290,27 @@ func SetupEnvironment(t *testing.T) *Environment {
 	_, err = dao.RegVoter(env.ctx, &env.api, env.TelosDecide, env.DAO)
 	assert.NilError(t, err)
 
-	daoTokens, _ := eos.NewAssetFromString("1.00 HVOICE")
-	_, err = dao.Mint(env.ctx, &env.api, env.TelosDecide, env.DAO, env.DAO, daoTokens)
-	assert.NilError(t, err)
-
-	whaleTokens, _ := eos.NewAssetFromString("100.00 HVOICE")
-	env.Whale, err = SetupMember(t, env.ctx, &env.api, env.DAO, env.TelosDecide, "whale", whaleTokens)
-	assert.NilError(t, err)
-
-	index := 1
-	for index < 5 {
-
-		memberNameIn := "member" + strconv.Itoa(index)
-
-		newMember, err := SetupMember(t, env.ctx, &env.api, env.DAO, env.TelosDecide, memberNameIn, daoTokens)
+	if addFakeMembers {
+		daoTokens, _ := eos.NewAssetFromString("1.00 HVOICE")
+		_, err = dao.Mint(env.ctx, &env.api, env.TelosDecide, env.DAO, env.DAO, daoTokens)
 		assert.NilError(t, err)
 
-		env.Members = append(env.Members, newMember)
-		index++
-	}
+		aliceTokens, _ := eos.NewAssetFromString("100.00 HVOICE")
+		env.Alice, err = SetupMember(t, env.ctx, &env.api, env.DAO, env.TelosDecide, "alice", aliceTokens)
+		assert.NilError(t, err)
 
+		index := 1
+		for index < 5 {
+
+			memberNameIn := "mem" + strconv.Itoa(index) + ".hypha"
+
+			newMember, err := SetupMember(t, env.ctx, &env.api, env.DAO, env.TelosDecide, memberNameIn, daoTokens)
+			assert.NilError(t, err)
+
+			env.Members = append(env.Members, newMember)
+			index++
+		}
+	}
 	return &env
 }
 

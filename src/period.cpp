@@ -38,7 +38,7 @@ namespace hypha
                            Content(CONTENT_GROUP_LABEL, SYSTEM),
                            Content(TYPE, common::PERIOD),
                            // useful when reporting errors and for readable payment memos, albeit a bit overkill
-                           Content(READABLE_START_TIME, readable), 
+                           Content(READABLE_START_TIME, readable),
                            Content(READABLE_START_DATE, readable.substr(0, 11)),
                            Content(NODE_LABEL, nodeLabel)}}),
           m_dao{dao}
@@ -59,7 +59,12 @@ namespace hypha
         return getContentWrapper().getOrFail(SYSTEM, READABLE_START_TIME)->getAs<std::string>();
     }
 
-    std::string Period::getNodeLabel () 
+    std::string Period::getReadableDate()
+    {
+        return getContentWrapper().getOrFail(SYSTEM, READABLE_START_DATE)->getAs<std::string>();
+    }
+
+    std::string Period::getNodeLabel()
     {
         return getContentWrapper().getOrFail(SYSTEM, NODE_LABEL)->getAs<std::string>();
     }
@@ -90,20 +95,26 @@ namespace hypha
         return false;
     }
 
-    Period Period::current(dao *dao)
+    Period Period::asOf(dao *dao, eosio::time_point moment)
     {
         auto [exists, startEdge] = Edge::getIfExists(dao->get_self(), getRoot(dao->get_self()), common::START);
         eosio::check(exists, "Root node does not have a 'start' edge.");
         Period period(dao, startEdge.getToNode());
 
-        eosio::check(period.getStartTime() < eosio::current_time_point(),
-                     "start_period is in the future. No current period found.");
+        eosio::check(period.getStartTime() < moment,
+                     "start_period is in the future. No period found.");
 
-        while (period.getEndTime() < eosio::current_time_point())
+        while (period.getEndTime() < moment)
         {
+            // eosio::print("Checking next period: " + period.getNodeLabel() + "\n");
             period = period.next();
         }
         return period;
+    }
+
+    Period Period::current(dao *dao)
+    {
+        return asOf(dao, eosio::current_time_point());
     }
 
     Period Period::next()

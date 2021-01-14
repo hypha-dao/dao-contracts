@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	eostest "github.com/digital-scarcity/eos-go-test"
@@ -93,6 +94,9 @@ func AddPeriods(ctx context.Context, api *eos.API, daoContract eos.AccountName,
 	startTime := eos.TimePoint(marker.UnixNano() / 1000)
 	periods := make([]docgraph.Document, numPeriods)
 
+	fmt.Println("\nAdding periods: " + strconv.Itoa(len(periods)))
+	bar := DefaultProgressBar(len(periods))
+
 	for i := 0; i < numPeriods; i++ {
 		startTime = eos.TimePoint((marker.UnixNano() / 1000) + 1)
 		addPeriodAction := eos.Action{
@@ -104,7 +108,7 @@ func AddPeriods(ctx context.Context, api *eos.API, daoContract eos.AccountName,
 			ActionData: eos.NewActionData(addPeriod{
 				Predecessor: predecessor,
 				StartTime:   startTime,
-				Label:       "test phase",
+				Label:       "period #" + strconv.Itoa(i+1) + " of " + strconv.Itoa(numPeriods),
 			}),
 		}
 
@@ -118,6 +122,8 @@ func AddPeriods(ctx context.Context, api *eos.API, daoContract eos.AccountName,
 
 		periods[i], _ = docgraph.GetLastDocument(ctx, api, daoContract)
 		predecessor = periods[i].Hash
+		time.Sleep(defaultPause())
+		bar.Add(1)
 	}
 
 	return periods, nil

@@ -24,13 +24,15 @@ import (
 
 // Object struct
 type Object struct {
-	ID         uint64        `json:"id"`
-	Scope      eos.Name      `json:"scope"`
-	Names      []NameKV      `json:"names"`
-	Strings    []StringKV    `json:"strings"`
-	Assets     []AssetKV     `json:"assets"`
-	TimePoints []TimePointKV `json:"time_points"`
-	Ints       []IntKV       `json:"ints"`
+	ID          uint64        `json:"id"`
+	Scope       eos.Name      `json:"scope"`
+	Names       []NameKV      `json:"names"`
+	Strings     []StringKV    `json:"strings"`
+	Assets      []AssetKV     `json:"assets"`
+	TimePoints  []TimePointKV `json:"time_points"`
+	Ints        []IntKV       `json:"ints"`
+	CreatedDate eos.TimePoint `json:"created_date"`
+	UpdatedDate eos.TimePoint `json:"updated_date"`
 }
 
 // SeedsExchConfigTable ...

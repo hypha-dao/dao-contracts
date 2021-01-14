@@ -257,6 +257,12 @@ namespace hypha
       removeSetting(key);
    }
 
+   void dao::cancel (const uint64_t senderid)
+   {
+      require_auth(get_self());
+      eosio::cancel_deferred (senderid);
+   }
+
    void dao::removeSetting(const string &key)
    {
       auto document = getSettingsDocument();
@@ -319,7 +325,7 @@ namespace hypha
       eosio::require_auth(get_self());
 
       Migration migration(this);
-      migration.addAssPayoutToTable(ass_payment_id, assignment_id, recipient, period_id, payments, payment_date);
+      migration.addLegacyAssPayout(ass_payment_id, assignment_id, recipient, period_id, payments, payment_date);
    }
 
    void dao::migrateper(const uint64_t id)
@@ -348,7 +354,7 @@ namespace hypha
       eosio::require_auth(get_self());
 
       Migration migration(this);
-      migration.addPeriodToTable(id, start_date, end_date, phase, readable, label);
+      migration.addLegacyPeriod(id, start_date, end_date, phase, readable, label);
    }
 
    void dao::addmember(const eosio::name &member)
@@ -356,7 +362,7 @@ namespace hypha
       eosio::require_auth(get_self());
 
       Migration migration(this);
-      migration.addMemberToTable(member);
+      migration.addLegacyMember(member);
    }
 
    void dao::migratemem(const eosio::name &member)
@@ -372,7 +378,7 @@ namespace hypha
       eosio::require_auth(get_self());
 
       Migration migration(this);
-      migration.addApplicant(applicant, content);
+      migration.addLegacyApplicant(applicant, content);
    }
 
    void dao::createroot(const std::string &notes)
@@ -409,6 +415,11 @@ namespace hypha
          Migration migration(this);
          migration.migrateAssignment(id);
       }
+      else if (scope == common::PAYOUT)
+      {
+         Migration migration(this);
+         migration.migratePayout(id);
+      }
    }
 
    void dao::migrateconfig(const std::string &notes)
@@ -439,11 +450,44 @@ namespace hypha
       migration.eraseGraph();
    }
 
-   void dao::eraseobjs(const eosio::name &scope)
+   // void dao::eraseobjs(const eosio::name &scope)
+   // {
+   //    require_auth(get_self());
+   //    Migration migration(this);
+   //    migration.eraseAllObjects(scope);
+   // }
+
+   void dao::eraseobj(const eosio::name &scope, const uint64_t &starting_id)
    {
       require_auth(get_self());
-      Migration migration(this);
-      migration.eraseAllObjects(scope);
+      Migration::object_table o_t(get_self(), scope.value);
+      auto o_itr = o_t.find(starting_id);
+      eosio::check(o_itr != o_t.end(), "id not found");
+      o_t.erase(o_itr);
+   }
+
+   void dao::eraseobjs(const eosio::name &scope, const uint64_t &starting_id, const uint64_t &batch_size, int senderId)
+   {
+      int counter = 0;
+      
+      Migration::object_table o_t(get_self(), scope.value);
+      auto o_itr = o_t.find(starting_id);
+      while (o_itr != o_t.end() && counter < batch_size)
+      {
+         o_itr = o_t.erase(o_itr);
+         counter++;
+      }
+
+      if (o_itr != o_t.end()) {
+         eosio::transaction out{};
+         out.actions.emplace_back(
+            eosio::permission_level{get_self(), name("active")},
+            get_self(), name("eraseobjs"),
+            std::make_tuple(scope, starting_id + batch_size, batch_size, ++senderId));
+
+         out.delay_sec = 1;
+         out.send(senderId, get_self());
+      }      
    }
 
    void dao::erasexfer(const eosio::name &scope)
@@ -455,12 +499,11 @@ namespace hypha
 
    void dao::erasedoc(const checksum256 &hash)
    {
-      require_auth (get_self());
-      
+      require_auth(get_self());
+
       DocumentGraph dg(get_self());
       dg.eraseDocument(hash);
    }
-
 
    void dao::setalert(const eosio::name &level, const std::string &content)
    {
@@ -496,9 +539,11 @@ namespace hypha
                        std::map<string, string> strings,
                        std::map<string, asset> assets,
                        std::map<string, eosio::time_point> time_points,
-                       std::map<string, uint64_t> ints)
+                       std::map<string, uint64_t> ints,
+                       eosio::time_point created_date,
+                       eosio::time_point updated_date)
    {
       Migration migration(this);
-      migration.newObject(id, scope, names, strings, assets, time_points, ints);
+      migration.addLegacyObject(id, scope, names, strings, assets, time_points, ints, created_date, updated_date);
    }
 } // namespace hypha
