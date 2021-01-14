@@ -83,16 +83,26 @@ namespace hypha
 
         // add the USD period pay amount (this is used to calculate SEEDS at time of salary claim)
         Content usdSalaryPerPeriod(USD_SALARY_PER_PERIOD, adjustAsset(annual_usd_salary, common::PHASE_TO_YEAR_RATIO));
+        ContentWrapper::insertOrReplace(*detailsGroup, usdSalaryPerPeriod);
 
         // add remaining derived per period salary amounts to this document
-        Content husdSalaryPerPeriod(HUSD_SALARY_PER_PERIOD, calculateHusd(annual_usd_salary, timeShare, deferred));
-        Content hyphaSalaryPerPeriod(HYPHA_SALARY_PER_PERIOD, calculateHypha(annual_usd_salary, timeShare, deferred));
-        Content hvoiceSalaryPerPeriod(HVOICE_SALARY_PER_PERIOD, calculateHvoice(annual_usd_salary, timeShare));
+        auto husd = calculateHusd(annual_usd_salary, timeShare, deferred);
+        if (husd.amount > 0) {
+            Content husdSalaryPerPeriod(HUSD_SALARY_PER_PERIOD, husd);
+            ContentWrapper::insertOrReplace(*detailsGroup, husdSalaryPerPeriod);
+        }
 
-        ContentWrapper::insertOrReplace(*detailsGroup, usdSalaryPerPeriod);
-        ContentWrapper::insertOrReplace(*detailsGroup, husdSalaryPerPeriod);
-        ContentWrapper::insertOrReplace(*detailsGroup, hyphaSalaryPerPeriod);
-        ContentWrapper::insertOrReplace(*detailsGroup, hvoiceSalaryPerPeriod);
+        auto hypha = calculateHypha(annual_usd_salary, timeShare, deferred);
+        if (hypha.amount > 0) {
+            Content hyphaSalaryPerPeriod(HYPHA_SALARY_PER_PERIOD, hypha);
+            ContentWrapper::insertOrReplace(*detailsGroup, hyphaSalaryPerPeriod);
+        }
+
+        auto hvoice = calculateHvoice(annual_usd_salary, timeShare);
+        if (hvoice.amount > 0) {
+            Content hvoiceSalaryPerPeriod(HVOICE_SALARY_PER_PERIOD, hvoice);
+            ContentWrapper::insertOrReplace(*detailsGroup, hvoiceSalaryPerPeriod);
+        }
     }
 
     void AssignmentProposal::postProposeImpl(Document &proposal)

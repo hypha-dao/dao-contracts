@@ -92,6 +92,8 @@ namespace common
 #define END_TIME "end_time"
 #define LABEL "label"
 #define NODE_LABEL "node_label"
+#define READABLE_START_TIME "readable_start_time"
+#define READABLE_START_DATE "readable_start_date"
 
 #define ORIGINAL_DOCUMENT "original_document"
 #define HYPHA_COEFFICIENT "hypha_coefficient_x10000"

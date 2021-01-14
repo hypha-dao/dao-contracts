@@ -2,6 +2,7 @@
 #include <eosio/name.hpp>
 #include <eosio/crypto.hpp>
 #include <period.hpp>
+#include <member.hpp>
 #include <document_graph/document.hpp>
 
 namespace hypha
@@ -12,6 +13,7 @@ namespace hypha
     {
     public:
         Assignment(dao *dao, const eosio::checksum256 &hash);
+        Assignment(dao *dao, ContentWrapper &assignment);
 
         std::optional<Period> getNextClaimablePeriod ();
         bool isClaimed (Period* period);
@@ -28,7 +30,7 @@ namespace hypha
         eosio::asset calcHyphaSalary ();
 
         dao *m_dao;
-        ContentWrapper contentWrapper;
+        // ContentWrapper contentWrapper;
 
     private: 
         eosio::asset getAsset (const symbol* symbol, const std::string &key);

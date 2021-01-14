@@ -20,6 +20,10 @@ namespace hypha
                      const eosio::asset &quantity,
                      const string &memo);
 
+        static ContentGroups defaultReceipt(const eosio::name &recipient,
+                                            const eosio::asset &quantity,
+                                            const string &memo);
+
     protected:
         virtual Document payImpl(const eosio::name &recipient,
                                  const eosio::asset &quantity,
@@ -30,10 +34,6 @@ namespace hypha
                         const name &to,
                         const asset &token_amount,
                         const string &memo);
-
-        ContentGroups defaultReceipt(const eosio::name &recipient,
-                                     const eosio::asset &quantity,
-                                     const string &memo);
 
         dao &m_dao;
 

@@ -76,11 +76,28 @@ namespace hypha
         Edge applicantRootEdge = Edge::get(getContract(), getHash(), root, common::APPLICANT_OF);
         applicantRootEdge.erase();
 
+        // TODO: add as configuration setting for genesis amount
+        // TODO: connect the payment receipt to the period also
+        // TODO: change Payer.hpp to NOT require m_dao so this payment can be made using payer factory
+
+        eosio::asset genesis_voice{100, common::S_HVOICE};
+        std::string memo{"genesis voice issuance during enrollment"};
+
         eosio::action(
-			eosio::permission_level{getContract(), name("active")},
-			name("eosio"), name("buyram"),
-			std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE))
-			.send();
+            eosio::permission_level{getContract(), eosio::name("active")},
+            m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT), eosio::name("mint"),
+            std::make_tuple(getAccount(), genesis_voice, memo))
+            .send();
+
+        Document paymentReceipt(getContract(), getContract(), Payer::defaultReceipt(getAccount(), genesis_voice, memo));
+
+        Edge::write(getContract(), getAccount(), getHash(), paymentReceipt.getHash(), common::PAYMENT);
+
+        eosio::action(
+            eosio::permission_level{getContract(), name("active")},
+            name("eosio"), name("buyram"),
+            std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE))
+            .send();
     }
 
     eosio::name Member::getAccount()

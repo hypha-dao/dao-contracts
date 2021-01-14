@@ -4,46 +4,100 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"testing"
 	"time"
 
 	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
-	"github.com/hypha-dao/dao-go"
-	"github.com/hypha-dao/document-graph/docgraph"
-	"github.com/k0kubun/go-ansi"
-	"github.com/schollz/progressbar/v3"
 )
 
-// MemberRecord represents a single row in the dao::members table
-type MemberRecord struct {
-	MemberName eos.Name `json:"member"`
+type addPeriodBTS struct {
+	Predecessor eos.Checksum256 `json:"predecessor"`
+	StartTime   eos.TimePoint   `json:"start_time"`
+	Label       string          `json:"label"`
 }
 
-// MigrateMembers ...
-func MigrateMembers(ctx context.Context, api *eos.API, contract eos.AccountName, from string) {
+type migratePer struct {
+	ID uint64 `json:"id"`
+}
 
-	endpointAPI := *eos.New(from)
+// MigrateAssPayouts ...
+func MigrateAssPayouts(ctx context.Context, api *eos.API, contract eos.AccountName) {
 
-	var memberRecords []MemberRecord
-	var request eos.GetTableRowsRequest
-	request.Code = "dao.hypha"
-	request.Scope = "dao.hypha"
-	request.Table = "members"
-	request.Limit = 500
-	request.JSON = true
-	response, _ := endpointAPI.GetTableRows(ctx, request)
-	response.JSONToStructs(&memberRecords)
+	payoutsIn, err := getAllAssPayouts(ctx, api, contract)
+	if err != nil {
+		panic(err)
+	}
 
-	for index, memberRecord := range memberRecords {
+	fmt.Println("\nMigrating assignment payments : " + strconv.Itoa(len(payoutsIn)))
+	bar := DefaultProgressBar(len(payoutsIn))
+
+	for index, payoutIn := range payoutsIn {
+
 		actions := []*eos.Action{{
 			Account: contract,
-			Name:    eos.ActN("addmember"),
+			Name:    eos.ActN("migasspay"),
 			Authorization: []eos.PermissionLevel{
 				{Actor: contract, Permission: eos.PN("active")},
 			},
-			ActionData: eos.NewActionData(memberRecord),
-		}, {
+			ActionData: eos.NewActionData(migratePer{
+				ID: payoutIn.ID,
+			}),
+		}}
+
+		_, err := eostest.ExecTrx(ctx, api, actions)
+		if err != nil {
+			fmt.Println("\nFAILED to migrate assignment pay: ", payoutIn.PaymentDate.Format("2006 Jan 02"), ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(payoutsIn)))
+			fmt.Println(err)
+			fmt.Println()
+		}
+
+		bar.Add(1)
+		time.Sleep(defaultPause())
+	}
+}
+
+// MigratePeriods ...
+func MigratePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) {
+
+	periods := getLegacyPeriods(ctx, api, contract)
+
+	fmt.Println("\nMigrating periods: " + strconv.Itoa(len(periods)))
+	bar := DefaultProgressBar(len(periods))
+
+	for _, period := range periods {
+
+		actions := []*eos.Action{{
+			Account: contract,
+			Name:    eos.ActN("migrateper"),
+			Authorization: []eos.PermissionLevel{
+				{Actor: contract, Permission: eos.PN("active")},
+			},
+			ActionData: eos.NewActionData(migratePer{
+				ID: period.PeriodID,
+			}),
+		}}
+
+		_, err := eostest.ExecTrx(ctx, api, actions)
+		if err != nil {
+			fmt.Println("\nFAILED to migrate period: ", strconv.Itoa(int(period.PeriodID)))
+			fmt.Println(err)
+			fmt.Println()
+		}
+		bar.Add(1)
+		time.Sleep(defaultPause())
+	}
+}
+
+// MigrateMembers ...
+func MigrateMembers(ctx context.Context, api *eos.API, contract eos.AccountName) {
+
+	memberRecords := getLegacyMembers(ctx, api, contract)
+
+	fmt.Println("\nMigrating members: " + strconv.Itoa(len(memberRecords)))
+	bar := DefaultProgressBar(len(memberRecords))
+
+	for index, memberRecord := range memberRecords {
+		actions := []*eos.Action{{
 			Account: contract,
 			Name:    eos.ActN("migratemem"),
 			Authorization: []eos.PermissionLevel{
@@ -52,168 +106,53 @@ func MigrateMembers(ctx context.Context, api *eos.API, contract eos.AccountName,
 			ActionData: eos.NewActionData(memberRecord),
 		}}
 
-		trxID, err := eostest.ExecTrx(ctx, api, actions)
+		_, err := eostest.ExecTrx(ctx, api, actions)
 		if err != nil {
-			panic(err)
+			fmt.Println("\n\nFAILED to migrate a member: ", memberRecord.MemberName, ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(memberRecords)))
+			fmt.Println(err)
+			fmt.Println()
 		}
 
-		fmt.Println("Added & migrated member: " + string(memberRecord.MemberName) + ", " + strconv.Itoa(index+1) + " / " + strconv.Itoa(len(memberRecords)) + " : trxID:  " + trxID)
-	}
-}
-
-func getProdPeriods() []dao.Period {
-	endpointAPI := *eos.New("https://api.telos.kitchen")
-
-	var objects []dao.Period
-	var request eos.GetTableRowsRequest
-	request.Code = "dao.hypha"
-	request.Scope = "dao.hypha"
-	request.Table = "periods"
-	request.Limit = 10000
-	request.JSON = true
-	response, _ := endpointAPI.GetTableRows(context.Background(), request)
-	response.JSONToStructs(&objects)
-	return objects
-}
-
-type addPeriodBTS struct {
-	Predecessor eos.Checksum256 `json:"predecessor"`
-	StartTime   eos.TimePoint   `json:"start_time"`
-	Label       string          `json:"label"`
-}
-
-func pause(t *testing.T, seconds time.Duration, headline, prefix string) {
-	if headline != "" {
-		t.Log(headline)
-	}
-
-	bar := progressbar.NewOptions(100,
-		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionSetWidth(90),
-		// progressbar.OptionShowIts(),
-		progressbar.OptionSetDescription("[cyan]"+fmt.Sprintf("%20v", prefix)),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}))
-
-	chunk := seconds / 100
-	for i := 0; i < 100; i++ {
 		bar.Add(1)
-		time.Sleep(chunk)
-	}
-	fmt.Println()
-	fmt.Println()
-}
-
-// MigratePeriods ...
-func MigratePeriods(api *eos.API, predecessor eos.Checksum256, contract eos.AccountName) {
-
-	periods := getProdPeriods()
-
-	var lastPeriod docgraph.Document
-
-	for _, period := range periods {
-
-		seconds := period.StartTime
-		microSeconds := seconds.UnixNano() / 1000
-		startTime := eos.TimePoint(microSeconds)
-
-		addPeriodAction := eos.Action{
-			Account: contract,
-			Name:    eos.ActN("addperiod"),
-			Authorization: []eos.PermissionLevel{
-				{Actor: contract, Permission: eos.PN("active")},
-			},
-			ActionData: eos.NewActionData(addPeriodBTS{
-				Predecessor: predecessor,
-				StartTime:   startTime,
-				Label:       period.Phase,
-			}),
-		}
-
-		trxID, err := eostest.ExecTrx(context.Background(), api, []*eos.Action{&addPeriodAction})
-		if err != nil {
-			fmt.Printf("Error adding period: %v", err)
-		} else {
-			fmt.Println(" Added period: " + trxID)
-			t := testing.T{}
-			pause(&t, time.Second, "Build block...", "")
-
-			lastPeriod, err = docgraph.GetLastDocument(context.Background(), api, contract)
-			if err != nil {
-				panic(err)
-			}
-		}
-
-		predecessor = lastPeriod.Hash
+		time.Sleep(defaultPause())
 	}
 }
 
-// MigrateObject ...
-type MigrateObject struct {
+type migrate struct {
 	Scope eos.Name `json:"scope"`
 	ID    uint64   `json:"id"`
 }
 
-func getObject(ctx context.Context, scope eos.Name, endpoint string, ID uint64) Object {
-	endpointAPI := *eos.New(endpoint)
+// MigrateObjects ...
+func MigrateObjects(ctx context.Context, api *eos.API, contract eos.AccountName, scope eos.Name) {
 
-	var objects []Object
-	var request eos.GetTableRowsRequest
-	request.Code = "dao.hypha"
-	request.Scope = string(scope)
-	request.Table = "objects"
-	request.LowerBound = strconv.Itoa(int(ID))
-	request.UpperBound = strconv.Itoa(int(ID))
-	request.Limit = 1
-	request.JSON = true
-	response, _ := endpointAPI.GetTableRows(ctx, request)
-	response.JSONToStructs(&objects)
-	return objects[0]
-}
+	objects, _ := getLegacyObjects(ctx, api, contract, scope)
 
-// GetObjects ...
-func GetObjects(ctx context.Context, contract eos.AccountName, scope eos.Name, endpoint string) []Object {
-	endpointAPI := *eos.New(endpoint)
+	fmt.Println("\nMigrating " + string(scope) + " objects: " + strconv.Itoa(len(objects)))
+	bar := DefaultProgressBar(len(objects))
 
-	var objects []Object
-	var request eos.GetTableRowsRequest
-	request.Code = "dao.hypha"
-	request.Scope = string(scope)
-	request.Table = "objects"
-	request.Limit = 10000
-	request.JSON = true
-	response, _ := endpointAPI.GetTableRows(ctx, request)
-	response.JSONToStructs(&objects)
-	return objects
-}
-
-// CopyObjects ...
-func CopyObjects(ctx context.Context, api *eos.API, contract eos.AccountName, scope eos.Name, from string) {
-
-	objects := GetObjects(ctx, contract, scope, from)
-
-	for _, object := range objects {
-		object.Scope = eos.Name(scope)
+	for index, object := range objects {
 
 		actions := []*eos.Action{{
 			Account: contract,
-			Name:    eos.ActN("createobj"),
+			Name:    eos.ActN("migrate"),
 			Authorization: []eos.PermissionLevel{
 				{Actor: contract, Permission: eos.PN("active")},
 			},
-			ActionData: eos.NewActionData(object),
+			ActionData: eos.NewActionData(migrate{
+				Scope: scope,
+				ID:    object.ID,
+			}),
 		}}
 
-		trxID, err := eostest.ExecTrx(ctx, api, actions)
+		_, err := eostest.ExecTrx(ctx, api, actions)
 		if err != nil {
-			panic(err)
+			fmt.Println("\n\nFailed to migrate : ", strconv.Itoa(int(object.ID)), ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(objects)))
+			fmt.Println(err)
+			fmt.Println()
 		}
-		fmt.Println("Created an object- trxID:  " + trxID)
+
+		bar.Add(1)
+		time.Sleep(defaultPause())
 	}
 }

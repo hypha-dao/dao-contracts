@@ -45,10 +45,11 @@ namespace hypha
 
       // assignee must still be a DHO member
       eosio::check(Member::isMember(get_self(), assignee), "assignee must be a current member to claim pay: " + assignee.to_string());
-      require_auth(assignee);
 
       std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
       eosio::check(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
+
+      require_auth(assignee);
 
       // Valid claim identified - start process
       // process this claim
@@ -256,6 +257,12 @@ namespace hypha
       removeSetting(key);
    }
 
+   void dao::cancel (const uint64_t senderid)
+   {
+      require_auth(get_self());
+      eosio::cancel_deferred (senderid);
+   }
+
    void dao::removeSetting(const string &key)
    {
       auto document = getSettingsDocument();
@@ -308,19 +315,61 @@ namespace hypha
       }
    }
 
+   void dao::addasspayout(const uint64_t &ass_payment_id,
+                          const uint64_t &assignment_id,
+                          const name &recipient,
+                          uint64_t period_id,
+                          std::vector<eosio::asset> payments,
+                          eosio::time_point payment_date)
+   {
+      eosio::require_auth(get_self());
+
+      Migration migration(this);
+      migration.addLegacyAssPayout(ass_payment_id, assignment_id, recipient, period_id, payments, payment_date);
+   }
+
+   void dao::migrateper(const uint64_t id)
+   {
+      eosio::require_auth(get_self());
+
+      Migration migration(this);
+      migration.migratePeriod(id);
+   }
+
+   void dao::migasspay(const uint64_t id)
+   {
+      eosio::require_auth(get_self());
+
+      Migration migration(this);
+      migration.migrateAssPayout(id);
+   }
+
+   void dao::addlegper(const uint64_t &id,
+                       const time_point &start_date,
+                       const time_point &end_date,
+                       const string &phase,
+                       const string &readable,
+                       const string &label)
+   {
+      eosio::require_auth(get_self());
+
+      Migration migration(this);
+      migration.addLegacyPeriod(id, start_date, end_date, phase, readable, label);
+   }
+
    void dao::addmember(const eosio::name &member)
    {
       eosio::require_auth(get_self());
 
-      Migration migration(*this);
-      migration.addMemberToTable(member);
+      Migration migration(this);
+      migration.addLegacyMember(member);
    }
 
    void dao::migratemem(const eosio::name &member)
    {
       eosio::require_auth(get_self());
 
-      Migration migration(*this);
+      Migration migration(this);
       migration.migrateMember(member);
    }
 
@@ -328,8 +377,8 @@ namespace hypha
    {
       eosio::require_auth(get_self());
 
-      Migration migration(*this);
-      migration.addApplicant(applicant, content);
+      Migration migration(this);
+      migration.addLegacyApplicant(applicant, content);
    }
 
    void dao::createroot(const std::string &notes)
@@ -340,16 +389,13 @@ namespace hypha
 
       // Create the settings document as well and add an edge to it
       ContentGroups settingCgs{
-         ContentGroup {
-            Content(CONTENT_GROUP_LABEL, SETTINGS),
-            Content(ROOT_NODE, readableHash(rootDoc.getHash()))
-         },
-         ContentGroup {
-            Content(CONTENT_GROUP_LABEL, SYSTEM),
-            Content(TYPE, common::SETTINGS_EDGE),
-            Content(NODE_LABEL, "Settings")
-         }
-      };
+          ContentGroup{
+              Content(CONTENT_GROUP_LABEL, SETTINGS),
+              Content(ROOT_NODE, readableHash(rootDoc.getHash()))},
+          ContentGroup{
+              Content(CONTENT_GROUP_LABEL, SYSTEM),
+              Content(TYPE, common::SETTINGS_EDGE),
+              Content(NODE_LABEL, "Settings")}};
 
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), rootDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
@@ -361,37 +407,102 @@ namespace hypha
 
       if (scope == common::ROLE_NAME)
       {
-         Migration migration(*this);
+         Migration migration(this);
          migration.migrateRole(id);
+      }
+      else if (scope == common::ASSIGNMENT)
+      {
+         Migration migration(this);
+         migration.migrateAssignment(id);
+      }
+      else if (scope == common::PAYOUT)
+      {
+         Migration migration(this);
+         migration.migratePayout(id);
       }
    }
 
    void dao::migrateconfig(const std::string &notes)
    {
       require_auth(get_self());
-      Migration migration(*this);
+      Migration migration(this);
       migration.migrateConfig();
    }
 
    void dao::reset4test(const std::string &notes)
    {
       require_auth(get_self());
-      Migration migration(*this);
+      Migration migration(this);
       migration.reset4test();
    }
 
-   void dao::eraseall(const std::string &notes)
+   void dao::erasepers(const std::string &notes)
    {
       require_auth(get_self());
-      Migration migration(*this);
-      migration.eraseAll(true);
+      Migration migration(this);
+      migration.erasePeriods();
    }
 
-   void dao::eraseobjs(const eosio::name &scope)
+   void dao::erasegraph(const std::string &notes)
    {
       require_auth(get_self());
-      Migration migration(*this);
-      migration.eraseAllObjects(scope);
+      Migration migration(this);
+      migration.eraseGraph();
+   }
+
+   // void dao::eraseobjs(const eosio::name &scope)
+   // {
+   //    require_auth(get_self());
+   //    Migration migration(this);
+   //    migration.eraseAllObjects(scope);
+   // }
+
+   void dao::eraseobj(const eosio::name &scope, const uint64_t &starting_id)
+   {
+      require_auth(get_self());
+      Migration::object_table o_t(get_self(), scope.value);
+      auto o_itr = o_t.find(starting_id);
+      eosio::check(o_itr != o_t.end(), "id not found");
+      o_t.erase(o_itr);
+   }
+
+   void dao::eraseobjs(const eosio::name &scope, const uint64_t &starting_id, const uint64_t &batch_size, int senderId)
+   {
+      int counter = 0;
+      
+      Migration::object_table o_t(get_self(), scope.value);
+      auto o_itr = o_t.find(starting_id);
+      while (o_itr != o_t.end() && counter < batch_size)
+      {
+         o_itr = o_t.erase(o_itr);
+         counter++;
+      }
+
+      if (o_itr != o_t.end()) {
+         eosio::transaction out{};
+         out.actions.emplace_back(
+            eosio::permission_level{get_self(), name("active")},
+            get_self(), name("eraseobjs"),
+            std::make_tuple(scope, starting_id + batch_size, batch_size, ++senderId));
+
+         out.delay_sec = 1;
+         out.send(senderId, get_self());
+      }      
+   }
+
+   void dao::erasexfer(const eosio::name &scope)
+   {
+      require_auth(get_self());
+      Migration migration(this);
+      migration.eraseXRefs(scope);
+   }
+
+   void dao::erasedoc(const checksum256 &hash)
+   {
+      require_auth(get_self());
+
+      DocumentGraph dg(get_self());
+      dg.eraseDocument(hash);
    }
 
    void dao::setalert(const eosio::name &level, const std::string &content)
@@ -428,9 +539,11 @@ namespace hypha
                        std::map<string, string> strings,
                        std::map<string, asset> assets,
                        std::map<string, eosio::time_point> time_points,
-                       std::map<string, uint64_t> ints)
+                       std::map<string, uint64_t> ints,
+                       eosio::time_point created_date,
+                       eosio::time_point updated_date)
    {
-      Migration migration(*this);
-      migration.newObject(id, scope, names, strings, assets, time_points, ints);
+      Migration migration(this);
+      migration.addLegacyObject(id, scope, names, strings, assets, time_points, ints, created_date, updated_date);
    }
 } // namespace hypha
