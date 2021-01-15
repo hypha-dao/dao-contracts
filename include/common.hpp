@@ -56,6 +56,8 @@ namespace common
     static constexpr name PAID = name ("paid");
     static constexpr name CLAIMED = name ("claimed");
 
+    static constexpr name HAS_BALLOT = name ("hasballot");
+
     // document types
     static constexpr name ALERT = name ("alert");
 
@@ -121,7 +123,6 @@ namespace common
 #define UPDATED_DATE "updated_date"
 #define SEEDS_DEFERRAL_FACTOR_X100 "seeds_deferral_factor_x100"
 #define HYPHA_DEFERRAL_FACTOR_X100 "hypha_deferral_factor_x100"
-#define LAST_BALLOT_ID "last_ballot_id"
 #define LAST_SENDER_ID "last_sender_id"
 #define VOTING_DURATION_SEC "voting_duration_sec"
 #define PUBLISHER_CONTRACT "publisher_contract"

@@ -38,16 +38,14 @@ namespace hypha
 
         ContentGroup makeSystemGroup(const name &proposer,
                                        const name &proposal_type,
-                                       const string &decide_title,
-                                       const string &decide_desc,
-                                       const string &decide_content);
+                                       const string &decide_title);
 
         bool didPass(const name &ballot_id);
 
-        name registerBallot(const name &proposer,
+        eosio::checksum256 registerBallot(const name &proposer,
                             const std::map<string, string> &strings);
 
-        name registerBallot(const name &proposer,
+        eosio::checksum256 registerBallot(const name &proposer,
                             const string &title, const string &description, const string &content);
     };
 } // namespace hypha

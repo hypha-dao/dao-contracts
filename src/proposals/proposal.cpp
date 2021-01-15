@@ -24,13 +24,17 @@ namespace hypha
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
+        std::string decide_title = proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>();
+
         contentGroups.push_back(makeSystemGroup(proposer,
                                                 getProposalType(),
-                                                proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>(),
-                                                proposalContent.getOrFail(DETAILS, DESCRIPTION)->getAs<std::string>(),
-                                                getBallotContent(proposalContent)));
+                                                decide_title));
 
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
+        eosio::checksum256 ballotHash = registerBallot(proposer, 
+                                            decide_title, 
+                                            proposalContent.getOrFail(DETAILS, DESCRIPTION)->getAs<std::string>(), 
+                                            getBallotContent(proposalContent));
 
         // creates the document, or the graph NODE
         eosio::checksum256 memberHash = Member::calcHash(proposer);
@@ -44,6 +48,9 @@ namespace hypha
 
         // the DHO also links to the document as a proposal, another graph EDGE
         Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
+        
+        // the proposal HAS_BALLOT ballot; this creates the graph EDGE
+        Edge::write(m_dao.get_self(), proposer, proposalNode.getHash(), ballotHash, common::HAS_BALLOT);
 
         postProposeImpl(proposalNode);
 
@@ -83,15 +90,12 @@ namespace hypha
 
     ContentGroup Proposal::makeSystemGroup(const name &proposer,
                                            const name &proposal_type,
-                                           const string &decide_title,
-                                           const string &decide_desc,
-                                           const string &decide_content)
+                                           const string &decide_title)
     {
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, SYSTEM),
             Content(CLIENT_VERSION, m_dao.getSettingOrDefault<std::string>(CLIENT_VERSION, DEFAULT_VERSION)),
             Content(CONTRACT_VERSION, m_dao.getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)),
-            Content(BALLOT_ID, registerBallot(proposer, decide_title, decide_desc, decide_content)),
             Content(NODE_LABEL, decide_title),
             Content(TYPE, proposal_type)};
     }
@@ -125,61 +129,32 @@ namespace hypha
         }
     }
 
-    name Proposal::registerBallot(const name &proposer,
+    eosio::checksum256 Proposal::registerBallot(const name &proposer,
                                   const string &title, const string &description, const string &content)
     {
         check(has_auth(proposer) || has_auth(m_dao.get_self()), "Authentication failed. Must have authority from proposer: " +
                                                                     proposer.to_string() + "@active or " + m_dao.get_self().to_string() + "@active.");
 
-        // increment the ballot_id
-        name ballotId = name(m_dao.getSettingOrFail<eosio::name>(LAST_BALLOT_ID).value + 1);
-        m_dao.setSetting(LAST_BALLOT_ID, ballotId);
-
-        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
-
-        trailservice::trail::ballots_table b_t(trailContract, trailContract.value);
-        auto b_itr = b_t.find(ballotId.value);
-        check(b_itr == b_t.end(), "ballot_id: " + ballotId.to_string() + " has already been used.");
-
-        vector<name> options;
-        options.push_back(name("pass"));
-        options.push_back(name("fail"));
-        options.push_back(name("abstain"));
-
-        action(
-            permission_level{m_dao.get_self(), name("active")},
-            trailContract, name("newballot"),
-            std::make_tuple(
-                ballotId,
-                name("poll"),
-                m_dao.get_self(),
-                common::S_HVOICE,
-                name("1token1vote"),
-                options))
-            .send();
-
-        action(
-            permission_level{m_dao.get_self(), name("active")},
-            trailContract, name("editdetails"),
-            std::make_tuple(
-                ballotId,
-                title,
-                description.substr(0, std::min(description.length(), size_t(25))),
-                content))
-            .send();
-
         auto expiration = time_point_sec(current_time_point()) + m_dao.getSettingOrFail<int64_t>(VOTING_DURATION_SEC);
 
-        action(
-            permission_level{m_dao.get_self(), name("active")},
-            trailContract, name("openvoting"),
-            std::make_tuple(ballotId, expiration))
-            .send();
+        ContentGroups contentGroups{
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, "settings"),
+                Content("expiration", expiration)
+            },
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, "options"),
+                Content("name", name("pass")),
+                Content("fail", name("fail")),
+                Content("abstain", name("abstain")),
+            }
+        };
 
-        return ballotId;
+        Document ballotNode(m_dao.get_self(), proposer, contentGroups);
+        return ballotNode.getHash();
     }
 
-    name Proposal::registerBallot(const name &proposer,
+    eosio::checksum256 Proposal::registerBallot(const name &proposer,
                                   const map<string, string> &strings)
     {
         return registerBallot(proposer,
