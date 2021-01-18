@@ -40,12 +40,12 @@ namespace hypha
                                        const name &proposal_type,
                                        const string &decide_title);
 
-        bool didPass(const name &ballot_id);
+        ContentGroup makeBallotGroup();
+        ContentGroup makeBallotOptionsGroup();
 
-        eosio::checksum256 registerBallot(const name &proposer,
-                            const std::map<string, string> &strings);
+        void updateVoteTally(Document& proposal, const eosio::name creator);
 
-        eosio::checksum256 registerBallot(const name &proposer,
-                            const string &title, const string &description, const string &content);
+        bool didPass(const eosio::checksum256 &tallyHash);
+
     };
 } // namespace hypha

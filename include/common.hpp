@@ -56,7 +56,8 @@ namespace common
     static constexpr name PAID = name ("paid");
     static constexpr name CLAIMED = name ("claimed");
 
-    static constexpr name HAS_BALLOT = name ("hasballot");
+    static constexpr name VOTE = name ("vote");
+    static constexpr name VOTE_ON = name ("voteon");
 
     // document types
     static constexpr name ALERT = name ("alert");
@@ -110,7 +111,8 @@ namespace common
 #define MEMBER_STRING "member"
 #define ASSIGNMENT_STRING "assignment"
 #define SYSTEM "system"
-#define BALLOT_ID "ballot_id"
+#define BALLOT "ballot"
+#define BALLOT_OPTIONS "ballot_options"
 #define BALLOT_TYPE "ballot_type"
 
 // setting document
