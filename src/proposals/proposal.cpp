@@ -58,6 +58,40 @@ namespace hypha
 
     void Proposal::postProposeImpl(Document &proposal) {}
 
+    void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal)
+    {
+        proposal.getContentWrapper().getOrFail(BALLOT_OPTIONS, vote, "Invalid vote");
+
+        // Fetch vote power
+        // cleos -u https://api.telos.kitchen get table trailservice hyphanewyork voters
+        trailservice::trail::treasuries_table
+        int64_t votePower = 1;
+
+        ContentGroups contentGroups{
+            ContentGroup{
+                Content(VOTE_POWER, asset(votePower, common::S_HVOICE)),
+                Content(vote, vote)
+            }
+        };
+
+        eosio::checksum256 voterHash = Member::calcHash(voter);
+        Document voteDocument(m_dao.get_self(), voter, contentGroups);
+
+        // an edge from the member to the vote named vote
+        Edge::write(m_dao.get_self(), voter, voterHash, voteDocument.getHash(), common::VOTE);
+
+        // an edge from the proposal to the vote named vote
+        Edge::write(m_dao.get_self(), voter, proposal.getHash(), voteDocument.getHash(), common::VOTE);
+
+        // an edge from the vote to the member named ownedby
+        Edge::write(m_dao.get_self(), voter, voteDocument.getHash(), voterHash, common::OWNED_BY);
+
+        // an edge from the vote to the proposal named voteon
+        Edge::write(m_dao.get_self(), voter, voteDocument.getHash(), proposal.getHash(), common::VOTE_ON);
+
+        updateVoteTally(proposal, voter);
+    }
+
     void Proposal::close(Document &proposal)
     {
         eosio::checksum256 root = getRoot(m_dao.get_self());
@@ -131,14 +165,31 @@ namespace hypha
             }
         }
 
-        // Fetch votes...
+        
+        std::vector<Edge> edges = Edge::getAll(m_dao.get_self(), proposal.getHash(), common::VOTE);
+        for (auto itr = edges.begin(); itr != edges.end(); ++itr) {
+            eosio::checksum256 voteHash = itr->getToNode();
+            Document voteDocument(m_dao.get_self(), voteHash);
+            ContentGroup group = voteDocument.getContentGroups().front();
+            std::string vote;
+            std::int64_t power;
+            for (ContentGroup::const_iterator contentIt = group.begin(); contentIt != group.end(); ++contentIt)  {
+                if (contentIt->label == VOTE_POWER) {
+                    power = contentIt->getAs<std::int64_t>();
+                } else {
+                    vote = contentIt->getAs<std::string>();
+                }
+            }
 
+            optionsTally[vote] += power;
+        }
+        
 
         ContentGroups tallyContentGroups;
         for (auto it = optionsTally.begin(); it != optionsTally.end(); ++it) 
         {
             tallyContentGroups.push_back(ContentGroup{
-                Content("vote_power", asset(it->second, common::S_HVOICE)),
+                Content(VOTE_POWER, asset(it->second, common::S_HVOICE)),
                 Content(it->first, it->first)
             });
         }

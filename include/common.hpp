@@ -161,4 +161,6 @@ namespace common
 #define HVOICE_SALARY_PER_PERIOD "hvoice_salary_per_phase"
 #define SETTINGS "settings"
 
+#define VOTE_POWER "vote_power"
+
 }; // namespace common

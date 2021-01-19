@@ -20,6 +20,7 @@ namespace hypha
 
         Document propose(const eosio::name &proposer, ContentGroups &contentGroups);
 
+        void vote(const eosio::name &voter, const std::string vote, Document& proposal);
         void close(Document &proposal);
 
         dao &m_dao;
