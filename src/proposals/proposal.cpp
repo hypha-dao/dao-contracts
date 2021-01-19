@@ -63,13 +63,14 @@ namespace hypha
         proposal.getContentWrapper().getOrFail(BALLOT_OPTIONS, vote, "Invalid vote");
 
         // Fetch vote power
-        // cleos -u https://api.telos.kitchen get table trailservice hyphanewyork voters
-        trailservice::trail::treasuries_table
-        int64_t votePower = 1;
+        trailservice::trail::voters_table v_t(voter, voter.value);
+        auto v_itr = v_t.find(common::S_HVOICE.code().raw());
+        check(v_itr != v_t.end(), "No HVOICE found");
+        asset votePower = v_itr->liquid;
 
         ContentGroups contentGroups{
             ContentGroup{
-                Content(VOTE_POWER, asset(votePower, common::S_HVOICE)),
+                Content(VOTE_POWER, votePower),
                 Content(vote, vote)
             }
         };
