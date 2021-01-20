@@ -39,7 +39,7 @@ namespace hypha
 
         ContentGroup makeSystemGroup(const name &proposer,
                                        const name &proposal_type,
-                                       const string &decide_title);
+                                       const string &proposal_title);
 
         ContentGroup makeBallotGroup();
         ContentGroup makeBallotOptionsGroup();

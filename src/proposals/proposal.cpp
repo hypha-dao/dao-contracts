@@ -24,11 +24,11 @@ namespace hypha
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
-        std::string decide_title = proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>();
+        std::string proposal_title = proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>();
 
         contentGroups.push_back(makeSystemGroup(proposer,
                                                 getProposalType(),
-                                                decide_title));
+                                                proposal_title));
         
         contentGroups.push_back(makeBallotGroup());
         contentGroups.push_back(makeBallotOptionsGroup());
@@ -63,7 +63,8 @@ namespace hypha
         proposal.getContentWrapper().getOrFail(BALLOT_OPTIONS, vote, "Invalid vote");
 
         // Fetch vote power
-        trailservice::trail::voters_table v_t(voter, voter.value);
+        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
+        trailservice::trail::voters_table v_t(trailContract, voter.value);
         auto v_itr = v_t.find(common::S_HVOICE.code().raw());
         check(v_itr != v_t.end(), "No HVOICE found");
         asset votePower = v_itr->liquid;
@@ -120,13 +121,13 @@ namespace hypha
 
     ContentGroup Proposal::makeSystemGroup(const name &proposer,
                                            const name &proposal_type,
-                                           const string &decide_title)
+                                           const string &proposal_title)
     {
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, SYSTEM),
             Content(CLIENT_VERSION, m_dao.getSettingOrDefault<std::string>(CLIENT_VERSION, DEFAULT_VERSION)),
             Content(CONTRACT_VERSION, m_dao.getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)),
-            Content(NODE_LABEL, decide_title),
+            Content(NODE_LABEL, proposal_title),
             Content(TYPE, proposal_type)};
     }
 
@@ -144,8 +145,8 @@ namespace hypha
     {
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, BALLOT_OPTIONS),
-            Content("pass", name("pass")),
-            Content("fail", name("fail"))
+            Content(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), common::BALLOT_DEFAULT_OPTION_PASS),
+            Content(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), common::BALLOT_DEFAULT_OPTION_FAIL)
         };
     }
 
@@ -162,7 +163,7 @@ namespace hypha
         for (auto it = contentOptions->begin(); it != contentOptions->end(); ++it) 
         {
             if (it->label != CONTENT_GROUP_LABEL) {
-                optionsTally[it->getAs<std::string>()] = 0;
+                optionsTally[it->label] = 0;
             }
         }
 

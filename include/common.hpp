@@ -75,6 +75,9 @@ namespace common
 
     static constexpr name GROUP_TYPE_OPTION = name("option");
 
+    static constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
+    static constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
+
 // content keys
 // keys used with settings
 #define ROOT_NODE "root_node"
