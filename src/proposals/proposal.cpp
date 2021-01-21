@@ -191,8 +191,8 @@ namespace hypha
         for (auto it = optionsTally.begin(); it != optionsTally.end(); ++it) 
         {
             tallyContentGroups.push_back(ContentGroup{
-                Content(VOTE_POWER, asset(it->second, common::S_HVOICE)),
-                Content(it->first, it->first)
+                Content(CONTENT_GROUP_LABEL, it->first),
+                Content(VOTE_POWER, asset(it->second, common::S_HVOICE))
             });
         }
 
@@ -204,23 +204,23 @@ namespace hypha
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
         // Todo: Implement this according to the native ballot
-        /*name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
-        trailservice::trail::ballots_table b_t(trailContract, trailContract.value);
-        auto b_itr = b_t.find(ballot_id.value);
-        check(b_itr != b_t.end(), "ballot_id: " + ballot_id.to_string() + " not found.");
+        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
 
         trailservice::trail::treasuries_table t_t(trailContract, trailContract.value);
         auto t_itr = t_t.find(common::S_HVOICE.code().raw());
         check(t_itr != t_t.end(), "Treasury: " + common::S_HVOICE.code().to_string() + " not found.");
 
         asset quorum_threshold = adjustAsset(t_itr->supply, 0.20000000);
-        map<name, asset> votes = b_itr->options;
-        asset votes_pass = votes.at(name("pass"));
-        asset votes_fail = votes.at(name("fail"));
-        asset votes_abstain = votes.at(name("abstain"));
 
+        Document tally(m_dao.get_self(), tallyHash);
+
+        // Currently get pass/fail
+        asset votes_pass = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+        asset votes_fail = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+
+        asset total = votes_pass + votes_fail;
         bool passed = false;
-        if (b_itr->total_raw_weight >= quorum_threshold &&      // must meet quorum
+        if (total >= quorum_threshold &&      // must meet quorum
             adjustAsset(votes_pass, 0.2500000000) > votes_fail) // must have 80% of the vote power
         {
             return true;
@@ -228,7 +228,7 @@ namespace hypha
         else
         {
             return false;
-        }*/
+        }
     }
 
 } // namespace hypha
