@@ -8,6 +8,7 @@
 namespace hypha
 {
     class dao;
+    class TimeShare;
 
     class Assignment : public Document
     {
@@ -23,6 +24,10 @@ namespace hypha
 
         eosio::asset getSalaryAmount (const eosio::symbol* symbol, Period* period);
         eosio::asset getSalaryAmount (const eosio::symbol* symbol);
+
+        TimeShare getInitialTimeShare();
+        TimeShare getCurrentTimeShare();
+        TimeShare getLastTimeShare();
 
         eosio::asset calcDSeedsSalary (Period* period);
         eosio::asset calcLiquidSeedsSalary ();

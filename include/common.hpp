@@ -72,6 +72,11 @@ namespace common
 
     static constexpr name GROUP_TYPE_OPTION = name("option");
 
+    constexpr name LAST_TIME_SHARE = name("lastimeshare");
+    constexpr name CURRENT_TIME_SHARE = name("curntimeshare");
+    constexpr name INIT_TIME_SHARE = name("initimeshare");
+    constexpr name NEXT_TIME_SHARE = name("nextimeshare");
+    constexpr name TIME_SHARE_LABEL = name("timeshare");
 // content keys
 // keys used with settings
 #define ROOT_NODE "root_node"
@@ -144,9 +149,11 @@ namespace common
 
 #define EVENT "event"
 
+#define TIME_SHARE_START_DATE "start_date"
 #define FULL_TIME_CAPACITY "fulltime_capacity_x100"
 #define ANNUAL_USD_SALARY "annual_usd_salary"
 #define TIME_SHARE "time_share_x100"
+#define NEW_TIME_SHARE "new_time_share_x100"
 #define MIN_TIME_SHARE "min_time_share_x100"
 #define MIN_DEFERRED "min_deferred_x100"
 #define DEFERRED "deferred_perc_x100"

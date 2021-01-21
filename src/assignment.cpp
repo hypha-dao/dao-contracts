@@ -6,6 +6,7 @@
 #include <document_graph/content_wrapper.hpp>
 #include <member.hpp>
 #include <assignment.hpp>
+#include <time_share.hpp>
 
 namespace hypha
 {
@@ -186,6 +187,26 @@ namespace hypha
         }
 
         return eosio::asset{0, *symbol};
+    }
+    
+    TimeShare Assignment::getInitialTimeShare() 
+    {
+      Edge initialEdge = Edge::get(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
+      return TimeShare(m_dao->get_self(), initialEdge.getToNode());
+    }
+    
+    TimeShare Assignment::getCurrentTimeShare() 
+    {
+      Edge currentEdge = Edge::get(m_dao->get_self(), getHash(), common::CURRENT_TIME_SHARE);
+
+      return TimeShare(m_dao->get_self(), currentEdge.getToNode());
+    }
+    
+    TimeShare Assignment::getLastTimeShare() 
+    {
+      Edge lastEdge = Edge::get(m_dao->get_self(), getHash(), common::LAST_TIME_SHARE);
+
+      return TimeShare(m_dao->get_self(), lastEdge.getToNode());
     }
 
     eosio::asset Assignment::calcDSeedsSalary(Period *period)

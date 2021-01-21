@@ -90,6 +90,8 @@ namespace hypha
          return def;
       }
 
+      ACTION adjustcmtmnt(name issuer, ContentGroups& adjust_info);
+
       // migration actions
       ACTION migrate(const eosio::name &scope, const uint64_t &id);
       ACTION migrateconfig(const std::string &notes);
