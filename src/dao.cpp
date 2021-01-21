@@ -683,12 +683,15 @@ namespace hypha
                                    + string(" You submitted: ") + std::to_string(newTimeShare));
 
       //Update lasttimeshare
-      Edge lastTimeShare = Edge::get(get_self(), assignment.getHash(), common::LAST_TIME_SHARE);
-      lastTimeShare.erase();
+      Edge lastTimeShareEdge = Edge::get(get_self(), assignment.getHash(), common::LAST_TIME_SHARE);
       
       TimeShare newTimeShareDoc(get_self(), issuer, newTimeShare, eosio::current_time_point());
 
-      Edge::write(get_self(), issuer, assignment.getHash(), newTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
+      Edge::write(get_self(), get_self(), lastTimeShareEdge.getFromNode(), newTimeShareDoc.getHash(), common::NEXT_TIME_SHARE);
+
+      lastTimeShareEdge.erase();
+
+      Edge::write(get_self(), get_self(), assignment.getHash(), newTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
     }
   }
 
