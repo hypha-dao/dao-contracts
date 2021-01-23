@@ -71,13 +71,14 @@ namespace hypha
 
         ContentGroups contentGroups{
             ContentGroup{
+                Content(VOTER_LABEL, voter),
                 Content(VOTE_POWER, votePower),
-                Content(vote, vote)
+                Content(VOTE_LABEL, vote)
             }
         };
 
         eosio::checksum256 voterHash = Member::calcHash(voter);
-        Document voteDocument(m_dao.get_self(), voter, contentGroups);
+        Document voteDocument = Document::getOrNew(m_dao.get_self(), m_dao.get_self(), contentGroups);
 
         // an edge from the member to the vote named vote
         Edge::write(m_dao.get_self(), voter, voterHash, voteDocument.getHash(), common::VOTE);
@@ -137,7 +138,7 @@ namespace hypha
         auto expiration = time_point_sec(current_time_point()) + m_dao.getSettingOrFail<int64_t>(VOTING_DURATION_SEC);
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, BALLOT),
-            Content("expiration", expiration)
+            Content(EXPIRATION_LABEL, expiration)
         };
     }
 
@@ -159,11 +160,11 @@ namespace hypha
 
         ContentGroup* contentOptions = proposal.getContentWrapper().getGroupOrFail(BALLOT_OPTIONS);
 
-        std::map<std::string, int64_t> optionsTally;
+        std::map<std::string, eosio::asset> optionsTally;
         for (auto it = contentOptions->begin(); it != contentOptions->end(); ++it) 
         {
             if (it->label != CONTENT_GROUP_LABEL) {
-                optionsTally[it->label] = 0;
+                optionsTally[it->label] = asset(0, common::S_HVOICE);
             }
         }
 
@@ -174,11 +175,11 @@ namespace hypha
             Document voteDocument(m_dao.get_self(), voteHash);
             ContentGroup group = voteDocument.getContentGroups().front();
             std::string vote;
-            std::int64_t power;
+            eosio::asset power;
             for (ContentGroup::const_iterator contentIt = group.begin(); contentIt != group.end(); ++contentIt)  {
                 if (contentIt->label == VOTE_POWER) {
-                    power = contentIt->getAs<std::int64_t>();
-                } else {
+                    power = contentIt->getAs<eosio::asset>();
+                } else if (contentIt->label == VOTE_LABEL) {
                     vote = contentIt->getAs<std::string>();
                 }
             }
@@ -192,18 +193,17 @@ namespace hypha
         {
             tallyContentGroups.push_back(ContentGroup{
                 Content(CONTENT_GROUP_LABEL, it->first),
-                Content(VOTE_POWER, asset(it->second, common::S_HVOICE))
+                Content(VOTE_POWER, it->second)
             });
         }
 
         // Who is the creator? The last voter? the contract?
-        Document document(m_dao.get_self(), creator, tallyContentGroups);
-        Edge::write(m_dao.get_self(), creator, proposal.getHash(), document.getHash(), common::VOTE_TALLY);
+        Document document = Document::getOrNew(m_dao.get_self(), m_dao.get_self(), tallyContentGroups);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), document.getHash(), common::VOTE_TALLY);
     }
 
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
-        // Todo: Implement this according to the native ballot
         name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
 
         trailservice::trail::treasuries_table t_t(trailContract, trailContract.value);

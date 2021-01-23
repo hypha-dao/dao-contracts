@@ -25,7 +25,7 @@ namespace hypha
       proposal->propose(proposer, content_groups);
    }
 
-   void dao::vote(const name& voter, const checksum256 &proposal_hash, string vote)
+   void dao::vote(const name& voter, const checksum256 &proposal_hash, string &vote)
    {
       eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
       Document docprop(get_self(), proposal_hash);

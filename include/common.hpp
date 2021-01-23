@@ -165,5 +165,8 @@ namespace common
 #define SETTINGS "settings"
 
 #define VOTE_POWER "vote_power"
+#define VOTE_LABEL "vote"
+#define VOTER_LABEL "voter"
+#define EXPIRATION_LABEL "expiration"
 
 }; // namespace common
