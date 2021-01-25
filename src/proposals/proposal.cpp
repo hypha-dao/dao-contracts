@@ -62,6 +62,16 @@ namespace hypha
     {
         proposal.getContentWrapper().getOrFail(BALLOT_OPTIONS, vote, "Invalid vote");
 
+        eosio::check(
+            Edge::exists(m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::PROPOSAL),
+            "Only allowed to vote active proposals"
+        );
+
+        std::vector<Edge> voters = Edge::getAll(m_dao.get_self(), proposal.getHash(), common::VOTE);
+        for (auto votersIt = voters.begin(); votersIt != voters.end(); ++votersIt) {
+            eosio::check(votersIt->getCreator() != voter, "Already voted for this proposal");
+        }
+
         // Fetch vote power
         name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
         trailservice::trail::voters_table v_t(trailContract, voter.value);
