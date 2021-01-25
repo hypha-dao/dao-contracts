@@ -57,7 +57,7 @@ namespace hypha
       Edge::write(get_self(), get_self(), assignment.getHash(), periodToClaim.value().getHash(), common::CLAIMED);
       int64_t assignmentApprovedDateSec = assignment.getApprovedTime().sec_since_epoch();
       int64_t periodStartSec = periodToClaim.value().getStartTime().sec_since_epoch();
-      int64_t periodEndSec = periodToClaim.value().next().getEndTime().sec_since_epoch();
+      int64_t periodEndSec = periodToClaim.value().getEndTime().sec_since_epoch();
 
       // Pro-rate the payment if the assignment was created during the period being claimed
       float first_phase_ratio_calc = 1.f; // pro-rate based on elapsed % of the first phase
@@ -134,7 +134,7 @@ namespace hypha
           float relativeDuration = static_cast<float>(remainingTimeSec) / static_cast<float>(fullPeriodSec);
           float relativeCommitment = static_cast<float>(timeShare) / static_cast<float>(initTimeShare);
           float commitmentMultiplier = relativeDuration * relativeCommitment;
-
+          
           //Accumlate each of the currencies with the time share multiplier
           deferredSeeds = (deferredSeeds.is_valid() ? deferredSeeds : eosio::asset{0, common::S_SEEDS}) + 
           adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc * commitmentMultiplier);
@@ -673,9 +673,12 @@ namespace hypha
 
       ContentWrapper assignmentCW = assignment.getContentWrapper();
 
+      Document roleDocument(get_self(), assignmentCW.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
+      auto role = roleDocument.getContentWrapper();
+
       //Check min_time_share_x100 <= new_time_share_x100 <= time_share_x100
       int64_t originalTimeShare = assignmentCW.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-      int64_t minTimeShare = assignmentCW.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
+      int64_t minTimeShare = role.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
       int64_t newTimeShare = cw.getOrFail(i, NEW_TIME_SHARE).second->getAs<int64_t>();
 
       eosio::check(newTimeShare >= minTimeShare, 
@@ -687,10 +690,17 @@ namespace hypha
 
       //Update lasttimeshare
       Edge lastTimeShareEdge = Edge::get(get_self(), assignment.getHash(), common::LAST_TIME_SHARE);
-      
-      TimeShare newTimeShareDoc(get_self(), issuer, newTimeShare, eosio::current_time_point());
+    
+      time_point startDate = eosio::current_time_point();
 
-      Edge::write(get_self(), get_self(), lastTimeShareEdge.getFromNode(), newTimeShareDoc.getHash(), common::NEXT_TIME_SHARE);
+      if (auto [idx, startDateContent] = cw.get(i, TIME_SHARE_START_DATE); 
+          startDateContent) {
+        startDate = startDateContent->getAs<time_point>();
+      }
+
+      TimeShare newTimeShareDoc(get_self(), issuer, newTimeShare, startDate);
+
+      Edge::write(get_self(), get_self(), lastTimeShareEdge.getToNode(), newTimeShareDoc.getHash(), common::NEXT_TIME_SHARE);
 
       lastTimeShareEdge.erase();
 

@@ -3,12 +3,182 @@ package dao_test
 import (
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/eoscanada/eos-go"
 	"github.com/hypha-dao/dao-contracts/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"gotest.tools/assert"
 )
+
+func GetAdjustInfo(assignment eos.Checksum256, timeShare int64, startDate eos.TimePoint) ([]docgraph.ContentGroup) {
+
+	return []docgraph.ContentGroup{
+	{
+			{
+				Label: "assignemnt_id",
+				Value: 	&docgraph.FlexValue{ 
+					BaseVariant: eos.BaseVariant{
+					TypeID: docgraph.GetVariants().TypeID("checksum256"),
+					Impl:   assignment,
+				}},
+			},
+			{
+				Label: "new_time_share_x100",
+				Value: &docgraph.FlexValue{
+					BaseVariant: eos.BaseVariant{
+						TypeID: docgraph.GetVariants().TypeID("int64"),
+						Impl:  timeShare,
+					}},
+			},
+			{
+				Label: "start_date",
+				Value: &docgraph.FlexValue{
+					BaseVariant: eos.BaseVariant{
+						TypeID: docgraph.GetVariants().TypeID("time_point"),
+						Impl:  startDate,
+					}},
+			},
+	}}
+
+}
+
+func TestAdjustCommitment(t *testing.T) {
+	teardownTestCase := setupTestCase(t)
+	defer teardownTestCase(t)
+
+	env = SetupEnvironment(t)
+	t.Log(env.String())
+	t.Log("\nDAO Environment Setup complete\n")
+
+	// roles
+	proposer := env.Members[0]
+	assignee := env.Members[1]
+	closer := env.Members[2]
+
+	role1Doc := CreateRole(t, env, proposer, closer, role1)
+	t.Run("Test Adjust assignment commitment", func(t *testing.T) {
+
+		tests := []struct {
+			name       string
+			roleTitle  string
+			title      string
+			role       docgraph.Document
+			assignment string
+			husd       string
+			hypha      string
+			hvoice     string
+			usd        string
+		}{
+			{
+				name:       "role1 - 100% 100%",
+				roleTitle:  "Underwater Basketweaver",
+				title:      "Underwater Basketweaver - Atlantic",
+				role:       role1Doc,
+				assignment: assignment1,
+				husd:       "0.00 HUSD",
+				hypha:      "759.75 HYPHA",
+				hvoice:     "6078.02 HVOICE",
+				usd:        "3039.01 USD",
+			},
+		}
+
+		for _, test := range tests {
+
+			t.Log("\n\nStarting test: ", test.name)
+
+			_, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, test.role.Hash, env.Periods[0].Hash, test.assignment)
+			assert.NilError(t, err)
+
+			// retrieve the document we just created
+			proposal, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
+			assert.NilError(t, err)
+		
+			ballot, err := proposal.GetContent("ballot_id")
+			assert.NilError(t, err)
+			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+
+			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
+			assert.NilError(t, err)
+
+			assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
+
+			var adjustStartDate eos.TimePoint
+			//Get starting period to calculate half period duration
+			{
+				periodHash, err := assignment.GetContent("start_period")
+				assert.NilError(t, err)
+				period, err := docgraph.LoadDocument(env.ctx, &env.api, env.DAO, periodHash.String());
+				assert.NilError(t, err)
+				startTime, err := period.GetContent("start_time")
+				assert.NilError(t, err)
+				time := time.Unix(int64(startTime.Impl.(eos.TimePoint))/1000000, 0)
+				adjustStartDate = eos.TimePoint(time.Add(env.PeriodDuration).Add(env.PeriodDuration/2).UnixNano()/1000)
+			}
+
+			//Create Adjustment
+			var adjustInfo = GetAdjustInfo(assignment.Hash, int64(50), adjustStartDate)
+
+			_, err = AdjustCommitment(env, assignee.Member, adjustInfo);
+
+			assert.NilError(t, err);
+
+			//Check Adjustemnt was created correctly
+			{
+				timeShare, err := docgraph.GetLastDocument(env.ctx, &env.api, env.DAO)
+
+				ts, err := timeShare.GetContent("time_share_x100")
+				assert.NilError(t, err);
+				assert.Equal(t, ts.String(), "50")
+
+				sd, err := timeShare.GetContent("start_date")
+				assert.NilError(t, err);
+				assert.Equal(t, sd.Impl.(eos.TimePoint), adjustStartDate)
+			}
+								
+			//Claim first period
+			t.Log("Waiting for a period to lapse...")
+			pause(t, env.PeriodPause, "", "Waiting...")
+
+			//This shouldn't get full payment since proposal was approved after period start
+			_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
+			assert.NilError(t, err)
+
+			{
+
+			}
+
+			//Claim second period
+			t.Log("Waiting for another period to lapse...")
+			pause(t, env.PeriodPause, "", "Waiting...")
+
+			//This should get full payment for the first half of the period 
+			//and then half payment for the last half of the period
+			_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
+			assert.NilError(t, err)
+			{
+
+			}
+
+			// fetchedAssignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
+
+			// husd, err := fetchedAssignment.GetContent("husd_salary_per_phase")
+			// assert.NilError(t, err)
+
+			// hypha, err := fetchedAssignment.GetContent("hypha_salary_per_phase")
+			// assert.NilError(t, err)
+
+			// hvoice, err := fetchedAssignment.GetContent("hvoice_salary_per_phase")
+			// assert.NilError(t, err)
+
+			//Claim next period
+
+			//Check receips
+			
+			t.Log("Test", assignment.Creator)
+		}
+	})
+}
 
 func TestAssignmentProposalDocument(t *testing.T) {
 	teardownTestCase := setupTestCase(t)
@@ -398,6 +568,29 @@ func TestAssignmentPayClaim(t *testing.T) {
 		}
 	})
 }
+
+const base_assigment_adjust_x1 =`
+{
+	"content_groups": [
+			[
+				{
+					"label": "assignemnt_id",
+					"value": [
+							"checksum256",
+							"c9937a11790ff74d9465a779138572f4312a76c2db487964820f0f4177e9c905"
+					]
+				},
+				{
+					"label": "new_time_share_x100",
+					"value": [
+							"int64",
+							50
+					]
+				}
+			]
+	]
+}
+`
 
 const assignment1 = `{
     "content_groups": [
