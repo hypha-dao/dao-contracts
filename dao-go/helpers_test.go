@@ -308,6 +308,7 @@ func checkEdge(t *testing.T, env *Environment, fromEdge, toEdge docgraph.Documen
 }
 
 func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, voter Member) {
+	pause(t, env.VotingPause, "", "Waiting before fetching last vote")
 	vote, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("vote"))
 	assert.NilError(t, err)
 
@@ -318,7 +319,7 @@ func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, v
 	// vote			---ownedby----> 	voter
 	// vote		    ---voteon----->     propDocument
 	checkEdge(t, env, voter.Doc, vote, eos.Name("vote"))
-	checkEdge(t, env, proposal, vote, eos.Name("voteby"))
+	checkEdge(t, env, proposal, vote, eos.Name("vote"))
 	checkEdge(t, env, vote, voter.Doc, eos.Name("ownedby"))
 	checkEdge(t, env, vote, proposal, eos.Name("voteon"))
 }
@@ -334,7 +335,6 @@ func nativeVoteToPassTD(t *testing.T, env *Environment, proposal docgraph.Docume
 	for _, member := range env.Members {
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, member.Member, "pass", proposal_hash)
 		assert.NilError(t, err)
-		t.Log("Checking other member:")
 		checkLastVote(t, env, proposal, member)
 	}
 	t.Log("Allowing the ballot voting period to lapse")
