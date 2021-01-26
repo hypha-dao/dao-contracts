@@ -117,7 +117,8 @@ namespace hypha
 
     eosio::time_point Assignment::getApprovedTime()
     {
-        return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
+        //return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
+        return getInitialTimeShare().getContentWrapper().getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
     }
 
     bool Assignment::isClaimed(Period *period)
@@ -132,15 +133,20 @@ namespace hypha
         int64_t periodCount = getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
         int64_t counter = 0;
 
+        auto approvedTime = getApprovedTime().sec_since_epoch();
+        auto currentTime = eosio::current_time_point().sec_since_epoch();
+
         while (counter < periodCount)
         {
             eosio::print ("current time     : " + std::to_string(eosio::current_time_point().sec_since_epoch()) + "\n");
             eosio::print ("start time       : " + std::to_string(period.getStartTime().sec_since_epoch()) + "\n");
             eosio::print ("approved time    : " + std::to_string(getApprovedTime().sec_since_epoch()) + "\n");
-
-            if (period.getStartTime().sec_since_epoch() >= getApprovedTime().sec_since_epoch() &&        // if period comes after assignment creation
-                period.getEndTime().sec_since_epoch() <= eosio::current_time_point().sec_since_epoch() && // if period has lapsed
-                !isClaimed(&period))                                                                     // and not yet claimed
+            auto startTime = period.getStartTime().sec_since_epoch();
+            auto endTime = period.getEndTime().sec_since_epoch();
+            if ((startTime >= approvedTime || // if period comes after assignment creation
+                 approvedTime < endTime) &&  //Or if it was approved in the middle of a period
+                 endTime <= currentTime &&   // if period has lapsed
+                !isClaimed(&period))         // and not yet claimed
             {
                 return std::optional<Period>{period};
             }

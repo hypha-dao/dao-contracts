@@ -55,7 +55,7 @@ namespace hypha
       // Valid claim identified - start process
       // process this claim
       Edge::write(get_self(), get_self(), assignment.getHash(), periodToClaim.value().getHash(), common::CLAIMED);
-      int64_t assignmentApprovedDateSec = assignment.getApprovedTime().sec_since_epoch();
+      //int64_t assignmentApprovedDateSec = assignment.getApprovedTime().sec_since_epoch();
       int64_t periodStartSec = periodToClaim.value().getStartTime().sec_since_epoch();
       int64_t periodEndSec = periodToClaim.value().getEndTime().sec_since_epoch();
 
@@ -126,10 +126,10 @@ namespace hypha
           }
           else {
             remainingTimeSec = periodEndSec - baseDateSec;
-          }
-
-          const int64_t fullPeriodSec = periodEndSec - periodStartSec;
+          }        
           
+          const int64_t fullPeriodSec = periodEndSec - periodStartSec;
+
           //Time share could only represent a portion of the whole period
           float relativeDuration = static_cast<float>(remainingTimeSec) / static_cast<float>(fullPeriodSec);
           float relativeCommitment = static_cast<float>(timeShare) / static_cast<float>(initTimeShare);
@@ -695,7 +695,12 @@ namespace hypha
 
       if (auto [idx, startDateContent] = cw.get(i, TIME_SHARE_START_DATE); 
           startDateContent) {
+        TimeShare lastTimeShare(get_self(), lastTimeShareEdge.getToNode());
+        time_point lastStartDate = lastTimeShare.getContentWrapper()
+                                                .getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
         startDate = startDateContent->getAs<time_point>();
+        eosio::check(lastStartDate.sec_since_epoch() < startDate.sec_since_epoch(), 
+                     "New time share start date must be greater than the previous time share");
       }
 
       TimeShare newTimeShareDoc(get_self(), issuer, newTimeShare, startDate);

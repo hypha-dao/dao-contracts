@@ -2,6 +2,7 @@ package dao_test
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,7 +41,89 @@ func GetAdjustInfo(assignment eos.Checksum256, timeShare int64, startDate eos.Ti
 					}},
 			},
 	}}
+}
 
+//Used to calculate token compensation with 3 adjustments over the same
+//period
+func CalculateTotalCompensation(alfa, beta, gamma, totalByPeriod float32) float32 {
+	//Or factorized totalByPeriod*1.0/3.0*(alfa+beta+gamma)
+	return	totalByPeriod * 1.0 / 3.0 * alfa + 
+					totalByPeriod * 1.0 / 3.0 * beta +
+					totalByPeriod * 1.0 / 3.0 * gamma
+}
+
+func CreateAdjustmentAfter(commitment, startSecs int64, offsetSecs time.Duration, assignment *docgraph.Document, assignee *Member, env *Environment, t *testing.T) error {
+
+	time := time.Unix(startSecs, 0)
+
+	adjustStartDate := eos.TimePoint(time.Add(offsetSecs).UnixNano()/1000)
+
+	var adjustInfo = GetAdjustInfo(assignment.Hash, commitment, adjustStartDate)
+
+	_, err := AdjustCommitment(env, assignee.Member, adjustInfo);
+
+	assert.NilError(t, err);
+
+	timeShare, err := docgraph.GetLastDocument(env.ctx, &env.api, env.DAO)
+
+	ts, err := timeShare.GetContent("time_share_x100")
+	assert.NilError(t, err);
+	assert.Equal(t, ts.String(), strconv.FormatInt(commitment, 10))
+
+	sd, err := timeShare.GetContent("start_date")
+	assert.NilError(t, err);
+	assert.Equal(t, sd.Impl.(eos.TimePoint), adjustStartDate)
+
+	return err
+}
+
+func AssetToInt(asset *docgraph.FlexValue) (int64, string, error) {
+	assetStr := asset.Impl.(*eos.Asset).String()
+	stringItms := strings.Split(assetStr, " ")
+	parsed, err := strconv.ParseFloat(stringItms[0], 32)
+
+	return int64(parsed), stringItms[1], err
+}
+
+func ValidateLastReceipt(targetHUSD, targetHYPHA, targetHVOICE, targetSEEDS int64, env *Environment, t *testing.T) {
+
+	period, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("claimed"))
+	assert.NilError(t, err);
+
+	paymentEdges, err := docgraph.GetEdgesFromDocumentWithEdge(env.ctx, &env.api, env.DAO, period, eos.Name("payment"))
+	assert.NilError(t, err);
+
+	var paymentMap map[string]int64
+
+	paymentMap = make(map[string]int64)
+
+	for _, edge := range paymentEdges {
+		payment, err := docgraph.LoadDocument(env.ctx, &env.api, env.DAO, edge.ToNode.String())
+		assert.NilError(t, err);
+		asset, err := payment.GetContent("amount");
+		assert.NilError(t, err);
+		amount, symbol, err := AssetToInt(asset)
+		assert.NilError(t, err);
+		paymentMap[symbol] = amount
+	}
+
+	if (targetHUSD != 0) {
+		assert.Equal(t, targetHUSD, paymentMap["HUSD"])
+	}
+
+	if (targetHYPHA != 0) {
+		assert.Equal(t, targetHYPHA, paymentMap["HYPHA"])
+	}
+
+	if (targetHVOICE != 0) {
+		assert.Equal(t, targetHVOICE, paymentMap["HVOICE"])
+	}
+
+	if (targetSEEDS != 0) {
+		assert.Equal(t, targetSEEDS, paymentMap["SEEDS"])
+	}
+
+	assert.NilError(t, err);
 }
 
 func TestAdjustCommitment(t *testing.T) {
@@ -98,12 +181,18 @@ func TestAdjustCommitment(t *testing.T) {
 			assert.NilError(t, err)
 			voteToPassTD(t, env, ballot.Impl.(eos.Name))
 
+			//Wait 1 Period to close the proposal and test the special 
+			//case when approved time overlaps in the first period
+			t.Log("Waiting for a period to lapse...")
+			pause(t, env.PeriodPause, "", "Waiting...")
+
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
 			assert.NilError(t, err)
 
 			assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
 
-			var adjustStartDate eos.TimePoint
+			var firstPeriodStartSecs int64
+			var firstPeriodEndSecs int64
 			//Get starting period to calculate half period duration
 			{
 				periodHash, err := assignment.GetContent("start_period")
@@ -112,43 +201,98 @@ func TestAdjustCommitment(t *testing.T) {
 				assert.NilError(t, err)
 				startTime, err := period.GetContent("start_time")
 				assert.NilError(t, err)
-				time := time.Unix(int64(startTime.Impl.(eos.TimePoint))/1000000, 0)
-				adjustStartDate = eos.TimePoint(time.Add(env.PeriodDuration).Add(env.PeriodDuration/2).UnixNano()/1000)
+				firstPeriodStartSecs = int64(startTime.Impl.(eos.TimePoint))/1000000
+				nextPeriods, err := docgraph.GetEdgesFromDocumentWithEdge(env.ctx, &env.api, env.DAO, period, eos.Name("next"))
+				assert.NilError(t, err)
+				nextPeriod, err := docgraph.LoadDocument(env.ctx, &env.api, env.DAO, nextPeriods[0].ToNode.String())
+				assert.NilError(t, err)
+				startTime, err = nextPeriod.GetContent("start_time")
+				assert.NilError(t, err)
+				firstPeriodEndSecs = int64(startTime.Impl.(eos.TimePoint))/1000000
 			}
 
-			//Create Adjustment
-			var adjustInfo = GetAdjustInfo(assignment.Hash, int64(50), adjustStartDate)
+			//Create Adjustment 2.5 Periods after start period
+			CreateAdjustmentAfter(int64(50), 
+														firstPeriodStartSecs, 
+														env.PeriodDuration * 5 / 2,
+														&assignment,
+														&assignee, env, t)
 
-			_, err = AdjustCommitment(env, assignee.Member, adjustInfo);
+			//Create Adjustment 3.33 Periods after start period
+			CreateAdjustmentAfter(int64(100), 
+														firstPeriodStartSecs,
+														env.PeriodDuration * 10 / 3,
+														&assignment,
+														&assignee, env, t)
 
-			assert.NilError(t, err);
+			//Create Adjustment 3.66 Periods after start period
+			CreateAdjustmentAfter(int64(75), 
+														firstPeriodStartSecs,
+														env.PeriodDuration * 11 / 3,
+														&assignment,
+														&assignee, env, t)
 
-			//Check Adjustemnt was created correctly
+			//TODO: Calculate seeds_per_usd using tlosto.seeds table
+			hardcodedSeedsPerUsd := float32(39.0840)
+			var seedsDeferralFactor float32
 			{
-				timeShare, err := docgraph.GetLastDocument(env.ctx, &env.api, env.DAO)
+				settings, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("settings"))
+				
+				seedsDeferral, err := settings.GetContent("seeds_deferral_factor_x100")
+				assert.NilError(t, err)
 
-				ts, err := timeShare.GetContent("time_share_x100")
-				assert.NilError(t, err);
-				assert.Equal(t, ts.String(), "50")
-
-				sd, err := timeShare.GetContent("start_date")
-				assert.NilError(t, err);
-				assert.Equal(t, sd.Impl.(eos.TimePoint), adjustStartDate)
+				seedsDeferralFactor = float32(seedsDeferral.Impl.(int64)) / 100.0
 			}
-								
+
+			usdSalaryPerPhase := float32(3039.01)
+
+			//Number of HYPHA tokens received in 1 full period
+			totalHYPHA := float32(759.75)
+
+			//Number of HUSD tokens received in 1 full period
+			totalHUSD := float32(0)
+
+			//Number of HVOICE tokens received in 1 full period
+			totalHVOICE := float32(usdSalaryPerPhase*2.0)
+
+			//Number of seeds received in 1 full period
+			totalSEEDS := usdSalaryPerPhase * hardcodedSeedsPerUsd * seedsDeferralFactor
+
 			//Claim first period
 			t.Log("Waiting for a period to lapse...")
 			pause(t, env.PeriodPause, "", "Waiting...")
 
-			//This shouldn't get full payment since proposal was approved after period start
+			//This should get partial payment since the approved time should be > than 
+			//the start time of the period
 			_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
 			assert.NilError(t, err)
 
 			{
-
+				initTimeShare, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("initimeshare"))
+				assert.NilError(t, err)
+				approvedTime, err := initTimeShare.GetContent("start_date")
+				approvedSecs := int64(approvedTime.Impl.(eos.TimePoint))/1000000
+				periodDuration := float32(firstPeriodEndSecs-firstPeriodStartSecs)
+				timeFactor := float32(firstPeriodEndSecs-approvedSecs) / periodDuration
+				ValidateLastReceipt(int64(totalHUSD*timeFactor), 
+														int64(totalHYPHA*timeFactor), 
+														int64(totalHVOICE*timeFactor), 
+														int64(totalSEEDS*timeFactor), env, t)
 			}
 
 			//Claim second period
+			t.Log("Waiting for a period to lapse...")
+			pause(t, env.PeriodPause, "", "Waiting...")
+			
+			//This should get full payment since the first 50% adjustment takes
+			//place on the next period
+			_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
+			assert.NilError(t, err)
+
+			//Ignore decimal precision.
+			ValidateLastReceipt(int64(totalHUSD), int64(totalHYPHA), int64(totalHVOICE), int64(totalSEEDS), env, t)
+
+			//Claim third period
 			t.Log("Waiting for another period to lapse...")
 			pause(t, env.PeriodPause, "", "Waiting...")
 
@@ -156,26 +300,35 @@ func TestAdjustCommitment(t *testing.T) {
 			//and then half payment for the last half of the period
 			_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
 			assert.NilError(t, err)
+			
 			{
-
+				//15 : Period Duration
+				firstHalf := float32(7.0 / 15.0)
+				secondHalf := float32(8.0 / 15.0)
+				newTotalSEEDS := totalSEEDS * firstHalf + totalSEEDS * float32(0.5) * secondHalf
+				newTotalHYPHA := totalHYPHA * firstHalf + totalHYPHA * float32(0.5) * secondHalf
+				newTotalHVOICE := totalHVOICE * firstHalf + totalHVOICE * float32(0.5) * secondHalf
+				newTotalHUSD := totalHUSD * firstHalf + totalHUSD * float32(0.5) * secondHalf
+				ValidateLastReceipt(int64(newTotalHUSD), int64(newTotalHYPHA), int64(newTotalHVOICE), int64(newTotalSEEDS), env, t)
 			}
 
-			// fetchedAssignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
+			//Claim last period
+			t.Log("Waiting for another period to lapse...")
+			pause(t, env.PeriodPause, "", "Waiting...")
 
-			// husd, err := fetchedAssignment.GetContent("husd_salary_per_phase")
-			// assert.NilError(t, err)
+			//This should get half payment for the first third,
+			//full payment on the second third &
+			//75% of payment on the last third
+			_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
+			assert.NilError(t, err)
 
-			// hypha, err := fetchedAssignment.GetContent("hypha_salary_per_phase")
-			// assert.NilError(t, err)
-
-			// hvoice, err := fetchedAssignment.GetContent("hvoice_salary_per_phase")
-			// assert.NilError(t, err)
-
-			//Claim next period
-
-			//Check receips
-			
-			t.Log("Test", assignment.Creator)
+			{
+				newTotalSEEDS := CalculateTotalCompensation(0.5, 1.0, 0.75, totalSEEDS)
+				newTotalHYPHA := CalculateTotalCompensation(0.5, 1.0, 0.75, totalHYPHA)
+				newTotalHVOICE := CalculateTotalCompensation(0.5, 1.0, 0.75, totalHVOICE)
+				newTotalHUSD := CalculateTotalCompensation(0.5, 1.0, 0.75, totalHUSD)
+				ValidateLastReceipt(int64(newTotalHUSD), int64(newTotalHYPHA), int64(newTotalHVOICE), int64(newTotalSEEDS), env, t)
+			}
 		}
 	})
 }
