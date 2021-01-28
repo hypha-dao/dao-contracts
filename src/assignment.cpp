@@ -110,7 +110,7 @@ namespace hypha
 
     Member Assignment::getAssignee()
     {
-        return Member(m_dao->get_self(), Edge::get(m_dao->get_self(), getHash(), common::ASSIGNEE_NAME).getToNode());
+        return Member(*m_dao, Edge::get(m_dao->get_self(), getHash(), common::ASSIGNEE_NAME).getToNode());
         // return m;
     }
 
