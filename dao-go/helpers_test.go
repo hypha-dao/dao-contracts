@@ -307,7 +307,7 @@ func checkEdge(t *testing.T, env *Environment, fromEdge, toEdge docgraph.Documen
 	assert.Check(t, exists)
 }
 
-func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, voter Member) {
+func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, voter Member) docgraph.Document {
 	pause(t, env.VotingPause, "", "Waiting before fetching last vote")
 	vote, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("vote"))
 	assert.NilError(t, err)
@@ -322,6 +322,8 @@ func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, v
 	checkEdge(t, env, proposal, vote, eos.Name("vote"))
 	checkEdge(t, env, vote, voter.Doc, eos.Name("ownedby"))
 	checkEdge(t, env, vote, proposal, eos.Name("voteon"))
+
+	return vote
 }
 
 func nativeVoteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document) {

@@ -19,7 +19,7 @@ type CloseDocProp struct {
 type VoteProposal struct {
 	Voter        eos.AccountName `json:"voter"`
 	ProposalHash eos.Checksum256 `json:"proposal_hash"`
-	Vote         string `json:"vote"`
+	Vote         string          `json:"vote"`
 }
 
 // Vote represents a set of options being cast as a vote to Telos Decide
@@ -355,7 +355,6 @@ func DocumentVote(ctx context.Context, api *eos.API,
 	return nil
 }
 
-
 // ProposalVote
 func ProposalVote(
 	ctx context.Context, api *eos.API,
@@ -364,18 +363,18 @@ func ProposalVote(
 
 	actions := []*eos.Action{{
 		Account: contract,
-		Name:	 eos.ActN("vote"),
-		Authorization:  []eos.PermissionLevel{
+		Name:    eos.ActN("vote"),
+		Authorization: []eos.PermissionLevel{
 			{Actor: voter, Permission: eos.PN("active")},
 		},
 		ActionData: eos.NewActionData(&VoteProposal{
-			Voter: voter,
+			Voter:        voter,
 			ProposalHash: proposalHash,
-			Vote: vote,
+			Vote:         vote,
 		}),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions);
+	return eostest.ExecTrx(ctx, api, actions)
 }
 
 // CloseProposal ...

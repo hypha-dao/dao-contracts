@@ -158,9 +158,7 @@ func TestAssignmentProposalDocument(t *testing.T) {
 			// }
 			// assert.Check(t, exists)
 
-			ballot, err := assignment.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+			nativeVoteToPassTD(t, env, assignment)
 
 			t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)

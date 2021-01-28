@@ -67,9 +67,18 @@ namespace hypha
             "Only allowed to vote active proposals"
         );
 
-        std::vector<Edge> voters = Edge::getAll(m_dao.get_self(), proposal.getHash(), common::VOTE);
-        for (auto votersIt = voters.begin(); votersIt != voters.end(); ++votersIt) {
-            eosio::check(votersIt->getCreator() != voter, "Already voted for this proposal");
+        std::vector<Edge> votes = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
+        for (auto votesIt = votes.begin(); votesIt != votes.end(); ++votesIt) {
+            if (votesIt->getCreator() == voter) {
+                eosio::checksum256 voterHash = Member::calcHash(voter);
+                Document voteDocument(m_dao.get_self(), votesIt->getToNode());
+
+                // Already voted, erase edges and allow to vote again.
+                Edge::get(m_dao.get_self(), voterHash, voteDocument.getHash(), common::VOTE).erase();
+                Edge::get(m_dao.get_self(), proposal.getHash(), voteDocument.getHash(), common::VOTE).erase();
+                Edge::get(m_dao.get_self(), voteDocument.getHash(), voterHash, common::OWNED_BY).erase();
+                Edge::get(m_dao.get_self(), voteDocument.getHash(), proposal.getHash(), common::VOTE_ON).erase();
+            }
         }
 
         // Fetch vote power
@@ -91,13 +100,15 @@ namespace hypha
         Document voteDocument = Document::getOrNew(m_dao.get_self(), m_dao.get_self(), contentGroups);
 
         // an edge from the member to the vote named vote
-        Edge::write(m_dao.get_self(), voter, voterHash, voteDocument.getHash(), common::VOTE);
+        // Note: This edge could already exist, as voteDocument is likely to be re-used.
+        Edge::getOrNew(m_dao.get_self(), voter, voterHash, voteDocument.getHash(), common::VOTE);
 
         // an edge from the proposal to the vote named vote
         Edge::write(m_dao.get_self(), voter, proposal.getHash(), voteDocument.getHash(), common::VOTE);
 
         // an edge from the vote to the member named ownedby
-        Edge::write(m_dao.get_self(), voter, voteDocument.getHash(), voterHash, common::OWNED_BY);
+        // Note: This edge could already exist, as voteDocument is likely to be re-used.
+        Edge::getOrNew(m_dao.get_self(), voter, voteDocument.getHash(), voterHash, common::OWNED_BY);
 
         // an edge from the vote to the proposal named voteon
         Edge::write(m_dao.get_self(), voter, voteDocument.getHash(), proposal.getHash(), common::VOTE_ON);
@@ -171,15 +182,17 @@ namespace hypha
         ContentGroup* contentOptions = proposal.getContentWrapper().getGroupOrFail(BALLOT_OPTIONS);
 
         std::map<std::string, eosio::asset> optionsTally;
+        std::vector<std::string> optionsTallyOrdered;
         for (auto it = contentOptions->begin(); it != contentOptions->end(); ++it) 
         {
             if (it->label != CONTENT_GROUP_LABEL) {
                 optionsTally[it->label] = asset(0, common::S_HVOICE);
+                optionsTallyOrdered.push_back(it->label);
             }
         }
 
         
-        std::vector<Edge> edges = Edge::getAll(m_dao.get_self(), proposal.getHash(), common::VOTE);
+        std::vector<Edge> edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
         for (auto itr = edges.begin(); itr != edges.end(); ++itr) {
             eosio::checksum256 voteHash = itr->getToNode();
             Document voteDocument(m_dao.get_self(), voteHash);
@@ -199,11 +212,11 @@ namespace hypha
         
 
         ContentGroups tallyContentGroups;
-        for (auto it = optionsTally.begin(); it != optionsTally.end(); ++it) 
+        for (auto it = optionsTallyOrdered.begin(); it != optionsTallyOrdered.end(); ++it) 
         {
             tallyContentGroups.push_back(ContentGroup{
-                Content(CONTENT_GROUP_LABEL, it->first),
-                Content(VOTE_POWER, it->second)
+                Content(CONTENT_GROUP_LABEL, *it),
+                Content(VOTE_POWER, optionsTally[*it])
             });
         }
 
