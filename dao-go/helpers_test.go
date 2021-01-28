@@ -180,9 +180,7 @@ func CreateAssignment(t *testing.T, env *Environment, role *docgraph.Document,
 	checkEdge(t, env, proposer.Doc, assignment, eos.Name("owns"))
 	checkEdge(t, env, assignment, proposer.Doc, eos.Name("ownedby"))
 
-	ballot, err := assignment.GetContent("ballot_id")
-	assert.NilError(t, err)
-	voteToPassTD(t, env, ballot.Impl.(eos.Name))
+	voteToPassTD(t, env, assignment)
 
 	t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
 	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
@@ -228,7 +226,7 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content
 	checkEdge(t, env, role, proposer.Doc, eos.Name("ownedby"))
 	checkEdge(t, env, role, votetally, eos.Name("votetally"))
 
-	nativeVoteToPassTD(t, env, role)
+	voteToPassTD(t, env, role)
 
 	t.Log("Member: ", closer.Member, " is closing role proposal	: ", role.Hash.String())
 	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)
@@ -326,7 +324,7 @@ func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, v
 	return vote
 }
 
-func nativeVoteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document) {
+func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document) {
 	proposal_hash := proposal.Hash
 	t.Log("Voting all members to 'pass' on proposal: " + proposal_hash.String())
 
@@ -338,21 +336,6 @@ func nativeVoteToPassTD(t *testing.T, env *Environment, proposal docgraph.Docume
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, member.Member, "pass", proposal_hash)
 		assert.NilError(t, err)
 		checkLastVote(t, env, proposal, member)
-	}
-	t.Log("Allowing the ballot voting period to lapse")
-	pause(t, env.VotingPause, "", "Voting...")
-}
-
-// Remove this one after migration ?
-func voteToPassTD(t *testing.T, env *Environment, ballot eos.Name) {
-	t.Log("Voting all members to 'pass' on ballot: " + ballot)
-
-	_, err := dao.TelosDecideVote(env.ctx, &env.api, env.TelosDecide, env.Alice.Member, ballot, eos.Name("pass"))
-	assert.NilError(t, err)
-
-	for _, member := range env.Members {
-		_, err = dao.TelosDecideVote(env.ctx, &env.api, env.TelosDecide, member.Member, ballot, eos.Name("pass"))
-		assert.NilError(t, err)
 	}
 	t.Log("Allowing the ballot voting period to lapse")
 	pause(t, env.VotingPause, "", "Voting...")
