@@ -232,7 +232,8 @@ func TestAdjustCommitment(t *testing.T) {
                             &assignee, env, t)
 
       //TODO: Calculate seeds_per_usd using tlosto.seeds table
-      hardcodedSeedsPerUsd := float32(39.0840)
+      //Set to 0 to temporaly disable  calculating SEEDS
+      hardcodedSeedsPerUsd := float32(0) /*float32(39.0840)*/
       var seedsDeferralFactor float32
       {
         settings, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("settings"))
