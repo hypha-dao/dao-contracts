@@ -73,7 +73,7 @@ namespace common
     static constexpr name GROUP_TYPE_OPTION = name("option");
 
     constexpr name LAST_TIME_SHARE = name("lastimeshare");
-    constexpr name CURRENT_TIME_SHARE = name("curntimeshare");
+    constexpr name CURRENT_TIME_SHARE = name("curtimeshare");
     constexpr name INIT_TIME_SHARE = name("initimeshare");
     constexpr name NEXT_TIME_SHARE = name("nextimeshare");
     constexpr name TIME_SHARE_LABEL = name("timeshare");

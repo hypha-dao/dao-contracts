@@ -117,7 +117,6 @@ namespace hypha
 
     eosio::time_point Assignment::getApprovedTime()
     {
-        //return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
         return getInitialTimeShare().getContentWrapper().getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
     }
 

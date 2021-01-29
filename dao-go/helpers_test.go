@@ -144,7 +144,6 @@ func AdjustCommitment(env *Environment, assignee eos.AccountName, adjustInfo []d
 		Authorization: []eos.PermissionLevel{
 			{Actor: assignee, Permission: eos.PN("active")},
 		},
-		// ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
 		ActionData: eos.NewActionData(AdjustData{
 			Issuer: assignee,
 			AdjustInfo: adjustInfo,
@@ -345,7 +344,6 @@ func ReplaceContent(d *docgraph.Document, label string, value *docgraph.FlexValu
 	for _, contentGroup := range d.ContentGroups {
 		for i := range contentGroup {
 			if contentGroup[i].Label == label {
-				//contentGroup[i].Label = newLabel
 				contentGroup[i].Value = value
 				return nil
 			}

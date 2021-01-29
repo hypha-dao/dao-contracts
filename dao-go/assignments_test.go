@@ -212,8 +212,7 @@ func TestAdjustCommitment(t *testing.T) {
 			}
 
 			//Create Adjustment 2.5 Periods after start period
-			CreateAdjustmentAfter(int64(50), 
-														firstPeriodStartSecs, 
+			CreateAdjustmentAfter(int64(50), firstPeriodStartSecs, 
 														env.PeriodDuration * 5 / 2,
 														&assignment,
 														&assignee, env, t)
@@ -274,9 +273,9 @@ func TestAdjustCommitment(t *testing.T) {
 				approvedSecs := int64(approvedTime.Impl.(eos.TimePoint))/1000000
 				periodDuration := float32(firstPeriodEndSecs-firstPeriodStartSecs)
 				timeFactor := float32(firstPeriodEndSecs-approvedSecs) / periodDuration
-				ValidateLastReceipt(int64(totalHUSD*timeFactor), 
-														int64(totalHYPHA*timeFactor), 
-														int64(totalHVOICE*timeFactor), 
+				ValidateLastReceipt(int64(totalHUSD*timeFactor),
+														int64(totalHYPHA*timeFactor),
+														int64(totalHVOICE*timeFactor),
 														int64(totalSEEDS*timeFactor), env, t)
 			}
 

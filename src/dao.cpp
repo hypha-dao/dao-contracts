@@ -55,21 +55,13 @@ namespace hypha
       // Valid claim identified - start process
       // process this claim
       Edge::write(get_self(), get_self(), assignment.getHash(), periodToClaim.value().getHash(), common::CLAIMED);
-      //int64_t assignmentApprovedDateSec = assignment.getApprovedTime().sec_since_epoch();
       int64_t periodStartSec = periodToClaim.value().getStartTime().sec_since_epoch();
       int64_t periodEndSec = periodToClaim.value().getEndTime().sec_since_epoch();
 
       // Pro-rate the payment if the assignment was created during the period being claimed
       float first_phase_ratio_calc = 1.f; // pro-rate based on elapsed % of the first phase
 
-      /** This is no longer necesary since addition of TimeShare
-      if (assignmentApprovedDateSec > periodStartSec)
-      {
-          int64_t elapsed_sec = periodEndSec - assignmentApprovedDateSec;
-          int64_t period_sec = periodEndSec - periodStartSec;
-          first_phase_ratio_calc = (float)elapsed_sec / (float)period_sec;
-      }
-      */ 
+      
       eosio::check(first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
 
       asset deferredSeeds;
