@@ -102,9 +102,7 @@ func TestPayoutProposal(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			ballot, err := payout.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+			voteToPassTD(t, env, payout)
 
 			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
@@ -210,9 +208,7 @@ func TestPayoutHistoricalPeriod(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			ballot, err := payout.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+			voteToPassTD(t, env, payout)
 
 			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
@@ -330,9 +326,7 @@ func TestCustomPayout(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			ballot, err := payout.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+			voteToPassTD(t, env, payout)
 
 			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
@@ -442,9 +436,7 @@ func TestUnknownAssetPayout(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			ballot, err := payout.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+			voteToPassTD(t, env, payout)
 
 			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
