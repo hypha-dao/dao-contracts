@@ -218,14 +218,14 @@ namespace hypha
    void dao::apply(const eosio::name &applicant, const std::string &content)
    {
       require_auth(applicant);
-      Member member(get_self(), applicant, applicant);
+      Member member(*this, applicant, applicant);
       member.apply(getRoot(get_self()), content);
    }
 
    void dao::enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content)
    {
       require_auth(enroller);
-      Member member = Member::get(get_self(), applicant);
+      Member member = Member::get(*this, applicant);
       member.enroll(enroller, content);
    }
 
