@@ -131,6 +131,28 @@ func ClaimNextPeriod(t *testing.T, env *Environment, claimer eos.AccountName, as
 	return trxID, err
 }
 
+type AdjustData struct {
+	Issuer eos.AccountName `json:"issuer"`
+	AdjustInfo []docgraph.ContentGroup `json:"adjust_info"`
+}
+
+func AdjustCommitment(env *Environment, assignee eos.AccountName, adjustInfo []docgraph.ContentGroup) (string, error) {
+
+	actions := []*eos.Action{{
+		Account: env.DAO,
+		Name:    eos.ActN("adjustcmtmnt"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: assignee, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionData(AdjustData{
+			Issuer: assignee,
+			AdjustInfo: adjustInfo,
+		}),
+	}}
+
+	return eostest.ExecTrx(env.ctx, &env.api, actions);
+}
+
 func pause(t *testing.T, seconds time.Duration, headline, prefix string) {
 	if headline != "" {
 		t.Log(headline)
@@ -339,4 +361,16 @@ func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document) {
 	}
 	t.Log("Allowing the ballot voting period to lapse")
 	pause(t, env.VotingPause, "", "Voting...")
+}
+
+func ReplaceContent(d *docgraph.Document, label string, value *docgraph.FlexValue) error {
+	for _, contentGroup := range d.ContentGroups {
+		for i := range contentGroup {
+			if contentGroup[i].Label == label {
+				contentGroup[i].Value = value
+				return nil
+			}
+		}
+	}
+	return nil
 }

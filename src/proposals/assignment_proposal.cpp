@@ -7,6 +7,7 @@
 #include <common.hpp>
 #include <dao.hpp>
 #include <util.hpp>
+#include <time_share.hpp>
 
 namespace hypha
 {
@@ -126,6 +127,16 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGNED);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
         Edge::write(m_dao.get_self(), m_dao.get_self(), role.getHash(), proposal.getHash(), common::ASSIGNMENT);
+
+        //Initial time share for proposal
+        int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+        
+        //Set starting date to approval date.
+        TimeShare initTimeShareDoc(m_dao.get_self(), m_dao.get_self(), initTimeShare, eosio::current_time_point());
+
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
     }
 
     std::string AssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)
