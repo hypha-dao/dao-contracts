@@ -83,7 +83,7 @@ namespace hypha
         eosio::require_auth(m_dao->get_self());
 
         // create the member document
-        hypha::Member member(m_dao->get_self(), m_dao->get_self(), memberName);
+        hypha::Member member(*m_dao, m_dao->get_self(), memberName);
         eosio::checksum256 root = getRoot(m_dao->get_self());
 
         // create the new member edges
@@ -187,7 +187,7 @@ namespace hypha
 
         Document roleDocument(m_dao->get_self(), m_dao->get_self(), role);
 
-        auto owner = hypha::Member::get(m_dao->get_self(), o_itr->names.at("owner"));
+        auto owner = hypha::Member::get(*m_dao, o_itr->names.at("owner"));
 
         // document owner
         eosio::checksum256 ownerHash = getAccountHash(o_itr->names.at("owner"));
@@ -472,7 +472,7 @@ namespace hypha
         eosio::check(a_itr != a_t.end(), "applicant not in applicants table: " + applicant.to_string());
 
         // create the member document
-        hypha::Member member(m_dao->get_self(), m_dao->get_self(), applicant);
+        hypha::Member member(*m_dao, m_dao->get_self(), applicant);
         eosio::checksum256 root = getRoot(m_dao->get_self());
 
         member.apply(root, a_itr->content);

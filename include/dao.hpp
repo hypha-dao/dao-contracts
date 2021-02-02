@@ -27,6 +27,7 @@ namespace hypha
       DECLARE_DOCUMENT_GRAPH(dao)
 
       ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
+      ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote);
       ACTION closedocprop(const checksum256 &proposal_hash);
       ACTION setsetting(const string &key, const Content::FlexValue &value);
       ACTION remsetting(const string &key);

@@ -56,6 +56,9 @@ namespace common
     static constexpr name PAID = name ("paid");
     static constexpr name CLAIMED = name ("claimed");
 
+    static constexpr name VOTE = name ("vote");
+    static constexpr name VOTE_ON = name ("voteon");
+
     // document types
     static constexpr name ALERT = name ("alert");
 
@@ -77,6 +80,10 @@ namespace common
     constexpr name INIT_TIME_SHARE = name("initimeshare");
     constexpr name NEXT_TIME_SHARE = name("nextimeshare");
     constexpr name TIME_SHARE_LABEL = name("timeshare");
+
+    static constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
+    static constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
+
 // content keys
 // keys used with settings
 #define ROOT_NODE "root_node"
@@ -113,7 +120,8 @@ namespace common
 #define MEMBER_STRING "member"
 #define ASSIGNMENT_STRING "assignment"
 #define SYSTEM "system"
-#define BALLOT_ID "ballot_id"
+#define BALLOT "ballot"
+#define BALLOT_OPTIONS "ballot_options"
 #define BALLOT_TYPE "ballot_type"
 
 // setting document
@@ -126,7 +134,6 @@ namespace common
 #define UPDATED_DATE "updated_date"
 #define SEEDS_DEFERRAL_FACTOR_X100 "seeds_deferral_factor_x100"
 #define HYPHA_DEFERRAL_FACTOR_X100 "hypha_deferral_factor_x100"
-#define LAST_BALLOT_ID "last_ballot_id"
 #define LAST_SENDER_ID "last_sender_id"
 #define VOTING_DURATION_SEC "voting_duration_sec"
 #define PUBLISHER_CONTRACT "publisher_contract"
@@ -164,5 +171,10 @@ namespace common
 #define HUSD_SALARY_PER_PERIOD "husd_salary_per_phase"
 #define HVOICE_SALARY_PER_PERIOD "hvoice_salary_per_phase"
 #define SETTINGS "settings"
+
+#define VOTE_POWER "vote_power"
+#define VOTE_LABEL "vote"
+#define VOTER_LABEL "voter"
+#define EXPIRATION_LABEL "expiration"
 
 }; // namespace common

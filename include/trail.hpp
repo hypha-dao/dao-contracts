@@ -89,5 +89,25 @@ namespace trailservice {
         };
         typedef multi_index<name("ballots"), ballot> ballots_table;
 
+        //scope: voter.value
+        //ram: 
+        TABLE voter {
+            asset liquid;
+
+            asset staked;
+            time_point_sec staked_time;
+
+            asset delegated;
+            name delegated_to;
+            time_point_sec delegation_time;
+
+            uint64_t primary_key() const { return liquid.symbol.code().raw(); }
+            EOSLIB_SERIALIZE(voter,
+                (liquid)
+                (staked)(staked_time)
+                (delegated)(delegated_to)(delegation_time))
+        };
+        typedef multi_index<name("voters"), voter> voters_table;
+
     };
 }
