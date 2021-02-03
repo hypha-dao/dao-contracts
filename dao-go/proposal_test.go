@@ -52,68 +52,68 @@ func TestProposalDocumentVote(t *testing.T) {
 		t.Log("Checking initial tally")
 		AssertTally(t, voteTally, "0.00 HVOICE", "0.00 HVOICE")
 
-		// whale votes "pass"
-		t.Log("whale votes pass")
-		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Whale.Member, "pass", role.Hash)
+		// alice votes "pass"
+		t.Log("alice votes pass")
+		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", role.Hash)
 		assert.NilError(t, err)
-		voteDocument := checkLastVote(t, env, role, env.Whale)
-		AssertVote(t, voteDocument, "whale", "100.00 HVOICE", "pass")
+		voteDocument := checkLastVote(t, env, role, env.Alice)
+		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "pass")
 
 		// New tally should be different. We have 1 vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
-		AssertTally(t, voteTally, "100.00 HVOICE", "0.00 HVOICE")
+		AssertTally(t, voteTally, "101.00 HVOICE", "0.00 HVOICE")
 
-		// whale changes his mind and votes "fail"
-		t.Log("whale votes fail")
-		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Whale.Member, "fail", role.Hash)
+		// alice changes his mind and votes "fail"
+		t.Log("alice votes fail")
+		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "fail", role.Hash)
 		assert.NilError(t, err)
-		voteDocument = checkLastVote(t, env, role, env.Whale)
-		AssertVote(t, voteDocument, "whale", "100.00 HVOICE", "fail")
+		voteDocument = checkLastVote(t, env, role, env.Alice)
+		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail")
 
 		// New tally should be different. We have a different vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
-		AssertTally(t, voteTally, "0.00 HVOICE", "100.00 HVOICE")
+		AssertTally(t, voteTally, "0.00 HVOICE", "101.00 HVOICE")
 
-		// whale decides to vote again for "fail". Just in case ;-)
-		t.Log("whale votes fail (again)")
-		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Whale.Member, "fail", role.Hash)
+		// alice decides to vote again for "fail". Just in case ;-)
+		t.Log("alice votes fail (again)")
+		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "fail", role.Hash)
 		assert.NilError(t, err)
-		voteDocument = checkLastVote(t, env, role, env.Whale)
-		AssertVote(t, voteDocument, "whale", "100.00 HVOICE", "fail")
+		voteDocument = checkLastVote(t, env, role, env.Alice)
+		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail")
 
 		// Tally should be the same. It was the same vote
 		voteTally = AssertSameLastTally(t, voteTally)
-		AssertTally(t, voteTally, "0.00 HVOICE", "100.00 HVOICE")
+		AssertTally(t, voteTally, "0.00 HVOICE", "101.00 HVOICE")
 
 		// Member1 decides to vote pass
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[0])
-		AssertVote(t, voteDocument, "member1", "1.00 HVOICE", "pass")
+		AssertVote(t, voteDocument, "mem1.hypha", "2.00 HVOICE", "pass")
 
 		// Tally should be different. We have a new vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
-		AssertTally(t, voteTally, "1.00 HVOICE", "100.00 HVOICE")
+		AssertTally(t, voteTally, "2.00 HVOICE", "101.00 HVOICE")
 
 		// Member2 decides to vote fail
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[1].Member, "fail", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[1])
-		AssertVote(t, voteDocument, "member2", "1.00 HVOICE", "fail")
+		AssertVote(t, voteDocument, "mem2.hypha", "2.00 HVOICE", "fail")
 
 		// Tally should be different. We have a new vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
-		AssertTally(t, voteTally, "1.00 HVOICE", "101.00 HVOICE")
+		AssertTally(t, voteTally, "2.00 HVOICE", "103.00 HVOICE")
 
 		// Member1 decides to vote pass (again)
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[0])
-		AssertVote(t, voteDocument, "member1", "1.00 HVOICE", "pass")
+		AssertVote(t, voteDocument, "mem1.hypha", "2.00 HVOICE", "pass")
 
 		// Tally should be the same.
 		voteTally = AssertSameLastTally(t, voteTally)
-		AssertTally(t, voteTally, "1.00 HVOICE", "101.00 HVOICE")
+		AssertTally(t, voteTally, "2.00 HVOICE", "103.00 HVOICE")
 
 		t.Log("Member: ", closer.Member, " is closing role proposal	: ", role.Hash.String())
 		_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)

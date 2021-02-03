@@ -328,7 +328,8 @@ func checkEdge(t *testing.T, env *Environment, fromEdge, toEdge docgraph.Documen
 }
 
 func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, voter Member) docgraph.Document {
-	pause(t, env.VotingPause, "", "Waiting before fetching last vote")
+    // Wait 1s - If we don't, some Edges are not found.
+	pause(t, 1000000000, "", "Waiting before fetching last vote")
 	vote, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("vote"))
 	assert.NilError(t, err)
 
@@ -350,17 +351,15 @@ func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document) {
 	proposal_hash := proposal.Hash
 	t.Log("Voting all members to 'pass' on proposal: " + proposal_hash.String())
 
-	_, err := dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Whale.Member, "pass", proposal_hash)
+	_, err := dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", proposal_hash)
 	assert.NilError(t, err)
-	checkLastVote(t, env, proposal, env.Whale)
+	checkLastVote(t, env, proposal, env.Alice)
 
 	for _, member := range env.Members {
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, member.Member, "pass", proposal_hash)
 		assert.NilError(t, err)
 		checkLastVote(t, env, proposal, member)
 	}
-	t.Log("Allowing the ballot voting period to lapse")
-	pause(t, env.VotingPause, "", "Voting...")
 }
 
 func ReplaceContent(d *docgraph.Document, label string, value *docgraph.FlexValue) error {

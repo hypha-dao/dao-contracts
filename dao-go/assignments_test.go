@@ -176,10 +176,8 @@ func TestAdjustCommitment(t *testing.T) {
       // retrieve the document we just created
       proposal, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
       assert.NilError(t, err)
-    
-      ballot, err := proposal.GetContent("ballot_id")
-      assert.NilError(t, err)
-      voteToPassTD(t, env, ballot.Impl.(eos.Name))
+
+      voteToPassTD(t, env, proposal)
 
       //Wait 1 Period to close the proposal and test the special 
       //case when approved time overlaps in the first period
