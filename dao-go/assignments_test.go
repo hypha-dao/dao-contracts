@@ -502,25 +502,50 @@ func TestAssignmentProposalDocument(t *testing.T) {
 
 			fetchedAssignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
 
-			husd, err := fetchedAssignment.GetContent("husd_salary_per_phase")
+			testHusdAsset, err := eos.NewAssetFromString(test.husd)
 			assert.NilError(t, err)
-			t.Log("test: ", test.name, ": husd: "+husd.String())
-			assert.Equal(t, husd.String(), test.husd)
+			testHyphaAsset, err := eos.NewAssetFromString(test.hypha)
+			assert.NilError(t, err)
+			testHvoiceAsset, err := eos.NewAssetFromString(test.hvoice)
+			assert.NilError(t, err)
+			testUsdAsset, err := eos.NewAssetFromString(test.usd)
+			assert.NilError(t, err)
+
+            husd, err := fetchedAssignment.GetContent("husd_salary_per_phase")
+			if (testHusdAsset.Amount != 0) {
+            	assert.NilError(t, err)
+            	t.Log("test: ", test.name, ": husd: "+husd.String())
+            	assert.Equal(t, husd.String(), test.husd)
+			} else {
+			    assert.ErrorContains(t, err, "content label not found")
+			}
 
 			hypha, err := fetchedAssignment.GetContent("hypha_salary_per_phase")
-			assert.NilError(t, err)
-			t.Log("test: ", test.name, ": hypha: "+hypha.String())
-			assert.Equal(t, hypha.String(), test.hypha)
+			if (testHyphaAsset.Amount != 0) {
+			    assert.NilError(t, err)
+            	t.Log("test: ", test.name, ": hypha: "+hypha.String())
+            	assert.Equal(t, hypha.String(), test.hypha)
+			} else {
+			    assert.ErrorContains(t, err, "content label not found")
+			}
 
 			hvoice, err := fetchedAssignment.GetContent("hvoice_salary_per_phase")
-			assert.NilError(t, err)
-			t.Log("test: ", test.name, ": hvoice: "+hvoice.String())
-			assert.Equal(t, hvoice.String(), test.hvoice)
+			if (testHvoiceAsset.Amount != 0) {
+			    assert.NilError(t, err)
+            	t.Log("test: ", test.name, ": hvoice: "+hvoice.String())
+            	assert.Equal(t, hvoice.String(), test.hvoice)
+			} else {
+			    assert.ErrorContains(t, err, "content label not found")
+			}
 
 			usd, err := fetchedAssignment.GetContent("usd_salary_value_per_phase")
-			assert.NilError(t, err)
-			t.Log("test: ", test.name, ": usd: "+usd.String())
-			assert.Equal(t, usd.String(), test.usd)
+			if (testUsdAsset.Amount != 0) {
+			    assert.NilError(t, err)
+                t.Log("test: ", test.name, ": usd: "+usd.String())
+                assert.Equal(t, usd.String(), test.usd)
+			} else {
+			    assert.ErrorContains(t, err, "content label not found")
+			}
 		}
 	})
 }
