@@ -8,9 +8,8 @@ require (
 	github.com/hypha-dao/dao-contracts/dao-go v0.0.0-20201229192602-b03263aebb57
 	github.com/hypha-dao/document-graph/docgraph v0.0.0-20201229193929-e09f4b1c9e47
 	github.com/spf13/viper v1.3.1
-	gotest.tools v2.2.0+incompatible
 )
 
 replace github.com/hypha-dao/dao-contracts/dao-go => ./dao-go
 
-replace github.com/hypha-dao/document-graph/docgraph => ../document-graph/docgraph
+replace github.com/hypha-dao/document-graph/docgraph => ./document-graph/docgraph

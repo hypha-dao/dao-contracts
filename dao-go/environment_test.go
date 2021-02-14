@@ -184,7 +184,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	_, env.SeedsEscrow, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "escrow.seeds")
 	_, env.SeedsExchange, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "tlosto.seeds")
 
-	_, env.TelosDecide, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "telos.decide")
+	_, env.TelosDecide, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "trailservice")
 
 	t.Log("Deploying DAO contract to 		: ", env.DAO)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.DAO, daoPrefix+"wasm", daoPrefix+"abi")

@@ -24,6 +24,5 @@ namespace hypha
 
     private: 
         static ContentGroups defaultContent (const eosio::name &member);
-
     };
 } // namespace hypha

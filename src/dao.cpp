@@ -257,10 +257,10 @@ namespace hypha
       removeSetting(key);
    }
 
-   void dao::cancel (const uint64_t senderid)
+   void dao::cancel(const uint64_t senderid)
    {
       require_auth(get_self());
-      eosio::cancel_deferred (senderid);
+      eosio::cancel_deferred(senderid);
    }
 
    void dao::removeSetting(const string &key)
@@ -468,8 +468,9 @@ namespace hypha
 
    void dao::eraseobjs(const eosio::name &scope, const uint64_t &starting_id, const uint64_t &batch_size, int senderId)
    {
+      require_auth(get_self());
       int counter = 0;
-      
+
       Migration::object_table o_t(get_self(), scope.value);
       auto o_itr = o_t.find(starting_id);
       while (o_itr != o_t.end() && counter < batch_size)
@@ -478,16 +479,53 @@ namespace hypha
          counter++;
       }
 
-      if (o_itr != o_t.end()) {
+      if (o_itr != o_t.end())
+      {
          eosio::transaction out{};
          out.actions.emplace_back(
-            eosio::permission_level{get_self(), name("active")},
-            get_self(), name("eraseobjs"),
-            std::make_tuple(scope, starting_id + batch_size, batch_size, ++senderId));
+             eosio::permission_level{get_self(), name("active")},
+             get_self(), name("eraseobjs"),
+             std::make_tuple(scope, starting_id + batch_size, batch_size, ++senderId));
 
          out.delay_sec = 1;
          out.send(senderId, get_self());
-      }      
+      }
+   }
+
+   void dao::eraseedgesb(const uint64_t &batch_size, int senderId)
+   {
+      require_auth(get_self());
+      int counter = 0;
+
+      Edge::edge_table e_t(get_self(), get_self().value);
+      auto e_itr = e_t.begin();
+      while (e_itr != e_t.end() && counter < batch_size)
+      {
+         if (e_itr->edge_name == eosio::name("settings"))
+         {
+            e_itr++;
+            continue;
+         }
+         e_itr = e_t.erase(e_itr);
+         counter++;
+      }
+
+      if (e_itr != e_t.end())
+      {
+         eosio::transaction out{};
+         out.actions.emplace_back(
+             eosio::permission_level{get_self(), name("active")},
+             get_self(), name("eraseedgesb"),
+             std::make_tuple(batch_size, ++senderId));
+
+         out.delay_sec = 1;
+         out.send(senderId, get_self());
+      }
+   }
+
+   void dao::eraseedges(const std::string &notes)
+   {
+      eraseedgesb(350, 1);
    }
 
    void dao::erasexfer(const eosio::name &scope)

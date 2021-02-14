@@ -104,6 +104,8 @@ namespace hypha
       ACTION erasexfer(const eosio::name &scope);
       ACTION erasepers(const std::string &notes);
       ACTION erasegraph(const std::string &notes);
+      ACTION eraseedges (const std::string &notes);
+      ACTION eraseedgesb(const uint64_t &batch_size, int senderId);
       ACTION erasedoc (const eosio::checksum256 &hash);
       ACTION eraseobj(const eosio::name &scope, const uint64_t &starting_id);
       // ACTION eraseobjs(const eosio::name &scope);
