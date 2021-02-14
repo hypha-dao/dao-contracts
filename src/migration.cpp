@@ -699,6 +699,7 @@ namespace hypha
             p_itr = period_t.erase(p_itr);
         }
     }
+
     void Migration::eraseGraph()
     {
         eosio::require_auth(m_dao->get_self());
@@ -707,15 +708,18 @@ namespace hypha
         auto e_itr = e_t.begin();
         while (e_itr != e_t.end())
         {
+            if (e_itr->edge_name == eosio::name("settings")) {
+                continue;
+            }
             e_itr = e_t.erase(e_itr);
         }
 
-        Document::document_table d_t(m_dao->get_self(), m_dao->get_self().value);
-        auto d_itr = d_t.begin();
-        while (d_itr != d_t.end())
-        {
-            d_itr = d_t.erase(d_itr);
-        }
+        // Document::document_table d_t(m_dao->get_self(), m_dao->get_self().value);
+        // auto d_itr = d_t.begin();
+        // while (d_itr != d_t.end())
+        // {
+        //     d_itr = d_t.erase(d_itr);
+        // }
     }
 
 } // namespace hypha

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	eostest "github.com/digital-scarcity/eos-go-test"
@@ -115,7 +116,7 @@ func main() {
 contract: dao.hypha
 host: https://testnet.telos.caleos.io
 pause: 1s
-periodDuration: 300s
+periodDuration: 24h
 rootHash: 52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91
 `)
 
@@ -132,7 +133,7 @@ rootHash: 52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91
 	err = keyBag.ImportPrivateKey(ctx, "5HwnoWBuuRmNdcqwBzd1LABFRKnTk2RY2kUMYKkZfF8tKodubtK")
 	err = keyBag.ImportPrivateKey(ctx, eostest.DefaultKey())
 
-	//new test key: 5KCZ9VBJMMiLaAY24Ro66mhx4vU1VcJELZVGrJbkUBATyqxyYmj
+	// new test key: 5KCZ9VBJMMiLaAY24Ro66mhx4vU1VcJELZVGrJbkUBATyqxyYmj
 	// old test key: 5HwnoWBuuRmNdcqwBzd1LABFRKnTk2RY2kUMYKkZfF8tKodubtK
 	// api := eos.New("https://test.telos.kitchen")
 	api := eos.New(viper.GetString("host"))
@@ -147,8 +148,8 @@ rootHash: 52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91
 	// reset4test(ctx, api, contract)
 	// dao.EnrollMembers(ctx, api, contract)
 
-	// duration := viper.GetDuration("periodDuration")
-	// fmt.Println("Adding "+strconv.Itoa(20)+" periods with duration 		 ", duration)
+	duration := viper.GetDuration("periodDuration")
+	fmt.Println("Adding "+strconv.Itoa(20)+" periods with duration 		 ", duration)
 
 	// settings, err := docgraph.GetLastDocumentOfEdge(ctx, api, contract, eos.Name("settings"))
 	// if err != nil {
@@ -160,22 +161,22 @@ rootHash: 52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91
 	// 	panic(err)
 	// }
 
-	// roleDocument, err := docgraph.LoadDocument(ctx, api, contract, rootNode.String())
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// _, err = dao.AddPeriods(ctx, api, contract, roleDocument.Hash, 20, duration)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// time.Sleep(time.Second)
-
-	roleAssignment, err := dao.CreatePretend(ctx, api, contract, eos.AN("trailservice"), eos.AN("mem2.hypha"))
+	rootDocument, err := docgraph.LoadDocument(ctx, api, contract, "15a0610fa918bdf2cb189a8716887bcb1ec1a811bead03d5ad69dc423565b7c9")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(roleAssignment)
+
+	_, err = dao.AddPeriods(ctx, api, contract, rootDocument.Hash, 20, duration)
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(time.Second)
+
+	// badgeAssignment, err := dao.CreatePretend(ctx, api, contract, eos.AN("trailservice"), eos.AN("mem2.hypha"))
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println(badgeAssignment)
 
 	// dao.CopyMembers(ctx, api, contract, "https://api.telos.kitchen")
 	// dao.MigrateMembers(ctx, api, contract)
@@ -183,7 +184,7 @@ rootHash: 52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91
 	// dao.CopyPeriods(ctx, api, contract, "https://api.telos.kitchen")
 	// dao.MigratePeriods(ctx, api, contract)
 
-	// scopes := []eos.Name{"assignment", "payout"}
+	// scopes := []eos.Name{"role", "assignment", "payout"}
 
 	// for _, scope := range scopes {
 	// 	dao.CopyObjects(ctx, api, contract, scope, "https://api.telos.kitchen")

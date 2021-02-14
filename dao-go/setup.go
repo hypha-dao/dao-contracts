@@ -170,7 +170,7 @@ func periodExists(ctx context.Context, api *eos.API, contract eos.AccountName, i
 func CopyPeriods(ctx context.Context, api *eos.API, contract eos.AccountName, from string) {
 
 	sourceAPI := *eos.New(from)
-	periods := getLegacyPeriods(ctx, &sourceAPI, contract)
+	periods := getLegacyPeriods(ctx, &sourceAPI, eos.AN("dao.hypha"))
 
 	fmt.Println("\nCopying " + strconv.Itoa(len(periods)) + " periods from " + from)
 
@@ -278,7 +278,7 @@ func memberExists(ctx context.Context, api *eos.API, contract eos.AccountName, m
 func CopyMembers(ctx context.Context, api *eos.API, contract eos.AccountName, from string) {
 
 	sourceAPI := *eos.New(from)
-	memberRecords := getLegacyMembers(ctx, &sourceAPI, contract)
+	memberRecords := getLegacyMembers(ctx, &sourceAPI, eos.AN("dao.hypha"))
 
 	fmt.Println("\nCopying " + strconv.Itoa(len(memberRecords)) + " members from " + from)
 	bar := DefaultProgressBar(len(memberRecords))
@@ -313,22 +313,21 @@ func CopyMembers(ctx context.Context, api *eos.API, contract eos.AccountName, fr
 // CreatePretend ...
 func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName) (docgraph.Document, error) {
 
-	roleFilename := "/Users/max/dev/hypha/daoctl/testing/role.json"
-	roleData, err := ioutil.ReadFile(roleFilename)
-	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to read file: %v %v", roleFilename, err)
-	}
+	// roleFilename := "/Users/max/dev/hypha/daoctl/testing/role.json"
+	// roleData, err := ioutil.ReadFile(roleFilename)
+	// if err != nil {
+	// 	return docgraph.Document{}, fmt.Errorf("Unable to read file: %v %v", roleFilename, err)
+	// }
 
-	role, err := CreateRole(ctx, api, contract, telosDecide, member, roleData)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Created role document	: ", role.Hash.String())
+	// role, err := CreateRole(ctx, api, contract, telosDecide, member, roleData)
+	// if err != nil {
+	// 	return docgraph.Document{}, fmt.Errorf("Unable to create role: %v", err)
+	// }
+	// fmt.Println("Created role document	: ", role.Hash.String())
 
 	assignmentData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/assignment.json")
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("Unable to read file: %v", err)
-
 	}
 
 	roleAssignment, err := CreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("role"), eos.Name("assignment"), assignmentData)
@@ -337,10 +336,10 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 	}
 	fmt.Println("Created role assignment document	: ", roleAssignment.Hash.String())
 
-	fmt.Println("Waiting for a period to lapse...")
-	time.Sleep(defaultPeriodDuration())
+	// fmt.Println("Waiting for a period to lapse...")
+	// time.Sleep(defaultPeriodDuration())
 
-	_, err = claimNextPeriod(ctx, api, contract, member, roleAssignment)
+	// _, err = claimNextPeriod(ctx, api, contract, member, roleAssignment)
 
 	payoutData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/payout.json")
 	if err != nil {
@@ -375,7 +374,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("Unable to create badge assignment: %v", err)
 	}
 	fmt.Println("Created badge assignment document	: ", badgeAssignment.Hash.String())
-	return roleAssignment, nil
+	return badgeAssignment, nil //roleAssignment, nil
 }
 
 type claimNext struct {
@@ -430,13 +429,20 @@ func EnrollMembers(ctx context.Context, api *eos.API, contract eos.AccountName) 
 
 		newMember, err := enrollMember(ctx, api, contract, eos.AN(memberNameIn))
 		if err != nil {
-			panic(err)
+			fmt.Println("Error attempting to enroll : " + string(memberNameIn) + " with hash: " + newMember.Hash.String())
 		}
 		fmt.Println("Member enrolled : " + string(memberNameIn) + " with hash: " + newMember.Hash.String())
 		fmt.Println()
 
 		index++
 	}
+
+	johnnyhypha, err := enrollMember(ctx, api, contract, eos.AN("johnnyhypha1"))
+	if err != nil {
+		fmt.Println("Error attempting to enroll : johnnyhypha1 with hash: " + johnnyhypha.Hash.String())
+	}
+	fmt.Println("Member enrolled : johnnyhypha1 with hash: " + johnnyhypha.Hash.String())
+	fmt.Println()
 }
 
 func enrollMember(ctx context.Context, api *eos.API, contract, member eos.AccountName) (docgraph.Document, error) {
@@ -566,11 +572,19 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	if err == nil {
 		fmt.Println("Member voted : " + string(member))
 	}
+	pause(defaultPause(), "Building block...", "")
+
+	_, err = dao.TelosDecideVote(ctx, api, telosDecide, eos.AN("alice"), ballot.Impl.(eos.Name), eos.Name("pass"))
+	if err == nil {
+		fmt.Println("Member voted : alice")
+	}
+	pause(defaultPause(), "Building block...", "")
 
 	_, err = dao.TelosDecideVote(ctx, api, telosDecide, eos.AN("johnnyhypha1"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : johnnyhypha1")
 	}
+	pause(defaultPause(), "Building block...", "")
 
 	index := 1
 	for index < 5 {
@@ -582,6 +596,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 		if err != nil {
 			return docgraph.Document{}, fmt.Errorf("error voting via telos decide %v", err)
 		}
+		pause(defaultPause(), "Building block...", "")
 		fmt.Println("Member voted : " + string(memberNameIn))
 		index++
 	}
@@ -598,7 +613,6 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 
 	votingPause := time.Duration((5 + votingPeriodDuration.Impl.(int64)) * 1000000000)
 	pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
-
 	_, err = dao.CloseProposal(ctx, api, contract, member, proposal.Hash)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("cannot close proposal %v", err)
@@ -635,15 +649,17 @@ func CreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, 
 	var proposalDoc docgraph.Document
 	err := json.Unmarshal([]byte(data), &proposalDoc)
 	if err != nil {
-		panic(err)
+		return docgraph.Document{}, fmt.Errorf("cannot unmarshal error: %v ", err)
 	}
+
+	pause(defaultPause(), "Building block...", "")
 
 	// e.g. a "role" is parent to a "role assignment"
 	// e.g. a "badge" is parent to a "badge assignment"
 	var parent docgraph.Document
 	parent, err = docgraph.GetLastDocumentOfEdge(ctx, api, contract, parentType)
 	if err != nil {
-		panic(err)
+		return docgraph.Document{}, fmt.Errorf("cannot retrieve last document of edge: "+string(parentType)+"  - error: %v ", err)
 	}
 
 	// inject the parent hash in the first content group of the document
@@ -683,7 +699,7 @@ func CreatePayout(ctx context.Context, api *eos.API,
 	var payoutDoc docgraph.Document
 	err := json.Unmarshal([]byte(data), &payoutDoc)
 	if err != nil {
-		panic("cannot unmarshal payout doc")
+		return docgraph.Document{}, fmt.Errorf("cannot unmarshal error: %v ", err)
 	}
 
 	// inject the recipient in the first content group of the document
