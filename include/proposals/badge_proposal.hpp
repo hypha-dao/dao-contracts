@@ -1,6 +1,11 @@
 #pragma once
 
+#include <cstring>
 #include <eosio/name.hpp>
+
+#include <document_graph/content_wrapper.hpp>
+#include <document_graph/document.hpp>
+
 #include "proposal.hpp"
 
 namespace hypha {
@@ -11,17 +16,17 @@ namespace hypha {
     public:
         using Proposal::Proposal;
 
-        Document propose(const name &proposer, ContentGroups &content_groups);
-        void close(Document proposal);
+        Document propose(const eosio::name &proposer, ContentGroups &contentGroups);
+        void close(Document &proposal);
 
     protected:
-        ContentGroups propose_impl(const name &proposer, ContentGroups &content_groups) override;
-        Document pass_impl(Document proposal) override;
-        string GetBallotContent (ContentGroups contentGroups) override;
-        name GetProposalType () override;
+        void proposeImpl(const eosio::name &proposer, ContentWrapper &contentWrapper) override;
+        void passImpl(Document &proposal) override;
+        std::string getBallotContent (ContentWrapper &contentWrapper) override;
+        eosio::name getProposalType () override;
 
     private:
-        void checkCoefficient(Content coefficient);
+        void checkCoefficient(ContentWrapper &badge, const std::string &key);
 
     };
 }

@@ -2,6 +2,7 @@
 
 #include <eosio/name.hpp>
 #include <eosio/asset.hpp>
+#include <document_graph/content_wrapper.hpp>
 
 #include "proposal.hpp"
 
@@ -13,16 +14,18 @@ namespace hypha {
     public:
         using Proposal::Proposal;
 
-        Document propose(const name &proposer, ContentGroups &content_groups);
-        void close(Document proposal);
+        Document propose(const name &proposer, ContentGroups &contentGroups);
+        void close(Document &proposal);
 
     protected:
 
-        ContentGroups propose_impl(const name &proposer, ContentGroups &content_groups) override;
-        Document pass_impl(Document proposal) override;
-        string GetBallotContent (ContentGroups contentGroups) override;
-        name GetProposalType () override;
+        void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;
+        void passImpl(Document &proposal) override;
+        string getBallotContent (ContentWrapper &contentWrapper) override;
+        name getProposalType () override;
 
+        void postProposeImpl(Document &proposal) override;
+        
     private: 
 
         asset calculateTimeShareUsdPerPeriod(const asset &annualUsd, const int64_t &timeShare);

@@ -1,0 +1,572 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "Balance",
+            "base": "",
+            "fields": [
+                {
+                    "name": "funds",
+                    "type": "asset"
+                },
+                {
+                    "name": "token_contract",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "Config",
+            "base": "",
+            "fields": [
+                {
+                    "name": "redemption_symbol",
+                    "type": "symbol"
+                },
+                {
+                    "name": "names",
+                    "type": "pair_string_name[]"
+                },
+                {
+                    "name": "strings",
+                    "type": "pair_string_string[]"
+                },
+                {
+                    "name": "assets",
+                    "type": "pair_string_asset[]"
+                },
+                {
+                    "name": "ints",
+                    "type": "pair_string_uint64[]"
+                },
+                {
+                    "name": "updated_date",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "Redemption",
+            "base": "",
+            "fields": [
+                {
+                    "name": "redemption_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "requestor",
+                    "type": "name"
+                },
+                {
+                    "name": "amount_requested",
+                    "type": "asset"
+                },
+                {
+                    "name": "amount_paid",
+                    "type": "asset"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                },
+                {
+                    "name": "requested_date",
+                    "type": "time_point"
+                },
+                {
+                    "name": "updated_date",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "RedemptionPayment",
+            "base": "",
+            "fields": [
+                {
+                    "name": "payment_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "creator",
+                    "type": "name"
+                },
+                {
+                    "name": "redemption_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "amount_paid",
+                    "type": "asset"
+                },
+                {
+                    "name": "created_date",
+                    "type": "time_point"
+                },
+                {
+                    "name": "confirmed_date",
+                    "type": "time_point"
+                },
+                {
+                    "name": "attestations",
+                    "type": "pair_name_time_point[]"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                }
+            ]
+        },
+        {
+            "name": "Treasurer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "treasurer",
+                    "type": "name"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                },
+                {
+                    "name": "created_date",
+                    "type": "time_point"
+                },
+                {
+                    "name": "updated_date",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "addnotestres",
+            "base": "",
+            "fields": [
+                {
+                    "name": "redemption_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                }
+            ]
+        },
+        {
+            "name": "addnotesuser",
+            "base": "",
+            "fields": [
+                {
+                    "name": "redemption_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                }
+            ]
+        },
+        {
+            "name": "addtreasrer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "treasurer",
+                    "type": "name"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                }
+            ]
+        },
+        {
+            "name": "attestpaymnt",
+            "base": "",
+            "fields": [
+                {
+                    "name": "treasurer",
+                    "type": "name"
+                },
+                {
+                    "name": "payment_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "redemption_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "amount",
+                    "type": "asset"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                }
+            ]
+        },
+        {
+            "name": "newpayment",
+            "base": "",
+            "fields": [
+                {
+                    "name": "treasurer",
+                    "type": "name"
+                },
+                {
+                    "name": "redemption_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "amount",
+                    "type": "asset"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                }
+            ]
+        },
+        {
+            "name": "pair_name_time_point",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "pair_string_asset",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "string"
+                },
+                {
+                    "name": "value",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "pair_string_name",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "string"
+                },
+                {
+                    "name": "value",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "pair_string_string",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "string"
+                },
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "pair_string_uint64",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "string"
+                },
+                {
+                    "name": "value",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "pauseall",
+            "base": "",
+            "fields": [
+                {
+                    "name": "note",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "pauseredmp",
+            "base": "",
+            "fields": [
+                {
+                    "name": "note",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "redeem",
+            "base": "",
+            "fields": [
+                {
+                    "name": "redeemer",
+                    "type": "name"
+                },
+                {
+                    "name": "amount",
+                    "type": "asset"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                }
+            ]
+        },
+        {
+            "name": "removeattest",
+            "base": "",
+            "fields": [
+                {
+                    "name": "treasurer",
+                    "type": "name"
+                },
+                {
+                    "name": "payment_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                }
+            ]
+        },
+        {
+            "name": "remtreasrer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "treasurer",
+                    "type": "name"
+                },
+                {
+                    "name": "note",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "setconfig",
+            "base": "",
+            "fields": [
+                {
+                    "name": "names",
+                    "type": "pair_string_name[]"
+                },
+                {
+                    "name": "strings",
+                    "type": "pair_string_string[]"
+                },
+                {
+                    "name": "assets",
+                    "type": "pair_string_asset[]"
+                },
+                {
+                    "name": "ints",
+                    "type": "pair_string_uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "setredsymbol",
+            "base": "",
+            "fields": [
+                {
+                    "name": "redemption_symbol",
+                    "type": "symbol"
+                }
+            ]
+        },
+        {
+            "name": "setthreshold",
+            "base": "",
+            "fields": [
+                {
+                    "name": "threshold",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "settreasrers",
+            "base": "",
+            "fields": [
+                {
+                    "name": "treasurers",
+                    "type": "name[]"
+                },
+                {
+                    "name": "notes",
+                    "type": "pair_string_string[]"
+                }
+            ]
+        },
+        {
+            "name": "unpauseall",
+            "base": "",
+            "fields": [
+                {
+                    "name": "note",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "unpauseredmp",
+            "base": "",
+            "fields": [
+                {
+                    "name": "note",
+                    "type": "string"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "addnotestres",
+            "type": "addnotestres",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "addnotesuser",
+            "type": "addnotesuser",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "addtreasrer",
+            "type": "addtreasrer",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "attestpaymnt",
+            "type": "attestpaymnt",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "newpayment",
+            "type": "newpayment",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "pauseall",
+            "type": "pauseall",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "pauseredmp",
+            "type": "pauseredmp",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "redeem",
+            "type": "redeem",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "removeattest",
+            "type": "removeattest",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "remtreasrer",
+            "type": "remtreasrer",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setconfig",
+            "type": "setconfig",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setredsymbol",
+            "type": "setredsymbol",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setthreshold",
+            "type": "setthreshold",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "settreasrers",
+            "type": "settreasrers",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "unpauseall",
+            "type": "unpauseall",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "unpauseredmp",
+            "type": "unpauseredmp",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "balances",
+            "type": "Balance",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "config",
+            "type": "Config",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "payments",
+            "type": "RedemptionPayment",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "redemptions",
+            "type": "Redemption",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "treasurers",
+            "type": "Treasurer",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}

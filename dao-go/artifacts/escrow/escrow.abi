@@ -1,0 +1,245 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "cancellock",
+            "base": "",
+            "fields": [
+                {
+                    "name": "lock_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "claim",
+            "base": "",
+            "fields": [
+                {
+                    "name": "beneficiary",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "event",
+            "base": "",
+            "fields": [
+                {
+                    "name": "event_name",
+                    "type": "name"
+                },
+                {
+                    "name": "event_date",
+                    "type": "time_point"
+                },
+                {
+                    "name": "notes",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "lock",
+            "base": "",
+            "fields": [
+                {
+                    "name": "lock_type",
+                    "type": "name"
+                },
+                {
+                    "name": "sponsor",
+                    "type": "name"
+                },
+                {
+                    "name": "beneficiary",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "trigger_event",
+                    "type": "name"
+                },
+                {
+                    "name": "trigger_source",
+                    "type": "name"
+                },
+                {
+                    "name": "vesting_date",
+                    "type": "time_point"
+                },
+                {
+                    "name": "notes",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "reset",
+            "base": "",
+            "fields": []
+        },
+        {
+            "name": "sponsors_table",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sponsor",
+                    "type": "name"
+                },
+                {
+                    "name": "locked_balance",
+                    "type": "asset"
+                },
+                {
+                    "name": "liquid_balance",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "token_lock",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "lock_type",
+                    "type": "name"
+                },
+                {
+                    "name": "sponsor",
+                    "type": "name"
+                },
+                {
+                    "name": "beneficiary",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "trigger_event",
+                    "type": "name"
+                },
+                {
+                    "name": "trigger_source",
+                    "type": "name"
+                },
+                {
+                    "name": "vesting_date",
+                    "type": "time_point"
+                },
+                {
+                    "name": "notes",
+                    "type": "string"
+                },
+                {
+                    "name": "created_date",
+                    "type": "time_point"
+                },
+                {
+                    "name": "updated_date",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "trigger",
+            "base": "",
+            "fields": [
+                {
+                    "name": "trigger_source",
+                    "type": "name"
+                },
+                {
+                    "name": "event_name",
+                    "type": "name"
+                },
+                {
+                    "name": "notes",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "withdraw",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sponsor",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "cancellock",
+            "type": "cancellock",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "claim",
+            "type": "claim",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "lock",
+            "type": "lock",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "reset",
+            "type": "reset",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "trigger",
+            "type": "trigger",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "withdraw",
+            "type": "withdraw",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "events",
+            "type": "event",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "locks",
+            "type": "token_lock",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "sponsors",
+            "type": "sponsors_table",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}
