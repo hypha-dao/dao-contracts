@@ -9,7 +9,6 @@
 #include <common.hpp>
 #include <util.hpp>
 #include <member.hpp>
-#include <migration.hpp>
 #include <period.hpp>
 #include <assignment.hpp>
 
@@ -108,7 +107,6 @@ namespace hypha
    {
       std::vector<Document> current_badges;
       std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(Member::calcHash(member), common::ASSIGN_BADGE);
-      // eosio::print ("getting badges    : " + std::to_string(badge_assignment_edges.size()) + "\n");
       for (Edge e : badge_assignment_edges)
       {
          Document badgeAssignmentDoc(get_self(), e.getToNode());
@@ -117,30 +115,20 @@ namespace hypha
          Document badge(get_self(), badge_edge.getToNode());
          current_badges.push_back(badge);
 
-         // fast forward to duration end (TODO: probably need a duration class)
+         // TODO: exclude badges that are no longer active
          // Period startPeriod(this, badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
-         // eosio::print (" badge assignment start period: " + readableHash(startPeriod.getHash()) + "\n");
-
          // int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
          // int64_t counter = 0;
          // std::optional<Period> seeker = std::optional<Period>{startPeriod};
-         // eosio::print (" periodCount   : " + std::to_string(periodCount) + "\n");
          // while (seeker.has_value() && counter <= periodCount)
          // {
          //    eosio::print (" counter : " + std::to_string(counter) + "\n");
          //    seeker = seeker.value().next();
          //    counter++;
          // }
-
-         // eosio::print (" checking expiration time of last period ");
          // std::optional<eosio::time_point> periodEndTime = seeker.value().getEndTime();
-         // eosio::print (" got end time ");
-
          // eosio::check(periodEndTime != std::nullopt, "End of calendar has been reached. Contact administrator to add more time periods.");
-
          // int64_t badgeAssignmentExpiration = periodEndTime.value().sec_since_epoch();
-         // eosio::print (" badge assignment expiration: " + std::to_string(badgeAssignmentExpiration) + "\n");
-
          // if (badgeAssignmentExpiration > eosio::current_time_point().sec_since_epoch())
          // {
 
@@ -153,10 +141,10 @@ namespace hypha
    {
       if (auto [idx, coefficient] = badge.get(DETAILS, key); coefficient)
       {
-         // if (std::holds_alternative<std::monostate>(coefficient->value))
-         // {
-         //    return asset{0, base.symbol};
-         // }
+         if (std::holds_alternative<std::monostate>(coefficient->value))
+         {
+            return asset{0, base.symbol};
+         }
 
          eosio::check(std::holds_alternative<int64_t>(coefficient->value), "fatal error: coefficient must be an int64_t type: key: " + key);
 
@@ -257,12 +245,6 @@ namespace hypha
       removeSetting(key);
    }
 
-   void dao::cancel(const uint64_t senderid)
-   {
-      require_auth(get_self());
-      eosio::cancel_deferred(senderid);
-   }
-
    void dao::removeSetting(const string &key)
    {
       auto document = getSettingsDocument();
@@ -315,76 +297,29 @@ namespace hypha
       }
    }
 
-   void dao::updatexref(const name &scope, const uint64_t &id, const checksum256 &hash)
-   {
-      require_auth(get_self());
-      Migration::XReferenceTable xref_t(get_self(), scope.value);
-      auto x_itr = xref_t.find(id);
-      eosio::check(x_itr != xref_t.end(), "xref not found");
+   // void dao::nbadge(const name &owner, const ContentGroups &contentGroups)
+   // {
+   //    eosio::require_auth(get_self());
 
-      xref_t.modify(x_itr, get_self(), [&](auto &x) {
-         x.hash = hash;
-      });
-   }
+   //    Migration migration(this);
+   //    migration.createBadge(owner, contentGroups);
+   // }
 
-   void dao::fixassprop(const checksum256 &hash)
-   {
-      Migration migration(this);
-      migration.fixAssProp(hash);
-   }
+   // void dao::nbadass(const name &owner, const ContentGroups &contentGroups)
+   // {
+   //    eosio::require_auth(get_self());
 
-   void dao::addasspayout(const uint64_t &ass_payment_id,
-                          const uint64_t &assignment_id,
-                          const name &recipient,
-                          uint64_t period_id,
-                          std::vector<eosio::asset> payments,
-                          eosio::time_point payment_date)
-   {
-      eosio::require_auth(get_self());
+   //    Migration migration(this);
+   //    migration.createBadgeAssignment(owner, contentGroups);
+   // }
 
-      Migration migration(this);
-      migration.addLegacyAssPayout(ass_payment_id, assignment_id, recipient, period_id, payments, payment_date);
-   }
+   // void dao::nbadprop(const name &owner, const ContentGroups &contentGroups)
+   // {
+   //    eosio::require_auth(get_self());
 
-   void dao::migrateper(const uint64_t id)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.migratePeriod(id);
-   }
-
-   void dao::migasspay(const uint64_t id)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.migrateAssPayout(id);
-   }
-
-   void dao::nbadge(const name &owner, const ContentGroups &contentGroups)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.createBadge(owner, contentGroups);
-   }
-
-   void dao::nbadass(const name &owner, const ContentGroups &contentGroups)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.createBadgeAssignment(owner, contentGroups);
-   }
-
-   void dao::nbadprop(const name &owner, const ContentGroups &contentGroups)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.createBadgeAssignmentProposal(owner, contentGroups);
-   }
+   //    Migration migration(this);
+   //    migration.createBadgeAssignmentProposal(owner, contentGroups);
+   // }
 
    void dao::updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value)
    {
@@ -400,50 +335,7 @@ namespace hypha
       auto [idx, contentGroup] = cw.getGroupOrCreate(group);
       auto content = Content(key, value);
       ContentWrapper::insertOrReplace(*contentGroup, content);
-
-      // update the updated_date to now
-      // auto [systemIndex, systemGroup] = cw.getGroupOrCreate("system");
-      // auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
-      // ContentWrapper::insertOrReplace(*systemGroup, updateDateContent);
-
       m_documentGraph.updateDocument(updater, oldHash, document.getContentGroups());
-   }
-
-   void dao::addlegper(const uint64_t &id,
-                       const time_point &start_date,
-                       const time_point &end_date,
-                       const string &phase,
-                       const string &readable,
-                       const string &label)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.addLegacyPeriod(id, start_date, end_date, phase, readable, label);
-   }
-
-   void dao::addmember(const eosio::name &member)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.addLegacyMember(member);
-   }
-
-   void dao::migratemem(const eosio::name &member)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.migrateMember(member);
-   }
-
-   void dao::addapplicant(const eosio::name &applicant, const std::string content)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.addLegacyApplicant(applicant, content);
    }
 
    void dao::createroot(const std::string &notes)
@@ -466,145 +358,6 @@ namespace hypha
       Edge::write(get_self(), get_self(), rootDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
    }
 
-   void dao::migrate(const eosio::name &scope, const uint64_t &id)
-   {
-      require_auth(get_self());
-
-      if (scope == common::ROLE_NAME)
-      {
-         Migration migration(this);
-         migration.migrateRole(id);
-      }
-      else if (scope == common::ASSIGNMENT)
-      {
-         Migration migration(this);
-         migration.migrateAssignment(id);
-      }
-      else if (scope == common::PAYOUT)
-      {
-         Migration migration(this);
-         migration.migratePayout(id);
-      }
-      else if (scope == common::PROPOSAL)
-      {
-         Migration migration(this);
-         migration.migrateProposal(id);
-      }
-   }
-
-   void dao::migrateconfig(const std::string &notes)
-   {
-      require_auth(get_self());
-      Migration migration(this);
-      migration.migrateConfig();
-   }
-
-   void dao::reset4test(const std::string &notes)
-   {
-      require_auth(get_self());
-      Migration migration(this);
-      migration.reset4test();
-   }
-
-   void dao::erasepers(const std::string &notes)
-   {
-      require_auth(get_self());
-      Migration migration(this);
-      migration.erasePeriods();
-   }
-
-   void dao::erasegraph(const std::string &notes)
-   {
-      require_auth(get_self());
-      Migration migration(this);
-      migration.eraseGraph();
-   }
-
-   // void dao::eraseobjs(const eosio::name &scope)
-   // {
-   //    require_auth(get_self());
-   //    Migration migration(this);
-   //    migration.eraseAllObjects(scope);
-   // }
-
-   void dao::eraseobj(const eosio::name &scope, const uint64_t &starting_id)
-   {
-      require_auth(get_self());
-      Migration::object_table o_t(get_self(), scope.value);
-      auto o_itr = o_t.find(starting_id);
-      eosio::check(o_itr != o_t.end(), "id not found");
-      o_t.erase(o_itr);
-   }
-
-   void dao::eraseobjs(const eosio::name &scope, const uint64_t &starting_id, const uint64_t &batch_size, int senderId)
-   {
-      require_auth(get_self());
-      int counter = 0;
-
-      Migration::object_table o_t(get_self(), scope.value);
-      auto o_itr = o_t.find(starting_id);
-      while (o_itr != o_t.end() && counter < batch_size)
-      {
-         o_itr = o_t.erase(o_itr);
-         counter++;
-      }
-
-      if (o_itr != o_t.end())
-      {
-         eosio::transaction out{};
-         out.actions.emplace_back(
-             eosio::permission_level{get_self(), name("active")},
-             get_self(), name("eraseobjs"),
-             std::make_tuple(scope, starting_id + batch_size, batch_size, ++senderId));
-
-         out.delay_sec = 1;
-         out.send(senderId, get_self());
-      }
-   }
-
-   void dao::eraseedgesb(const uint64_t &batch_size, int senderId)
-   {
-      require_auth(get_self());
-      int counter = 0;
-
-      Edge::edge_table e_t(get_self(), get_self().value);
-      auto e_itr = e_t.begin();
-      while (e_itr != e_t.end() && counter < batch_size)
-      {
-         if (e_itr->edge_name == eosio::name("settings"))
-         {
-            e_itr++;
-            continue;
-         }
-         e_itr = e_t.erase(e_itr);
-         counter++;
-      }
-
-      if (e_itr != e_t.end())
-      {
-         eosio::transaction out{};
-         out.actions.emplace_back(
-             eosio::permission_level{get_self(), name("active")},
-             get_self(), name("eraseedgesb"),
-             std::make_tuple(batch_size, ++senderId));
-
-         out.delay_sec = 1;
-         out.send(senderId, get_self());
-      }
-   }
-
-   void dao::eraseedges(const std::string &notes)
-   {
-      eraseedgesb(350, 1);
-   }
-
-   void dao::erasexfer(const eosio::name &scope)
-   {
-      require_auth(get_self());
-      Migration migration(this);
-      migration.eraseXRefs(scope);
-   }
-
    void dao::erasedoc(const checksum256 &hash)
    {
       require_auth(get_self());
@@ -618,7 +371,7 @@ namespace hypha
       require_auth(get_self());
       Edge::edge_table e_t(get_self(), get_self().value);
       auto itr = e_t.find(id);
-      e_t.erase (itr);
+      e_t.erase(itr);
    }
 
    void dao::setalert(const eosio::name &level, const std::string &content)
@@ -653,19 +406,5 @@ namespace hypha
    DocumentGraph &dao::getGraph()
    {
       return m_documentGraph;
-   }
-
-   void dao::createobj(const uint64_t &id,
-                       const name &scope,
-                       std::map<string, name> names,
-                       std::map<string, string> strings,
-                       std::map<string, asset> assets,
-                       std::map<string, eosio::time_point> time_points,
-                       std::map<string, uint64_t> ints,
-                       eosio::time_point created_date,
-                       eosio::time_point updated_date)
-   {
-      Migration migration(this);
-      migration.addLegacyObject(id, scope, names, strings, assets, time_points, ints, created_date, updated_date);
    }
 } // namespace hypha
