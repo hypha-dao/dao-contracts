@@ -166,6 +166,344 @@ func periodExists(ctx context.Context, api *eos.API, contract eos.AccountName, i
 	return false
 }
 
+type updateDoc struct {
+	Hash  eos.Checksum256    `json:"hash"`
+	Group string             `json:"group"`
+	Key   string             `json:"key"`
+	Value docgraph.FlexValue `json:"value"`
+}
+
+type updateRef struct {
+	Scope eos.Name        `json:"scope"`
+	ID    uint64          `json:"id"`
+	Hash  eos.Checksum256 `json:"hash"`
+}
+
+func UpdatePeriodXRef(ctx context.Context, api *eos.API, contract eos.AccountName) error {
+	rootDocument, err := docgraph.LoadDocument(ctx, api, contract, viper.GetString("rootHash"))
+	if err != nil {
+		return fmt.Errorf("cannot get root %v", err)
+	}
+
+	edges, err := docgraph.GetEdgesFromDocumentWithEdge(ctx, api, contract, rootDocument, eos.Name("start"))
+	if err != nil {
+		return fmt.Errorf("cannot get edges %v", err)
+	}
+
+	id := uint64(0)
+	hash := edges[0].ToNode
+
+	for {
+		actions := []*eos.Action{
+			{
+				Account: contract,
+				Name:    eos.ActN("updatexref"),
+				Authorization: []eos.PermissionLevel{
+					{Actor: contract, Permission: eos.PN("active")},
+				},
+				ActionData: eos.NewActionData(updateRef{
+					Scope: "period",
+					ID:    id,
+					Hash:  hash}),
+			}}
+
+		_, err = eostest.ExecTrx(ctx, api, actions)
+		if err != nil {
+			fmt.Println("\n\nFAILED to update xref: ", hash)
+			fmt.Println(err)
+			fmt.Println()
+		}
+		time.Sleep(defaultPause())
+
+		nextDoc, err := docgraph.LoadDocument(ctx, api, contract, hash.String())
+		if err != nil {
+			return fmt.Errorf("cannot get next document %v", err)
+		}
+
+		next, err := docgraph.GetEdgesFromDocumentWithEdge(ctx, api, contract, nextDoc, eos.Name("next"))
+		if err != nil {
+			return fmt.Errorf("cannot get edges %v", err)
+		}
+
+		if len(next) == 0 {
+			return nil
+		}
+
+		hash = next[0].ToNode
+		id++
+	}
+}
+
+func UpdateXref(ctx context.Context, api *eos.API, contract eos.AccountName, scope eos.Name) error {
+
+	// get all documents
+	// if type is period, update
+	documents, err := docgraph.GetAllDocuments(ctx, api, contract)
+	if err != nil {
+		return fmt.Errorf("cannot get all documents %v", err)
+	}
+
+	for _, d := range documents {
+		docType, err := d.GetContentFromGroup("system", "type")
+		if err != nil {
+			return fmt.Errorf("cannot get type %v", err)
+		}
+
+		if docType.String() == string(scope) {
+
+			legScope, err := d.GetContentFromGroup("system", "legacy_object_scope")
+			if err != nil {
+				return fmt.Errorf("cannot get legacy scope %v", err)
+			}
+
+			if legScope.String() != docType.String() {
+				panic("legacy object ID does not match scope")
+			}
+
+			legacyObjectId, err := d.GetContentFromGroup("system", "legacy_object_id")
+			if err != nil {
+				return fmt.Errorf("cannot get type %v", err)
+			}
+
+			objectId, err := legacyObjectId.Int64()
+			if err != nil {
+				return fmt.Errorf("cannot get type %v", err)
+			}
+
+			actions := []*eos.Action{
+				{
+					Account: contract,
+					Name:    eos.ActN("updatexref"),
+					Authorization: []eos.PermissionLevel{
+						{Actor: contract, Permission: eos.PN("active")},
+					},
+					ActionData: eos.NewActionData(updateRef{
+						Scope: scope,
+						ID:    uint64(objectId),
+						Hash:  d.Hash}),
+				}}
+
+			_, err = eostest.ExecTrx(ctx, api, actions)
+			if err != nil {
+				fmt.Println("\n\nFAILED to update xref: ", d.Hash)
+				fmt.Println(err)
+				fmt.Println()
+			}
+			time.Sleep(defaultPause())
+		}
+	}
+	return nil
+}
+
+func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountName) error {
+
+	// get all documents
+	// if type is period, update
+	// documents, err := docgraph.GetAllDocuments(ctx, api, contract)
+	// if err != nil {
+	// 	return fmt.Errorf("cannot get all documents %v", err)
+	// }
+
+	// counter := 0
+	// for _, d := range documents {
+	// 	docType, err := d.GetContentFromGroup("system", "type")
+	// 	if err != nil {
+	// 		return fmt.Errorf("cannot get type %v", err)
+	// 	}
+
+	// 	fmt.Println("Document type: ", docType.String())
+	// 	if docType.String() == "assignment" {
+
+	// 		legacyScope, err := d.GetContentFromGroup("system", "legacy_object_scope")
+	// 		if err != nil {
+	// 			return fmt.Errorf("cannot get legacy scope %v", err)
+	// 		}
+
+	// 		if legacyScope.String() == "proposal" {
+
+	// 		}
+
+	// 		startPeriod, err := docgraph.LoadDocument(ctx, api, contract, edges[0].ToNode.String())
+	// 		if err != nil {
+	// 			return fmt.Errorf("cannot load document %v", err)
+	// 		}
+
+	// 		fmt.Println("Assignment: ", d.GetNodeLabel())
+	// 		fmt.Println("Start Period: ", startPeriod.GetNodeLabel())
+
+	// assignee, err := d.GetContent("assignee")
+	// if err != nil {
+	// 	return fmt.Errorf("cannot get assignee %v", err)
+	// }
+
+	// newNodeLabel := assignee.String() + ": " + startPeriod.GetNodeLabel()
+
+	// actions := []*eos.Action{
+	// 	{
+	// 		Account: contract,
+	// 		Name:    eos.ActN("updatedoc"),
+	// 		Authorization: []eos.PermissionLevel{
+	// 			{Actor: contract, Permission: eos.PN("active")},
+	// 		},
+	// 		ActionData: eos.NewActionData(updateDoc{
+	// 			Hash:  d.Hash,
+	// 			Group: "system",
+	// 			Key:   "node_label",
+	// 			Value: docgraph.FlexValue{
+	// 				BaseVariant: eos.BaseVariant{
+	// 					TypeID: docgraph.GetVariants().TypeID("string"),
+	// 					Impl:   newNodeLabel,
+	// 				},
+	// 			}}),
+	// 	},
+	// }
+
+	// _, err = eostest.ExecTrx(ctx, api, actions)
+	// if err != nil {
+	// 	fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
+	// 	fmt.Println(err)
+	// 	fmt.Println()
+	// }
+	// time.Sleep(defaultPause())
+
+	// 		actions2 := []*eos.Action{
+	// 			{
+	// 				Account: contract,
+	// 				Name:    eos.ActN("updatedoc"),
+	// 				Authorization: []eos.PermissionLevel{
+	// 					{Actor: contract, Permission: eos.PN("active")},
+	// 				},
+	// 				ActionData: eos.NewActionData(updateDoc{
+	// 					Hash:  d.Hash,
+	// 					Group: "details",
+	// 					Key:   "start_period",
+	// 					Value: docgraph.FlexValue{
+	// 						BaseVariant: eos.BaseVariant{
+	// 							TypeID: docgraph.GetVariants().TypeID("checksum256"),
+	// 							Impl:   edges[0].ToNode,
+	// 						},
+	// 					}}),
+	// 			},
+	// 		}
+
+	// 		_, err = eostest.ExecTrx(ctx, api, actions2)
+	// 		if err != nil {
+	// 			fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
+	// 			fmt.Println(err)
+	// 			fmt.Println()
+	// 		}
+	// 		time.Sleep(defaultPause())
+
+	// 		counter++
+	// 		if counter > 10 {
+	// 			return nil
+	// 		}
+	// 	}
+	// }
+	return nil
+}
+
+// UpdatePeriods ...
+func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) error {
+
+	// get all documents
+	// if type is period, update
+	documents, err := docgraph.GetAllDocuments(ctx, api, contract)
+	if err != nil {
+		return fmt.Errorf("cannot get all documents %v", err)
+	}
+
+	for _, d := range documents {
+		docType, err := d.GetContentFromGroup("system", "type")
+		if err != nil {
+			return fmt.Errorf("cannot get type %v", err)
+		}
+
+		if docType.String() == "period" {
+
+			startTime, err := d.GetContent("start_time")
+			if err != nil {
+				return fmt.Errorf("cannot get start_time %v", err)
+			}
+
+			startTimePoint, err := startTime.TimePoint()
+			if err != nil {
+				return fmt.Errorf("cannot get start time_point %v", err)
+			}
+
+			fmt.Println("Start time point: ", startTimePoint.String())
+			unixTime := time.Unix(int64(startTimePoint)/1000000, 0).UTC()
+			fmt.Println("Starting " + unixTime.Format("2006 Jan 02"))
+			fmt.Println(unixTime.Format("15:04:05 MST"))
+
+			actions := []*eos.Action{
+				// {
+				// 	Account: contract,
+				// 	Name:    eos.ActN("updatedoc"),
+				// 	Authorization: []eos.PermissionLevel{
+				// 		{Actor: contract, Permission: eos.PN("active")},
+				// 	},
+				// 	ActionData: eos.NewActionData(updateDoc{
+				// 		Hash:  d.Hash,
+				// 		Group: "system",
+				// 		Key:   "node_label",
+				// 		Value: docgraph.FlexValue{
+				// 			BaseVariant: eos.BaseVariant{
+				// 				TypeID: docgraph.GetVariants().TypeID("string"),
+				// 				Impl:   "Starting " + unixTime.Format("2006 Jan 02"),
+				// 			},
+				// 		}}),
+				// },
+				// {
+				// 	Account: contract,
+				// 	Name:    eos.ActN("updatedoc"),
+				// 	Authorization: []eos.PermissionLevel{
+				// 		{Actor: contract, Permission: eos.PN("active")},
+				// 	},
+				// 	ActionData: eos.NewActionData(updateDoc{
+				// 		Hash:  d.Hash,
+				// 		Group: "system",
+				// 		Key:   "readable_start_date",
+				// 		Value: docgraph.FlexValue{
+				// 			BaseVariant: eos.BaseVariant{
+				// 				TypeID: docgraph.GetVariants().TypeID("string"),
+				// 				Impl:   unixTime.Format("2006 Jan 02"),
+				// 			},
+				// 		}}),
+				// },
+				{
+					Account: contract,
+					Name:    eos.ActN("updatedoc"),
+					Authorization: []eos.PermissionLevel{
+						{Actor: contract, Permission: eos.PN("active")},
+					},
+					ActionData: eos.NewActionData(updateDoc{
+						Hash:  d.Hash,
+						Group: "system",
+						Key:   "readable_start_time",
+						Value: docgraph.FlexValue{
+							BaseVariant: eos.BaseVariant{
+								TypeID: docgraph.GetVariants().TypeID("string"),
+								Impl:   unixTime.Format("15:04:05 MST"),
+							},
+						}}),
+				},
+			}
+
+			_, err = eostest.ExecTrx(ctx, api, actions)
+			if err != nil {
+				fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
+				fmt.Println(err)
+				fmt.Println()
+			}
+			time.Sleep(defaultPause())
+		}
+
+	}
+	return nil
+
+}
+
 // CopyPeriods ...
 func CopyPeriods(ctx context.Context, api *eos.API, contract eos.AccountName, from string) {
 

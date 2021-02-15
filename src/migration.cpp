@@ -104,8 +104,8 @@ namespace hypha
             p.start_date = start_date;
             p.end_date = end_date;
             p.phase = phase;
-            p.label = label;
-            p.readable = readable;
+            // p.label = label;
+            // p.readable = readable;
         });
     }
     void Migration::migratePeriod(const uint64_t &id)
@@ -115,7 +115,7 @@ namespace hypha
         Migration::period_table period_t(m_dao->get_self(), m_dao->get_self().value);
         auto p_itr = period_t.find(id);
 
-        Period newPeriod(m_dao, p_itr->start_date, p_itr->phase, p_itr->readable, p_itr->label);
+        Period newPeriod(m_dao, p_itr->start_date, p_itr->phase, p_itr->phase, p_itr->phase);
         newXRef(newPeriod.getHash(), eosio::name("period"), id);
 
         eosio::checksum256 predecessor;
@@ -198,6 +198,39 @@ namespace hypha
 
         newXRef(roleDocument.getHash(), scope, roleId);
         o_t_role.erase(o_itr);
+    }
+
+    void Migration::migrateProposal(const uint64_t &proposalId)
+    {
+        eosio::name scope = eosio::name("proposal");
+
+        Migration::object_table o_t(m_dao->get_self(), scope.value);
+        auto o_itr = o_t.find(proposalId);
+        eosio::check(o_itr != o_t.end(), "proposalId does not exist: " + std::to_string(proposalId));
+
+        // create the new document
+        ContentGroups proposal = newContentGroups(o_itr->id,
+                                                  scope,
+                                                  o_itr->created_date,
+                                                  o_itr->names,
+                                                  o_itr->strings,
+                                                  o_itr->assets,
+                                                  o_itr->time_points,
+                                                  o_itr->ints);
+
+        Document proposalDocument(m_dao->get_self(), m_dao->get_self(), proposal);
+
+        auto owner = hypha::Member::get(m_dao->get_self(), o_itr->names.at("owner"));
+
+        // document owner
+        eosio::checksum256 ownerHash = getAccountHash(o_itr->names.at("owner"));
+        Edge::write(m_dao->get_self(), m_dao->get_self(), ownerHash, proposalDocument.getHash(), common::OWNS);
+        Edge::write(m_dao->get_self(), m_dao->get_self(), proposalDocument.getHash(), ownerHash, common::OWNED_BY);
+
+        Edge::write(m_dao->get_self(), m_dao->get_self(), getRoot(m_dao->get_self()), proposalDocument.getHash(), common::PROPOSAL);
+
+        newXRef(proposalDocument.getHash(), scope, proposalId);
+        o_t.erase(o_itr);
     }
 
     void Migration::migrateAssignment(const uint64_t &assignmentId)
@@ -341,11 +374,11 @@ namespace hypha
         for (asset_itr = o_itr->assets.begin(); asset_itr != o_itr->assets.end(); ++asset_itr)
         {
             // only create receipts for symbols known to have been paid (this matches to legacy logic)
-            if (asset_itr->second.amount > 0 && 
-                ( asset_itr->second.symbol == common::S_HUSD ||
-                  asset_itr->second.symbol == common::S_HYPHA ||
-                  asset_itr->second.symbol == common::S_HVOICE ||
-                  asset_itr->second.symbol == common::S_SEEDS ))
+            if (asset_itr->second.amount > 0 &&
+                (asset_itr->second.symbol == common::S_HUSD ||
+                 asset_itr->second.symbol == common::S_HYPHA ||
+                 asset_itr->second.symbol == common::S_HVOICE ||
+                 asset_itr->second.symbol == common::S_SEEDS))
             {
                 // create receipt for each payment
                 ContentGroups receipt = Payer::defaultReceipt(o_itr->names.at("recipient"), asset_itr->second, "created during migration: " + asset_itr->first);
@@ -370,7 +403,7 @@ namespace hypha
     }
 
     // will usually be the member object, but sometimes a memo stands in for these migration objects
-    eosio::checksum256 Migration::getAccountHash (const eosio::name &account) 
+    eosio::checksum256 Migration::getAccountHash(const eosio::name &account)
     {
         eosio::checksum256 recipientHash = hypha::Member::calcHash(account);
         if (!Document::exists(m_dao->get_self(), recipientHash))
@@ -394,6 +427,105 @@ namespace hypha
             a.payments = payments;
         });
     }
+
+    void Migration::createBadge (const name& owner, const ContentGroups& contentGroups)
+    {
+        require_auth (m_dao->get_self());
+        Document badge(m_dao->get_self(), owner, contentGroups);
+        
+        eosio::checksum256 memberHash = Member::calcHash(owner);
+        eosio::checksum256 root = getRoot(m_dao->get_self());
+
+        Edge::write(m_dao->get_self(), owner, memberHash, badge.getHash(), common::OWNS);
+        Edge::write(m_dao->get_self(), owner, badge.getHash(), memberHash, common::OWNED_BY);
+        Edge::write(m_dao->get_self(), owner, root, badge.getHash(), common::PASSED_PROPS);
+        Edge::write(m_dao->get_self(), owner, root, badge.getHash(), common::BADGE_NAME);
+    }
+
+    void Migration::createBadgeAssignment (const name& owner, const ContentGroups& contentGroups)
+    {
+        require_auth (m_dao->get_self());
+        Document badgeAssignmentDoc (m_dao->get_self(), owner, contentGroups);
+        ContentWrapper badgeAssignment = badgeAssignmentDoc.getContentWrapper();
+        // name owner = badgeAssignment.getOrFail(SYSTEM, "proposer")->getAs<eosio::name>();
+        
+        Document badgeDocument(m_dao->get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
+
+        eosio::checksum256 memberHash = Member::calcHash(owner);
+        eosio::checksum256 root = getRoot(m_dao->get_self());
+
+        Edge::getOrNew(m_dao->get_self(), owner, badgeAssignmentDoc.getHash(), badgeDocument.getHash(), common::BADGE_NAME);
+        Edge::getOrNew(m_dao->get_self(), owner, badgeAssignmentDoc.getHash(), memberHash, common::OWNED_BY);
+        Edge::getOrNew(m_dao->get_self(), owner, badgeAssignmentDoc.getHash(), Period::current(m_dao).getHash(), common::START);
+
+        Edge::getOrNew(m_dao->get_self(), owner, memberHash, badgeAssignmentDoc.getHash(), common::OWNS);
+        Edge::getOrNew(m_dao->get_self(), owner, memberHash, badgeAssignmentDoc.getHash(), common::ASSIGN_BADGE);
+
+        Edge::getOrNew(m_dao->get_self(), owner, memberHash, badgeDocument.getHash(), common::HOLDS_BADGE);
+        Edge::getOrNew(m_dao->get_self(), owner, badgeDocument.getHash(), memberHash, common::HELD_BY);
+
+        Edge::getOrNew(m_dao->get_self(), owner, root, badgeDocument.getHash(), common::PASSED_PROPS);
+        Edge::getOrNew(m_dao->get_self(), owner, badgeDocument.getHash(), badgeAssignmentDoc.getHash(), common::ASSIGNMENT);
+
+    }
+
+    void Migration::createBadgeAssignmentProposal (const name& owner, const ContentGroups& contentGroups)
+    {
+        require_auth (m_dao->get_self());
+        Document badgeAssignmentDoc (m_dao->get_self(), owner, contentGroups);
+
+        eosio::checksum256 memberHash = Member::calcHash(owner);
+        eosio::checksum256 root = getRoot(m_dao->get_self());
+
+        Edge::getOrNew(m_dao->get_self(), owner, memberHash, badgeAssignmentDoc.getHash(), common::OWNS);
+        Edge::getOrNew(m_dao->get_self(), owner, badgeAssignmentDoc.getHash(), memberHash, common::OWNED_BY);
+        Edge::getOrNew(m_dao->get_self(), owner, root, badgeAssignmentDoc.getHash(), common::PROPOSAL);
+    }
+
+    void Migration::fixAssProp(const eosio::checksum256 &hash)
+    {
+        Document assProp(m_dao->get_self(), hash);
+        ContentWrapper cw = assProp.getContentWrapper();
+        auto [detailsGroupIdx, detailsGroup] = cw.getGroup(DETAILS);
+        auto [systemGroupIdx, systemGroup] = cw.getGroup(SYSTEM);
+
+        // auto [startPeriodIdx, startId] = cw.getOrFail(detailsGroupIdx, START_PERIOD);
+        // auto [endPeriodIdx, endId] = cw.getOrFail(detailsGroupIdx, END_PERIOD);
+        // uint64_t startPeriodId = static_cast<uint64_t>(startId->getAs<int64_t>());
+        // uint64_t endPeriodId = static_cast<uint64_t>(endId->getAs<int64_t>());
+        // int64_t periodCount = endPeriodId - startPeriodId;
+
+        // auto startPeriodHash = getXRef(common::PERIOD, startPeriodId);
+
+        // eosio::print ("Start period hash: " + readableHash(startPeriodHash));
+
+        // Period startPeriod(m_dao, startPeriodHash);
+
+        // ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, startPeriodHash});
+        // ContentWrapper::insertOrReplace(*detailsGroup, Content{PERIOD_COUNT, periodCount});
+
+        // auto [roleIdx, roleId] = cw.getOrFail(detailsGroupIdx, "role_id");
+        auto [assignedIdx, assignee] = cw.getOrFail(detailsGroupIdx, "assigned_account");
+        ContentWrapper::insertOrReplace(*detailsGroup, Content{ASSIGNEE, assignee->getAs<eosio::name>()});
+
+
+        // ContentWrapper::insertOrReplace(*detailsGroup,
+        //                                 Content{ROLE_STRING,
+        //                                         getXRef(common::ROLE_NAME, roleId->getAs<int64_t>())});        
+
+        // ContentWrapper::insertOrReplace(*systemGroup,
+        //                                 Content{NODE_LABEL,
+        //                                         assignee->getAs<eosio::name>().to_string() + ": " +
+        //                                             startPeriod.getNodeLabel()});
+
+        // cw.removeContent(DETAILS, "fk");
+        // cw.removeContent(DETAILS, "role_id");
+        cw.removeContent(DETAILS, "assigned_account");
+        cw.removeContent(DETAILS, "end_period");
+
+        m_dao->getGraph().updateDocument(m_dao->get_self(), hash, assProp.getContentGroups());
+    }
+
     void Migration::migrateAssPayout(const uint64_t &ass_payout_id)
     {
         // get asspayout
@@ -708,7 +840,8 @@ namespace hypha
         auto e_itr = e_t.begin();
         while (e_itr != e_t.end())
         {
-            if (e_itr->edge_name == eosio::name("settings")) {
+            if (e_itr->edge_name == eosio::name("settings"))
+            {
                 continue;
             }
             e_itr = e_t.erase(e_itr);

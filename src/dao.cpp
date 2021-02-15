@@ -315,6 +315,24 @@ namespace hypha
       }
    }
 
+   void dao::updatexref(const name &scope, const uint64_t &id, const checksum256 &hash)
+   {
+      require_auth(get_self());
+      Migration::XReferenceTable xref_t(get_self(), scope.value);
+      auto x_itr = xref_t.find(id);
+      eosio::check(x_itr != xref_t.end(), "xref not found");
+
+      xref_t.modify(x_itr, get_self(), [&](auto &x) {
+         x.hash = hash;
+      });
+   }
+
+   void dao::fixassprop(const checksum256 &hash)
+   {
+      Migration migration(this);
+      migration.fixAssProp(hash);
+   }
+
    void dao::addasspayout(const uint64_t &ass_payment_id,
                           const uint64_t &assignment_id,
                           const name &recipient,
@@ -342,6 +360,53 @@ namespace hypha
 
       Migration migration(this);
       migration.migrateAssPayout(id);
+   }
+
+   void dao::nbadge(const name &owner, const ContentGroups &contentGroups)
+   {
+      eosio::require_auth(get_self());
+
+      Migration migration(this);
+      migration.createBadge(owner, contentGroups);
+   }
+
+   void dao::nbadass(const name &owner, const ContentGroups &contentGroups)
+   {
+      eosio::require_auth(get_self());
+
+      Migration migration(this);
+      migration.createBadgeAssignment(owner, contentGroups);
+   }
+
+   void dao::nbadprop(const name &owner, const ContentGroups &contentGroups)
+   {
+      eosio::require_auth(get_self());
+
+      Migration migration(this);
+      migration.createBadgeAssignmentProposal(owner, contentGroups);
+   }
+
+   void dao::updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value)
+   {
+      eosio::require_auth(get_self());
+
+      Document document(get_self(), hash);
+      auto oldHash = document.getHash();
+
+      // the ContentWrapper is used to access the document's data
+      ContentWrapper cw = document.getContentWrapper();
+
+      // update the indicated group to the new value
+      auto [idx, contentGroup] = cw.getGroupOrCreate(group);
+      auto content = Content(key, value);
+      ContentWrapper::insertOrReplace(*contentGroup, content);
+
+      // update the updated_date to now
+      // auto [systemIndex, systemGroup] = cw.getGroupOrCreate("system");
+      // auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
+      // ContentWrapper::insertOrReplace(*systemGroup, updateDateContent);
+
+      m_documentGraph.updateDocument(updater, oldHash, document.getContentGroups());
    }
 
    void dao::addlegper(const uint64_t &id,
@@ -419,6 +484,11 @@ namespace hypha
       {
          Migration migration(this);
          migration.migratePayout(id);
+      }
+      else if (scope == common::PROPOSAL)
+      {
+         Migration migration(this);
+         migration.migrateProposal(id);
       }
    }
 
@@ -543,8 +613,22 @@ namespace hypha
       dg.eraseDocument(hash);
    }
 
+   void dao::killedge(const uint64_t id)
+   {
+      require_auth(get_self());
+      Edge::edge_table e_t(get_self(), get_self().value);
+      auto itr = e_t.find(id);
+      e_t.erase (itr);
+   }
+
    void dao::setalert(const eosio::name &level, const std::string &content)
    {
+      auto [exists, edge] = Edge::getIfExists(get_self(), getRoot(get_self()), common::ALERT);
+      if (exists)
+      {
+         remalert("removing alert to replace with new alert");
+      }
+
       Document alert(get_self(), get_self(),
                      ContentGroups{
                          ContentGroup{

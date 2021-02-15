@@ -129,7 +129,7 @@ func MigrateObjects(ctx context.Context, api *eos.API, contract eos.AccountName,
 	objects, _ := getLegacyObjects(ctx, api, contract, scope)
 
 	fmt.Println("\nMigrating " + string(scope) + " objects: " + strconv.Itoa(len(objects)))
-	bar := DefaultProgressBar(len(objects))
+	//bar := DefaultProgressBar(len(objects))
 
 	for index, object := range objects {
 
@@ -145,14 +145,16 @@ func MigrateObjects(ctx context.Context, api *eos.API, contract eos.AccountName,
 			}),
 		}}
 
-		_, err := eostest.ExecTrx(ctx, api, actions)
+		trxID, err := eostest.ExecTrx(ctx, api, actions)
 		if err != nil {
 			fmt.Println("\n\nFailed to migrate : ", strconv.Itoa(int(object.ID)), ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(objects)))
 			fmt.Println(err)
 			fmt.Println()
 		}
 
-		bar.Add(1)
+		fmt.Println("Migrated: ", strconv.Itoa(int(object.ID)), ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(objects))+" Trx: "+trxID)
+
+		//bar.Add(1)
 		time.Sleep(defaultPause())
 	}
 }

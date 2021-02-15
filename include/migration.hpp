@@ -109,6 +109,8 @@ namespace hypha
                                                                           eosio::checksum256, &XReference::by_hash>>>
             XReferenceTable;
 
+
+
         struct [[eosio::table, eosio::contract("dao")]] AssignmentPayout
         {
             uint64_t ass_payment_id;
@@ -138,14 +140,18 @@ namespace hypha
         };
         typedef multi_index<name("debugs"), Debug> debug_table;
 
+        
+        // void erase_debugs();
+
+
         struct [[eosio::table, eosio::contract("dao")]] PeriodRecord
         {
             uint64_t period_id;
             time_point start_date;
             time_point end_date;
             string phase;
-            string label;
-            string readable;
+            // string label;
+            // string readable;
 
             uint64_t primary_key() const { return period_id; }
         };
@@ -181,6 +187,7 @@ namespace hypha
         void migratePeriod(const uint64_t &id);
         void migrateAssPayout (const uint64_t &ass_payout_id);
         void migratePayout(const uint64_t &payoutId);
+        void migrateProposal(const uint64_t &proposalId);
         ContentGroups newMemo(const std::string memo);
 
         void newXRef(eosio::checksum256 hash, eosio::name scope, uint64_t id);
@@ -211,7 +218,12 @@ namespace hypha
 
         void migrateApplicant (const eosio::name &applicant);
         void addLegacyApplicant(const eosio::name &applicant, const std::string content);
+        void fixAssProp(const eosio::checksum256 &hash);
+        void createBadge (const name& owner, const ContentGroups& contentGroups);
+        void createBadgeAssignment (const name& owner, const ContentGroups& contentGroups);
+        void createBadgeAssignmentProposal (const name& owner, const ContentGroups& contentGroups);
 
+        void migratedOldDocs ();
         void reset4test();
         void eraseGraph();
         void eraseAssPayouts();

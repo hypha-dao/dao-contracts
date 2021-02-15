@@ -17,6 +17,12 @@ using eosio::checksum256;
 using eosio::multi_index;
 using eosio::name;
 
+using eosio::const_mem_fun;
+using eosio::indexed_by;
+using std::vector;
+using eosio::time_point;
+using eosio::current_time_point;
+
 namespace hypha
 {
    CONTRACT dao : public eosio::contract
@@ -25,6 +31,97 @@ namespace hypha
       using eosio::contract::contract;
 
       DECLARE_DOCUMENT_GRAPH(dao)
+
+      // migration only
+      struct [[eosio::table, eosio::contract("dao")]] edgeold
+      {
+         uint64_t id;
+
+         // these three additional indexes allow isolating/querying edges more precisely (less iteration)
+         uint64_t from_node_edge_name_index;
+         uint64_t from_node_to_node_index;
+         uint64_t to_node_edge_name_index;
+         uint64_t by_from_node_edge_name_index() const { return from_node_edge_name_index; }
+         uint64_t by_from_node_to_node_index() const { return from_node_to_node_index; }
+         uint64_t by_to_node_edge_name_index() const { return to_node_edge_name_index; }
+
+         checksum256 from_node;
+         checksum256 by_from() const { return from_node; }
+
+         checksum256 to_node;
+         checksum256 by_to() const { return to_node; }
+
+         name edge_name;
+         uint64_t by_edge_name() const { return edge_name.value; }
+
+         time_point created_date = current_time_point();
+         uint64_t by_created() const { return created_date.sec_since_epoch(); }
+
+         name creator;
+         uint64_t by_creator() const { return creator.value; }
+
+         uint64_t primary_key() const { return id; }
+
+         EOSLIB_SERIALIZE(edgeold, (id)(from_node_edge_name_index)(from_node_to_node_index)(to_node_edge_name_index)(from_node)(to_node)(edge_name)(created_date)(creator))
+      };
+
+      typedef multi_index<name("edgesold"), edgeold,
+                          indexed_by<name("fromnode"), const_mem_fun<edgeold, checksum256, &edgeold::by_from>>,
+                          indexed_by<name("tonode"), const_mem_fun<edgeold, checksum256, &edgeold::by_to>>,
+                          indexed_by<name("edgename"), const_mem_fun<edgeold, uint64_t, &edgeold::by_edge_name>>,
+                          indexed_by<name("byfromname"), const_mem_fun<edgeold, uint64_t, &edgeold::by_from_node_edge_name_index>>,
+                          indexed_by<name("byfromto"), const_mem_fun<edgeold, uint64_t, &edgeold::by_from_node_to_node_index>>,
+                          indexed_by<name("bytoname"), const_mem_fun<edgeold, uint64_t, &edgeold::by_to_node_edge_name_index>>,
+                          indexed_by<name("bycreated"), const_mem_fun<edgeold, uint64_t, &edgeold::by_created>>,
+                          indexed_by<name("bycreator"), const_mem_fun<edgeold, uint64_t, &edgeold::by_creator>>>
+          edge_table_old;
+
+      typedef std::variant<name, string, asset, time_point, int64_t, checksum256> flexvalueold;
+       // a single labeled flexvalue
+        struct contentold
+        {
+            string label;
+            flexvalueold value;
+
+            EOSLIB_SERIALIZE(contentold, (label)(value))
+        };
+
+        typedef vector<contentold> content_groupold;
+
+        struct certificateold
+        {
+            name certifier;
+            string notes;
+            time_point certification_date = current_time_point();
+
+            EOSLIB_SERIALIZE(certificateold, (certifier)(notes)(certification_date))
+        };
+
+
+      struct [[eosio::table, eosio::contract("dao")]] documentold
+      {
+         uint64_t id;
+         checksum256 hash;
+         name creator;
+         vector<content_groupold> content_groups;
+
+         vector<certificateold> certificates;
+         uint64_t primary_key() const { return id; }
+         uint64_t by_creator() const { return creator.value; }
+         checksum256 by_hash() const { return hash; }
+
+         time_point created_date = current_time_point();
+         uint64_t by_created() const { return created_date.sec_since_epoch(); }
+
+         EOSLIB_SERIALIZE(documentold, (id)(hash)(creator)(content_groups)(certificates)(created_date))
+      };
+
+      typedef multi_index<name("documentsold"), documentold,
+                          indexed_by<name("idhash"), const_mem_fun<documentold, checksum256, &documentold::by_hash>>,
+                          indexed_by<name("bycreator"), const_mem_fun<documentold, uint64_t, &documentold::by_creator>>,
+                          indexed_by<name("bycreated"), const_mem_fun<documentold, uint64_t, &documentold::by_created>>>
+          document_table_old;
+      // end migration only
 
       ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION closedocprop(const checksum256 &proposal_hash);
@@ -51,7 +148,7 @@ namespace hypha
                        std::map<string, string> strings,
                        std::map<string, asset> assets,
                        std::map<string, eosio::time_point> time_points,
-                       std::map<string, uint64_t> ints, 
+                       std::map<string, uint64_t> ints,
                        eosio::time_point created_date,
                        eosio::time_point updated_date);
 
@@ -97,16 +194,16 @@ namespace hypha
       ACTION migratemem(const eosio::name &member);
       ACTION migrateper(const uint64_t id);
       ACTION migasspay(const uint64_t id);
-      ACTION cancel (const uint64_t senderid);
+      ACTION cancel(const uint64_t senderid);
 
       // test setup actions
       ACTION reset4test(const std::string &notes);
       ACTION erasexfer(const eosio::name &scope);
       ACTION erasepers(const std::string &notes);
       ACTION erasegraph(const std::string &notes);
-      ACTION eraseedges (const std::string &notes);
+      ACTION eraseedges(const std::string &notes);
       ACTION eraseedgesb(const uint64_t &batch_size, int senderId);
-      ACTION erasedoc (const eosio::checksum256 &hash);
+      ACTION erasedoc(const eosio::checksum256 &hash);
       ACTION eraseobj(const eosio::name &scope, const uint64_t &starting_id);
       // ACTION eraseobjs(const eosio::name &scope);
       ACTION eraseobjs(const eosio::name &scope, const uint64_t &starting_id, const uint64_t &batch_size, int senderId);
@@ -116,6 +213,14 @@ namespace hypha
                        const eosio::time_point &start_date,
                        const eosio::time_point &end_date,
                        const string &phase, const string &readable, const string &label);
+
+      ACTION updatedoc (const eosio::checksum256 hash, const name& updater, const string &group, const string &key, const Content::FlexValue &value);
+      ACTION updatexref (const name& scope, const uint64_t &id, const checksum256& hash);
+      ACTION fixassprop (const checksum256& hash);
+      ACTION nbadge (const name& owner, const ContentGroups& contentGroups);
+      ACTION nbadass(const name& owner, const ContentGroups& contentGroups);
+      ACTION nbadprop (const name& owner, const ContentGroups& contentGroups);
+      ACTION killedge (const uint64_t id);
 
       ACTION addasspayout(const uint64_t &ass_payment_id,
                           const uint64_t &assignment_id,
