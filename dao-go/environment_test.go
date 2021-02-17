@@ -255,6 +255,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "publisher_contract", env.Events)
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "treasury_contract", env.Bank)
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "telos_decide_contract", env.TelosDecide)
+	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "hypha_token_hvoice_contract", env.HyphaTokenHvoiceContract)
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "last_ballot_id", "hypha......1")
 
 	if addFakePeriods {
