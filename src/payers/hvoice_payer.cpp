@@ -20,6 +20,12 @@ namespace hypha
             std::make_tuple(recipient, quantity, memo))
             .send();
 
+        eosio::action(
+                eosio::permission_level{m_dao.get_self(), eosio::name("active")},
+                m_dao.getSettingOrFail<name>(HYPHA_TOKEN_HVOICE_CONTRACT), eosio::name("issue"),
+                std::make_tuple(recipient, quantity, memo))
+                .send();
+
         return Document(m_dao.get_self(),
                         m_dao.get_self(),
                         defaultReceipt(recipient, quantity, memo));
