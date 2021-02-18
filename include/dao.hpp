@@ -44,17 +44,6 @@ namespace hypha
       ACTION setalert(const eosio::name &level, const std::string &content);
       ACTION remalert(const std::string &notes);
 
-      // migration only
-      ACTION createobj(const uint64_t &id,
-                       const name &scope,
-                       std::map<string, name> names,
-                       std::map<string, string> strings,
-                       std::map<string, asset> assets,
-                       std::map<string, eosio::time_point> time_points,
-                       std::map<string, uint64_t> ints, 
-                       eosio::time_point created_date,
-                       eosio::time_point updated_date);
-
       DocumentGraph &getGraph();
       Document getSettingsDocument();
 
@@ -90,39 +79,13 @@ namespace hypha
          return def;
       }
 
-      // migration actions
-      ACTION migrate(const eosio::name &scope, const uint64_t &id);
-      ACTION migrateconfig(const std::string &notes);
       ACTION createroot(const std::string &notes);
-      ACTION migratemem(const eosio::name &member);
-      ACTION migrateper(const uint64_t id);
-      ACTION migasspay(const uint64_t id);
-      ACTION cancel (const uint64_t senderid);
-
-      // test setup actions
-      ACTION reset4test(const std::string &notes);
-      ACTION erasexfer(const eosio::name &scope);
-      ACTION erasepers(const std::string &notes);
-      ACTION erasegraph(const std::string &notes);
-      ACTION eraseedges (const std::string &notes);
-      ACTION eraseedgesb(const uint64_t &batch_size, int senderId);
-      ACTION erasedoc (const eosio::checksum256 &hash);
-      ACTION eraseobj(const eosio::name &scope, const uint64_t &starting_id);
-      // ACTION eraseobjs(const eosio::name &scope);
-      ACTION eraseobjs(const eosio::name &scope, const uint64_t &starting_id, const uint64_t &batch_size, int senderId);
-      ACTION addmember(const eosio::name &member);
-      ACTION addapplicant(const eosio::name &applicant, const std::string content);
-      ACTION addlegper(const uint64_t &id,
-                       const eosio::time_point &start_date,
-                       const eosio::time_point &end_date,
-                       const string &phase, const string &readable, const string &label);
-
-      ACTION addasspayout(const uint64_t &ass_payment_id,
-                          const uint64_t &assignment_id,
-                          const name &recipient,
-                          uint64_t period_id,
-                          std::vector<eosio::asset> payments,
-                          eosio::time_point payment_date);
+      ACTION erasedoc(const eosio::checksum256 &hash);
+      ACTION killedge(const uint64_t id);
+      ACTION updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value);
+      // ACTION nbadge (const name& owner, const ContentGroups& contentGroups);
+      // ACTION nbadass(const name& owner, const ContentGroups& contentGroups);
+      // ACTION nbadprop (const name& owner, const ContentGroups& contentGroups);
 
       void setSetting(const string &key, const Content::FlexValue &value);
 
