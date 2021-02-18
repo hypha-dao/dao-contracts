@@ -58,6 +58,9 @@ type Environment struct {
 
 	Members []Member
 	Periods []docgraph.Document
+
+	//HVOICE Given to new test members
+	GenesisHVOICE int64
 }
 
 func envHeader() *simpletable.Header {
@@ -134,7 +137,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	env.SeedsDeferralFactor = 100
 	env.HyphaDeferralFactor = 25
 
-	env.PeriodDuration, _ = time.ParseDuration("15s")
+	env.PeriodDuration, _ = time.ParseDuration("5s")
 	env.NumPeriods = 20
 
 	// pauses
@@ -311,6 +314,9 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 			index++
 		}
 	}
+
+	env.GenesisHVOICE = 200
+
 	return &env
 }
 

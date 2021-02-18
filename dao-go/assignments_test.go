@@ -1,15 +1,15 @@
 package dao_test
 
 import (
-  "strconv"
-  "strings"
-  "testing"
-  "time"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
 
-  "github.com/eoscanada/eos-go"
-  "github.com/hypha-dao/dao-contracts/dao-go"
-  "github.com/hypha-dao/document-graph/docgraph"
-  "gotest.tools/assert"
+	"github.com/eoscanada/eos-go"
+	"github.com/hypha-dao/dao-contracts/dao-go"
+	"github.com/hypha-dao/document-graph/docgraph"
+	"gotest.tools/assert"
 )
 
 func GetAdjustInfo(assignment eos.Checksum256, timeShare int64, startDate eos.TimePoint) ([]docgraph.ContentGroup) {
@@ -720,7 +720,7 @@ func TestAssignmentPayClaim(t *testing.T) {
 			assert.Assert(t, husd.Impl.(*eos.Asset).Amount >= payments[len(payments)-1].Husd.Amount)
 			t.Log("Hvoice from payment      : ", strconv.Itoa(int(payments[len(payments)-1].Hvoice.Amount)))
 			t.Log("Hvoice from assignment   : ", strconv.Itoa(int(hvoice.Impl.(*eos.Asset).Amount)))
-			assert.Assert(t, hvoice.Impl.(*eos.Asset).Amount+100 >= payments[len(payments)-1].Hvoice.Amount)
+			assert.Assert(t, hvoice.Impl.(*eos.Asset).Amount+eos.Int64(env.GenesisHVOICE) >= payments[len(payments)-1].Hvoice.Amount)
 			assert.Assert(t, payments[len(payments)-1].SeedsEscrow.Amount > 0)
 
 			t.Log("Waiting for a period to lapse...")

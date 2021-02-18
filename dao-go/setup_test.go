@@ -93,40 +93,40 @@ func TestSetup(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestPretend(t *testing.T) {
-	teardownTestCase := setupTestCase(t)
-	defer teardownTestCase(t)
+// func TestPretend(t *testing.T) {
+// 	teardownTestCase := setupTestCase(t)
+// 	defer teardownTestCase(t)
 
-	env = SetupEnvironment(t)
+// 	env = SetupEnvironment(t)
 
-	t.Log(env.String())
-	t.Log("\nDAO Environment Setup complete\n")
+// 	t.Log(env.String())
+// 	t.Log("\nDAO Environment Setup complete\n")
 
-	// enroll the test members
-	//dao.EnrollMembers(env.ctx, &env.api, env.DAO)
+// 	// enroll the test members
+// 	//dao.EnrollMembers(env.ctx, &env.api, env.DAO)
 
-	mem2 := env.Members[2].Member
-	roleAssignment, err := dao.CreatePretend(env.ctx, &env.api, env.DAO, env.TelosDecide, mem2)
-	assert.NilError(t, err)
+// 	mem2 := env.Members[2].Member
+// 	roleAssignment, err := dao.CreatePretend(env.ctx, &env.api, env.DAO, env.TelosDecide, mem2)
+// 	assert.NilError(t, err)
 
-	t.Log("Waiting for a period to lapse...")
-	pause(t, env.PeriodPause, "", "Waiting...")
+// 	t.Log("Waiting for a period to lapse...")
+// 	pause(t, env.PeriodPause, "", "Waiting...")
 
-	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
-	assert.NilError(t, err)
+// 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
+// 	assert.NilError(t, err)
 
-	t.Log("Waiting for a period to lapse...")
-	pause(t, env.PeriodPause, "", "Waiting...")
+// 	t.Log("Waiting for a period to lapse...")
+// 	pause(t, env.PeriodPause, "", "Waiting...")
 
-	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
-	assert.NilError(t, err)
+// 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
+// 	assert.NilError(t, err)
 
-	t.Log("Waiting for a period to lapse...")
-	pause(t, env.PeriodPause, "", "Waiting...")
+// 	t.Log("Waiting for a period to lapse...")
+// 	pause(t, env.PeriodPause, "", "Waiting...")
 
-	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
-	assert.NilError(t, err)
-}
+// 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
+// 	assert.NilError(t, err)
+// }
 
 // func TestReset2(t *testing.T) {
 // 	teardownTestCase := setupTestCase(t)
