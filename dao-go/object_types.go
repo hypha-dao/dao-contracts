@@ -15,36 +15,6 @@ type QrAction struct {
 	Data           string
 }
 
-// NameKV struct
-type NameKV struct {
-	Key   string   `json:"key"`
-	Value eos.Name `json:"value"`
-}
-
-// StringKV struct
-type StringKV struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-// AssetKV struct
-type AssetKV struct {
-	Key   string    `json:"key"`
-	Value eos.Asset `json:"value"`
-}
-
-// TimePointKV struct
-type TimePointKV struct {
-	Key   string        `json:"key"`
-	Value eos.TimePoint `json:"value"`
-}
-
-// IntKV struct
-type IntKV struct {
-	Key   string `json:"key"`
-	Value uint64 `json:"value"`
-}
-
 // Scope ...
 type Scope struct {
 	Code  eos.Name `json:"code"`
