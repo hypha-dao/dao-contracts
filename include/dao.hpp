@@ -26,6 +26,53 @@ namespace hypha
 
       DECLARE_DOCUMENT_GRAPH(dao)
 
+      struct [[eosio::table, eosio::contract("dao")]] Payment
+      {
+         uint64_t payment_id;
+         eosio::time_point payment_date;
+         uint64_t period_id = 0;
+         uint64_t assignment_id = -1;
+         name recipient;
+         asset amount;
+         string memo;
+
+         uint64_t primary_key() const { return payment_id; }
+         uint64_t by_period() const { return period_id; }
+         uint64_t by_recipient() const { return recipient.value; }
+         uint64_t by_assignment() const { return assignment_id; }
+      };
+      typedef multi_index<name("payments"), Payment,
+                          eosio::indexed_by<name("byperiod"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_period>>,
+                          eosio::indexed_by<name("byrecipient"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_recipient>>,
+                          eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
+          payment_table;
+
+      ACTION erasepymts(const eosio::name &scope, const uint64_t &starting_id, const uint64_t &batch_size, int senderId)
+      {
+         require_auth(get_self());
+         int counter = 0;
+
+         payment_table o_t(get_self(), scope.value);
+         auto o_itr = o_t.find(starting_id);
+         while (o_itr != o_t.end() && counter < batch_size)
+         {
+            o_itr = o_t.erase(o_itr);
+            counter++;
+         }
+
+         if (o_itr != o_t.end())
+         {
+            eosio::transaction out{};
+            out.actions.emplace_back(
+                eosio::permission_level{get_self(), name("active")},
+                get_self(), name("erasepymts"),
+                std::make_tuple(scope, starting_id + batch_size, batch_size, ++senderId));
+
+            out.delay_sec = 1;
+            out.send(senderId, get_self());
+         }
+      }
+
       ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION closedocprop(const checksum256 &proposal_hash);
       ACTION setsetting(const string &key, const Content::FlexValue &value);
