@@ -48,7 +48,8 @@ namespace hypha
       std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
       eosio::check(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
 
-      require_auth(assignee);
+      // require_auth(assignee);
+      eosio::check(has_auth(assignee) || has_auth(get_self()), "only assignee or " + get_self().to_string() + " can claim pay");
 
       // Valid claim identified - start process
       // process this claim
@@ -67,8 +68,6 @@ namespace hypha
       }
       eosio::check(first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
 
-      asset deferredSeeds = adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc);
-
       // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
       // If there is an explicit INSTANT SEEDS amount, support sending it
       asset husd = adjustAsset(assignment.getSalaryAmount(&common::S_HUSD), first_phase_ratio_calc);
@@ -79,7 +78,6 @@ namespace hypha
 
       // creating a single struct improves performance for table queries here
       AssetBatch ab{};
-      ab.d_seeds = deferredSeeds;
       ab.hypha = hypha;
       ab.voice = hvoice;
       ab.husd = husd;
@@ -87,7 +85,6 @@ namespace hypha
       ab = applyBadgeCoefficients(periodToClaim.value(), assignee, ab);
 
       makePayment(periodToClaim.value().getHash(), assignee, ab.hypha, memo, eosio::name{0});
-      makePayment(periodToClaim.value().getHash(), assignee, ab.d_seeds, memo, common::ESCROW);
       makePayment(periodToClaim.value().getHash(), assignee, ab.voice, memo, eosio::name{0});
       makePayment(periodToClaim.value().getHash(), assignee, ab.husd, memo, eosio::name{0});
    }
@@ -168,8 +165,6 @@ namespace hypha
          applied_assets.hypha = applied_assets.hypha + applyCoefficient(badgeCW, ab.hypha, HYPHA_COEFFICIENT);
          applied_assets.husd = applied_assets.husd + applyCoefficient(badgeCW, ab.husd, HUSD_COEFFICIENT);
          applied_assets.voice = applied_assets.voice + applyCoefficient(badgeCW, ab.voice, HVOICE_COEFFICIENT);
-         applied_assets.seeds = applied_assets.seeds + applyCoefficient(badgeCW, ab.seeds, SEEDS_COEFFICIENT);
-         applied_assets.d_seeds = applied_assets.d_seeds + applyCoefficient(badgeCW, ab.d_seeds, SEEDS_COEFFICIENT);
       }
 
       return applied_assets;

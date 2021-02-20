@@ -14,19 +14,11 @@ namespace hypha
                                   const eosio::asset &quantity,
                                   const string &memo)
     {
-
-        // if the DSEEDS symbol is used, convert it to SEEDS
-        eosio::asset updatedQuantity = quantity;
-        if (quantity.symbol.code().raw() == common::S_DSEEDS.code().raw())
-        {
-            updatedQuantity = eosio::asset{quantity.amount, common::S_SEEDS};
-        }
-
         eosio::action(
             eosio::permission_level{m_dao.get_self(), name("active")},
             m_dao.getSettingOrFail<name>(SEEDS_TOKEN_CONTRACT),
             eosio::name("transfer"),
-            std::make_tuple(m_dao.get_self(), m_dao.getSettingOrFail<eosio::name>(SEEDS_ESCROW_CONTRACT), updatedQuantity, memo))
+            std::make_tuple(m_dao.get_self(), m_dao.getSettingOrFail<eosio::name>(SEEDS_ESCROW_CONTRACT), quantity, memo))
             .send();
 
         eosio::action(
@@ -35,7 +27,7 @@ namespace hypha
             std::make_tuple(eosio::name("event"),
                             m_dao.get_self(),
                             recipient,
-                            updatedQuantity,
+                            quantity,
                             eosio::name("golive"),
                             m_dao.get_self(),
                             eosio::time_point(eosio::current_time_point().time_since_epoch() +
@@ -46,7 +38,7 @@ namespace hypha
         ContentGroups recieptCgs{
             {Content(CONTENT_GROUP_LABEL, DETAILS),
              Content(RECIPIENT, recipient),
-             Content(AMOUNT, updatedQuantity),
+             Content(AMOUNT, quantity),
              Content(MEMO, memo),
              Content(PAYMENT_TYPE, ESCROW_SEEDS_AMOUNT),
              Content(EVENT, eosio::name("golive"))},
