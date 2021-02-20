@@ -156,8 +156,6 @@ namespace hypha
       struct AssetBatch
       {
          eosio::asset hypha = eosio::asset{0, common::S_HYPHA};
-         eosio::asset d_seeds = eosio::asset{0, common::S_SEEDS};
-         eosio::asset seeds = eosio::asset{0, common::S_SEEDS};
          eosio::asset voice = eosio::asset{0, common::S_HVOICE};
          eosio::asset husd = eosio::asset{0, common::S_HUSD};
       };

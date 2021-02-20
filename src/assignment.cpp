@@ -107,7 +107,6 @@ namespace hypha
     Member Assignment::getAssignee()
     {
         return Member(m_dao->get_self(), Edge::get(m_dao->get_self(), getHash(), common::ASSIGNEE_NAME).getToNode());
-        // return m;
     }
 
     eosio::time_point Assignment::getApprovedTime()
@@ -177,39 +176,4 @@ namespace hypha
 
         return eosio::asset{0, *symbol};
     }
-
-    eosio::asset Assignment::getSalaryAmount(const eosio::symbol *symbol, Period *period)
-    {
-        switch (symbol->code().raw())
-        {
-
-        case common::S_SEEDS.code().raw():
-            return calcDSeedsSalary(period);
-        }
-
-        return eosio::asset{0, *symbol};
-    }
-
-    eosio::asset Assignment::calcDSeedsSalary(Period *period)
-    {
-        // If there is an explicit ESCROW SEEDS salary amount, support sending it; else it should be calculated
-        if (auto [idx, seedsEscrowSalary] = getContentWrapper().get(DETAILS, "seeds_escrow_salary_per_phase"); seedsEscrowSalary)
-        {
-            eosio::check(std::holds_alternative<eosio::asset>(seedsEscrowSalary->value), "fatal error: expected token type must be an asset value type: " + seedsEscrowSalary->label);
-            return std::get<eosio::asset>(seedsEscrowSalary->value);
-        }
-        else if (auto [idx, usdSalaryValue] = getContentWrapper().get(DETAILS, USD_SALARY_PER_PERIOD); usdSalaryValue)
-        {
-            eosio::check(std::holds_alternative<eosio::asset>(usdSalaryValue->value), "fatal error: expected token type must be an asset value type: " + usdSalaryValue->label);
-
-            // Dynamically calculate the SEEDS amount based on the price at the end of the period being claimed
-            return getSeedsAmount(m_dao->getSettingOrFail<int64_t>(SEEDS_DEFERRAL_FACTOR_X100),
-                                  usdSalaryValue->getAs<eosio::asset>(),
-                                  period->getEndTime(),
-                                  (float)(getContentWrapper().getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>() / (float)100),
-                                  (float)(getContentWrapper().getOrFail(DETAILS, DEFERRED)->getAs<int64_t>() / (float)100));
-        }
-        return asset{0, common::S_SEEDS};
-    }
-
 } // namespace hypha
