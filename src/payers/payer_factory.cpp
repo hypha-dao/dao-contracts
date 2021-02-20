@@ -12,7 +12,7 @@ namespace hypha
 
     Payer *PayerFactory::Factory(dao &dao, const eosio::symbol &symbol, const eosio::name &paymentType)
     {
-        if (paymentType == common::ESCROW || symbol.code().raw() == common::S_DSEEDS.code().raw())
+        if (paymentType == common::ESCROW)
         {
             return new EscrowPayer(dao);
         }
