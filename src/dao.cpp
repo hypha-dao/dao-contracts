@@ -48,7 +48,8 @@ namespace hypha
       std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
       eosio::check(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
 
-      require_auth(assignee);
+      // require_auth(assignee);
+      eosio::check (has_auth(assignee) || has_auth(get_self()), "only assignee or " + get_self().to_string() + " can claim pay");
 
       // Valid claim identified - start process
       // process this claim

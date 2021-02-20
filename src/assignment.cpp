@@ -24,9 +24,7 @@ namespace hypha
         // assignee must exist and be a DHO member
         name assignee = assignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
 
-        // TODO: re-enable
-        // need to disable for migration only - loading historical assignments of accounts that are no longer members (only 1 assignment)
-        // eosio::check(Member::isMember(dao->get_self(), assignee), "only members can be assigned to assignments " + assignee.to_string());
+        eosio::check(Member::isMember(dao->get_self(), assignee), "only members can be assigned to assignments " + assignee.to_string());
 
         Document roleDocument(dao->get_self(), assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
         auto role = roleDocument.getContentWrapper();
@@ -57,11 +55,9 @@ namespace hypha
         // retrieve the minimum deferred from the role, if it exists, and check the assignment against it
         if (auto [idx, minDeferred] = role.get(DETAILS, MIN_DEFERRED); minDeferred)
         {
-            // TODO: re-enable
-            // need to disable for migration only - loading historical assignments of accounts that are no longer members (only 1 assignment)
-            // eosio::check(deferred >= minDeferred->getAs<int64_t>(),
-            //              DEFERRED + string(" must be greater than or equal to the role configuration. Role value for ") +
-            //                  MIN_DEFERRED + " is " + std::to_string(minDeferred->getAs<int64_t>()) + ", and you submitted: " + std::to_string(deferred));
+            eosio::check(deferred >= minDeferred->getAs<int64_t>(),
+                         DEFERRED + string(" must be greater than or equal to the role configuration. Role value for ") +
+                             MIN_DEFERRED + " is " + std::to_string(minDeferred->getAs<int64_t>()) + ", and you submitted: " + std::to_string(deferred));
         }
 
         // START_PERIOD - number of periods the assignment is valid for
@@ -86,8 +82,8 @@ namespace hypha
             eosio::check(std::holds_alternative<int64_t>(periodCount->value),
                          "fatal error: expected to be an int64 type: " + periodCount->label);
 
-            // eosio::check(std::get<int64_t>(periodCount->value) < 26, PERIOD_COUNT +
-            //                                                              string(" must be less than 26. You submitted: ") + std::to_string(std::get<int64_t>(periodCount->value)));
+            eosio::check(std::get<int64_t>(periodCount->value) < 26,
+                         PERIOD_COUNT + string(" must be less than 26. You submitted: ") + std::to_string(std::get<int64_t>(periodCount->value)));
         }
         else
         {
@@ -116,6 +112,12 @@ namespace hypha
 
     eosio::time_point Assignment::getApprovedTime()
     {
+        if (auto [idx, legacyCreatedDate] = getContentWrapper().get(SYSTEM, "legacy_object_created_date"); legacyCreatedDate)
+        {
+            eosio::check(std::holds_alternative<eosio::time_point>(legacyCreatedDate->value), "fatal error: expected time_point type: " + legacyCreatedDate->label);
+            return std::get<eosio::time_point>(legacyCreatedDate->value);
+        }
+
         return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
     }
 
@@ -133,13 +135,13 @@ namespace hypha
 
         while (counter < periodCount)
         {
-            eosio::print ("current time     : " + std::to_string(eosio::current_time_point().sec_since_epoch()) + "\n");
-            eosio::print ("start time       : " + std::to_string(period.getStartTime().sec_since_epoch()) + "\n");
-            eosio::print ("approved time    : " + std::to_string(getApprovedTime().sec_since_epoch()) + "\n");
+            eosio::print("current time     : " + std::to_string(eosio::current_time_point().sec_since_epoch()) + "\n");
+            eosio::print("start time       : " + std::to_string(period.getStartTime().sec_since_epoch()) + "\n");
+            eosio::print("approved time    : " + std::to_string(getApprovedTime().sec_since_epoch()) + "\n");
 
-            if (period.getStartTime().sec_since_epoch() >= getApprovedTime().sec_since_epoch() &&        // if period comes after assignment creation
+            if (period.getStartTime().sec_since_epoch() >= getApprovedTime().sec_since_epoch() &&         // if period comes after assignment creation
                 period.getEndTime().sec_since_epoch() <= eosio::current_time_point().sec_since_epoch() && // if period has lapsed
-                !isClaimed(&period))                                                                     // and not yet claimed
+                !isClaimed(&period))                                                                      // and not yet claimed
             {
                 return std::optional<Period>{period};
             }
