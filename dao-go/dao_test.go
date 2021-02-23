@@ -29,7 +29,13 @@ func setupTestCase(t *testing.T) func(t *testing.T) {
 
 	t.Log("Starting nodeos from 'nodeos.sh' script ...")
 	cmd := exec.Command("./nodeos.sh")
-	cmd.Stdout = os.Stdout
+
+    outfile, err := os.Create("./nodeos-go.log")
+    assert.NilError(t, err)
+
+    defer outfile.Close()
+    cmd.Stdout = outfile
+    cmd.Stderr = outfile
 	err = cmd.Start()
 	assert.NilError(t, err)
 
