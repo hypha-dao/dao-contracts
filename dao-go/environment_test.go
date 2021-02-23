@@ -117,6 +117,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	treasuryPrefix := artifactsHome + "/treasury/treasury."
 	monitorPrefix := artifactsHome + "/monitor/monitor."
 	escrowPrefix := artifactsHome + "/escrow/escrow."
+	voicePrefix := artifactsHome + "/voice/voice."
 
 	exchangeWasm = "mocks/seedsexchg/build/seedsexchg/seedsexchg.wasm"
 	exchangeAbi = "mocks/seedsexchg/build/seedsexchg/seedsexchg.abi"
@@ -186,7 +187,6 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	_, env.SeedsToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "token.seeds")
 	_, env.SeedsEscrow, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "escrow.seeds")
 	_, env.SeedsExchange, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "tlosto.seeds")
-
 	_, env.TelosDecide, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "telos.decide")
 
 	t.Log("Deploying DAO contract to 		: ", env.DAO)
@@ -200,6 +200,10 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	t.Log("Deploying Escrow contract to 		: ", env.SeedsEscrow)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.SeedsEscrow, escrowPrefix+"wasm", escrowPrefix+"abi")
 	assert.NilError(t, err)
+
+    t.Log("Deploying voice.hypha contract to 		: ", env.HvoiceToken)
+    _, err = eostest.SetContract(env.ctx, &env.api, env.HvoiceToken, voicePrefix+"wasm", voicePrefix+"abi")
+    assert.NilError(t, err)
 
 	t.Log("Deploying SeedsExchange contract to 		: ", env.SeedsExchange)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.SeedsExchange, exchangeWasm, exchangeAbi)
@@ -224,7 +228,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	assert.NilError(t, err)
 
 	hvoiceMaxSupply, _ := eos.NewAssetFromString("1000000000.00 HVOICE")
-	_, err = eostest.DeployAndCreateToken(env.ctx, t, &env.api, artifactsHome, env.HvoiceToken, env.DAO, hvoiceMaxSupply)
+	_, err = CreateHVoiceToken(env.ctx, t, &env.api, env.HvoiceToken, env.DAO, hvoiceMaxSupply)
 	assert.NilError(t, err)
 
 	seedsMaxSupply, _ := eos.NewAssetFromString("1000000000.0000 SEEDS")
@@ -255,7 +259,6 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "publisher_contract", env.Events)
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "treasury_contract", env.Bank)
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "telos_decide_contract", env.TelosDecide)
-	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "hypha_token_hvoice_contract", env.HyphaTokenHvoiceContract)
 	dao.SetNameSetting(env.ctx, &env.api, env.DAO, "last_ballot_id", "hypha......1")
 
 	if addFakePeriods {
@@ -353,6 +356,31 @@ func SetupMember(t *testing.T, ctx context.Context, api *eos.API,
 		Member: memberAccount,
 		Doc:    memberDoc,
 	}, nil
+}
+
+func CreateHVoiceToken(ctx context.Context, t *testing.T, api *eos.API, contract, issuer eos.AccountName, maxSupply eos.Asset) (string, error) {
+    type tokenCreate struct {
+        Issuer           eos.AccountName
+        MaxSupply        eos.Asset
+        DecayPeriod      eos.Uint64
+        DecayPerPeriod   eos.Uint64
+    }
+    actions := []*eos.Action{{
+        Account: contract,
+        Name:    eos.ActN("create"),
+        Authorization: []eos.PermissionLevel{
+            {Actor: contract, Permission: eos.PN("active")},
+        },
+        ActionData: eos.NewActionData(tokenCreate{
+            Issuer:    issuer,
+            MaxSupply: maxSupply,
+            DecayPeriod: 0,
+            DecayPerPeriod: 0,
+        }),
+    }}
+
+    t.Log("Created Token : ", contract, " 		: ", maxSupply.String())
+    return eostest.ExecTrx(ctx, api, actions)
 }
 
 func SaveGraph(ctx context.Context, api *eos.API, contract eos.AccountName, folderName string) error {

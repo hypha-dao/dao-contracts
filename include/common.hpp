@@ -131,7 +131,7 @@ namespace common
 #define HUSD_TOKEN_CONTRACT "husd_token_contract"
 #define TREASURY_CONTRACT "treasury_contract"
 #define HYPHA_TOKEN_CONTRACT "hypha_token_contract"
-#define HYPHA_TOKEN_HVOICE_CONTRACT "hypha_token_hvoice_contract"
+#define HVOICE_TOKEN_CONTRACT "hvoice_token_contract"
 
 #define UPDATED_DATE "updated_date"
 #define SEEDS_DEFERRAL_FACTOR_X100 "seeds_deferral_factor_x100"
