@@ -227,8 +227,9 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	_, err = eostest.DeployAndCreateToken(env.ctx, t, &env.api, artifactsHome, env.HyphaToken, env.DAO, hyphaMaxSupply)
 	assert.NilError(t, err)
 
-	hvoiceMaxSupply, _ := eos.NewAssetFromString("1000000000.00 HVOICE")
-	_, err = CreateHVoiceToken(env.ctx, t, &env.api, env.HvoiceToken, env.DAO, hvoiceMaxSupply)
+    // Hvoice doesn't have any limit (max supply should be 0)
+	hvoiceMaxSupply, _ := eos.NewAssetFromString("-1.00 HVOICE")
+	_, err = CreateHVoiceToken(env.ctx, t, &env.api, env.HvoiceToken, env.DAO, hvoiceMaxSupply, 5, 0.5)
 	assert.NilError(t, err)
 
 	seedsMaxSupply, _ := eos.NewAssetFromString("1000000000.0000 SEEDS")
@@ -358,13 +359,14 @@ func SetupMember(t *testing.T, ctx context.Context, api *eos.API,
 	}, nil
 }
 
-func CreateHVoiceToken(ctx context.Context, t *testing.T, api *eos.API, contract, issuer eos.AccountName, maxSupply eos.Asset) (string, error) {
+func CreateHVoiceToken(ctx context.Context, t *testing.T, api *eos.API, contract, issuer eos.AccountName, maxSupply eos.Asset, decayPeriod eos.Uint64, decayPerPeriod float32) (string, error) {
     type tokenCreate struct {
         Issuer           eos.AccountName
         MaxSupply        eos.Asset
         DecayPeriod      eos.Uint64
-        DecayPerPeriod   eos.Uint64
+        DecayPerPeriod   float32
     }
+
     actions := []*eos.Action{{
         Account: contract,
         Name:    eos.ActN("create"),
@@ -374,12 +376,12 @@ func CreateHVoiceToken(ctx context.Context, t *testing.T, api *eos.API, contract
         ActionData: eos.NewActionData(tokenCreate{
             Issuer:    issuer,
             MaxSupply: maxSupply,
-            DecayPeriod: 0,
-            DecayPerPeriod: 0,
+            DecayPeriod: decayPeriod,
+            DecayPerPeriod: decayPerPeriod,
         }),
     }}
 
-    t.Log("Created Token : ", contract, " 		: ", maxSupply.String())
+    t.Log("Created Token : ", contract, " 		: ", maxSupply.String(), " (-1 means unlimited)")
     return eostest.ExecTrx(ctx, api, actions)
 }
 

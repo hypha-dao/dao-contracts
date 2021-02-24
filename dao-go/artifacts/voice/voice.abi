@@ -144,20 +144,6 @@
             ]
         },
         {
-            "name": "retire",
-            "base": "",
-            "fields": [
-                {
-                    "name": "quantity",
-                    "type": "asset"
-                },
-                {
-                    "name": "memo",
-                    "type": "string"
-                }
-            ]
-        },
-        {
             "name": "transfer",
             "base": "",
             "fields": [
@@ -209,11 +195,6 @@
         {
             "name": "open",
             "type": "open",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "retire",
-            "type": "retire",
             "ricardian_contract": ""
         },
         {

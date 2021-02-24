@@ -13,9 +13,61 @@ type MigrateHVoiceArgs struct {
     TrailContract  eos.AccountName
 }
 
+type IssueHVoiceArgs struct {
+    To          eos.AccountName
+    Quantity    eos.Asset
+    Memo        string
+}
+
+type TransferHVoiceArgs struct {
+    From        eos.AccountName
+    To          eos.AccountName
+    Quantity    eos.Asset
+    Memo        string
+}
+
 type Account struct {
     Balance           eos.Asset   `json:"balance"`
     LastDecayPeriod   eos.Uint64  `json:"last_decay_period"`
+}
+
+func IssueHVoice(ctx context.Context, api *eos.API, contract, auth eos.AccountName,
+                 to eos.AccountName, quantity eos.Asset) (string, error) {
+    action := eos.ActN("issue")
+    actions := []*eos.Action{{
+        Account: contract,
+        Name:    action,
+        Authorization: []eos.PermissionLevel{
+            {Actor: auth, Permission: eos.PN("active")},
+        },
+        ActionData: eos.NewActionData(&IssueHVoiceArgs{
+            To:          to,
+            Quantity:    quantity,
+            Memo:        "HVoice transfer",
+        }),
+    }}
+
+    return eostest.ExecTrx(ctx, api, actions)
+}
+
+func TransferHVoice(ctx context.Context, api *eos.API, contract, auth eos.AccountName,
+                    from eos.AccountName, to eos.AccountName, quantity eos.Asset) (string, error) {
+    action := eos.ActN("transfer")
+    actions := []*eos.Action{{
+        Account: contract,
+        Name:    action,
+        Authorization: []eos.PermissionLevel{
+            {Actor: auth, Permission: eos.PN("active")},
+        },
+        ActionData: eos.NewActionData(&TransferHVoiceArgs{
+            From:        from,
+            To:          to,
+            Quantity:    quantity,
+            Memo:        "HVoice transfer",
+        }),
+    }}
+
+    return eostest.ExecTrx(ctx, api, actions)
 }
 
 func MigrateHVoice(ctx context.Context, api *eos.API, contract, daoContract eos.AccountName, trailContract  eos.AccountName) (string, error) {
