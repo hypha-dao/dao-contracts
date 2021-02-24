@@ -50,8 +50,6 @@ func TestHvoiceXX(t *testing.T) {
         // Wait 6 seconds (Decay is every 5 seconds and decays 50%).
         pause(t, 6000000000, "", "Waiting for a decay")
 
-        t.Log("first decay period", voiceAccount.LastDecayPeriod)
-
         // Issue and transfer
         _ ,err = dao.IssueHVoice(env.ctx, &env.api, env.HvoiceToken, env.DAO, env.DAO, hvoiceAsset)
         assert.NilError(t, err)
@@ -61,9 +59,7 @@ func TestHvoiceXX(t *testing.T) {
         lastVoiceAccount, err := dao.GetMemberHVoiceAccount(env.ctx, &env.api, env.HvoiceToken, env.Members[0].Member)
         assert.NilError(t, err)
 
-        t.Log("last decay period", lastVoiceAccount.LastDecayPeriod)
-
-        assert.Equal(t, lastVoiceAccount.Balance.Amount, float32(voiceAccount.Balance.Amount) * 0.5 + float32(hvoiceAsset.Amount))
+        assert.Equal(t, lastVoiceAccount.Balance.Amount, eos.Int64(float32(voiceAccount.Balance.Amount) * 0.5 + float32(hvoiceAsset.Amount)))
 
     })
 }
