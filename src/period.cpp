@@ -106,7 +106,6 @@ namespace hypha
 
         while (period.getEndTime() < moment)
         {
-            // eosio::print("Checking next period: " + period.getNodeLabel() + "\n");
             period = period.next();
         }
         return period;

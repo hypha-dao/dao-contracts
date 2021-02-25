@@ -16,3 +16,8 @@ eosc-vault.json
 **/test_results
 dao-go/nodeos.log
 dao-go/testlog.txt
+main.go
+main1.go
+*.json
+dao-contracts
+migration.sh

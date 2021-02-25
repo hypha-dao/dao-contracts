@@ -129,34 +129,6 @@ func AddPeriods(ctx context.Context, api *eos.API, daoContract eos.AccountName,
 	return periods, nil
 }
 
-// // Period represents a period of time aligning to a payroll period, typically a week
-// type Period struct {
-// 	PeriodID  uint64             `json:"period_id"`
-// 	StartTime eos.BlockTimestamp `json:"start_time"`
-// 	EndTime   eos.BlockTimestamp `json:"end_time"`
-// 	Phase     string             `json:"phase"`
-// }
-
-// LoadPeriods loads the period data from the blockchain
-func LoadPeriods(api *eos.API, includePast, includeFuture bool) ([]Period, error) {
-
-	var periods []Period
-	var periodRequest eos.GetTableRowsRequest
-	periodRequest.Code = "dao.hypha"
-	periodRequest.Scope = "dao.hypha"
-	periodRequest.Table = "periods"
-	periodRequest.Limit = 1000
-	periodRequest.JSON = true
-
-	periodResponse, err := api.GetTableRows(context.Background(), periodRequest)
-	if err != nil {
-		return []Period{}, fmt.Errorf("cannot load periods %v", err)
-	}
-
-	periodResponse.JSONToStructs(&periods)
-	return periods, nil
-}
-
 type applyParm struct {
 	Applicant eos.AccountName
 	Notes     string
@@ -245,15 +217,6 @@ func ClaimPay(ctx context.Context, api *eos.API, contract, claimer eos.AccountNa
 	}}
 	return eostest.ExecTrx(ctx, api, actions)
 }
-
-// type AssignmentPay struct {
-// 	ID           uint64             `json:"ass_payment_id"`
-// 	AssignmentID uint64             `json:"assignment_id"`
-// 	PeriodID     uint64             `json:"period_id"`
-// 	Recipient    eos.Name           `json:"recipient"`
-// 	Payments     []eos.Asset        `json:"payments"`
-// 	PaymentDate  eos.BlockTimestamp `json:"payment_date"`
-// }
 
 type balance struct {
 	Balance eos.Asset `json:"balance"`

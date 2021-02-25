@@ -15,7 +15,6 @@ namespace common
     static constexpr symbol S_HYPHA("HYPHA", 2);
     static constexpr symbol S_HVOICE("HVOICE", 2);
     static constexpr symbol S_SEEDS("SEEDS", 4);
-    static constexpr symbol S_DSEEDS("DSEEDS", 4);
     static constexpr symbol S_HUSD("HUSD", 2);
     static constexpr symbol S_USD("USD", 2);
 

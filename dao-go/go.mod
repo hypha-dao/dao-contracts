@@ -24,3 +24,5 @@ require (
 	gotest.tools v2.2.0+incompatible
 	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
 )
+
+replace github.com/hypha-dao/document-graph/docgraph => ../document-graph/docgraph

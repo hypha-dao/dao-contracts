@@ -14,320 +14,240 @@ import (
 	"github.com/spf13/viper"
 )
 
-type assPayoutIn struct {
-	ID           uint64             `json:"ass_payment_id"`
-	AssignmentID uint64             `json:"assignment_id"`
-	Recipient    eos.Name           `json:"recipient"`
-	PeriodID     uint64             `json:"period_id"`
-	Payments     []eos.Asset        `json:"payments"`
-	PaymentDate  eos.BlockTimestamp `json:"payment_date"`
+type updateDoc struct {
+	Hash  eos.Checksum256    `json:"hash"`
+	Group string             `json:"group"`
+	Key   string             `json:"key"`
+	Value docgraph.FlexValue `json:"value"`
 }
 
-type assPayoutOut struct {
-	ID           uint64        `json:"ass_payment_id"`
-	AssignmentID uint64        `json:"assignment_id"`
-	Recipient    eos.Name      `json:"recipient"`
-	PeriodID     uint64        `json:"period_id"`
-	Payments     []eos.Asset   `json:"payments"`
-	PaymentDate  eos.TimePoint `json:"payment_date"`
+func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountName) error {
+
+	// get all documents
+	// if type is period, update
+	// documents, err := docgraph.GetAllDocuments(ctx, api, contract)
+	// if err != nil {
+	// 	return fmt.Errorf("cannot get all documents %v", err)
+	// }
+
+	// counter := 0
+	// for _, d := range documents {
+	// 	docType, err := d.GetContentFromGroup("system", "type")
+	// 	if err != nil {
+	// 		return fmt.Errorf("cannot get type %v", err)
+	// 	}
+
+	// 	fmt.Println("Document type: ", docType.String())
+	// 	if docType.String() == "assignment" {
+
+	// 		legacyScope, err := d.GetContentFromGroup("system", "legacy_object_scope")
+	// 		if err != nil {
+	// 			return fmt.Errorf("cannot get legacy scope %v", err)
+	// 		}
+
+	// 		if legacyScope.String() == "proposal" {
+
+	// 		}
+
+	// 		startPeriod, err := docgraph.LoadDocument(ctx, api, contract, edges[0].ToNode.String())
+	// 		if err != nil {
+	// 			return fmt.Errorf("cannot load document %v", err)
+	// 		}
+
+	// 		fmt.Println("Assignment: ", d.GetNodeLabel())
+	// 		fmt.Println("Start Period: ", startPeriod.GetNodeLabel())
+
+	// assignee, err := d.GetContent("assignee")
+	// if err != nil {
+	// 	return fmt.Errorf("cannot get assignee %v", err)
+	// }
+
+	// newNodeLabel := assignee.String() + ": " + startPeriod.GetNodeLabel()
+
+	// actions := []*eos.Action{
+	// 	{
+	// 		Account: contract,
+	// 		Name:    eos.ActN("updatedoc"),
+	// 		Authorization: []eos.PermissionLevel{
+	// 			{Actor: contract, Permission: eos.PN("active")},
+	// 		},
+	// 		ActionData: eos.NewActionData(updateDoc{
+	// 			Hash:  d.Hash,
+	// 			Group: "system",
+	// 			Key:   "node_label",
+	// 			Value: docgraph.FlexValue{
+	// 				BaseVariant: eos.BaseVariant{
+	// 					TypeID: docgraph.GetVariants().TypeID("string"),
+	// 					Impl:   newNodeLabel,
+	// 				},
+	// 			}}),
+	// 	},
+	// }
+
+	// _, err = eostest.ExecTrx(ctx, api, actions)
+	// if err != nil {
+	// 	fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
+	// 	fmt.Println(err)
+	// 	fmt.Println()
+	// }
+	// time.Sleep(defaultPause())
+
+	// 		actions2 := []*eos.Action{
+	// 			{
+	// 				Account: contract,
+	// 				Name:    eos.ActN("updatedoc"),
+	// 				Authorization: []eos.PermissionLevel{
+	// 					{Actor: contract, Permission: eos.PN("active")},
+	// 				},
+	// 				ActionData: eos.NewActionData(updateDoc{
+	// 					Hash:  d.Hash,
+	// 					Group: "details",
+	// 					Key:   "start_period",
+	// 					Value: docgraph.FlexValue{
+	// 						BaseVariant: eos.BaseVariant{
+	// 							TypeID: docgraph.GetVariants().TypeID("checksum256"),
+	// 							Impl:   edges[0].ToNode,
+	// 						},
+	// 					}}),
+	// 			},
+	// 		}
+
+	// 		_, err = eostest.ExecTrx(ctx, api, actions2)
+	// 		if err != nil {
+	// 			fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
+	// 			fmt.Println(err)
+	// 			fmt.Println()
+	// 		}
+	// 		time.Sleep(defaultPause())
+
+	// 		counter++
+	// 		if counter > 10 {
+	// 			return nil
+	// 		}
+	// 	}
+	// }
+	return nil
 }
 
-func payoutExists(ctx context.Context, api *eos.API, contract eos.AccountName, id int) bool {
-	var records []assPayoutIn
-	var request eos.GetTableRowsRequest
-	request.Code = string(contract)
-	request.Scope = string(contract)
-	request.LowerBound = strconv.Itoa(id)
-	request.UpperBound = strconv.Itoa(id)
-	request.Table = "asspayouts"
-	request.Limit = 1
-	request.JSON = true
-	response, err := api.GetTableRows(ctx, request)
+// UpdatePeriods ...
+func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) error {
+
+	// get all documents
+	// if type is period, update
+	documents, err := docgraph.GetAllDocuments(ctx, api, contract)
 	if err != nil {
-		return false
+		return fmt.Errorf("cannot get all documents %v", err)
 	}
 
-	err = response.JSONToStructs(&records)
-	if err != nil {
-		return false
-	}
+	for _, d := range documents {
+		docType, err := d.GetContentFromGroup("system", "type")
+		if err != nil {
+			return fmt.Errorf("cannot get type %v", err)
+		}
 
-	if len(records) > 0 {
-		return true
-	}
-	return false
-}
+		if docType.String() == "period" {
 
-// CopyAssPayouts ...
-func CopyAssPayouts(ctx context.Context, api *eos.API, contract eos.AccountName, from string) {
-
-	sourceAPI := *eos.New(from)
-
-	payoutsIn, err := getAllAssPayouts(ctx, &sourceAPI, contract)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("\nCopying " + strconv.Itoa(len(payoutsIn)) + " assignment payout records from " + from)
-	bar := DefaultProgressBar(len(payoutsIn))
-
-	for index, payoutIn := range payoutsIn {
-
-		paymentDate := eos.TimePoint(payoutIn.PaymentDate.UnixNano() / 1000)
-
-		if !payoutExists(ctx, api, contract, int(payoutIn.ID)) {
-			actions := []*eos.Action{{
-				Account: contract,
-				Name:    eos.ActN("addasspayout"),
-				Authorization: []eos.PermissionLevel{
-					{Actor: contract, Permission: eos.PN("active")},
-				},
-				ActionData: eos.NewActionData(assPayoutOut{
-					ID:           payoutIn.ID,
-					AssignmentID: payoutIn.AssignmentID,
-					Recipient:    payoutIn.Recipient,
-					PeriodID:     payoutIn.PeriodID,
-					Payments:     payoutIn.Payments,
-					PaymentDate:  paymentDate,
-				}),
-			}}
-
-			_, err := eostest.ExecTrx(ctx, api, actions)
+			startTime, err := d.GetContent("start_time")
 			if err != nil {
-				fmt.Println("\n\nFAILED to migrate assignment pay: ", payoutIn.PaymentDate.Format("2006 Jan 02"), ", ", strconv.Itoa(index)+" / "+strconv.Itoa(len(payoutsIn)))
+				return fmt.Errorf("cannot get start_time %v", err)
+			}
+
+			startTimePoint, err := startTime.TimePoint()
+			if err != nil {
+				return fmt.Errorf("cannot get start time_point %v", err)
+			}
+
+			fmt.Println("Start time point: ", startTimePoint.String())
+			unixTime := time.Unix(int64(startTimePoint)/1000000, 0).UTC()
+			fmt.Println("Starting " + unixTime.Format("2006 Jan 02"))
+			fmt.Println(unixTime.Format("15:04:05 MST"))
+
+			actions := []*eos.Action{
+				// {
+				// 	Account: contract,
+				// 	Name:    eos.ActN("updatedoc"),
+				// 	Authorization: []eos.PermissionLevel{
+				// 		{Actor: contract, Permission: eos.PN("active")},
+				// 	},
+				// 	ActionData: eos.NewActionData(updateDoc{
+				// 		Hash:  d.Hash,
+				// 		Group: "system",
+				// 		Key:   "node_label",
+				// 		Value: docgraph.FlexValue{
+				// 			BaseVariant: eos.BaseVariant{
+				// 				TypeID: docgraph.GetVariants().TypeID("string"),
+				// 				Impl:   "Starting " + unixTime.Format("2006 Jan 02"),
+				// 			},
+				// 		}}),
+				// },
+				// {
+				// 	Account: contract,
+				// 	Name:    eos.ActN("updatedoc"),
+				// 	Authorization: []eos.PermissionLevel{
+				// 		{Actor: contract, Permission: eos.PN("active")},
+				// 	},
+				// 	ActionData: eos.NewActionData(updateDoc{
+				// 		Hash:  d.Hash,
+				// 		Group: "system",
+				// 		Key:   "readable_start_date",
+				// 		Value: docgraph.FlexValue{
+				// 			BaseVariant: eos.BaseVariant{
+				// 				TypeID: docgraph.GetVariants().TypeID("string"),
+				// 				Impl:   unixTime.Format("2006 Jan 02"),
+				// 			},
+				// 		}}),
+				// },
+				{
+					Account: contract,
+					Name:    eos.ActN("updatedoc"),
+					Authorization: []eos.PermissionLevel{
+						{Actor: contract, Permission: eos.PN("active")},
+					},
+					ActionData: eos.NewActionData(updateDoc{
+						Hash:  d.Hash,
+						Group: "system",
+						Key:   "readable_start_time",
+						Value: docgraph.FlexValue{
+							BaseVariant: eos.BaseVariant{
+								TypeID: docgraph.GetVariants().TypeID("string"),
+								Impl:   unixTime.Format("15:04:05 MST"),
+							},
+						}}),
+				},
+			}
+
+			_, err = eostest.ExecTrx(ctx, api, actions)
+			if err != nil {
+				fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
 				fmt.Println(err)
 				fmt.Println()
 			}
 			time.Sleep(defaultPause())
 		}
-		bar.Add(1)
+
 	}
-}
+	return nil
 
-type addLegPer struct {
-	ID        uint64        `json:"id"`
-	StartTime eos.TimePoint `json:"start_date"`
-	EndTime   eos.TimePoint `json:"end_date"`
-	Phase     string        `json:"phase"`
-	Readable  string        `json:"readable"`
-	NodeLabel string        `json:"label"`
-}
-
-func exists(ctx context.Context, api *eos.API, contract eos.AccountName, table, scope eos.Name, id int) bool {
-	var records []Object
-	var request eos.GetTableRowsRequest
-	request.Code = string(contract)
-	request.Scope = string(scope)
-	request.LowerBound = strconv.Itoa(id)
-	request.UpperBound = strconv.Itoa(id)
-	request.Table = string(table)
-	request.Limit = 1
-	request.JSON = true
-	response, err := api.GetTableRows(ctx, request)
-	if err != nil {
-		return false
-	}
-
-	err = response.JSONToStructs(&records)
-	if err != nil {
-		return false
-	}
-
-	if len(records) > 0 {
-		return true
-	}
-	return false
-}
-
-func periodExists(ctx context.Context, api *eos.API, contract eos.AccountName, id int) bool {
-	var records []Period
-	var request eos.GetTableRowsRequest
-	request.Code = string(contract)
-	request.Scope = string(contract)
-	request.LowerBound = strconv.Itoa(id)
-	request.UpperBound = strconv.Itoa(id)
-	request.Table = "periods"
-	request.Limit = 1
-	request.JSON = true
-	response, err := api.GetTableRows(ctx, request)
-	if err != nil {
-		return false
-	}
-
-	err = response.JSONToStructs(&records)
-	if err != nil {
-		return false
-	}
-
-	if len(records) > 0 {
-		return true
-	}
-	return false
-}
-
-// CopyPeriods ...
-func CopyPeriods(ctx context.Context, api *eos.API, contract eos.AccountName, from string) {
-
-	sourceAPI := *eos.New(from)
-	periods := getLegacyPeriods(ctx, &sourceAPI, contract)
-
-	fmt.Println("\nCopying " + strconv.Itoa(len(periods)) + " periods from " + from)
-
-	bar := DefaultProgressBar(len(periods))
-
-	for _, period := range periods {
-
-		if !periodExists(ctx, api, contract, int(period.PeriodID)) {
-
-			startTime := eos.TimePoint(period.StartTime.UnixNano() / 1000)
-			endTime := eos.TimePoint(period.EndTime.UnixNano() / 1000)
-
-			actions := []*eos.Action{{
-				Account: contract,
-				Name:    eos.ActN("addlegper"),
-				Authorization: []eos.PermissionLevel{
-					{Actor: contract, Permission: eos.PN("active")},
-				},
-				ActionData: eos.NewActionData(addLegPer{
-					ID:        period.PeriodID,
-					StartTime: startTime,
-					EndTime:   endTime,
-					Phase:     period.Phase,
-					Readable:  period.StartTime.Time.Format("2006 Jan 02 15:04:05 MST"),
-					NodeLabel: "Starting " + period.StartTime.Time.Format("2006 Jan 02"),
-				}),
-			}}
-
-			_, err := eostest.ExecTrx(ctx, api, actions)
-			if err != nil {
-				fmt.Println("\n\nFAILED to copy period: ", strconv.Itoa(int(period.PeriodID)))
-				fmt.Println(err)
-				fmt.Println()
-			}
-			time.Sleep(defaultPause())
-		}
-		bar.Add(1)
-	}
-}
-
-// CopyObjects ...
-func CopyObjects(ctx context.Context, api *eos.API, contract eos.AccountName, scope eos.Name, from string) {
-
-	sourceAPI := *eos.New(from)
-	objects, _ := getLegacyObjects(ctx, &sourceAPI, contract, scope)
-
-	fmt.Println("\nCopying " + strconv.Itoa(len(objects)) + " " + string(scope) + " objects from " + from)
-	bar := DefaultProgressBar(len(objects))
-
-	for _, object := range objects {
-
-		if !exists(ctx, api, contract, eos.Name("objects"), scope, int(object.ID)) {
-
-			object.Scope = eos.Name(scope)
-
-			actions := []*eos.Action{{
-				Account: contract,
-				Name:    eos.ActN("createobj"),
-				Authorization: []eos.PermissionLevel{
-					{Actor: contract, Permission: eos.PN("active")},
-				},
-				ActionData: eos.NewActionData(object),
-			}}
-
-			_, err := eostest.ExecTrx(ctx, api, actions)
-			if err != nil {
-				fmt.Println("\n\nFAILED to createobj object - scope: ", string(scope)+", ", strconv.Itoa(int(object.ID)))
-				fmt.Println(err)
-				fmt.Println()
-			} else {
-				time.Sleep(defaultPause())
-			}
-		}
-		bar.Add(1)
-	}
-}
-
-func memberExists(ctx context.Context, api *eos.API, contract eos.AccountName, member eos.Name) bool {
-	var records []memberRecord
-	var request eos.GetTableRowsRequest
-	request.Code = string(contract)
-	request.Scope = string(contract)
-	request.LowerBound = string(member)
-	request.UpperBound = string(member)
-	request.Table = "members"
-	request.Limit = 1
-	request.JSON = true
-	response, err := api.GetTableRows(ctx, request)
-	if err != nil {
-		return false
-	}
-
-	err = response.JSONToStructs(&records)
-	if err != nil {
-		return false
-	}
-
-	if len(records) > 0 {
-		return true
-	}
-	return false
-}
-
-// CopyMembers ...
-func CopyMembers(ctx context.Context, api *eos.API, contract eos.AccountName, from string) {
-
-	sourceAPI := *eos.New(from)
-	memberRecords := getLegacyMembers(ctx, &sourceAPI, contract)
-
-	fmt.Println("\nCopying " + strconv.Itoa(len(memberRecords)) + " members from " + from)
-	bar := DefaultProgressBar(len(memberRecords))
-
-	for _, memberRecord := range memberRecords {
-
-		if !memberExists(ctx, api, contract, memberRecord.MemberName) {
-
-			actions := []*eos.Action{{
-				Account: contract,
-				Name:    eos.ActN("addmember"),
-				Authorization: []eos.PermissionLevel{
-					{Actor: contract, Permission: eos.PN("active")},
-				},
-				ActionData: eos.NewActionData(memberRecord),
-			}}
-
-			_, err := eostest.ExecTrx(ctx, api, actions)
-			if err != nil {
-				fmt.Println("\n\nFAILED to copy member: ", string(memberRecord.MemberName))
-				fmt.Println(err)
-				fmt.Println()
-			}
-			time.Sleep(defaultPause())
-		} else {
-			fmt.Println("\nMember already exists: " + string(memberRecord.MemberName))
-		}
-		bar.Add(1)
-	}
 }
 
 // CreatePretend ...
 func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName) (docgraph.Document, error) {
 
-	roleFilename := "/Users/max/dev/hypha/daoctl/testing/role.json"
-	roleData, err := ioutil.ReadFile(roleFilename)
-	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to read file: %v %v", roleFilename, err)
-	}
+	// roleFilename := "/Users/max/dev/hypha/daoctl/testing/role.json"
+	// roleData, err := ioutil.ReadFile(roleFilename)
+	// if err != nil {
+	// 	return docgraph.Document{}, fmt.Errorf("Unable to read file: %v %v", roleFilename, err)
+	// }
 
-	role, err := CreateRole(ctx, api, contract, telosDecide, member, roleData)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Created role document	: ", role.Hash.String())
+	// role, err := CreateRole(ctx, api, contract, telosDecide, member, roleData)
+	// if err != nil {
+	// 	return docgraph.Document{}, fmt.Errorf("Unable to create role: %v", err)
+	// }
+	// fmt.Println("Created role document	: ", role.Hash.String())
 
 	assignmentData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/assignment.json")
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("Unable to read file: %v", err)
-
 	}
 
 	roleAssignment, err := CreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("role"), eos.Name("assignment"), assignmentData)
@@ -336,10 +256,10 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 	}
 	fmt.Println("Created role assignment document	: ", roleAssignment.Hash.String())
 
-	fmt.Println("Waiting for a period to lapse...")
-	time.Sleep(defaultPeriodDuration())
+	// fmt.Println("Waiting for a period to lapse...")
+	// time.Sleep(defaultPeriodDuration())
 
-	_, err = claimNextPeriod(ctx, api, contract, member, roleAssignment)
+	// _, err = claimNextPeriod(ctx, api, contract, member, roleAssignment)
 
 	payoutData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/payout.json")
 	if err != nil {
@@ -374,7 +294,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("Unable to create badge assignment: %v", err)
 	}
 	fmt.Println("Created badge assignment document	: ", badgeAssignment.Hash.String())
-	return roleAssignment, nil
+	return badgeAssignment, nil //roleAssignment, nil
 }
 
 type claimNext struct {
@@ -429,13 +349,20 @@ func EnrollMembers(ctx context.Context, api *eos.API, contract eos.AccountName) 
 
 		newMember, err := enrollMember(ctx, api, contract, eos.AN(memberNameIn))
 		if err != nil {
-			panic(err)
+			fmt.Println("Error attempting to enroll : " + string(memberNameIn) + " with hash: " + newMember.Hash.String())
 		}
 		fmt.Println("Member enrolled : " + string(memberNameIn) + " with hash: " + newMember.Hash.String())
 		fmt.Println()
 
 		index++
 	}
+
+	johnnyhypha, err := enrollMember(ctx, api, contract, eos.AN("johnnyhypha1"))
+	if err != nil {
+		fmt.Println("Error attempting to enroll : johnnyhypha1 with hash: " + johnnyhypha.Hash.String())
+	}
+	fmt.Println("Member enrolled : johnnyhypha1 with hash: " + johnnyhypha.Hash.String())
+	fmt.Println()
 }
 
 func enrollMember(ctx context.Context, api *eos.API, contract, member eos.AccountName) (docgraph.Document, error) {
@@ -565,11 +492,19 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	if err == nil {
 		fmt.Println("Member voted : " + string(member))
 	}
+	pause(defaultPause(), "Building block...", "")
+
+	_, err = dao.TelosDecideVote(ctx, api, telosDecide, eos.AN("alice"), ballot.Impl.(eos.Name), eos.Name("pass"))
+	if err == nil {
+		fmt.Println("Member voted : alice")
+	}
+	pause(defaultPause(), "Building block...", "")
 
 	_, err = TelosDecideVote(ctx, api, telosDecide, eos.AN("johnnyhypha1"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : johnnyhypha1")
 	}
+	pause(defaultPause(), "Building block...", "")
 
 	index := 1
 	for index < 5 {
@@ -581,6 +516,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 		if err != nil {
 			return docgraph.Document{}, fmt.Errorf("error voting via telos decide %v", err)
 		}
+		pause(defaultPause(), "Building block...", "")
 		fmt.Println("Member voted : " + string(memberNameIn))
 		index++
 	}
@@ -597,7 +533,6 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 
 	votingPause := time.Duration((5 + votingPeriodDuration.Impl.(int64)) * 1000000000)
 	pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
-
 	_, err = CloseProposal(ctx, api, contract, member, proposal.Hash)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("cannot close proposal %v", err)
@@ -634,15 +569,17 @@ func CreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, 
 	var proposalDoc docgraph.Document
 	err := json.Unmarshal([]byte(data), &proposalDoc)
 	if err != nil {
-		panic(err)
+		return docgraph.Document{}, fmt.Errorf("cannot unmarshal error: %v ", err)
 	}
+
+	pause(defaultPause(), "Building block...", "")
 
 	// e.g. a "role" is parent to a "role assignment"
 	// e.g. a "badge" is parent to a "badge assignment"
 	var parent docgraph.Document
 	parent, err = docgraph.GetLastDocumentOfEdge(ctx, api, contract, parentType)
 	if err != nil {
-		panic(err)
+		return docgraph.Document{}, fmt.Errorf("cannot retrieve last document of edge: "+string(parentType)+"  - error: %v ", err)
 	}
 
 	// inject the parent hash in the first content group of the document
@@ -682,7 +619,7 @@ func CreatePayout(ctx context.Context, api *eos.API,
 	var payoutDoc docgraph.Document
 	err := json.Unmarshal([]byte(data), &payoutDoc)
 	if err != nil {
-		panic("cannot unmarshal payout doc")
+		return docgraph.Document{}, fmt.Errorf("cannot unmarshal error: %v ", err)
 	}
 
 	// inject the recipient in the first content group of the document

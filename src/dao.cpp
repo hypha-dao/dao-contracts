@@ -9,7 +9,6 @@
 #include <common.hpp>
 #include <util.hpp>
 #include <member.hpp>
-#include <migration.hpp>
 #include <period.hpp>
 #include <assignment.hpp>
 #include <time_share.hpp>
@@ -60,7 +59,8 @@ namespace hypha
       std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
       eosio::check(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
 
-      require_auth(assignee);
+      // require_auth(assignee);
+      eosio::check(has_auth(assignee) || has_auth(get_self()), "only assignee or " + get_self().to_string() + " can claim pay");
 
       // Valid claim identified - start process
       // process this claim
@@ -170,7 +170,6 @@ namespace hypha
 
       // creating a single struct improves performance for table queries here
       AssetBatch ab{};
-      ab.d_seeds = deferredSeeds;
       ab.hypha = hypha;
       ab.voice = hvoice;
       ab.husd = husd;
@@ -178,7 +177,6 @@ namespace hypha
       ab = applyBadgeCoefficients(periodToClaim.value(), assignee, ab);
 
       makePayment(periodToClaim.value().getHash(), assignee, ab.hypha, memo, eosio::name{0});
-      makePayment(periodToClaim.value().getHash(), assignee, ab.d_seeds, memo, common::ESCROW);
       makePayment(periodToClaim.value().getHash(), assignee, ab.voice, memo, eosio::name{0});
       makePayment(periodToClaim.value().getHash(), assignee, ab.husd, memo, eosio::name{0});
    }
@@ -198,7 +196,6 @@ namespace hypha
    {
       std::vector<Document> current_badges;
       std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(Member::calcHash(member), common::ASSIGN_BADGE);
-      // eosio::print ("getting badges    : " + std::to_string(badge_assignment_edges.size()) + "\n");
       for (Edge e : badge_assignment_edges)
       {
          Document badgeAssignmentDoc(get_self(), e.getToNode());
@@ -207,30 +204,20 @@ namespace hypha
          Document badge(get_self(), badge_edge.getToNode());
          current_badges.push_back(badge);
 
-         // fast forward to duration end (TODO: probably need a duration class)
+         // TODO: exclude badges that are no longer active
          // Period startPeriod(this, badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
-         // eosio::print (" badge assignment start period: " + readableHash(startPeriod.getHash()) + "\n");
-
          // int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
          // int64_t counter = 0;
          // std::optional<Period> seeker = std::optional<Period>{startPeriod};
-         // eosio::print (" periodCount   : " + std::to_string(periodCount) + "\n");
          // while (seeker.has_value() && counter <= periodCount)
          // {
          //    eosio::print (" counter : " + std::to_string(counter) + "\n");
          //    seeker = seeker.value().next();
          //    counter++;
          // }
-
-         // eosio::print (" checking expiration time of last period ");
          // std::optional<eosio::time_point> periodEndTime = seeker.value().getEndTime();
-         // eosio::print (" got end time ");
-
          // eosio::check(periodEndTime != std::nullopt, "End of calendar has been reached. Contact administrator to add more time periods.");
-
          // int64_t badgeAssignmentExpiration = periodEndTime.value().sec_since_epoch();
-         // eosio::print (" badge assignment expiration: " + std::to_string(badgeAssignmentExpiration) + "\n");
-
          // if (badgeAssignmentExpiration > eosio::current_time_point().sec_since_epoch())
          // {
 
@@ -243,10 +230,10 @@ namespace hypha
    {
       if (auto [idx, coefficient] = badge.get(DETAILS, key); coefficient)
       {
-         // if (std::holds_alternative<std::monostate>(coefficient->value))
-         // {
-         //    return asset{0, base.symbol};
-         // }
+         if (std::holds_alternative<std::monostate>(coefficient->value))
+         {
+            return asset{0, base.symbol};
+         }
 
          eosio::check(std::holds_alternative<int64_t>(coefficient->value), "fatal error: coefficient must be an int64_t type: key: " + key);
 
@@ -270,8 +257,6 @@ namespace hypha
          applied_assets.hypha = applied_assets.hypha + applyCoefficient(badgeCW, ab.hypha, HYPHA_COEFFICIENT);
          applied_assets.husd = applied_assets.husd + applyCoefficient(badgeCW, ab.husd, HUSD_COEFFICIENT);
          applied_assets.voice = applied_assets.voice + applyCoefficient(badgeCW, ab.voice, HVOICE_COEFFICIENT);
-         applied_assets.seeds = applied_assets.seeds + applyCoefficient(badgeCW, ab.seeds, SEEDS_COEFFICIENT);
-         applied_assets.d_seeds = applied_assets.d_seeds + applyCoefficient(badgeCW, ab.d_seeds, SEEDS_COEFFICIENT);
       }
 
       return applied_assets;
@@ -347,12 +332,6 @@ namespace hypha
       removeSetting(key);
    }
 
-   void dao::cancel (const uint64_t senderid)
-   {
-      require_auth(get_self());
-      eosio::cancel_deferred (senderid);
-   }
-
    void dao::removeSetting(const string &key)
    {
       auto document = getSettingsDocument();
@@ -405,70 +384,45 @@ namespace hypha
       }
    }
 
-   void dao::addasspayout(const uint64_t &ass_payment_id,
-                          const uint64_t &assignment_id,
-                          const name &recipient,
-                          uint64_t period_id,
-                          std::vector<eosio::asset> payments,
-                          eosio::time_point payment_date)
+   // void dao::nbadge(const name &owner, const ContentGroups &contentGroups)
+   // {
+   //    eosio::require_auth(get_self());
+
+   //    Migration migration(this);
+   //    migration.createBadge(owner, contentGroups);
+   // }
+
+   // void dao::nbadass(const name &owner, const ContentGroups &contentGroups)
+   // {
+   //    eosio::require_auth(get_self());
+
+   //    Migration migration(this);
+   //    migration.createBadgeAssignment(owner, contentGroups);
+   // }
+
+   // void dao::nbadprop(const name &owner, const ContentGroups &contentGroups)
+   // {
+   //    eosio::require_auth(get_self());
+
+   //    Migration migration(this);
+   //    migration.createBadgeAssignmentProposal(owner, contentGroups);
+   // }
+
+   void dao::updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value)
    {
       eosio::require_auth(get_self());
 
-      Migration migration(this);
-      migration.addLegacyAssPayout(ass_payment_id, assignment_id, recipient, period_id, payments, payment_date);
-   }
+      Document document(get_self(), hash);
+      auto oldHash = document.getHash();
 
-   void dao::migrateper(const uint64_t id)
-   {
-      eosio::require_auth(get_self());
+      // the ContentWrapper is used to access the document's data
+      ContentWrapper cw = document.getContentWrapper();
 
-      Migration migration(this);
-      migration.migratePeriod(id);
-   }
-
-   void dao::migasspay(const uint64_t id)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.migrateAssPayout(id);
-   }
-
-   void dao::addlegper(const uint64_t &id,
-                       const time_point &start_date,
-                       const time_point &end_date,
-                       const string &phase,
-                       const string &readable,
-                       const string &label)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.addLegacyPeriod(id, start_date, end_date, phase, readable, label);
-   }
-
-   void dao::addmember(const eosio::name &member)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.addLegacyMember(member);
-   }
-
-   void dao::migratemem(const eosio::name &member)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.migrateMember(member);
-   }
-
-   void dao::addapplicant(const eosio::name &applicant, const std::string content)
-   {
-      eosio::require_auth(get_self());
-
-      Migration migration(this);
-      migration.addLegacyApplicant(applicant, content);
+      // update the indicated group to the new value
+      auto [idx, contentGroup] = cw.getGroupOrCreate(group);
+      auto content = Content(key, value);
+      ContentWrapper::insertOrReplace(*contentGroup, content);
+      m_documentGraph.updateDocument(updater, oldHash, document.getContentGroups());
    }
 
    void dao::createroot(const std::string &notes)
@@ -491,102 +445,6 @@ namespace hypha
       Edge::write(get_self(), get_self(), rootDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
    }
 
-   void dao::migrate(const eosio::name &scope, const uint64_t &id)
-   {
-      require_auth(get_self());
-
-      if (scope == common::ROLE_NAME)
-      {
-         Migration migration(this);
-         migration.migrateRole(id);
-      }
-      else if (scope == common::ASSIGNMENT)
-      {
-         Migration migration(this);
-         migration.migrateAssignment(id);
-      }
-      else if (scope == common::PAYOUT)
-      {
-         Migration migration(this);
-         migration.migratePayout(id);
-      }
-   }
-
-   void dao::migrateconfig(const std::string &notes)
-   {
-      require_auth(get_self());
-      Migration migration(this);
-      migration.migrateConfig();
-   }
-
-   void dao::reset4test(const std::string &notes)
-   {
-      require_auth(get_self());
-      Migration migration(this);
-      migration.reset4test();
-   }
-
-   void dao::erasepers(const std::string &notes)
-   {
-      require_auth(get_self());
-      Migration migration(this);
-      migration.erasePeriods();
-   }
-
-   void dao::erasegraph(const std::string &notes)
-   {
-      require_auth(get_self());
-      Migration migration(this);
-      migration.eraseGraph();
-   }
-
-   // void dao::eraseobjs(const eosio::name &scope)
-   // {
-   //    require_auth(get_self());
-   //    Migration migration(this);
-   //    migration.eraseAllObjects(scope);
-   // }
-
-   void dao::eraseobj(const eosio::name &scope, const uint64_t &starting_id)
-   {
-      require_auth(get_self());
-      Migration::object_table o_t(get_self(), scope.value);
-      auto o_itr = o_t.find(starting_id);
-      eosio::check(o_itr != o_t.end(), "id not found");
-      o_t.erase(o_itr);
-   }
-
-   void dao::eraseobjs(const eosio::name &scope, const uint64_t &starting_id, const uint64_t &batch_size, int senderId)
-   {
-      int counter = 0;
-      
-      Migration::object_table o_t(get_self(), scope.value);
-      auto o_itr = o_t.find(starting_id);
-      while (o_itr != o_t.end() && counter < batch_size)
-      {
-         o_itr = o_t.erase(o_itr);
-         counter++;
-      }
-
-      if (o_itr != o_t.end()) {
-         eosio::transaction out{};
-         out.actions.emplace_back(
-            eosio::permission_level{get_self(), name("active")},
-            get_self(), name("eraseobjs"),
-            std::make_tuple(scope, starting_id + batch_size, batch_size, ++senderId));
-
-         out.delay_sec = 1;
-         out.send(senderId, get_self());
-      }      
-   }
-
-   void dao::erasexfer(const eosio::name &scope)
-   {
-      require_auth(get_self());
-      Migration migration(this);
-      migration.eraseXRefs(scope);
-   }
-
    void dao::erasedoc(const checksum256 &hash)
    {
       require_auth(get_self());
@@ -595,8 +453,22 @@ namespace hypha
       dg.eraseDocument(hash);
    }
 
+   void dao::killedge(const uint64_t id)
+   {
+      require_auth(get_self());
+      Edge::edge_table e_t(get_self(), get_self().value);
+      auto itr = e_t.find(id);
+      e_t.erase(itr);
+   }
+
    void dao::setalert(const eosio::name &level, const std::string &content)
    {
+      auto [exists, edge] = Edge::getIfExists(get_self(), getRoot(get_self()), common::ALERT);
+      if (exists)
+      {
+         remalert("removing alert to replace with new alert");
+      }
+
       Document alert(get_self(), get_self(),
                      ContentGroups{
                          ContentGroup{
@@ -714,5 +586,4 @@ namespace hypha
       Edge::write(get_self(), get_self(), assignment.getHash(), newTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
     }
   }
-
 } // namespace hypha
