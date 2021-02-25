@@ -494,7 +494,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	}
 	pause(defaultPause(), "Building block...", "")
 
-	_, err = dao.TelosDecideVote(ctx, api, telosDecide, eos.AN("alice"), ballot.Impl.(eos.Name), eos.Name("pass"))
+	_, err = TelosDecideVote(ctx, api, telosDecide, eos.AN("alice"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : alice")
 	}

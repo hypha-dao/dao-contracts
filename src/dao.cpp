@@ -495,21 +495,6 @@ namespace hypha
       return m_documentGraph;
    }
 
-   void dao::createobj(const uint64_t &id,
-                       const name &scope,
-                       std::map<string, name> names,
-                       std::map<string, string> strings,
-                       std::map<string, asset> assets,
-                       std::map<string, eosio::time_point> time_points,
-                       std::map<string, uint64_t> ints,
-                       eosio::time_point created_date,
-                       eosio::time_point updated_date)
-   {
-      Migration migration(this);
-      migration.addLegacyObject(id, scope, names, strings, assets, time_points, ints, created_date, updated_date);
-   }
-
-
   /**
   * Info Structure
   * 
