@@ -129,9 +129,6 @@ namespace hypha
 
       ACTION adjustcmtmnt(name issuer, ContentGroups& adjust_info);
 
-      // migration actions
-      ACTION migrate(const eosio::name &scope, const uint64_t &id);
-      ACTION migrateconfig(const std::string &notes);
       ACTION createroot(const std::string &notes);
       ACTION erasedoc(const eosio::checksum256 &hash);
       ACTION killedge(const uint64_t id);
