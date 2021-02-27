@@ -5,6 +5,7 @@
 #include <document_graph/content.hpp>
 #include <document_graph/edge.hpp>
 #include <document_graph/util.hpp>
+#include <payers/payer.hpp>
 #include <util.hpp>
 #include <dao.hpp>
 #include <payers/payer.hpp>
@@ -87,7 +88,8 @@ namespace hypha
 
         eosio::action(
             eosio::permission_level{getContract(), eosio::name("active")},
-            m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT), eosio::name("mint"),
+            // TODO: hard-code TD contract
+            eosio::name("trailservice"), eosio::name("mint"),
             std::make_tuple(getAccount(), genesis_voice, memo))
             .send();
 

@@ -8,7 +8,6 @@ add_contract( dao dao
                 util.cpp 
                 period.cpp
                 member.cpp
-                migration.cpp
                 assignment.cpp
                 time_share.cpp
                 payers/payer.cpp
