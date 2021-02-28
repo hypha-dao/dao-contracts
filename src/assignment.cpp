@@ -6,6 +6,7 @@
 #include <document_graph/content_wrapper.hpp>
 #include <member.hpp>
 #include <assignment.hpp>
+#include <time_share.hpp>
 
 namespace hypha
 {
@@ -106,8 +107,7 @@ namespace hypha
 
     Member Assignment::getAssignee()
     {
-        return Member(m_dao->get_self(), Edge::get(m_dao->get_self(), getHash(), common::ASSIGNEE_NAME).getToNode());
-    }
+        return Member(*m_dao, Edge::get(m_dao->get_self(), getHash(), common::ASSIGNEE_NAME).getToNode());
 
     eosio::time_point Assignment::getApprovedTime()
     {
@@ -117,7 +117,7 @@ namespace hypha
             return std::get<eosio::time_point>(legacyCreatedDate->value);
         }
 
-        return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
+        return getInitialTimeShare().getContentWrapper().getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
     }
 
     bool Assignment::isClaimed(Period *period)
@@ -132,11 +132,18 @@ namespace hypha
         int64_t periodCount = getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
         int64_t counter = 0;
 
+        auto approvedTime = getApprovedTime().sec_since_epoch();
+        auto currentTime = eosio::current_time_point().sec_since_epoch();
+
         while (counter < periodCount)
         {
-            if (period.getStartTime().sec_since_epoch() >= getApprovedTime().sec_since_epoch() &&         // if period comes after assignment creation
-                period.getEndTime().sec_since_epoch() <= eosio::current_time_point().sec_since_epoch() && // if period has lapsed
-                !isClaimed(&period))                                                                      // and not yet claimed
+
+            auto startTime = period.getStartTime().sec_since_epoch();
+            auto endTime = period.getEndTime().sec_since_epoch();
+            if ((startTime >= approvedTime || // if period comes after assignment creation
+                 approvedTime < endTime) &&  //Or if it was approved in the middle of a period
+                 endTime <= currentTime &&   // if period has lapsed
+                !isClaimed(&period))         // and not yet claimed
             {
                 return std::optional<Period>{period};
             }
@@ -171,5 +178,37 @@ namespace hypha
         }
 
         return eosio::asset{0, *symbol};
+    }
+
+    eosio::asset Assignment::getSalaryAmount(const eosio::symbol *symbol, Period *period)
+    {
+        switch (symbol->code().raw())
+        {
+
+        case common::S_SEEDS.code().raw():
+            return calcDSeedsSalary(period);
+        }
+
+        return eosio::asset{0, *symbol};
+    }
+    
+    TimeShare Assignment::getInitialTimeShare() 
+    {
+      Edge initialEdge = Edge::get(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
+      return TimeShare(m_dao->get_self(), initialEdge.getToNode());
+    }
+    
+    TimeShare Assignment::getCurrentTimeShare() 
+    {
+      Edge currentEdge = Edge::get(m_dao->get_self(), getHash(), common::CURRENT_TIME_SHARE);
+
+      return TimeShare(m_dao->get_self(), currentEdge.getToNode());
+    }
+    
+    TimeShare Assignment::getLastTimeShare() 
+    {
+      Edge lastEdge = Edge::get(m_dao->get_self(), getHash(), common::LAST_TIME_SHARE);
+
+      return TimeShare(m_dao->get_self(), lastEdge.getToNode());
     }
 } // namespace hypha

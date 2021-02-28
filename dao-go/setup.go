@@ -10,7 +10,6 @@ import (
 
 	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
-	"github.com/hypha-dao/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"github.com/spf13/viper"
 )
@@ -133,8 +132,6 @@ func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountNa
 // UpdatePeriods ...
 func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) error {
 
-	// get all documents
-	// if type is period, update
 	documents, err := docgraph.GetAllDocuments(ctx, api, contract)
 	if err != nil {
 		return fmt.Errorf("cannot get all documents %v", err)
@@ -488,20 +485,19 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("error retrieving ballot %v", err)
 	}
-
-	_, err = dao.TelosDecideVote(ctx, api, telosDecide, member, ballot.Impl.(eos.Name), eos.Name("pass"))
+	_, err = TelosDecideVote(ctx, api, telosDecide, member, ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : " + string(member))
 	}
 	pause(defaultPause(), "Building block...", "")
 
-	_, err = dao.TelosDecideVote(ctx, api, telosDecide, eos.AN("alice"), ballot.Impl.(eos.Name), eos.Name("pass"))
+	_, err = TelosDecideVote(ctx, api, telosDecide, eos.AN("alice"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : alice")
 	}
 	pause(defaultPause(), "Building block...", "")
 
-	_, err = dao.TelosDecideVote(ctx, api, telosDecide, eos.AN("johnnyhypha1"), ballot.Impl.(eos.Name), eos.Name("pass"))
+	_, err = TelosDecideVote(ctx, api, telosDecide, eos.AN("johnnyhypha1"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : johnnyhypha1")
 	}
@@ -513,7 +509,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 		memberNameIn := "mem" + strconv.Itoa(index) + ".hypha"
 		//memberNameIn := "member" + strconv.Itoa(index)
 
-		_, err := dao.TelosDecideVote(ctx, api, telosDecide, eos.AN(memberNameIn), ballot.Impl.(eos.Name), eos.Name("pass"))
+		_, err := TelosDecideVote(ctx, api, telosDecide, eos.AN(memberNameIn), ballot.Impl.(eos.Name), eos.Name("pass"))
 		if err != nil {
 			return docgraph.Document{}, fmt.Errorf("error voting via telos decide %v", err)
 		}
@@ -534,6 +530,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 
 	votingPause := time.Duration((5 + votingPeriodDuration.Impl.(int64)) * 1000000000)
 	pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
+
 	_, err = dao.CloseProposal(ctx, api, contract, member, proposal.Hash)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("cannot close proposal %v", err)

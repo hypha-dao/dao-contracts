@@ -78,9 +78,7 @@ func TestEditProposal(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, attestation, eos.Name("owns"))
 			checkEdge(t, env, attestation, proposer.Doc, eos.Name("ownedby"))
 
-			ballot, err := attestation.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+			voteToPassTD(t, env, attestation)
 
 			t.Log("Member: ", closer.Member, " is closing attestation proposal	: ", attestation.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, attestation.Hash)
@@ -108,9 +106,7 @@ func TestEditProposal(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, edit, eos.Name("owns"))
 			checkEdge(t, env, edit, proposer.Doc, eos.Name("ownedby"))
 
-			editBallot, err := edit.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, editBallot.Impl.(eos.Name))
+			voteToPassTD(t, env, edit)
 
 			t.Log("Member: ", closer.Member, " is closing edit proposal	: ", edit.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, edit.Hash)

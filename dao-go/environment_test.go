@@ -58,6 +58,9 @@ type Environment struct {
 
 	Members []Member
 	Periods []docgraph.Document
+
+	//HVOICE Given to new test members
+	GenesisHVOICE int64
 }
 
 func envHeader() *simpletable.Header {
@@ -114,6 +117,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	treasuryPrefix := artifactsHome + "/treasury/treasury."
 	monitorPrefix := artifactsHome + "/monitor/monitor."
 	escrowPrefix := artifactsHome + "/escrow/escrow."
+	voicePrefix := artifactsHome + "/voice/voice."
 
 	exchangeWasm = "mocks/seedsexchg/build/seedsexchg/seedsexchg.wasm"
 	exchangeAbi = "mocks/seedsexchg/build/seedsexchg/seedsexchg.abi"
@@ -134,7 +138,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	env.SeedsDeferralFactor = 100
 	env.HyphaDeferralFactor = 25
 
-	env.PeriodDuration, _ = time.ParseDuration("6s")
+	env.PeriodDuration, _ = time.ParseDuration("5s")
 	env.NumPeriods = 20
 
 	// pauses
@@ -198,6 +202,10 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	_, err = eostest.SetContract(env.ctx, &env.api, env.SeedsEscrow, escrowPrefix+"wasm", escrowPrefix+"abi")
 	assert.NilError(t, err)
 
+    t.Log("Deploying voice.hypha contract to 		: ", env.HvoiceToken)
+    _, err = eostest.SetContract(env.ctx, &env.api, env.HvoiceToken, voicePrefix+"wasm", voicePrefix+"abi")
+    assert.NilError(t, err)
+
 	t.Log("Deploying SeedsExchange contract to 		: ", env.SeedsExchange)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.SeedsExchange, exchangeWasm, exchangeAbi)
 	assert.NilError(t, err)
@@ -220,8 +228,9 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	_, err = eostest.DeployAndCreateToken(env.ctx, t, &env.api, artifactsHome, env.HyphaToken, env.DAO, hyphaMaxSupply)
 	assert.NilError(t, err)
 
-	hvoiceMaxSupply, _ := eos.NewAssetFromString("1000000000.00 HVOICE")
-	_, err = eostest.DeployAndCreateToken(env.ctx, t, &env.api, artifactsHome, env.HvoiceToken, env.DAO, hvoiceMaxSupply)
+    // Hvoice doesn't have any limit (max supply should be 0)
+	hvoiceMaxSupply, _ := eos.NewAssetFromString("-1.00 HVOICE")
+	_, err = CreateHVoiceToken(env.ctx, t, &env.api, env.HvoiceToken, env.DAO, hvoiceMaxSupply, 5, 0.5)
 	assert.NilError(t, err)
 
 	seedsMaxSupply, _ := eos.NewAssetFromString("1000000000.0000 SEEDS")
@@ -311,6 +320,9 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 			index++
 		}
 	}
+
+	env.GenesisHVOICE = 200
+
 	return &env
 }
 
@@ -346,6 +358,32 @@ func SetupMember(t *testing.T, ctx context.Context, api *eos.API,
 		Member: memberAccount,
 		Doc:    memberDoc,
 	}, nil
+}
+
+func CreateHVoiceToken(ctx context.Context, t *testing.T, api *eos.API, contract, issuer eos.AccountName, maxSupply eos.Asset, decayPeriod eos.Uint64, decayPerPeriod float32) (string, error) {
+    type tokenCreate struct {
+        Issuer           eos.AccountName
+        MaxSupply        eos.Asset
+        DecayPeriod      eos.Uint64
+        DecayPerPeriod   float32
+    }
+
+    actions := []*eos.Action{{
+        Account: contract,
+        Name:    eos.ActN("create"),
+        Authorization: []eos.PermissionLevel{
+            {Actor: contract, Permission: eos.PN("active")},
+        },
+        ActionData: eos.NewActionData(tokenCreate{
+            Issuer:    issuer,
+            MaxSupply: maxSupply,
+            DecayPeriod: decayPeriod,
+            DecayPerPeriod: decayPerPeriod,
+        }),
+    }}
+
+    t.Log("Created Token : ", contract, " 		: ", maxSupply.String(), " (-1 means unlimited)")
+    return eostest.ExecTrx(ctx, api, actions)
 }
 
 func SaveGraph(ctx context.Context, api *eos.API, contract eos.AccountName, folderName string) error {

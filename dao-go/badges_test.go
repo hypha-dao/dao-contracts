@@ -108,9 +108,7 @@ func TestBadgeProposals(t *testing.T) {
 				checkEdge(t, env, proposer.Doc, badgeDoc, eos.Name("owns"))
 				checkEdge(t, env, badgeDoc, proposer.Doc, eos.Name("ownedby"))
 
-				ballot, err := badgeDoc.GetContent("ballot_id")
-				assert.NilError(t, err)
-				voteToPassTD(t, env, ballot.Impl.(eos.Name))
+				voteToPassTD(t, env, badgeDoc)
 
 				t.Log("Member: ", closer.Member, " is closing badge proposal	: ", badgeDoc.Hash.String())
 				_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, badgeDoc.Hash)
@@ -130,9 +128,7 @@ func TestBadgeProposals(t *testing.T) {
 				badgeAssignmentDoc, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
 				assert.NilError(t, err)
 
-				assignmentBallot, err := badgeAssignmentDoc.GetContent("ballot_id")
-				assert.NilError(t, err)
-				voteToPassTD(t, env, assignmentBallot.Impl.(eos.Name))
+				voteToPassTD(t, env, badgeAssignmentDoc)
 
 				t.Log("Member: ", closer.Member, " is closing badge assignment proposal	: ", badgeAssignmentDoc.Hash.String())
 				_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, badgeAssignmentDoc.Hash)
@@ -288,9 +284,7 @@ func TestBadgeProposals(t *testing.T) {
 // 				checkEdge(t, env, proposer.Doc, badgeDoc, eos.Name("owns"))
 // 				checkEdge(t, env, badgeDoc, proposer.Doc, eos.Name("ownedby"))
 
-// 				ballot, err := badgeDoc.GetContent("ballot_id")
-// 				assert.NilError(t, err)
-// 				voteToPassTD(t, env, ballot.Impl.(eos.Name))
+// 				voteToPassTD(t, env, badgeDoc)
 
 // 				t.Log("Member: ", closer.Member, " is closing badge proposal	: ", badgeDoc.Hash.String())
 // 				_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, badgeDoc.Hash)
@@ -310,9 +304,7 @@ func TestBadgeProposals(t *testing.T) {
 // 				badgeAssignmentDoc, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("propopsal"))
 // 				assert.NilError(t, err)
 
-// 				assignmentBallot, err := badgeAssignmentDoc.GetContent("ballot_id")
-// 				assert.NilError(t, err)
-// 				voteToPassTD(t, env, assignmentBallot.Impl.(eos.Name))
+// 				voteToPassTD(t, env, badgeAssignmentDoc)
 
 // 				t.Log("Member: ", closer.Member, " is closing badge assignment proposal	: ", badgeAssignmentDoc.Hash.String())
 // 				_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, badgeAssignmentDoc.Hash)
