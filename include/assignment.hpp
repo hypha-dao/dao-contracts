@@ -22,23 +22,19 @@ namespace hypha
         eosio::name &getType();
         eosio::time_point getApprovedTime();
 
-        eosio::asset getSalaryAmount (const eosio::symbol* symbol, Period* period);
         eosio::asset getSalaryAmount (const eosio::symbol* symbol);
 
         TimeShare getInitialTimeShare();
         TimeShare getCurrentTimeShare();
         TimeShare getLastTimeShare();
 
-        eosio::asset calcDSeedsSalary (Period* period);
         eosio::asset calcLiquidSeedsSalary ();
         eosio::asset calcHusdSalary ();
         eosio::asset calcHyphaSalary ();
 
         dao *m_dao;
-        // ContentWrapper contentWrapper;
 
     private: 
         eosio::asset getAsset (const symbol* symbol, const std::string &key);
-       
     };
 } // namespace hypha

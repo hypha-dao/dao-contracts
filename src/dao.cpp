@@ -138,8 +138,8 @@ namespace hypha
           float commitmentMultiplier = relativeDuration * relativeCommitment;
           
           //Accumlate each of the currencies with the time share multiplier
-          deferredSeeds = (deferredSeeds.is_valid() ? deferredSeeds : eosio::asset{0, common::S_SEEDS}) + 
-          adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc * commitmentMultiplier);
+         //  deferredSeeds = (deferredSeeds.is_valid() ? deferredSeeds : eosio::asset{0, common::S_SEEDS}) + 
+         //  adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc * commitmentMultiplier);
 
           // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
           // If there is an explicit INSTANT SEEDS amount, support sending it
@@ -161,7 +161,7 @@ namespace hypha
         }
       }
 
-      eosio::check(deferredSeeds.is_valid(), "fatal error: SEEDS has to be a valid asset");
+      // eosio::check(deferredSeeds.is_valid(), "fatal error: SEEDS has to be a valid asset");
       eosio::check(husd.is_valid(), "fatal error: HUSD has to be a valid asset");
       eosio::check(hvoice.is_valid(), "fatal error: HVOICE has to be a valid asset");
       eosio::check(hypha.is_valid(), "fatal error: HYPHA has to be a valid asset");

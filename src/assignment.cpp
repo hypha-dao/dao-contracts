@@ -108,6 +108,7 @@ namespace hypha
     Member Assignment::getAssignee()
     {
         return Member(*m_dao, Edge::get(m_dao->get_self(), getHash(), common::ASSIGNEE_NAME).getToNode());
+    }
 
     eosio::time_point Assignment::getApprovedTime()
     {
@@ -175,18 +176,6 @@ namespace hypha
 
         case common::S_HYPHA.code().raw():
             return getAsset(symbol, HYPHA_SALARY_PER_PERIOD);
-        }
-
-        return eosio::asset{0, *symbol};
-    }
-
-    eosio::asset Assignment::getSalaryAmount(const eosio::symbol *symbol, Period *period)
-    {
-        switch (symbol->code().raw())
-        {
-
-        case common::S_SEEDS.code().raw():
-            return calcDSeedsSalary(period);
         }
 
         return eosio::asset{0, *symbol};
