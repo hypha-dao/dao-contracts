@@ -494,7 +494,7 @@ namespace hypha
    {
       return m_documentGraph;
    }
-
+  
   /**
   * Info Structure
   * 

@@ -132,100 +132,98 @@ func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountNa
 // UpdatePeriods ...
 func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) error {
 
-	// get all documents
-	// if type is period, update
-// 	documents, err := docgraph.GetAllDocuments(ctx, api, contract)
-// 	if err != nil {
-// 		return fmt.Errorf("cannot get all documents %v", err)
-// 	}
-//
-// 	for _, d := range documents {
-// 		docType, err := d.GetContentFromGroup("system", "type")
-// 		if err != nil {
-// 			return fmt.Errorf("cannot get type %v", err)
-// 		}
-//
-// 		if docType.String() == "period" {
-//
-// 			startTime, err := d.GetContent("start_time")
-// 			if err != nil {
-// 				return fmt.Errorf("cannot get start_time %v", err)
-// 			}
-//
-// 			startTimePoint, err := startTime.TimePoint()
-// 			if err != nil {
-// 				return fmt.Errorf("cannot get start time_point %v", err)
-// 			}
-//
-// 			fmt.Println("Start time point: ", startTimePoint.String())
-// 			unixTime := time.Unix(int64(startTimePoint)/1000000, 0).UTC()
-// 			fmt.Println("Starting " + unixTime.Format("2006 Jan 02"))
-// 			fmt.Println(unixTime.Format("15:04:05 MST"))
-//
-// 			actions := []*eos.Action{
-// 				// {
-// 				// 	Account: contract,
-// 				// 	Name:    eos.ActN("updatedoc"),
-// 				// 	Authorization: []eos.PermissionLevel{
-// 				// 		{Actor: contract, Permission: eos.PN("active")},
-// 				// 	},
-// 				// 	ActionData: eos.NewActionData(updateDoc{
-// 				// 		Hash:  d.Hash,
-// 				// 		Group: "system",
-// 				// 		Key:   "node_label",
-// 				// 		Value: docgraph.FlexValue{
-// 				// 			BaseVariant: eos.BaseVariant{
-// 				// 				TypeID: docgraph.GetVariants().TypeID("string"),
-// 				// 				Impl:   "Starting " + unixTime.Format("2006 Jan 02"),
-// 				// 			},
-// 				// 		}}),
-// 				// },
-// 				// {
-// 				// 	Account: contract,
-// 				// 	Name:    eos.ActN("updatedoc"),
-// 				// 	Authorization: []eos.PermissionLevel{
-// 				// 		{Actor: contract, Permission: eos.PN("active")},
-// 				// 	},
-// 				// 	ActionData: eos.NewActionData(updateDoc{
-// 				// 		Hash:  d.Hash,
-// 				// 		Group: "system",
-// 				// 		Key:   "readable_start_date",
-// 				// 		Value: docgraph.FlexValue{
-// 				// 			BaseVariant: eos.BaseVariant{
-// 				// 				TypeID: docgraph.GetVariants().TypeID("string"),
-// 				// 				Impl:   unixTime.Format("2006 Jan 02"),
-// 				// 			},
-// 				// 		}}),
-// 				// },
-// 				{
-// 					Account: contract,
-// 					Name:    eos.ActN("updatedoc"),
-// 					Authorization: []eos.PermissionLevel{
-// 						{Actor: contract, Permission: eos.PN("active")},
-// 					},
-// 					ActionData: eos.NewActionData(updateDoc{
-// 						Hash:  d.Hash,
-// 						Group: "system",
-// 						Key:   "readable_start_time",
-// 						Value: docgraph.FlexValue{
-// 							BaseVariant: eos.BaseVariant{
-// 								TypeID: docgraph.GetVariants().TypeID("string"),
-// 								Impl:   unixTime.Format("15:04:05 MST"),
-// 							},
-// 						}}),
-// 				},
-// 			}
-//
-// 			_, err = eostest.ExecTrx(ctx, api, actions)
-// 			if err != nil {
-// 				fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
-// 				fmt.Println(err)
-// 				fmt.Println()
-// 			}
-// 			time.Sleep(defaultPause())
-// 		}
-//
-// 	}
+	documents, err := docgraph.GetAllDocuments(ctx, api, contract)
+	if err != nil {
+		return fmt.Errorf("cannot get all documents %v", err)
+	}
+
+	for _, d := range documents {
+		docType, err := d.GetContentFromGroup("system", "type")
+		if err != nil {
+			return fmt.Errorf("cannot get type %v", err)
+		}
+
+		if docType.String() == "period" {
+
+			startTime, err := d.GetContent("start_time")
+			if err != nil {
+				return fmt.Errorf("cannot get start_time %v", err)
+			}
+
+			startTimePoint, err := startTime.TimePoint()
+			if err != nil {
+				return fmt.Errorf("cannot get start time_point %v", err)
+			}
+
+			fmt.Println("Start time point: ", startTimePoint.String())
+			unixTime := time.Unix(int64(startTimePoint)/1000000, 0).UTC()
+			fmt.Println("Starting " + unixTime.Format("2006 Jan 02"))
+			fmt.Println(unixTime.Format("15:04:05 MST"))
+
+			actions := []*eos.Action{
+				// {
+				// 	Account: contract,
+				// 	Name:    eos.ActN("updatedoc"),
+				// 	Authorization: []eos.PermissionLevel{
+				// 		{Actor: contract, Permission: eos.PN("active")},
+				// 	},
+				// 	ActionData: eos.NewActionData(updateDoc{
+				// 		Hash:  d.Hash,
+				// 		Group: "system",
+				// 		Key:   "node_label",
+				// 		Value: docgraph.FlexValue{
+				// 			BaseVariant: eos.BaseVariant{
+				// 				TypeID: docgraph.GetVariants().TypeID("string"),
+				// 				Impl:   "Starting " + unixTime.Format("2006 Jan 02"),
+				// 			},
+				// 		}}),
+				// },
+				// {
+				// 	Account: contract,
+				// 	Name:    eos.ActN("updatedoc"),
+				// 	Authorization: []eos.PermissionLevel{
+				// 		{Actor: contract, Permission: eos.PN("active")},
+				// 	},
+				// 	ActionData: eos.NewActionData(updateDoc{
+				// 		Hash:  d.Hash,
+				// 		Group: "system",
+				// 		Key:   "readable_start_date",
+				// 		Value: docgraph.FlexValue{
+				// 			BaseVariant: eos.BaseVariant{
+				// 				TypeID: docgraph.GetVariants().TypeID("string"),
+				// 				Impl:   unixTime.Format("2006 Jan 02"),
+				// 			},
+				// 		}}),
+				// },
+				{
+					Account: contract,
+					Name:    eos.ActN("updatedoc"),
+					Authorization: []eos.PermissionLevel{
+						{Actor: contract, Permission: eos.PN("active")},
+					},
+					ActionData: eos.NewActionData(updateDoc{
+						Hash:  d.Hash,
+						Group: "system",
+						Key:   "readable_start_time",
+						Value: docgraph.FlexValue{
+							BaseVariant: eos.BaseVariant{
+								TypeID: docgraph.GetVariants().TypeID("string"),
+								Impl:   unixTime.Format("15:04:05 MST"),
+							},
+						}}),
+				},
+			}
+
+			_, err = eostest.ExecTrx(ctx, api, actions)
+			if err != nil {
+				fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
+				fmt.Println(err)
+				fmt.Println()
+			}
+			time.Sleep(defaultPause())
+		}
+
+	}
 	return nil
 
 }
@@ -487,7 +485,6 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("error retrieving ballot %v", err)
 	}
-
 	_, err = TelosDecideVote(ctx, api, telosDecide, member, ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : " + string(member))
@@ -533,7 +530,8 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 
 	votingPause := time.Duration((5 + votingPeriodDuration.Impl.(int64)) * 1000000000)
 	pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
-	_, err = CloseProposal(ctx, api, contract, member, proposal.Hash)
+
+	_, err = dao.CloseProposal(ctx, api, contract, member, proposal.Hash)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("cannot close proposal %v", err)
 	}
