@@ -94,8 +94,10 @@ namespace hypha
             .send();
 
 
+        name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
+
         hypha::issueToken(
-            eosio::name(HVOICE_TOKEN_CONTRACT),
+            hyphaHvoice,
             getContract(),
             getAccount(),
             genesis_voice,
