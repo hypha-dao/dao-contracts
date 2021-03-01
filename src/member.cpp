@@ -93,6 +93,15 @@ namespace hypha
             std::make_tuple(getAccount(), genesis_voice, memo))
             .send();
 
+
+        hypha::issueToken(
+            eosio::name(HVOICE_TOKEN_CONTRACT),
+            getContract(),
+            getAccount(),
+            genesis_voice,
+            memo
+        );
+
         Document paymentReceipt(getContract(), getContract(), Payer::defaultReceipt(getAccount(), genesis_voice, memo));
 
         Edge::write(getContract(), getAccount(), getHash(), paymentReceipt.getHash(), common::PAYMENT);

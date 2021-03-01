@@ -77,4 +77,23 @@ namespace hypha
                            (float)1 / (float)seeds_price);
     }
 
+    void issueToken(const eosio::name &token_contract,
+                    const eosio::name &issuer,
+                    const eosio::name &to,
+                    const eosio::asset &token_amount,
+                    const string &memo)
+    {
+        eosio::action(
+            eosio::permission_level{issuer, eosio::name("active")},
+            token_contract, eosio::name("issue"),
+            std::make_tuple(issuer, token_amount, memo))
+            .send();
+
+        eosio::action(
+            eosio::permission_level{issuer, eosio::name("active")},
+            token_contract, eosio::name("transfer"),
+            std::make_tuple(issuer, to, token_amount, memo))
+            .send();
+    }
+
 } // namespace hypha

@@ -22,6 +22,11 @@ namespace hypha
                                 const eosio::time_point &price_time_point,
                                 const float &time_share,
                                 const float &deferred_perc);
+    void issueToken(const eosio::name &token_contract,
+                    const eosio::name &issuer,
+                    const eosio::name &to,
+                    const eosio::asset &token_amount,
+                    const string &memo);
 
     // configtable is usued to read the Seeds price
     struct configtable
