@@ -2,6 +2,7 @@ package dao_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/eoscanada/eos-go"
 	"github.com/hypha-dao/dao-contracts/dao-go"
@@ -124,6 +125,69 @@ func TestProposalDocumentVote(t *testing.T) {
 		// but can't, proposal is closed
 		assert.ErrorContains(t, err, "Only allowed to vote active proposals")
 	})
+}
+
+func TestCloseOldProposal(t *testing.T) {
+	teardownTestCase := setupTestCase(t)
+	defer teardownTestCase(t)
+
+	// var env Environment
+	env = SetupEnvironmentWithFlags(t, false, true)
+
+	t.Run("Configuring the DAO environment: ", func(t *testing.T) {
+		t.Log(env.String())
+		t.Log("\nDAO Environment Setup complete\n")
+	})
+
+	t.Run("Test old ballots are still closeable", func(t *testing.T) {
+
+		var doc docgraph.Document
+
+		ExecuteDocgraphCall(t, env, func() {
+			t.Log("Inside docgraph call")
+			var err error
+			doc, err = docgraph.CreateDocument(
+				env.ctx,
+				&env.api,
+				env.DAO,
+				env.Alice.Member,
+				"./fixtures/proposal-with-old-ballot.json",
+			)
+			assert.NilError(t, err)
+
+			docgraph.CreateEdge(
+				env.ctx,
+				&env.api,
+				env.DAO,
+				env.Alice.Member,
+				env.Root.Hash,
+				doc.Hash,
+				"proposal",
+			)
+		})
+
+		// Simulate the old interaction of dao when creating a ballot
+		_, err := dao.CreateBallot(env.ctx, &env.api, env.TelosDecide, env.DAO, "hypha1....1g")
+		assert.NilError(t, err)
+		_, err = dao.OpenBallot(env.ctx, &env.api, env.TelosDecide, env.DAO, "hypha1....1g", 2)
+		assert.NilError(t, err)
+		pause(t, time.Second*3, "", "Waiting before closing")
+
+		// Close proposal
+		t.Log("Member: ", env.Alice.Member, " is closing role proposal	: ", doc.Hash.String())
+		_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, env.Alice.Member, doc.Hash)
+		assert.NilError(t, err)
+	})
+}
+
+func voteToPassOldBallot(t *testing.T, env *Environment, ballot eos.Name) {
+	t.Log("Voting all members to 'pass' on ballot: " + ballot)
+	_, err := dao.TelosDecideVote(env.ctx, &env.api, env.TelosDecide, env.Alice.Member, ballot, eos.Name("pass"))
+	assert.NilError(t, err)
+	for _, member := range env.Members {
+		_, err = dao.TelosDecideVote(env.ctx, &env.api, env.TelosDecide, member.Member, ballot, eos.Name("pass"))
+		assert.NilError(t, err)
+	}
 }
 
 func AssertDifferentLastTally(t *testing.T, tally docgraph.Document) docgraph.Document {
