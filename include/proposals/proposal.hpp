@@ -48,5 +48,8 @@ namespace hypha
 
         bool didPass(const eosio::checksum256 &tallyHash);
 
+    private:
+        bool oldDidPass(const eosio::name &ballotId);
+
     };
 } // namespace hypha
