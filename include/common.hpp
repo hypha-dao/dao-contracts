@@ -81,6 +81,7 @@ namespace common
     constexpr name TIME_SHARE_LABEL = name("timeshare");
 
     static constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
+    static constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
     static constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
 
 // content keys

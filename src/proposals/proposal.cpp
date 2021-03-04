@@ -187,6 +187,7 @@ namespace hypha
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, BALLOT_OPTIONS),
             Content(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), common::BALLOT_DEFAULT_OPTION_PASS),
+            Content(common::BALLOT_DEFAULT_OPTION_ABSTAIN.to_string(), common::BALLOT_DEFAULT_OPTION_ABSTAIN),
             Content(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), common::BALLOT_DEFAULT_OPTION_FAIL)
         };
     }
@@ -258,9 +259,10 @@ namespace hypha
 
         // Currently get pass/fail
         asset votes_pass = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+        asset votes_abstain = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_ABSTAIN.to_string(), VOTE_POWER)->getAs<eosio::asset>();
         asset votes_fail = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs<eosio::asset>();
 
-        asset total = votes_pass + votes_fail;
+        asset total = votes_pass + votes_abstain + votes_fail;
         bool passed = false;
         if (total >= quorum_threshold &&      // must meet quorum
             adjustAsset(votes_pass, 0.2500000000) > votes_fail) // must have 80% of the vote power
