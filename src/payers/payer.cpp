@@ -1,6 +1,7 @@
 
 #include <payers/payer.hpp>
 #include <member.hpp>
+#include <util.hpp>
 
 namespace hypha
 {
@@ -22,17 +23,13 @@ namespace hypha
                            const eosio::asset &token_amount,
                            const string &memo)
     {
-        eosio::action(
-            eosio::permission_level{issuer, eosio::name("active")},
-            token_contract, eosio::name("issue"),
-            std::make_tuple(issuer, token_amount, memo))
-            .send();
-
-        eosio::action(
-            eosio::permission_level{issuer, eosio::name("active")},
-            token_contract, eosio::name("transfer"),
-            std::make_tuple(issuer, to, token_amount, memo))
-            .send();
+        hypha::issueToken(
+            token_contract,
+            issuer,
+            to,
+            token_amount,
+            memo
+        );
     }
 
     ContentGroups Payer::defaultReceipt(const eosio::name &recipient,
