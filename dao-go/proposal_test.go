@@ -51,7 +51,7 @@ func TestProposalDocumentVote(t *testing.T) {
 		checkEdge(t, env, role, voteTally, eos.Name("votetally"))
 
 		t.Log("Checking initial tally")
-		AssertTally(t, voteTally, "0.00 HVOICE", "0.00 HVOICE")
+		AssertTally(t, voteTally, "0.00 HVOICE", "0.00 HVOICE", "0.00 HVOICE")
 
 		// alice votes "pass"
 		t.Log("alice votes pass")
@@ -62,7 +62,7 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// New tally should be different. We have 1 vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
-		AssertTally(t, voteTally, "101.00 HVOICE", "0.00 HVOICE")
+		AssertTally(t, voteTally, "101.00 HVOICE", "0.00 HVOICE", "0.00 HVOICE")
 
 		// alice changes his mind and votes "fail"
 		t.Log("alice votes fail")
@@ -73,7 +73,7 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// New tally should be different. We have a different vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
-		AssertTally(t, voteTally, "0.00 HVOICE", "101.00 HVOICE")
+		AssertTally(t, voteTally, "0.00 HVOICE", "0.00 HVOICE", "101.00 HVOICE")
 
 		// alice decides to vote again for "fail". Just in case ;-)
 		t.Log("alice votes fail (again)")
@@ -84,7 +84,7 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// Tally should be the same. It was the same vote
 		voteTally = AssertSameLastTally(t, voteTally)
-		AssertTally(t, voteTally, "0.00 HVOICE", "101.00 HVOICE")
+		AssertTally(t, voteTally, "0.00 HVOICE", "0.00 HVOICE", "101.00 HVOICE")
 
 		// Member1 decides to vote pass
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
@@ -94,7 +94,7 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// Tally should be different. We have a new vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
-		AssertTally(t, voteTally, "2.00 HVOICE", "101.00 HVOICE")
+		AssertTally(t, voteTally, "2.00 HVOICE", "0.00 HVOICE", "101.00 HVOICE")
 
 		// Member2 decides to vote fail
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[1].Member, "fail", role.Hash)
@@ -104,7 +104,7 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// Tally should be different. We have a new vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
-		AssertTally(t, voteTally, "2.00 HVOICE", "103.00 HVOICE")
+		AssertTally(t, voteTally, "2.00 HVOICE", "0.00 HVOICE", "103.00 HVOICE")
 
 		// Member1 decides to vote pass (again)
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
@@ -114,7 +114,17 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// Tally should be the same.
 		voteTally = AssertSameLastTally(t, voteTally)
-		AssertTally(t, voteTally, "2.00 HVOICE", "103.00 HVOICE")
+		AssertTally(t, voteTally, "2.00 HVOICE", "0.00 HVOICE", "103.00 HVOICE")
+
+		// Member3 decides to vote abstain
+		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[2].Member, "abstain", role.Hash)
+		assert.NilError(t, err)
+		voteDocument = checkLastVote(t, env, role, env.Members[2])
+		AssertVote(t, voteDocument, "mem3.hypha", "2.00 HVOICE", "abstain")
+
+		// Tally should be the different.
+		voteTally = AssertDifferentLastTally(t, voteTally)
+		AssertTally(t, voteTally, "2.00 HVOICE", "2.00 HVOICE", "103.00 HVOICE")
 
 		t.Log("Member: ", closer.Member, " is closing role proposal	: ", role.Hash.String())
 		_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)
@@ -204,7 +214,7 @@ func AssertSameLastTally(t *testing.T, tally docgraph.Document) docgraph.Documen
 	return lastTally
 }
 
-func AssertTally(t *testing.T, tallyDocument docgraph.Document, passPower string, failPower string) {
+func AssertTally(t *testing.T, tallyDocument docgraph.Document, passPower string, abstainPower string, failPower string) {
 	assert.Assert(t, tallyDocument.IsEqual(docgraph.Document{
 		ContentGroups: []docgraph.ContentGroup{
 			docgraph.ContentGroup{
@@ -223,6 +233,26 @@ func AssertTally(t *testing.T, tallyDocument docgraph.Document, passPower string
 						BaseVariant: eos.BaseVariant{
 							TypeID: docgraph.GetVariants().TypeID("asset"),
 							Impl:   passPower,
+						},
+					},
+				},
+			},
+			docgraph.ContentGroup{
+				docgraph.ContentItem{
+					Label: "content_group_label",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("string"),
+							Impl:   "abstain",
+						},
+					},
+				},
+				docgraph.ContentItem{
+					Label: "vote_power",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("asset"),
+							Impl:   abstainPower,
 						},
 					},
 				},
