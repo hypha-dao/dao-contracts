@@ -1,6 +1,7 @@
 #include <eosio/action.hpp>
 
 #include <proposals/proposal.hpp>
+#include <ballots/vote.hpp>
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/content.hpp>
 #include <document_graph/document.hpp>
@@ -59,59 +60,7 @@ namespace hypha
 
     void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal)
     {
-        proposal.getContentWrapper().getOrFail(BALLOT_OPTIONS, vote, "Invalid vote");
-
-        eosio::check(
-            Edge::exists(m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::PROPOSAL),
-            "Only allowed to vote active proposals"
-        );
-
-        std::vector<Edge> votes = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
-        for (auto votesIt = votes.begin(); votesIt != votes.end(); ++votesIt) {
-            if (votesIt->getCreator() == voter) {
-                eosio::checksum256 voterHash = Member::calcHash(voter);
-                Document voteDocument(m_dao.get_self(), votesIt->getToNode());
-
-                // Already voted, erase edges and allow to vote again.
-                Edge::get(m_dao.get_self(), voterHash, voteDocument.getHash(), common::VOTE).erase();
-                Edge::get(m_dao.get_self(), proposal.getHash(), voteDocument.getHash(), common::VOTE).erase();
-                Edge::get(m_dao.get_self(), voteDocument.getHash(), voterHash, common::OWNED_BY).erase();
-                Edge::get(m_dao.get_self(), voteDocument.getHash(), proposal.getHash(), common::VOTE_ON).erase();
-            }
-        }
-
-        // Fetch vote power
-        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
-        trailservice::trail::voters_table v_t(trailContract, voter.value);
-        auto v_itr = v_t.find(common::S_HVOICE.code().raw());
-        check(v_itr != v_t.end(), "No HVOICE found");
-        asset votePower = v_itr->liquid;
-
-        ContentGroups contentGroups{
-            ContentGroup{
-                Content(VOTER_LABEL, voter),
-                Content(VOTE_POWER, votePower),
-                Content(VOTE_LABEL, vote)
-            }
-        };
-
-        eosio::checksum256 voterHash = Member::calcHash(voter);
-        Document voteDocument = Document::getOrNew(m_dao.get_self(), m_dao.get_self(), contentGroups);
-
-        // an edge from the member to the vote named vote
-        // Note: This edge could already exist, as voteDocument is likely to be re-used.
-        Edge::getOrNew(m_dao.get_self(), voter, voterHash, voteDocument.getHash(), common::VOTE);
-
-        // an edge from the proposal to the vote named vote
-        Edge::write(m_dao.get_self(), voter, proposal.getHash(), voteDocument.getHash(), common::VOTE);
-
-        // an edge from the vote to the member named ownedby
-        // Note: This edge could already exist, as voteDocument is likely to be re-used.
-        Edge::getOrNew(m_dao.get_self(), voter, voteDocument.getHash(), voterHash, common::OWNED_BY);
-
-        // an edge from the vote to the proposal named voteon
-        Edge::write(m_dao.get_self(), voter, voteDocument.getHash(), proposal.getHash(), common::VOTE_ON);
-
+        Vote::build(this->m_dao, voter, vote, proposal);
         updateVoteTally(proposal, voter);
     }
 
@@ -225,19 +174,9 @@ namespace hypha
         std::vector<Edge> edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
         for (auto itr = edges.begin(); itr != edges.end(); ++itr) {
             eosio::checksum256 voteHash = itr->getToNode();
-            Document voteDocument(m_dao.get_self(), voteHash);
-            ContentGroup group = voteDocument.getContentGroups().front();
-            std::string vote;
-            eosio::asset power;
-            for (ContentGroup::const_iterator contentIt = group.begin(); contentIt != group.end(); ++contentIt)  {
-                if (contentIt->label == VOTE_POWER) {
-                    power = contentIt->getAs<eosio::asset>();
-                } else if (contentIt->label == VOTE_LABEL) {
-                    vote = contentIt->getAs<std::string>();
-                }
-            }
+            Vote voteDocument(m_dao, voteHash);
 
-            optionsTally[vote] += power;
+            optionsTally[voteDocument.getVote()] += voteDocument.getPower();
         }
         
 
