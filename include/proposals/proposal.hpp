@@ -36,18 +36,18 @@ namespace hypha
 
         virtual name getProposalType() = 0;
 
-        ContentGroup makeSystemGroup(const name &proposer,
-                                       const name &proposal_type,
-                                       const string &decide_title,
-                                       const string &decide_desc,
-                                       const string &decide_content);
+        ContentGroup makeSystemGroup(const name &ballot_id,
+                                     const string &node_label,
+                                     const name &proposal_type);
 
         bool didPass(const name &ballot_id);
 
-        name registerBallot(const name &proposer,
+        void registerBallot(const name &proposer,
+                            const name &ballot_id,
                             const std::map<string, string> &strings);
 
-        name registerBallot(const name &proposer,
+        void registerBallot(const name &proposer,
+                            const name &ballot_id,
                             const string &title, const string &description, const string &content);
     };
 } // namespace hypha
