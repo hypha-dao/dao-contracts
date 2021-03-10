@@ -45,8 +45,6 @@ namespace hypha
         ContentGroup makeBallotGroup();
         ContentGroup makeBallotOptionsGroup();
 
-        void updateVoteTally(Document& proposal, const eosio::name creator);
-
         bool didPass(const eosio::checksum256 &tallyHash);
 
     private:

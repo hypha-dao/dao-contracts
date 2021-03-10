@@ -2,6 +2,7 @@
 
 #include <proposals/proposal.hpp>
 #include <ballots/vote.hpp>
+#include <ballots/vote_tally.hpp>
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/content.hpp>
 #include <document_graph/document.hpp>
@@ -49,7 +50,7 @@ namespace hypha
         Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
 
         // Sets an empty tally
-        updateVoteTally(proposalNode, proposer);
+        VoteTally(m_dao, proposalNode);
 
         postProposeImpl(proposalNode);
 
@@ -60,8 +61,8 @@ namespace hypha
 
     void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal)
     {
-        Vote::build(this->m_dao, voter, vote, proposal);
-        updateVoteTally(proposal, voter);
+        Vote(this->m_dao, voter, vote, proposal);
+        VoteTally(m_dao, proposal);
     }
 
     void Proposal::close(Document &proposal)
@@ -151,65 +152,23 @@ namespace hypha
         };
     }
 
-    void Proposal::updateVoteTally(Document& proposal, const eosio::name creator)
-    {
-        auto [exists, oldTally] = Edge::getIfExists(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
-        if (exists) {
-            oldTally.erase();
-        }
-
-        ContentGroup* contentOptions = proposal.getContentWrapper().getGroupOrFail(BALLOT_OPTIONS);
-
-        std::map<std::string, eosio::asset> optionsTally;
-        std::vector<std::string> optionsTallyOrdered;
-        for (auto it = contentOptions->begin(); it != contentOptions->end(); ++it) 
-        {
-            if (it->label != CONTENT_GROUP_LABEL) {
-                optionsTally[it->label] = asset(0, common::S_HVOICE);
-                optionsTallyOrdered.push_back(it->label);
-            }
-        }
-
-        
-        std::vector<Edge> edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
-        for (auto itr = edges.begin(); itr != edges.end(); ++itr) {
-            eosio::checksum256 voteHash = itr->getToNode();
-            Vote voteDocument(m_dao, voteHash);
-
-            optionsTally[voteDocument.getVote()] += voteDocument.getPower();
-        }
-        
-
-        ContentGroups tallyContentGroups;
-        for (auto it = optionsTallyOrdered.begin(); it != optionsTallyOrdered.end(); ++it) 
-        {
-            tallyContentGroups.push_back(ContentGroup{
-                Content(CONTENT_GROUP_LABEL, *it),
-                Content(VOTE_POWER, optionsTally[*it])
-            });
-        }
-
-        // Who is the creator? The last voter? the contract?
-        Document document = Document::getOrNew(m_dao.get_self(), m_dao.get_self(), tallyContentGroups);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), document.getHash(), common::VOTE_TALLY);
-    }
-
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
+        // Todo: This should be using hypha.voice
         name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
-
         trailservice::trail::treasuries_table t_t(trailContract, trailContract.value);
         auto t_itr = t_t.find(common::S_HVOICE.code().raw());
         check(t_itr != t_t.end(), "Treasury: " + common::S_HVOICE.code().to_string() + " not found.");
 
         asset quorum_threshold = adjustAsset(t_itr->supply, 0.20000000);
 
-        Document tally(m_dao.get_self(), tallyHash);
+        VoteTally tally(m_dao, tallyHash);
 
         // Currently get pass/fail
-        asset votes_pass = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), VOTE_POWER)->getAs<eosio::asset>();
-        asset votes_abstain = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_ABSTAIN.to_string(), VOTE_POWER)->getAs<eosio::asset>();
-        asset votes_fail = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+        // Todo: Abstract this part into VoteTally class
+        asset votes_pass = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+        asset votes_abstain = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_ABSTAIN.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+        asset votes_fail = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs<eosio::asset>();
 
         asset total = votes_pass + votes_abstain + votes_fail;
         bool passed = false;

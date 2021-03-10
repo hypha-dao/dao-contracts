@@ -277,6 +277,35 @@ func AssertTally(t *testing.T, tallyDocument docgraph.Document, passPower string
 					},
 				},
 			},
+			docgraph.ContentGroup{
+				docgraph.ContentItem{
+					Label: "content_group_label",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("string"),
+							Impl:   "system",
+						},
+					},
+				},
+				docgraph.ContentItem{
+					Label: "type",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("name"),
+							Impl:   "vote.tally",
+						},
+					},
+				},
+				docgraph.ContentItem{
+					Label: "node_label",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("string"),
+							Impl:   "VoteTally",
+						},
+					},
+				},
+			},
 		},
 	}))
 }
@@ -285,6 +314,15 @@ func AssertVote(t *testing.T, voteDocument docgraph.Document, voter string, vote
 	assert.Assert(t, voteDocument.IsEqual(docgraph.Document{
 		ContentGroups: []docgraph.ContentGroup{
 			docgraph.ContentGroup{
+				docgraph.ContentItem{
+					Label: "content_group_label",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("string"),
+							Impl:   "vote",
+						},
+					},
+				},
 				docgraph.ContentItem{
 					Label: "voter",
 					Value: &docgraph.FlexValue{
@@ -309,6 +347,35 @@ func AssertVote(t *testing.T, voteDocument docgraph.Document, voter string, vote
 						BaseVariant: eos.BaseVariant{
 							TypeID: docgraph.GetVariants().TypeID("string"),
 							Impl:   vote,
+						},
+					},
+				},
+			},
+			docgraph.ContentGroup{
+				docgraph.ContentItem{
+					Label: "content_group_label",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("string"),
+							Impl:   "system",
+						},
+					},
+				},
+				docgraph.ContentItem{
+					Label: "type",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("name"),
+							Impl:   "vote",
+						},
+					},
+				},
+				docgraph.ContentItem{
+					Label: "node_label",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("string"),
+							Impl:   "Vote: " + vote,
 						},
 					},
 				},

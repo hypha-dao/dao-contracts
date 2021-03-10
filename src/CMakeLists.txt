@@ -29,6 +29,7 @@ add_contract( dao dao
                 proposals/edit_proposal.cpp
                 proposals/proposal_factory.cpp
                 ballots/vote.cpp
+                ballots/vote_tally.cpp
                 ../document-graph/src/document_graph/document_graph.cpp 
                 ../document-graph/src/document_graph/document.cpp 
                 ../document-graph/src/document_graph/content_wrapper.cpp

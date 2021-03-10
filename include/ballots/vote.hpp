@@ -11,19 +11,19 @@ namespace hypha
     {
     public:
         Vote(dao& dao, const eosio::checksum256& hash);
-    
-        static Vote build(
+        Vote(
             dao& dao, 
-            const eosio::name voter, 
+            const eosio::name voter,
             std::string vote, 
-            Document& proposal // This should be a Proposal document in the future.
+            Document& proposal
         );
 
         const std::string& getVote();
         const eosio::asset& getPower();
         const eosio::name& getVoter();
 
-    private:
-        Vote(dao& dao, ContentGroups &content);
+    protected:
+        virtual const std::string buildNodeLabel(ContentGroups &content);
+
     };
 }

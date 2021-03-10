@@ -16,12 +16,13 @@ namespace hypha
 
     }
     
-    Vote Vote::build(
+    Vote::Vote(
         hypha::dao& dao, 
         const eosio::name voter, 
         std::string vote, 
         Document& proposal
     )
+    : TypedDocument(dao)
     {
         // Could be replaced by i.e. proposal.hasVote(vote) when proposal is no longer just a "Document"
         // the goal is to have an easier API
@@ -63,35 +64,26 @@ namespace hypha
         };
 
         eosio::checksum256 voterHash = Member::calcHash(voter);
-        // Document voteDocument = Document::getOrNew(m_dao.get_self(), m_dao.get_self(), contentGroups);
-        Vote voteDocument(dao, contentGroups);
+        initializeDocument(dao, contentGroups, false);
 
         // an edge from the member to the vote named vote
         // Note: This edge could already exist, as voteDocument is likely to be re-used.
-        Edge::getOrNew(dao.get_self(), voter, voterHash, voteDocument.getHash(), common::VOTE);
+        Edge::getOrNew(dao.get_self(), voter, voterHash, getDocument().getHash(), common::VOTE);
 
         // an edge from the proposal to the vote named vote
-        Edge::write(dao.get_self(), voter, proposal.getHash(), voteDocument.getHash(), common::VOTE);
+        Edge::write(dao.get_self(), voter, proposal.getHash(), getDocument().getHash(), common::VOTE);
 
         // an edge from the vote to the member named ownedby
         // Note: This edge could already exist, as voteDocument is likely to be re-used.
-        Edge::getOrNew(dao.get_self(), voter, voteDocument.getHash(), voterHash, common::OWNED_BY);
+        Edge::getOrNew(dao.get_self(), voter, getDocument().getHash(), voterHash, common::OWNED_BY);
 
         // an edge from the vote to the proposal named voteon
-        Edge::write(dao.get_self(), voter, voteDocument.getHash(), proposal.getHash(), common::VOTE_ON);
-
-        return voteDocument;
-    }
-
-    Vote::Vote(dao& dao, ContentGroups &content)
-    : TypedDocument(dao, content)
-    {
-
+        Edge::write(dao.get_self(), voter, getDocument().getHash(), proposal.getHash(), common::VOTE_ON);
     }
 
     const std::string& Vote::getVote()
     {
-        return getContentWrapper().getOrFail(
+        return getDocument().getContentWrapper().getOrFail(
             CONTENT_GROUP_LABEL_VOTE, 
             VOTE_LABEL, 
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
@@ -100,7 +92,7 @@ namespace hypha
 
     const eosio::asset& Vote::getPower()
     {
-        return getContentWrapper().getOrFail(
+        return getDocument().getContentWrapper().getOrFail(
             CONTENT_GROUP_LABEL_VOTE, 
             VOTE_POWER, 
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
@@ -109,11 +101,21 @@ namespace hypha
 
     const eosio::name& Vote::getVoter()
     {
-        return getContentWrapper().getOrFail(
+        return getDocument().getContentWrapper().getOrFail(
             CONTENT_GROUP_LABEL_VOTE, 
             VOTER_LABEL, 
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
         )->template getAs<eosio::name>();
+    }
+
+    const std::string Vote::buildNodeLabel(ContentGroups &content)
+    {
+        std::string vote = ContentWrapper(content).getOrFail(
+            CONTENT_GROUP_LABEL_VOTE, 
+            VOTE_LABEL, 
+            "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
+        )->template getAs<std::string>(); 
+        return "Vote: " + vote;
     }
 
 }
