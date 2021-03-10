@@ -61,7 +61,7 @@ namespace hypha
 
     void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal)
     {
-        Vote(this->m_dao, voter, vote, proposal);
+        Vote(m_dao, voter, vote, proposal);
         VoteTally(m_dao, proposal);
     }
 
