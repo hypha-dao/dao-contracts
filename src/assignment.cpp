@@ -110,6 +110,11 @@ namespace hypha
         return Member(*m_dao, Edge::get(m_dao->get_self(), getHash(), common::ASSIGNEE_NAME).getToNode());
     }
 
+    int64_t Assignment::getPeriodCount() 
+    {
+        return getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
+    }
+
     eosio::time_point Assignment::getApprovedTime()
     {
         if (auto [idx, legacyCreatedDate] = getContentWrapper().get(SYSTEM, "legacy_object_created_date"); legacyCreatedDate)

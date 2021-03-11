@@ -249,6 +249,30 @@ func ProposeAssignment(ctx context.Context, api *eos.API,
 	})
 }
 
+func ProposeAssExtension(ctx context.Context, api *eos.API,
+	contract, proposer eos.AccountName, assignmentHash string, additionalPeriods int) (string, error) {
+
+	actionData := make(map[string]interface{})
+	actionData["assignment_hash"] = assignmentHash
+	actionData["additional_periods"] = additionalPeriods
+
+	actionBinary, err := api.ABIJSONToBin(ctx, contract, eos.Name("proposeextend"), actionData)
+	if err != nil {
+		return string(""), fmt.Errorf("ProposeBadge : %v", err)
+	}
+
+	actions := []*eos.Action{{
+		Account: contract,
+		Name:    eos.ActN("proposeextend"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: proposer, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
+	}}
+
+	return eostest.ExecTrx(ctx, api, actions)
+}
+
 // ProposeBadge proposes the badge to the specified DAO contract
 func ProposeBadge(ctx context.Context, api *eos.API, contract, proposer eos.AccountName, content string) (string, error) {
 

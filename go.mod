@@ -14,3 +14,5 @@ require (
 replace github.com/hypha-dao/dao-contracts/dao-go => ./dao-go
 
 replace github.com/hypha-dao/document-graph/docgraph => ./document-graph/docgraph
+
+replace github.com/digital-scarcity/eos-go-test => ../../../digital-scarcity/eos-go-test
