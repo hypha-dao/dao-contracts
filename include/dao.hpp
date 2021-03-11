@@ -133,6 +133,7 @@ namespace hypha
       ACTION createroot(const std::string &notes);
       ACTION erasedoc(const eosio::checksum256 &hash);
       ACTION killedge(const uint64_t id);
+      ACTION newedge(eosio::name & creator, const checksum256 &from_node, const checksum256 &to_node, const name &edge_name);
       ACTION updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value);
       // ACTION nbadge (const name& owner, const ContentGroups& contentGroups);
       // ACTION nbadass(const name& owner, const ContentGroups& contentGroups);

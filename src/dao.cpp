@@ -486,6 +486,13 @@ namespace hypha
       dg.eraseDocument(hash);
    }
 
+   void dao::newedge(name &creator, const checksum256 &from_node, const checksum256 &to_node, const name &edge_name)
+   {
+      require_auth(get_self());
+      Edge edge(get_self(), creator, from_node, to_node, edge_name);
+   }
+
+
    void dao::killedge(const uint64_t id)
    {
       require_auth(get_self());
