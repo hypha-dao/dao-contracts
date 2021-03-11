@@ -626,62 +626,7 @@ func CreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, 
 
 //Creates an assignment without the INIT_TIME_SHARE, CURRENT_TIME_SHARE & LAST_TIME_SHARE nodes
 func CreateOldAssignment(t* testing.T, ctx context.Context, api *eos.API, contract, member eos.AccountName, memberDocHash, roleDocHash, startPeriodHash eos.Checksum256, assignment string) (docgraph.Document, error) {
-
-	// jsonFile, err := os.Open(filename)
-
-	// if (err != nil) {
-	// 	return docgraph.Document{}, err
-	// }
-
-	// bytes, err := ioutil.ReadAll(jsonFile)
 	
-	// jsonFile.Close()
-
-	// if (err != nil) {
-	// 	return docgraph.Document{}, err
-	// }
-
-	// var jsonObj docGroups
-
-	// err = json.Unmarshal([]byte(bytes), &jsonObj)
-
-	// if (err != nil) {
-	// 	return docgraph.Document{}, err
-	// }
-	
-	// //Append role hash and member name
-	// err = ReplaceContent2(jsonObj.ContentGroups, "start_period", &docgraph.FlexValue{
-	// 	BaseVariant: eos.BaseVariant{
-	// 		TypeID: docgraph.GetVariants().TypeID("checksum256"),
-	// 		Impl:   startPeriodHash,
-	// 	}})
-	
-	// 	if (err != nil) {
-	// 	return docgraph.Document{}, err
-	// }
-
-	// //Save to same file
-
-	// bytes, err = json.Marshal(&jsonObj)
-
-	// if (err != nil) {
-	// 	return docgraph.Document{}, err
-	// }
-
-	// err = ioutil.WriteFile(filename, bytes, 0644)
-
-	// if (err != nil) {
-	// 	return docgraph.Document{}, err
-	// }
-
-	// var assignment docgraph.Document
-		
-	// assignment, err = docgraph.CreateDocument(ctx, api, contract, member, filename);
-
-	// if (err != nil) {
-	// 	return docgraph.Document{}, err
-	// }
-
 	_, err := ProposeAssignment(ctx, api, contract, member, member, roleDocHash, startPeriodHash, assignment)
 	if (err != nil) {
 		return docgraph.Document{}, err
