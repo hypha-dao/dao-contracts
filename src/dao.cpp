@@ -50,11 +50,11 @@ namespace hypha
    {
       eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      Assignment assignment(this, assignment_hash);      
+      Assignment assignment(this, assignment_hash);
 
       // only the assignee can submit an extension proposal
       eosio::name assignee = assignment.getAssignee().getAccount();
-      eosio::require_auth(assignee);      
+      eosio::require_auth(assignee);
       eosio::check(Member::isMember(get_self(), assignee), "assignee must be a current member to request an extension: " + assignee.to_string());
 
       eosio::print("\nproposer is: " + assignee.to_string() + "\n");
@@ -64,10 +64,9 @@ namespace hypha
               Content(CONTENT_GROUP_LABEL, DETAILS),
               Content(PERIOD_COUNT, assignment.getPeriodCount() + additional_periods),
               Content(TITLE, std::string("Assignment Extension Proposal")),
-              Content(ORIGINAL_DOCUMENT, assignment.getHash())
-          }};
+              Content(ORIGINAL_DOCUMENT, assignment.getHash())}};
 
-      // propose the extension      
+      // propose the extension
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, common::EXTENSION));
       proposal->propose(assignee, contentGroups);
    }
@@ -92,21 +91,21 @@ namespace hypha
       * Check if required edges & documents exists for this assignment, otherwise (assignments approved prior dynamic commitments)
       */
       if (auto [exists, edge] = Edge::getIfExists(get_self(), assignment.getHash(), common::INIT_TIME_SHARE);
-          !exists) 
+          !exists)
       {
-        //We have to create an Inital time share document and all the edges pointing towards it
-        auto contentWrapper = assignment.getContentWrapper();
+         //We have to create an Inital time share document and all the edges pointing towards it
+         auto contentWrapper = assignment.getContentWrapper();
 
-        //Initial time share for proposal
-        int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-        
-        //Set starting date to approval date.
-        auto approvedDate = Edge::get(get_self(), assignment.getAssignee().getHash(), common::ASSIGNED).getCreated();
-        TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate);
+         //Initial time share for proposal
+         int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
 
-        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
-        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
-        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
+         //Set starting date to approval date.
+         auto approvedDate = Edge::get(get_self(), assignment.getAssignee().getHash(), common::ASSIGNED).getCreated();
+         TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate);
+
+         Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
+         Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
+         Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
       }
 
       // Valid claim identified - start process
@@ -133,22 +132,16 @@ namespace hypha
 
          TimeShare current = assignment.getCurrentTimeShare();
 
-
-        while (nextOpt) 
-        {
-
+         //Initialize nextOpt with current in order to have a valid initial timeShare
+         auto nextOpt = std::optional<TimeShare>{current};
 
          int64_t currentTimeSec = periodStartSec;
 
          std::optional<TimeShare> lastUsedTimeShare;
 
+         while (nextOpt)
+         {
 
-          //If the time share doesn't belong to the claim period we 
-          //finish pro-rating
-          if (periodEndSec - startDateSec <= 0) 
-          {
-              break;
-          }
             ContentWrapper nextWrapper = nextOpt->getContentWrapper();
 
             const int64_t timeShare = nextWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
@@ -161,56 +154,64 @@ namespace hypha
                break;
             }
 
-          //Check if there is another timeshare
-          if ((nextOpt = lastUsedTimeShare->getNext(get_self()))) 
-          {
-            const time_point commingStartDate = nextOpt->getContentWrapper().getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
-            const int64_t commingStartDateSec = commingStartDate.sec_since_epoch();
-            //Check if the time share belongs to the same peroid
-            if (commingStartDateSec >= periodEndSec) 
+            int64_t remainingTimeSec;
+
+            lastUsedTimeShare = std::move(nextOpt.value());
+
+            //It's possible that time share was set on previous periods,
+            //if so we should use period start date as the base date
+            const int64_t baseDateSec = std::max(periodStartSec, startDateSec);
+
+            //Check if there is another timeshare
+            if ((nextOpt = lastUsedTimeShare->getNext(get_self())))
             {
-              remainingTimeSec = periodEndSec - baseDateSec;
+               const time_point commingStartDate = nextOpt->getContentWrapper().getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
+               const int64_t commingStartDateSec = commingStartDate.sec_since_epoch();
+               //Check if the time share belongs to the same peroid
+               if (commingStartDateSec >= periodEndSec)
+               {
+                  remainingTimeSec = periodEndSec - baseDateSec;
+               }
+               else
+               {
+                  remainingTimeSec = commingStartDateSec - baseDateSec;
+               }
             }
-            else 
+            else
             {
-              remainingTimeSec = commingStartDateSec - baseDateSec;
+               remainingTimeSec = periodEndSec - baseDateSec;
             }
-          }
-          else 
-          {
-            remainingTimeSec = periodEndSec - baseDateSec;
-          }        
-          
-          const int64_t fullPeriodSec = periodEndSec - periodStartSec;
 
-          //Time share could only represent a portion of the whole period
-          float relativeDuration = static_cast<float>(remainingTimeSec) / static_cast<float>(fullPeriodSec);
-          float relativeCommitment = static_cast<float>(timeShare) / static_cast<float>(initTimeShare);
-          float commitmentMultiplier = relativeDuration * relativeCommitment;
-          
-          //Accumlate each of the currencies with the time share multiplier
-         //  deferredSeeds = (deferredSeeds.is_valid() ? deferredSeeds : eosio::asset{0, common::S_SEEDS}) + 
-         //  adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc * commitmentMultiplier);
+            const int64_t fullPeriodSec = periodEndSec - periodStartSec;
 
-          // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
-          // If there is an explicit INSTANT SEEDS amount, support sending it
-          husd = (husd.is_valid() ? husd : eosio::asset{0, common::S_HUSD}) + 
-          adjustAsset(assignment.getSalaryAmount(&common::S_HUSD), first_phase_ratio_calc * commitmentMultiplier);
+            //Time share could only represent a portion of the whole period
+            float relativeDuration = static_cast<float>(remainingTimeSec) / static_cast<float>(fullPeriodSec);
+            float relativeCommitment = static_cast<float>(timeShare) / static_cast<float>(initTimeShare);
+            float commitmentMultiplier = relativeDuration * relativeCommitment;
 
-          hvoice = (hvoice.is_valid() ? hvoice : eosio::asset{0, common::S_HVOICE}) + 
-          adjustAsset(assignment.getSalaryAmount(&common::S_HVOICE), first_phase_ratio_calc * commitmentMultiplier);
-          
-          hypha = (hypha.is_valid() ? hypha : eosio::asset{0, common::S_HYPHA}) + 
-          adjustAsset(assignment.getSalaryAmount(&common::S_HYPHA), first_phase_ratio_calc * commitmentMultiplier);
-        }
+            //Accumlate each of the currencies with the time share multiplier
+            //  deferredSeeds = (deferredSeeds.is_valid() ? deferredSeeds : eosio::asset{0, common::S_SEEDS}) +
+            //  adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc * commitmentMultiplier);
 
-        //If the last used time share is different from current time share 
-        //let's update the edge
-        if (lastUsedTimeShare->getHash() != current.getHash()) 
-        {
-          Edge::get(get_self(), assignment.getHash(), common::CURRENT_TIME_SHARE).erase();
-          Edge::write(get_self(), get_self(), assignment.getHash(), lastUsedTimeShare->getHash(), common::CURRENT_TIME_SHARE);
-        }
+            // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
+            // If there is an explicit INSTANT SEEDS amount, support sending it
+            husd = (husd.is_valid() ? husd : eosio::asset{0, common::S_HUSD}) +
+                   adjustAsset(assignment.getSalaryAmount(&common::S_HUSD), first_phase_ratio_calc * commitmentMultiplier);
+
+            hvoice = (hvoice.is_valid() ? hvoice : eosio::asset{0, common::S_HVOICE}) +
+                     adjustAsset(assignment.getSalaryAmount(&common::S_HVOICE), first_phase_ratio_calc * commitmentMultiplier);
+
+            hypha = (hypha.is_valid() ? hypha : eosio::asset{0, common::S_HYPHA}) +
+                    adjustAsset(assignment.getSalaryAmount(&common::S_HYPHA), first_phase_ratio_calc * commitmentMultiplier);
+         }
+
+         //If the last used time share is different from current time share
+         //let's update the edge
+         if (lastUsedTimeShare->getHash() != current.getHash())
+         {
+            Edge::get(get_self(), assignment.getHash(), common::CURRENT_TIME_SHARE).erase();
+            Edge::write(get_self(), get_self(), assignment.getHash(), lastUsedTimeShare->getHash(), common::CURRENT_TIME_SHARE);
+         }
       }
 
       // eosio::check(deferredSeeds.is_valid(), "fatal error: SEEDS has to be a valid asset");
@@ -510,7 +511,6 @@ namespace hypha
       require_auth(get_self());
       Edge edge(get_self(), creator, from_node, to_node, edge_name);
    }
-
 
    void dao::killedge(const uint64_t id)
    {
