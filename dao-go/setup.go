@@ -546,7 +546,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	votingPause := time.Duration((5 + votingPeriodDuration.Impl.(int64)) * 1000000000)
 	pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
 
-	_, err = dao.CloseProposal(ctx, api, contract, member, proposal.Hash)
+	_, err = CloseProposal(ctx, api, contract, member, proposal.Hash)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("cannot close proposal %v", err)
 	}

@@ -25,7 +25,7 @@ namespace hypha
       proposal->propose(proposer, content_groups);
    }
 
-   void dao::vote(const name& voter, const checksum256 &proposal_hash, string &vote)
+   void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote)
    {
       eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
       Document docprop(get_self(), proposal_hash);
@@ -44,6 +44,32 @@ namespace hypha
 
       Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
       proposal->close(docprop);
+   }
+
+   void dao::proposeextend(const checksum256 &assignment_hash, const int64_t additional_periods)
+   {
+      eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+      Assignment assignment(this, assignment_hash);      
+
+      // only the assignee can submit an extension proposal
+      eosio::name assignee = assignment.getAssignee().getAccount();
+      eosio::require_auth(assignee);      
+      eosio::check(Member::isMember(get_self(), assignee), "assignee must be a current member to request an extension: " + assignee.to_string());
+
+      eosio::print("\nproposer is: " + assignee.to_string() + "\n");
+      // construct ContentGroups to call propose
+      auto contentGroups = ContentGroups{
+          ContentGroup{
+              Content(CONTENT_GROUP_LABEL, DETAILS),
+              Content(PERIOD_COUNT, assignment.getPeriodCount() + additional_periods),
+              Content(TITLE, std::string("Assignment Extension Proposal")),
+              Content(ORIGINAL_DOCUMENT, assignment.getHash())
+          }};
+
+      // propose the extension      
+      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, common::EXTENSION));
+      proposal->propose(assignee, contentGroups);
    }
 
    void dao::claimnextper(const eosio::checksum256 &assignment_hash)
@@ -92,7 +118,6 @@ namespace hypha
       // Pro-rate the payment if the assignment was created during the period being claimed
       float first_phase_ratio_calc = 1.f; // pro-rate based on elapsed % of the first phase
 
-      
       eosio::check(first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
 
       asset deferredSeeds;
@@ -101,26 +126,22 @@ namespace hypha
       asset hypha;
 
       {
-        const int64_t initTimeShare = assignment.getInitialTimeShare()
-                                                .getContentWrapper()
-                                                .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+         const int64_t initTimeShare = assignment.getInitialTimeShare()
+                                           .getContentWrapper()
+                                           .getOrFail(DETAILS, TIME_SHARE)
+                                           ->getAs<int64_t>();
 
-        TimeShare current = assignment.getCurrentTimeShare();
-        
-        //Initialize nextOpt with current in order to have a valid initial timeShare
-        auto nextOpt = std::optional<TimeShare>{current};
+         TimeShare current = assignment.getCurrentTimeShare();
 
-        int64_t currentTimeSec = periodStartSec;
-
-        std::optional<TimeShare> lastUsedTimeShare;
 
         while (nextOpt) 
         {
 
-          ContentWrapper nextWrapper = nextOpt->getContentWrapper();
 
-          const int64_t timeShare = nextWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-          const int64_t startDateSec = nextWrapper.getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>().sec_since_epoch();
+         int64_t currentTimeSec = periodStartSec;
+
+         std::optional<TimeShare> lastUsedTimeShare;
+
 
           //If the time share doesn't belong to the claim period we 
           //finish pro-rating
@@ -128,14 +149,17 @@ namespace hypha
           {
               break;
           }
+            ContentWrapper nextWrapper = nextOpt->getContentWrapper();
 
-          int64_t remainingTimeSec;
+            const int64_t timeShare = nextWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+            const int64_t startDateSec = nextWrapper.getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>().sec_since_epoch();
 
-          lastUsedTimeShare = std::move(nextOpt.value());
-
-          //It's possible that time share was set on previous periods,
-          //if so we should use period start date as the base date
-          const int64_t baseDateSec = std::max(periodStartSec, startDateSec);
+            //If the time share doesn't belong to the claim period we
+            //finish pro-rating
+            if (periodEndSec - startDateSec <= 0)
+            {
+               break;
+            }
 
           //Check if there is another timeshare
           if ((nextOpt = lastUsedTimeShare->getNext(get_self()))) 
@@ -522,8 +546,8 @@ namespace hypha
    {
       return m_documentGraph;
    }
-  
-  /**
+
+   /**
   * Info Structure
   * 
   * ContentGroups
@@ -542,61 +566,62 @@ namespace hypha
   *   ]
   * ]
   */
-  ACTION dao::adjustcmtmnt(name issuer, ContentGroups& adjust_info) 
-  {
-    //TODO: Test utility function to_str
-    //eosio::check(false, to_str("Test: ", 22, name(" abc "), 3.4, NEW_TIME_SHARE));
-    require_auth(issuer);
+   ACTION dao::adjustcmtmnt(name issuer, ContentGroups &adjust_info)
+   {
+      //TODO: Test utility function to_str
+      //eosio::check(false, to_str("Test: ", 22, name(" abc "), 3.4, NEW_TIME_SHARE));
+      require_auth(issuer);
 
-    ContentWrapper cw(adjust_info);
+      ContentWrapper cw(adjust_info);
 
-    for (size_t i = 0; i < adjust_info.size(); ++i) {
+      for (size_t i = 0; i < adjust_info.size(); ++i)
+      {
 
-      Assignment assignment = Assignment(this, 
-                                         cw.getOrFail(i, "assignemnt_id").second->getAs<checksum256>());
+         Assignment assignment = Assignment(this,
+                                            cw.getOrFail(i, "assignemnt_id").second->getAs<checksum256>());
 
-      eosio::check(assignment.getAssignee().getAccount() == issuer, 
-                   "Only the owner of the assignment can adjust it");
+         eosio::check(assignment.getAssignee().getAccount() == issuer,
+                      "Only the owner of the assignment can adjust it");
 
-      ContentWrapper assignmentCW = assignment.getContentWrapper();
+         ContentWrapper assignmentCW = assignment.getContentWrapper();
 
-      Document roleDocument(get_self(), assignmentCW.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
-      auto role = roleDocument.getContentWrapper();
+         Document roleDocument(get_self(), assignmentCW.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
+         auto role = roleDocument.getContentWrapper();
 
-      //Check min_time_share_x100 <= new_time_share_x100 <= time_share_x100
-      int64_t originalTimeShare = assignmentCW.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-      int64_t minTimeShare = role.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
-      int64_t newTimeShare = cw.getOrFail(i, NEW_TIME_SHARE).second->getAs<int64_t>();
+         //Check min_time_share_x100 <= new_time_share_x100 <= time_share_x100
+         int64_t originalTimeShare = assignmentCW.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+         int64_t minTimeShare = role.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
+         int64_t newTimeShare = cw.getOrFail(i, NEW_TIME_SHARE).second->getAs<int64_t>();
 
-      eosio::check(newTimeShare >= minTimeShare, 
-                    NEW_TIME_SHARE + string(" must be greater than or equal to: ") + std::to_string(minTimeShare) 
-                                   + string(" You submitted: ") + std::to_string(newTimeShare));
-      eosio::check(newTimeShare <= originalTimeShare, 
-                    NEW_TIME_SHARE + string(" must be less than or equal to original time_share_x100: ") + std::to_string(originalTimeShare)
-                                   + string(" You submitted: ") + std::to_string(newTimeShare));
+         eosio::check(newTimeShare >= minTimeShare,
+                      NEW_TIME_SHARE + string(" must be greater than or equal to: ") + std::to_string(minTimeShare) + string(" You submitted: ") + std::to_string(newTimeShare));
+         eosio::check(newTimeShare <= originalTimeShare,
+                      NEW_TIME_SHARE + string(" must be less than or equal to original time_share_x100: ") + std::to_string(originalTimeShare) + string(" You submitted: ") + std::to_string(newTimeShare));
 
-      //Update lasttimeshare
-      Edge lastTimeShareEdge = Edge::get(get_self(), assignment.getHash(), common::LAST_TIME_SHARE);
-    
-      time_point startDate = eosio::current_time_point();
+         //Update lasttimeshare
+         Edge lastTimeShareEdge = Edge::get(get_self(), assignment.getHash(), common::LAST_TIME_SHARE);
 
-      if (auto [idx, startDateContent] = cw.get(i, TIME_SHARE_START_DATE); 
-          startDateContent) {
-        TimeShare lastTimeShare(get_self(), lastTimeShareEdge.getToNode());
-        time_point lastStartDate = lastTimeShare.getContentWrapper()
-                                                .getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
-        startDate = startDateContent->getAs<time_point>();
-        eosio::check(lastStartDate.sec_since_epoch() < startDate.sec_since_epoch(), 
-                     "New time share start date must be greater than the previous time share");
+         time_point startDate = eosio::current_time_point();
+
+         if (auto [idx, startDateContent] = cw.get(i, TIME_SHARE_START_DATE);
+             startDateContent)
+         {
+            TimeShare lastTimeShare(get_self(), lastTimeShareEdge.getToNode());
+            time_point lastStartDate = lastTimeShare.getContentWrapper()
+                                           .getOrFail(DETAILS, TIME_SHARE_START_DATE)
+                                           ->getAs<time_point>();
+            startDate = startDateContent->getAs<time_point>();
+            eosio::check(lastStartDate.sec_since_epoch() < startDate.sec_since_epoch(),
+                         "New time share start date must be greater than the previous time share");
+         }
+
+         TimeShare newTimeShareDoc(get_self(), issuer, newTimeShare, startDate);
+
+         Edge::write(get_self(), get_self(), lastTimeShareEdge.getToNode(), newTimeShareDoc.getHash(), common::NEXT_TIME_SHARE);
+
+         lastTimeShareEdge.erase();
+
+         Edge::write(get_self(), get_self(), assignment.getHash(), newTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
       }
-
-      TimeShare newTimeShareDoc(get_self(), issuer, newTimeShare, startDate);
-
-      Edge::write(get_self(), get_self(), lastTimeShareEdge.getToNode(), newTimeShareDoc.getHash(), common::NEXT_TIME_SHARE);
-
-      lastTimeShareEdge.erase();
-
-      Edge::write(get_self(), get_self(), assignment.getHash(), newTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
-    }
-  }
+   }
 } // namespace hypha

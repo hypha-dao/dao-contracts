@@ -7,6 +7,7 @@
 #include <proposals/assignment_proposal.hpp>
 #include <proposals/attestation_proposal.hpp>
 #include <proposals/edit_proposal.hpp>
+#include <proposals/ass_extend_proposal.hpp>
 #include <common.hpp>
 
 namespace hypha
@@ -35,6 +36,10 @@ namespace hypha
 
         case common::EDIT.value:
             return new EditProposal(dao);
+    
+        // TODO: should be expanded to work with Badge Assignments as well
+        case common::EXTENSION.value:
+            return new AssignmentExtensionProposal(dao);
         }
 
         eosio::check(false, "Unknown proposal_type: " + proposal_type.to_string());

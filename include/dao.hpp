@@ -83,6 +83,7 @@ namespace hypha
       // ACTION claimpay(const eosio::checksum256 &hash);
       // ACTION claimpayper(const eosio::checksum256 &assignment_hash, const eosio::checksum256 &period_hash);
       ACTION claimnextper(const eosio::checksum256 &assignment_hash);
+      ACTION proposeextend (const eosio::checksum256 &assignment_hash, const int64_t additional_periods);
 
       ACTION apply(const eosio::name &applicant, const std::string &content);
       ACTION enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content);
