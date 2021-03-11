@@ -21,6 +21,7 @@ namespace hypha
         Member getAssignee();
         eosio::name &getType();
         eosio::time_point getApprovedTime();
+        int64_t getPeriodCount();
 
         eosio::asset getSalaryAmount (const eosio::symbol* symbol);
 

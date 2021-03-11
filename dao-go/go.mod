@@ -11,9 +11,9 @@ require (
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/ryanuber/columnize v2.1.2+incompatible // indirect
-	github.com/schollz/progressbar/v3 v3.7.3
+	github.com/schollz/progressbar/v3 v3.7.4
 	github.com/spf13/viper v1.3.1
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/sjson v1.1.2 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect

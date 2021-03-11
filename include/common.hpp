@@ -45,6 +45,7 @@ namespace common
     static constexpr name ATTESTATION = name("attestation");
     static constexpr name EDIT = name("edit");
     static constexpr name ORIGINAL = name("original");
+    static constexpr name EXTENSION = name("extension");
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
