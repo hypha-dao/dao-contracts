@@ -117,6 +117,11 @@ namespace hypha
             eosio::check(std::holds_alternative<eosio::time_point>(legacyCreatedDate->value), "fatal error: expected time_point type: " + legacyCreatedDate->label);
             return std::get<eosio::time_point>(legacyCreatedDate->value);
         }
+        //Fallback for old assignments
+        else if (auto [exists, edge] = Edge::getIfExists(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
+                 !exists) {
+            return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
+        }
 
         return getInitialTimeShare().getContentWrapper().getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
     }

@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
+	"testing"
 	"time"
 
 	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
+	"github.com/hypha-dao/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"github.com/spf13/viper"
 )
@@ -19,6 +21,22 @@ type updateDoc struct {
 	Group string             `json:"group"`
 	Key   string             `json:"key"`
 	Value docgraph.FlexValue `json:"value"`
+}
+
+type docGroups struct {
+	ContentGroups []docgraph.ContentGroup  `json:"content_groups"`
+}
+
+func ReplaceContent2(groups []docgraph.ContentGroup, label string, value *docgraph.FlexValue) error {
+	for _, contentGroup := range groups {
+		for i := range contentGroup {
+			if contentGroup[i].Label == label {
+				contentGroup[i].Value = value
+				return nil
+			}
+		}
+	}
+	return nil
 }
 
 func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountName) error {
@@ -150,11 +168,8 @@ func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) 
 				return fmt.Errorf("cannot get start_time %v", err)
 			}
 
-			startTimePoint, err := startTime.TimePoint()
-			if err != nil {
-				return fmt.Errorf("cannot get start time_point %v", err)
-			}
-
+			startTimePoint := startTime.Impl.(eos.TimePoint)
+			
 			fmt.Println("Start time point: ", startTimePoint.String())
 			unixTime := time.Unix(int64(startTimePoint)/1000000, 0).UTC()
 			fmt.Println("Starting " + unixTime.Format("2006 Jan 02"))
@@ -607,6 +622,78 @@ func CreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, 
 		ProposalType:  assignmentType,
 		ContentGroups: proposalDoc.ContentGroups,
 	})
+}
+
+//Creates an assignment without the INIT_TIME_SHARE, CURRENT_TIME_SHARE & LAST_TIME_SHARE nodes
+func CreateOldAssignment(t* testing.T, ctx context.Context, api *eos.API, contract, member eos.AccountName, memberDocHash, roleDocHash, startPeriodHash eos.Checksum256, assignment string) (docgraph.Document, error) {
+
+	// jsonFile, err := os.Open(filename)
+
+	// if (err != nil) {
+	// 	return docgraph.Document{}, err
+	// }
+
+	// bytes, err := ioutil.ReadAll(jsonFile)
+	
+	// jsonFile.Close()
+
+	// if (err != nil) {
+	// 	return docgraph.Document{}, err
+	// }
+
+	// var jsonObj docGroups
+
+	// err = json.Unmarshal([]byte(bytes), &jsonObj)
+
+	// if (err != nil) {
+	// 	return docgraph.Document{}, err
+	// }
+	
+	// //Append role hash and member name
+	// err = ReplaceContent2(jsonObj.ContentGroups, "start_period", &docgraph.FlexValue{
+	// 	BaseVariant: eos.BaseVariant{
+	// 		TypeID: docgraph.GetVariants().TypeID("checksum256"),
+	// 		Impl:   startPeriodHash,
+	// 	}})
+	
+	// 	if (err != nil) {
+	// 	return docgraph.Document{}, err
+	// }
+
+	// //Save to same file
+
+	// bytes, err = json.Marshal(&jsonObj)
+
+	// if (err != nil) {
+	// 	return docgraph.Document{}, err
+	// }
+
+	// err = ioutil.WriteFile(filename, bytes, 0644)
+
+	// if (err != nil) {
+	// 	return docgraph.Document{}, err
+	// }
+
+	// var assignment docgraph.Document
+		
+	// assignment, err = docgraph.CreateDocument(ctx, api, contract, member, filename);
+
+	// if (err != nil) {
+	// 	return docgraph.Document{}, err
+	// }
+
+	_, err := ProposeAssignment(ctx, api, contract, member, member, roleDocHash, startPeriodHash, assignment)
+	if (err != nil) {
+		return docgraph.Document{}, err
+	}
+
+	// retrieve the document we just created
+	proposal, err := docgraph.GetLastDocumentOfEdge(ctx, api, contract, eos.Name("proposal"))
+	if (err != nil) {
+		return docgraph.Document{}, err
+	}
+
+	return proposal, nil
 }
 
 // CreatePayout ...

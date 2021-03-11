@@ -62,6 +62,27 @@ namespace hypha
       // require_auth(assignee);
       eosio::check(has_auth(assignee) || has_auth(get_self()), "only assignee or " + get_self().to_string() + " can claim pay");
 
+      /**
+      * Check if required edges & documents exists for this assignment, otherwise (assignments approved prior dynamic commitments)
+      */
+      if (auto [exists, edge] = Edge::getIfExists(get_self(), assignment.getHash(), common::INIT_TIME_SHARE);
+          !exists) 
+      {
+        //We have to create an Inital time share document and all the edges pointing towards it
+        auto contentWrapper = assignment.getContentWrapper();
+
+        //Initial time share for proposal
+        int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+        
+        //Set starting date to approval date.
+        auto approvedDate = Edge::get(get_self(), assignment.getAssignee().getHash(), common::ASSIGNED).getCreated();
+        TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate);
+
+        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
+        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
+        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
+      }
+
       // Valid claim identified - start process
       // process this claim
       Edge::write(get_self(), get_self(), assignment.getHash(), periodToClaim.value().getHash(), common::CLAIMED);
@@ -93,7 +114,8 @@ namespace hypha
 
         std::optional<TimeShare> lastUsedTimeShare;
 
-        while (nextOpt) {
+        while (nextOpt) 
+        {
 
           ContentWrapper nextWrapper = nextOpt->getContentWrapper();
 
@@ -102,7 +124,8 @@ namespace hypha
 
           //If the time share doesn't belong to the claim period we 
           //finish pro-rating
-          if (periodEndSec - startDateSec <= 0) {
+          if (periodEndSec - startDateSec <= 0) 
+          {
               break;
           }
 
@@ -115,18 +138,22 @@ namespace hypha
           const int64_t baseDateSec = std::max(periodStartSec, startDateSec);
 
           //Check if there is another timeshare
-          if ((nextOpt = lastUsedTimeShare->getNext(get_self()))) {
+          if ((nextOpt = lastUsedTimeShare->getNext(get_self()))) 
+          {
             const time_point commingStartDate = nextOpt->getContentWrapper().getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
             const int64_t commingStartDateSec = commingStartDate.sec_since_epoch();
             //Check if the time share belongs to the same peroid
-            if (commingStartDateSec >= periodEndSec) {
+            if (commingStartDateSec >= periodEndSec) 
+            {
               remainingTimeSec = periodEndSec - baseDateSec;
             }
-            else {
+            else 
+            {
               remainingTimeSec = commingStartDateSec - baseDateSec;
             }
           }
-          else {
+          else 
+          {
             remainingTimeSec = periodEndSec - baseDateSec;
           }        
           
@@ -155,7 +182,8 @@ namespace hypha
 
         //If the last used time share is different from current time share 
         //let's update the edge
-        if (lastUsedTimeShare->getHash() != current.getHash()) {
+        if (lastUsedTimeShare->getHash() != current.getHash()) 
+        {
           Edge::get(get_self(), assignment.getHash(), common::CURRENT_TIME_SHARE).erase();
           Edge::write(get_self(), get_self(), assignment.getHash(), lastUsedTimeShare->getHash(), common::CURRENT_TIME_SHARE);
         }

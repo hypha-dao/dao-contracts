@@ -72,7 +72,7 @@ func CreateAdjustmentAfter(commitment, startSecs int64, offsetSecs time.Duration
 
   sd, err := timeShare.GetContent("start_date")
   assert.NilError(t, err);
-  assert.Equal(t, sd.Impl.(eos.TimePoint), adjustStartDate)
+  assert.Equal(t, sd.Impl.(eos.TimePoint) / 1000, adjustStartDate / 1000)
 
   return err
 }
@@ -179,16 +179,17 @@ func TestAdjustCommitment(t *testing.T) {
 
       voteToPassTD(t, env, proposal)
 
-      //Wait 1 Period to close the proposal and test the special 
+      //Wait Half Period to close the proposal and test the special 
       //case when approved time overlaps in the first period
       t.Log("Waiting for a period to lapse...")
-      pause(t, env.PeriodPause, "", "Waiting...")
+      pause(t, env.PeriodPause / 2, "", "Waiting...")
 
       _, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
       assert.NilError(t, err)
 
       assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
 
+			var periodDuration float32
       var firstPeriodStartSecs int64
       var firstPeriodEndSecs int64
       //Get starting period to calculate half period duration
@@ -270,7 +271,7 @@ func TestAdjustCommitment(t *testing.T) {
         assert.NilError(t, err)
         approvedTime, err := initTimeShare.GetContent("start_date")
         approvedSecs := int64(approvedTime.Impl.(eos.TimePoint))/1000000
-        periodDuration := float32(firstPeriodEndSecs-firstPeriodStartSecs)
+        periodDuration = float32(firstPeriodEndSecs-firstPeriodStartSecs)
         timeFactor := float32(firstPeriodEndSecs-approvedSecs) / periodDuration
         ValidateLastReceipt(int64(totalHUSD*timeFactor),
                             int64(totalHYPHA*timeFactor),
@@ -300,9 +301,10 @@ func TestAdjustCommitment(t *testing.T) {
       assert.NilError(t, err)
       
       {
-        //15 : Period Duration
-        firstHalf := float32(7.0 / 15.0)
-        secondHalf := float32(8.0 / 15.0)
+        //Period Duration
+				half := periodDuration / 2
+        firstHalf := float32(half/periodDuration)
+        secondHalf := float32((periodDuration-half) / periodDuration)
         newTotalSEEDS := totalSEEDS * firstHalf + totalSEEDS * float32(0.5) * secondHalf
         newTotalHYPHA := totalHYPHA * firstHalf + totalHYPHA * float32(0.5) * secondHalf
         newTotalHVOICE := totalHVOICE * firstHalf + totalHVOICE * float32(0.5) * secondHalf
@@ -604,6 +606,143 @@ func TestAssignmentDefaults(t *testing.T) {
       assert.Equal(t, fv.Impl.(int64), test.defaultPeriodCount)
     }
   })
+}
+
+func TestOldAssignmentsPayClaim(t *testing.T) {
+	teardownTestCase := setupTestCase(t)
+	defer teardownTestCase(t)
+
+	env = SetupEnvironment(t)
+
+	proposer := env.Members[0]
+
+	var balances []Balance
+
+	balances = append(balances, NewBalance())
+
+	t.Run("Test Assignment Document Proposal", func(t *testing.T) {
+
+		tests := []struct {
+			name       string
+			roleTitle  string
+			title      string
+			role       string
+			assignment string
+			husd       string
+			hypha      string
+			hvoice     string
+			usd        string
+		}{
+			{
+				name:       "role2 - 100% commit, 70% deferred",
+				roleTitle:  "Alfa Omega",
+				title:      "Underwater Basketweaver - Atlantic",
+				role:       role2,
+				assignment: assignment2,
+				// husd:       "455.85 HUSD",
+				// hypha:      "265.91 HYPHA",
+				// hvoice:     "3039.00 HVOICE",
+				// usd:        "1519.50 USD",
+			},
+		}
+
+		for _, test := range tests {
+
+			t.Log("\n\nStarting test: ", test.name)
+			role := CreateRole(t, env, proposer, proposer, test.role)
+
+			var assignment docgraph.Document
+			var err error
+
+			assignment, err = dao.CreateOldAssignment(t, env.ctx, &env.api, env.DAO, proposer.Member, proposer.Doc.Hash, role.Hash, env.Periods[0].Hash, assignment2)
+
+			assert.NilError(t, err)
+
+			assert.Equal(t, assignment.Creator, proposer.Member)
+
+			//Emulate voting period
+			t.Log("Waiting for a period to lapse...")
+			pause(t, env.PeriodPause, "", "Waiting...")
+
+			//Manually create the edges for passed assignments
+			ExecuteDocgraphCall(t, env, func() {
+				//Create edges
+				_, err = docgraph.CreateEdge(env.ctx, &env.api, env.DAO, env.DAO, proposer.Doc.Hash, assignment.Hash, eos.Name("assigned"))
+		
+				assert.NilError(t, err)
+		
+				_, err = docgraph.CreateEdge(env.ctx, &env.api, env.DAO, env.DAO, assignment.Hash, proposer.Doc.Hash, eos.Name("assignee"))
+		
+				assert.NilError(t, err)
+		
+				_, err = docgraph.CreateEdge(env.ctx, &env.api, env.DAO, env.DAO, role.Hash, assignment.Hash, eos.Name("assignment"))
+		
+				assert.NilError(t, err)
+			})			
+			
+			fv, err := assignment.GetContent("title")
+			assert.NilError(t, err)
+			assert.Equal(t, fv.String(), test.title)
+
+			// verify that the edges are created correctly
+			// Graph structure post creating proposal:
+			// update graph edges:
+			//  member          ---- assigned           ---->   role_assignment
+			//  role_assignment ---- assignee           ---->   member
+			//  role_assignment ---- role               ---->   role
+			//  role            ---- role_assignment    ---->   role_assignment
+			checkEdge(t, env, proposer.Doc, assignment, eos.Name("assigned"))
+			checkEdge(t, env, assignment, proposer.Doc, eos.Name("assignee"))
+			//checkEdge(t, env, assignment, role, eos.Name("role"))
+			checkEdge(t, env, role, assignment, eos.Name("assignment"))
+
+			//  root ---- passedprops        ---->   role_assignment
+			//checkEdge(t, env, env.Root, assignment, eos.Name("passedprops"))
+
+			t.Log("Waiting for a period to lapse...")
+			pause(t, env.PeriodPause, "", "Waiting...")
+
+			_, err = ClaimNextPeriod(t, env, proposer.Member, assignment)
+			assert.NilError(t, err)
+
+			fetchedAssignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
+
+			husd, err := fetchedAssignment.GetContent("husd_salary_per_phase")
+			assert.NilError(t, err)
+
+			hypha, err := fetchedAssignment.GetContent("hypha_salary_per_phase")
+			assert.NilError(t, err)
+
+			hvoice, err := fetchedAssignment.GetContent("hvoice_salary_per_phase")
+			assert.NilError(t, err)
+			
+			var payments []Balance
+			// first payment is a partial payment, so should be less than the amount on the assignment record
+			payments = append(payments, CalcLastPayment(t, env, balances[len(balances)-1], proposer.Member))
+			balances = append(balances, GetBalance(t, env, proposer.Member))
+			assert.Assert(t, hypha.Impl.(*eos.Asset).Amount >= payments[len(payments)-1].Hypha.Amount)
+			assert.Assert(t, husd.Impl.(*eos.Asset).Amount >= payments[len(payments)-1].Husd.Amount)
+			t.Log("Hvoice from payment      : ", strconv.Itoa(int(payments[len(payments)-1].Hvoice.Amount)))
+			t.Log("Hvoice from assignment   : ", strconv.Itoa(int(hvoice.Impl.(*eos.Asset).Amount)))
+			assert.Assert(t, hvoice.Impl.(*eos.Asset).Amount+eos.Int64(env.GenesisHVOICE) >= payments[len(payments)-1].Hvoice.Amount)
+			//No seeds payment anymore
+			//assert.Assert(t, payments[len(payments)-1].SeedsEscrow.Amount > 0)
+
+			t.Log("Waiting for a period to lapse...")
+			pause(t, env.PeriodPause, "", "Waiting...")
+
+			_, err = ClaimNextPeriod(t, env, proposer.Member, assignment)
+			assert.NilError(t, err)
+
+			// 2nd payment should be equal to the payment on the assignment record
+			payments = append(payments, CalcLastPayment(t, env, balances[len(balances)-1], proposer.Member))
+			balances = append(balances, GetBalance(t, env, proposer.Member))
+			assert.Equal(t, hypha.Impl.(*eos.Asset).Amount, payments[len(payments)-1].Hypha.Amount)
+			assert.Equal(t, husd.Impl.(*eos.Asset).Amount, payments[len(payments)-1].Husd.Amount)
+			assert.Equal(t, hvoice.Impl.(*eos.Asset).Amount, payments[len(payments)-1].Hvoice.Amount)
+			//assert.Assert(t, payments[len(payments)-1].SeedsEscrow.Amount >= payments[len(payments)-2].SeedsEscrow.Amount)
+		}
+	})
 }
 
 func TestAssignmentPayClaim(t *testing.T) {
