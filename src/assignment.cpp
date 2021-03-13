@@ -115,6 +115,7 @@ namespace hypha
         return getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
     }
 
+    // TODO: move to proposal class
     eosio::time_point Assignment::getApprovedTime()
     {
         if (auto [idx, legacyCreatedDate] = getContentWrapper().get(SYSTEM, "legacy_object_created_date"); legacyCreatedDate)
@@ -122,6 +123,7 @@ namespace hypha
             eosio::check(std::holds_alternative<eosio::time_point>(legacyCreatedDate->value), "fatal error: expected time_point type: " + legacyCreatedDate->label);
             return std::get<eosio::time_point>(legacyCreatedDate->value);
         }
+        // TODO: add a check for original_approval_date
         //Fallback for old assignments
         else if (auto [exists, edge] = Edge::getIfExists(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
                  !exists) {

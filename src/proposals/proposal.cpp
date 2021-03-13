@@ -140,7 +140,7 @@ namespace hypha
         {
             // INVOKE child class close logic
             passImpl(proposal);
-
+            // TODO: add original approval date to system group
             // if proposal passes, create an edge for PASSED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::PASSED_PROPS);
         }

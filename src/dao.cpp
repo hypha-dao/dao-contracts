@@ -100,6 +100,7 @@ namespace hypha
          int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
 
          //Set starting date to approval date.
+         // TODO: call Assignment.getApprovedDate()
          auto approvedDate = Edge::get(get_self(), assignment.getAssignee().getHash(), common::ASSIGNED).getCreated();
          TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate);
 
@@ -585,7 +586,7 @@ namespace hypha
       {
 
          Assignment assignment = Assignment(this,
-                                            cw.getOrFail(i, "assignemnt_id").second->getAs<checksum256>());
+                                            cw.getOrFail(i, "assignment_id").second->getAs<checksum256>());
 
          eosio::check(assignment.getAssignee().getAccount() == issuer,
                       "Only the owner of the assignment can adjust it");
