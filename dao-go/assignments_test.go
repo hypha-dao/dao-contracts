@@ -17,7 +17,7 @@ func GetAdjustInfo(assignment eos.Checksum256, timeShare int64, startDate eos.Ti
 	return []docgraph.ContentGroup{
 		{
 			{
-				Label: "assignemnt_id",
+				Label: "assignment",
 				Value: &docgraph.FlexValue{
 					BaseVariant: eos.BaseVariant{
 						TypeID: docgraph.GetVariants().TypeID("checksum256"),
@@ -302,9 +302,9 @@ func TestAdjustCommitment(t *testing.T) {
       
       {
         //Period Duration
-				half := periodDuration / 2
-        firstHalf := float32(half/periodDuration)
-        secondHalf := float32((periodDuration-half) / periodDuration)
+				half := int64(periodDuration) / 2
+        firstHalf := float32(half)/periodDuration
+        secondHalf := (periodDuration-float32(half)) / periodDuration
         newTotalSEEDS := totalSEEDS * firstHalf + totalSEEDS * float32(0.5) * secondHalf
         newTotalHYPHA := totalHYPHA * firstHalf + totalHYPHA * float32(0.5) * secondHalf
         newTotalHVOICE := totalHVOICE * firstHalf + totalHVOICE * float32(0.5) * secondHalf
