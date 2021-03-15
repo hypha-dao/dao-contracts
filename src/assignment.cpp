@@ -116,7 +116,7 @@ namespace hypha
         return getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
     }
 
-    // TODO: move to proposal class
+    // TODO: move to proposal class (needs some further design)
     eosio::time_point Assignment::getApprovedTime()
     {
         auto cw = getContentWrapper();
@@ -140,11 +140,9 @@ namespace hypha
         else if (auto [hasTimeShare, edge] = Edge::getIfExists(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
                  hasTimeShare)
         {
-          auto date = getInitialTimeShare().
-                      getContentWrapper().
-                      getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<eosio::time_point>();
-          cw.insertOrReplace(detailsIdx, Content{common::APPROVED_DATE, date});
-          return date;
+          return getInitialTimeShare().
+                 getContentWrapper().
+                 getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<eosio::time_point>();
         }
         
         //Fallback for old assignments without time share document

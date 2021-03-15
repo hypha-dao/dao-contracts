@@ -76,16 +76,25 @@ namespace hypha
       eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       Assignment assignment(this, assignment_hash);
-      eosio::name assignee = assignment.getAssignee().getAccount();
 
-      // assignee must still be a DHO member
-      eosio::check(Member::isMember(get_self(), assignee), "assignee must be a current member to claim pay: " + assignee.to_string());
+      /**
+      * Checks if the assignment has the original_approved_date item
+      */
+      if (auto [_, approvedItem] = assignment.getContentWrapper().get(DETAILS, common::APPROVED_DATE); 
+          approvedItem == nullptr) 
+      {
+        auto approvedDate = assignment.getApprovedTime();
 
-      std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
-      eosio::check(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
+        auto details = assignment.getContentWrapper().getGroupOrFail(DETAILS);
 
-      // require_auth(assignee);
-      eosio::check(has_auth(assignee) || has_auth(get_self()), "only assignee or " + get_self().to_string() + " can claim pay");
+        ContentWrapper::insertOrReplace(*details, Content{common::APPROVED_DATE, approvedDate});
+        
+        auto newDoc = getGraph().updateDocument(assignment.getCreator(), 
+                                                assignment.getHash(),
+                                                std::move(assignment.getContentGroups()));
+
+        assignment = Assignment(this, newDoc.getHash());
+      }
 
       /**
       * Check if required edges & documents exists for this assignment, otherwise (assignments approved prior dynamic commitments)
@@ -107,6 +116,17 @@ namespace hypha
          Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
          Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
       }
+
+      eosio::name assignee = assignment.getAssignee().getAccount();
+
+      // assignee must still be a DHO member
+      eosio::check(Member::isMember(get_self(), assignee), "assignee must be a current member to claim pay: " + assignee.to_string());
+
+      std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
+      eosio::check(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
+
+      // require_auth(assignee);
+      eosio::check(has_auth(assignee) || has_auth(get_self()), "only assignee or " + get_self().to_string() + " can claim pay");
 
       // Valid claim identified - start process
       // process this claim
@@ -589,6 +609,25 @@ namespace hypha
 
          eosio::check(assignment.getAssignee().getAccount() == issuer,
                       "Only the owner of the assignment can adjust it");
+
+        /**
+        * Checks if the assignment has the original_approved_date item
+        */
+        if (auto [_, approvedItem] = assignment.getContentWrapper().get(DETAILS, common::APPROVED_DATE); 
+            approvedItem == nullptr) 
+        {
+          auto approvedDate = assignment.getApprovedTime();
+
+          auto details = assignment.getContentWrapper().getGroupOrFail(DETAILS);
+
+          ContentWrapper::insertOrReplace(*details, Content{common::APPROVED_DATE, approvedDate});
+          
+          auto newDoc = getGraph().updateDocument(assignment.getCreator(), 
+                                                  assignment.getHash(),
+                                                  std::move(assignment.getContentGroups()));
+
+          assignment = Assignment(this, newDoc.getHash());
+        }
 
         /**
         * Check if required edges & documents exists for this assignment, otherwise (assignments approved prior dynamic commitments)

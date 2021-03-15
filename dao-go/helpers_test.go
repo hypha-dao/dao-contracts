@@ -132,7 +132,7 @@ func ClaimNextPeriod(t *testing.T, env *Environment, claimer eos.AccountName, as
 }
 
 type AdjustData struct {
-	Issuer eos.AccountName `json:"issuer"`
+	Issuer     eos.AccountName         `json:"issuer"`
 	AdjustInfo []docgraph.ContentGroup `json:"adjust_info"`
 }
 
@@ -145,12 +145,12 @@ func AdjustCommitment(env *Environment, assignee eos.AccountName, adjustInfo []d
 			{Actor: assignee, Permission: eos.PN("active")},
 		},
 		ActionData: eos.NewActionData(AdjustData{
-			Issuer: assignee,
+			Issuer:     assignee,
 			AdjustInfo: adjustInfo,
 		}),
 	}}
 
-	return eostest.ExecTrx(env.ctx, &env.api, actions);
+	return eostest.ExecTrx(env.ctx, &env.api, actions)
 }
 
 func pause(t *testing.T, seconds time.Duration, headline, prefix string) {
@@ -208,6 +208,10 @@ func CreateAssignment(t *testing.T, env *Environment, role *docgraph.Document,
 	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
 	assert.NilError(t, err)
 
+	pause(t, 1000000000, "", "Waiting before fetching role")
+	assignment, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
+	assert.NilError(t, err)
+	assert.Equal(t, assignment.Creator, proposer.Member)
 	// verify that the edges are created correctly
 	// Graph structure post creating proposal:
 	// update graph edges:
@@ -253,6 +257,12 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content
 	t.Log("Member: ", closer.Member, " is closing role proposal	: ", role.Hash.String())
 	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)
 	assert.NilError(t, err)
+
+	pause(t, 1000000000, "", "Waiting before fetching role")
+	//Must fetch again since the hash changes on proposal close
+	role, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("role"))
+	assert.NilError(t, err)
+	assert.Equal(t, role.Creator, proposer.Member)
 
 	// verify that the edges are created correctly
 	// Graph structure post creating proposal:
@@ -328,7 +338,7 @@ func checkEdge(t *testing.T, env *Environment, fromEdge, toEdge docgraph.Documen
 }
 
 func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, voter Member) docgraph.Document {
-    // Wait 1s - If we don't, some Edges are not found.
+	// Wait 1s - If we don't, some Edges are not found.
 	pause(t, 1000000000, "", "Waiting before fetching last vote")
 	vote, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("vote"))
 	assert.NilError(t, err)

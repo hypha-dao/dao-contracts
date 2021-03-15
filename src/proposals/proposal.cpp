@@ -138,9 +138,17 @@ namespace hypha
         
         if (proposalDidPass)
         {
+            auto details = proposal.getContentWrapper().getGroupOrFail(DETAILS);
+            ContentWrapper::insertOrReplace(*details, Content{
+              common::APPROVED_DATE,
+              eosio::current_time_point()
+            });
             // INVOKE child class close logic
             passImpl(proposal);
-            // TODO: add original approval date to system group
+
+            proposal = m_dao.getGraph().updateDocument(proposal.getCreator(), 
+                                                       proposal.getHash(),
+                                                       std::move(proposal.getContentGroups()));
             // if proposal passes, create an edge for PASSED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::PASSED_PROPS);
         }
