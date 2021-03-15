@@ -154,7 +154,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	env.SeedsDeferralFactor = 100
 	env.HyphaDeferralFactor = 25
 
-	env.PeriodDuration, _ = time.ParseDuration("5s")
+	env.PeriodDuration, _ = time.ParseDuration("10s")
 	env.NumPeriods = 20
 
 	// pauses

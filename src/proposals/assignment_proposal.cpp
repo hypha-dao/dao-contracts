@@ -132,7 +132,10 @@ namespace hypha
         int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
         
         //Set starting date to approval date.
-        TimeShare initTimeShareDoc(m_dao.get_self(), m_dao.get_self(), initTimeShare, eosio::current_time_point());
+        TimeShare initTimeShareDoc(m_dao.get_self(), 
+                                   m_dao.get_self(), 
+                                   initTimeShare, 
+                                   contentWrapper.getOrFail(DETAILS, common::APPROVED_DATE)->getAs<eosio::time_point>());
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);

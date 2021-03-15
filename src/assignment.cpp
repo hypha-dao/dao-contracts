@@ -7,6 +7,7 @@
 #include <member.hpp>
 #include <assignment.hpp>
 #include <time_share.hpp>
+#include <document_graph/util.hpp>
 
 namespace hypha
 {
@@ -115,22 +116,37 @@ namespace hypha
         return getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
     }
 
-    // TODO: move to proposal class
+    // TODO: move to proposal class (needs some further design)
     eosio::time_point Assignment::getApprovedTime()
     {
-        if (auto [idx, legacyCreatedDate] = getContentWrapper().get(SYSTEM, "legacy_object_created_date"); legacyCreatedDate)
+        auto cw = getContentWrapper();
+
+        auto [detailsIdx, _] = cw.getGroup(DETAILS);
+
+        eosio::check(detailsIdx != -1, "Missing details group for assignment [" + readableHash(getHash()) + "]");
+
+        if (auto [idx, legacyCreatedDate] = cw.get(SYSTEM, "legacy_object_created_date"); legacyCreatedDate)
         {
             eosio::check(std::holds_alternative<eosio::time_point>(legacyCreatedDate->value), "fatal error: expected time_point type: " + legacyCreatedDate->label);
             return std::get<eosio::time_point>(legacyCreatedDate->value);
         }
-        // TODO: add a check for original_approval_date
-        //Fallback for old assignments
-        else if (auto [exists, edge] = Edge::getIfExists(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
-                 !exists) {
-            return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
+        //All assignments should eventually contain this item 
+        else if (auto [approvedIdx, approvedDate] = cw.get(detailsIdx, common::APPROVED_DATE);
+                 approvedDate)
+        {
+          return approvedDate->getAs<eosio::time_point>();
         }
-
-        return getInitialTimeShare().getContentWrapper().getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
+        //For assignemnts approved/claimed post adjust commitment
+        else if (auto [hasTimeShare, edge] = Edge::getIfExists(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
+                 hasTimeShare)
+        {
+          return getInitialTimeShare().
+                 getContentWrapper().
+                 getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<eosio::time_point>();
+        }
+        
+        //Fallback for old assignments without time share document
+        return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
     }
 
     bool Assignment::isClaimed(Period *period)

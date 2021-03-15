@@ -76,16 +76,25 @@ namespace hypha
       eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       Assignment assignment(this, assignment_hash);
-      eosio::name assignee = assignment.getAssignee().getAccount();
 
-      // assignee must still be a DHO member
-      eosio::check(Member::isMember(get_self(), assignee), "assignee must be a current member to claim pay: " + assignee.to_string());
+      /**
+      * Checks if the assignment has the original_approved_date item
+      */
+      if (auto [_, approvedItem] = assignment.getContentWrapper().get(DETAILS, common::APPROVED_DATE); 
+          approvedItem == nullptr) 
+      {
+        auto approvedDate = assignment.getApprovedTime();
 
-      std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
-      eosio::check(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
+        auto details = assignment.getContentWrapper().getGroupOrFail(DETAILS);
 
-      // require_auth(assignee);
-      eosio::check(has_auth(assignee) || has_auth(get_self()), "only assignee or " + get_self().to_string() + " can claim pay");
+        ContentWrapper::insertOrReplace(*details, Content{common::APPROVED_DATE, approvedDate});
+        
+        auto newDoc = getGraph().updateDocument(assignment.getCreator(), 
+                                                assignment.getHash(),
+                                                std::move(assignment.getContentGroups()));
+
+        assignment = Assignment(this, newDoc.getHash());
+      }
 
       /**
       * Check if required edges & documents exists for this assignment, otherwise (assignments approved prior dynamic commitments)
@@ -100,14 +109,24 @@ namespace hypha
          int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
 
          //Set starting date to approval date.
-         // TODO: call Assignment.getApprovedDate()
-         auto approvedDate = Edge::get(get_self(), assignment.getAssignee().getHash(), common::ASSIGNED).getCreated();
+         auto approvedDate = assignment.getApprovedTime();
          TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate);
 
          Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
          Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
          Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
       }
+
+      eosio::name assignee = assignment.getAssignee().getAccount();
+
+      // assignee must still be a DHO member
+      eosio::check(Member::isMember(get_self(), assignee), "assignee must be a current member to claim pay: " + assignee.to_string());
+
+      std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
+      eosio::check(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
+
+      // require_auth(assignee);
+      eosio::check(has_auth(assignee) || has_auth(get_self()), "only assignee or " + get_self().to_string() + " can claim pay");
 
       // Valid claim identified - start process
       // process this claim
@@ -561,15 +580,15 @@ namespace hypha
   * ContentGroups
   * [
   *   Group Assignment 0 Details: [
-  *     assignemnt_id: [checksum256]
+  *     assignment: [checksum256]
   *     new_time_share_x100: [int64_t] min_time_share_x100 <= new_time_share_x100 <= time_share_x100
   *   ],
   *   Group Assignment 1 Details: [
-  *     assignemnt_id: [checksum256]
+  *     assignment: [checksum256]
   *     new_time_share_x100: [int64_t] min_time_share_x100 <= new_time_share_x100 <= time_share_x100
   *   ],
   *   Group Assignment N Details: [
-  *     assignemnt_id: [checksum256]
+  *     assignment: [checksum256]
   *     new_time_share_x100: [int64_t] min_time_share_x100 <= new_time_share_x100 <= time_share_x100
   *   ]
   * ]
@@ -586,10 +605,50 @@ namespace hypha
       {
 
          Assignment assignment = Assignment(this,
-                                            cw.getOrFail(i, "assignment_id").second->getAs<checksum256>());
+                                            cw.getOrFail(i, "assignment").second->getAs<checksum256>());
 
          eosio::check(assignment.getAssignee().getAccount() == issuer,
                       "Only the owner of the assignment can adjust it");
+
+        /**
+        * Checks if the assignment has the original_approved_date item
+        */
+        if (auto [_, approvedItem] = assignment.getContentWrapper().get(DETAILS, common::APPROVED_DATE); 
+            approvedItem == nullptr) 
+        {
+          auto approvedDate = assignment.getApprovedTime();
+
+          auto details = assignment.getContentWrapper().getGroupOrFail(DETAILS);
+
+          ContentWrapper::insertOrReplace(*details, Content{common::APPROVED_DATE, approvedDate});
+          
+          auto newDoc = getGraph().updateDocument(assignment.getCreator(), 
+                                                  assignment.getHash(),
+                                                  std::move(assignment.getContentGroups()));
+
+          assignment = Assignment(this, newDoc.getHash());
+        }
+
+        /**
+        * Check if required edges & documents exists for this assignment, otherwise (assignments approved prior dynamic commitments)
+        */
+        if (auto [exists, edge] = Edge::getIfExists(get_self(), assignment.getHash(), common::INIT_TIME_SHARE);
+            !exists)
+        {
+          //We have to create an Inital time share document and all the edges pointing towards it
+          auto contentWrapper = assignment.getContentWrapper();
+
+          //Initial time share for proposal
+          int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+
+          //Set starting date to approval date.
+          auto approvedDate = assignment.getApprovedTime();
+          TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate);
+
+          Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
+          Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
+          Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
+        }
 
          ContentWrapper assignmentCW = assignment.getContentWrapper();
 

@@ -49,6 +49,7 @@ namespace common
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
+    constexpr        auto APPROVED_DATE = "original_approved_date";
     static constexpr name PERIOD = name("period");
     static constexpr name START = name ("start");
     static constexpr name NEXT = name ("next");
