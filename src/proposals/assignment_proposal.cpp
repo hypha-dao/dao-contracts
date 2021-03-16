@@ -135,7 +135,7 @@ namespace hypha
         TimeShare initTimeShareDoc(m_dao.get_self(), 
                                    m_dao.get_self(), 
                                    initTimeShare, 
-                                   contentWrapper.getOrFail(DETAILS, common::APPROVED_DATE)->getAs<eosio::time_point>());
+                                   contentWrapper.getOrFail(SYSTEM, common::APPROVED_DATE)->getAs<eosio::time_point>());
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
