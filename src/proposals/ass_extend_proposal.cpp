@@ -1,5 +1,3 @@
-#include <string_view>
-
 #include <eosio/asset.hpp>
 #include <eosio/crypto.hpp>
 
@@ -69,8 +67,9 @@ namespace hypha
 
         auto ignoredDetailsItems = {TITLE,
                                     DESCRIPTION,
-                                    ORIGINAL_DOCUMENT, 
-                                    common::APPROVED_DATE};
+                                    "ballot_title",
+                                    "ballot_description",
+                                    ORIGINAL_DOCUMENT};
 
         for (auto item : ignoredDetailsItems) 
         {

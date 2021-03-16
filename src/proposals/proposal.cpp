@@ -24,7 +24,18 @@ namespace hypha
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
-        std::string proposal_title = proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>();
+        auto [titleIdx, title] = proposalContent.get(DETAILS, TITLE);
+
+        auto [ballotTitleIdx, ballotTitle] = proposalContent.get(DETAILS, common::BALLOT_TITLE);
+
+        eosio::check(
+          title != nullptr || ballotTitle != nullptr,
+          to_str("Proposal [details] group must contain at least one of the following items [", 
+                  TITLE, ", ", common::BALLOT_TITLE, "]")
+        );
+
+        std::string proposal_title = title != nullptr ? title->getAs<std::string>() : 
+                                                        ballotTitle->getAs<std::string>();
 
         contentGroups.push_back(makeSystemGroup(proposer,
                                                 getProposalType(),
@@ -138,8 +149,9 @@ namespace hypha
         
         if (proposalDidPass)
         {
-            auto details = proposal.getContentWrapper().getGroupOrFail(DETAILS);
-            ContentWrapper::insertOrReplace(*details, Content{
+
+            auto system = proposal.getContentWrapper().getGroupOrFail(SYSTEM);
+            ContentWrapper::insertOrReplace(*system, Content{
               common::APPROVED_DATE,
               eosio::current_time_point()
             });

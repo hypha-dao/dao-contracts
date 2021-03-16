@@ -78,7 +78,7 @@ func CreateAdjustmentAfter(commitment, startSecs int64, offsetSecs time.Duration
 }
 
 func AssetToInt(asset *docgraph.FlexValue) (int64, string, error) {
-	assetStr := asset.Impl.(*eos.Asset).String()
+	assetStr := asset.Impl.(eos.Asset).String()
 	stringItms := strings.Split(assetStr, " ")
 	parsed, err := strconv.ParseFloat(stringItms[0], 32)
 
@@ -730,11 +730,11 @@ func TestOldAssignmentsPayClaim(t *testing.T) {
 			// first payment is a partial payment, so should be less than the amount on the assignment record
 			payments = append(payments, CalcLastPayment(t, env, balances[len(balances)-1], proposer.Member))
 			balances = append(balances, GetBalance(t, env, proposer.Member))
-			assert.Assert(t, hypha.Impl.(*eos.Asset).Amount >= payments[len(payments)-1].Hypha.Amount)
-			assert.Assert(t, husd.Impl.(*eos.Asset).Amount >= payments[len(payments)-1].Husd.Amount)
+			assert.Assert(t, hypha.Impl.(eos.Asset).Amount >= payments[len(payments)-1].Hypha.Amount)
+			assert.Assert(t, husd.Impl.(eos.Asset).Amount >= payments[len(payments)-1].Husd.Amount)
 			t.Log("Hvoice from payment      : ", strconv.Itoa(int(payments[len(payments)-1].Hvoice.Amount)))
-			t.Log("Hvoice from assignment   : ", strconv.Itoa(int(hvoice.Impl.(*eos.Asset).Amount)))
-			assert.Assert(t, hvoice.Impl.(*eos.Asset).Amount+eos.Int64(env.GenesisHVOICE) >= payments[len(payments)-1].Hvoice.Amount)
+			t.Log("Hvoice from assignment   : ", strconv.Itoa(int(hvoice.Impl.(eos.Asset).Amount)))
+			assert.Assert(t, hvoice.Impl.(eos.Asset).Amount+eos.Int64(env.GenesisHVOICE) >= payments[len(payments)-1].Hvoice.Amount)
 			//No seeds payment anymore
 			//assert.Assert(t, payments[len(payments)-1].SeedsEscrow.Amount > 0)
 
@@ -747,9 +747,9 @@ func TestOldAssignmentsPayClaim(t *testing.T) {
 			// 2nd payment should be equal to the payment on the assignment record
 			payments = append(payments, CalcLastPayment(t, env, balances[len(balances)-1], proposer.Member))
 			balances = append(balances, GetBalance(t, env, proposer.Member))
-			assert.Equal(t, hypha.Impl.(*eos.Asset).Amount, payments[len(payments)-1].Hypha.Amount)
-			assert.Equal(t, husd.Impl.(*eos.Asset).Amount, payments[len(payments)-1].Husd.Amount)
-			assert.Equal(t, hvoice.Impl.(*eos.Asset).Amount, payments[len(payments)-1].Hvoice.Amount)
+			assert.Equal(t, hypha.Impl.(eos.Asset).Amount, payments[len(payments)-1].Hypha.Amount)
+			assert.Equal(t, husd.Impl.(eos.Asset).Amount, payments[len(payments)-1].Husd.Amount)
+			assert.Equal(t, hvoice.Impl.(eos.Asset).Amount, payments[len(payments)-1].Hvoice.Amount)
 			//assert.Assert(t, payments[len(payments)-1].SeedsEscrow.Amount >= payments[len(payments)-2].SeedsEscrow.Amount)
 		}
 	})
@@ -865,11 +865,11 @@ func TestAssignmentPayClaim(t *testing.T) {
 			// SEEDS escrow payment should be greater than zero
 			payments = append(payments, CalcLastPayment(t, env, balances[len(balances)-1], assignee.Member))
 			balances = append(balances, GetBalance(t, env, assignee.Member))
-			assert.Assert(t, hypha.Impl.(*eos.Asset).Amount >= payments[len(payments)-1].Hypha.Amount)
-			assert.Assert(t, husd.Impl.(*eos.Asset).Amount >= payments[len(payments)-1].Husd.Amount)
+			assert.Assert(t, hypha.Impl.(eos.Asset).Amount >= payments[len(payments)-1].Hypha.Amount)
+			assert.Assert(t, husd.Impl.(eos.Asset).Amount >= payments[len(payments)-1].Husd.Amount)
 			t.Log("Hvoice from payment      : ", strconv.Itoa(int(payments[len(payments)-1].Hvoice.Amount)))
-			t.Log("Hvoice from assignment   : ", strconv.Itoa(int(hvoice.Impl.(*eos.Asset).Amount)))
-			assert.Assert(t, hvoice.Impl.(*eos.Asset).Amount+eos.Int64(env.GenesisHVOICE) >= payments[len(payments)-1].Hvoice.Amount)
+			t.Log("Hvoice from assignment   : ", strconv.Itoa(int(hvoice.Impl.(eos.Asset).Amount)))
+			assert.Assert(t, hvoice.Impl.(eos.Asset).Amount+eos.Int64(env.GenesisHVOICE) >= payments[len(payments)-1].Hvoice.Amount)
 			assert.Assert(t, payments[len(payments)-1].SeedsEscrow.Amount > 0)
 
 			t.Log("Waiting for a period to lapse...")
@@ -882,9 +882,9 @@ func TestAssignmentPayClaim(t *testing.T) {
 			// 2nd SEEDS escrow payment should be greater than the first one
 			payments = append(payments, CalcLastPayment(t, env, balances[len(balances)-1], assignee.Member))
 			balances = append(balances, GetBalance(t, env, assignee.Member))
-			assert.Equal(t, hypha.Impl.(*eos.Asset).Amount, payments[len(payments)-1].Hypha.Amount)
-			assert.Equal(t, husd.Impl.(*eos.Asset).Amount, payments[len(payments)-1].Husd.Amount)
-			assert.Equal(t, hvoice.Impl.(*eos.Asset).Amount, payments[len(payments)-1].Hvoice.Amount)
+			assert.Equal(t, hypha.Impl.(eos.Asset).Amount, payments[len(payments)-1].Hypha.Amount)
+			assert.Equal(t, husd.Impl.(eos.Asset).Amount, payments[len(payments)-1].Husd.Amount)
+			assert.Equal(t, hvoice.Impl.(eos.Asset).Amount, payments[len(payments)-1].Hvoice.Amount)
 			assert.Assert(t, payments[len(payments)-1].SeedsEscrow.Amount >= payments[len(payments)-2].SeedsEscrow.Amount)
 		}
 	})
@@ -1017,6 +1017,147 @@ func TestAssignmentExtensionProposal(t *testing.T) {
 	})
 }
 
+func TestAssignmentEditProposal(t *testing.T) {
+	teardownTestCase := setupTestCase(t)
+	defer teardownTestCase(t)
+
+	env = SetupEnvironment(t)
+	t.Log(env.String())
+	t.Log("\nDAO Environment Setup complete\n")
+
+	balances = append(balances, NewBalance())
+
+	// roles
+	proposer := env.Members[0]
+	assignee := env.Members[0]
+	closer := env.Members[0]
+
+	t.Run("Test Assignment Edit", func(t *testing.T) {
+
+		tests := []struct {
+			name       string
+			roleTitle  string
+			title      string
+			role       string
+			assignment string
+			edit       string
+			failedit   string
+			husd       string
+			hypha      string
+			hvoice     string
+			usd        string
+		}{
+			{
+				name:       "role2 - 100% commit, 70% deferred",
+				roleTitle:  "Underwater Basketweaver",
+				title:      "Underwater Basketweaver - Atlantic",
+				role:       role2,
+				assignment: assignment2,
+				edit:       assignment2_edit,
+				failedit:   fail_assignment2_edit,
+				// husd:       "455.85 HUSD",
+				// hypha:      "265.91 HYPHA",
+				// hvoice:     "3039.00 HVOICE",
+				// usd:        "1519.50 USD",
+			},
+		}
+
+		for _, test := range tests {
+
+			t.Log("\n\nStarting test: ", test.name)
+			role := CreateRole(t, env, proposer, closer, test.role)
+
+			trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, env.Periods[0].Hash, test.assignment)
+			t.Log("Assignment proposed: ", trxID)
+			assert.NilError(t, err)
+
+			// retrieve the document we just created
+			assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
+			assert.NilError(t, err)
+			assert.Equal(t, assignment.Creator, proposer.Member)
+
+			fv, err := assignment.GetContent("title")
+			assert.NilError(t, err)
+			assert.Equal(t, fv.String(), test.title)
+
+			originalPeriodCount, err := assignment.GetContent("period_count")
+			assert.NilError(t, err)
+			assert.Equal(t, originalPeriodCount.Impl.(int64), int64(10))
+
+			// verify that the edges are created correctly
+			// Graph structure post creating proposal:
+			// root 		---proposal---> 	propDocument
+			// member 		---owns-------> 	propDocument
+			// propDocument ---ownedby----> 	member
+			checkEdge(t, env, env.Root, assignment, eos.Name("proposal"))
+			checkEdge(t, env, proposer.Doc, assignment, eos.Name("owns"))
+			checkEdge(t, env, assignment, proposer.Doc, eos.Name("ownedby"))
+
+			voteToPassTD(t, env, assignment)
+
+			t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
+			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
+			assert.NilError(t, err)
+
+			pause(t, 1000000000, "", "Waiting before fetching assignment again")
+
+			// Assignment hash will change due origina_approved_date item begin added the first time
+			// we claim with an old assignment
+			assignment, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
+			assert.NilError(t, err)
+
+			// verify that the edges are created correctly
+			// Graph structure post creating proposal:
+			// update graph edges:
+			//  member          ---- assigned           ---->   role_assignment
+			//  role_assignment ---- assignee           ---->   member
+			//  role_assignment ---- role               ---->   role
+			//  role            ---- role_assignment    ---->   role_assignment
+			checkEdge(t, env, assignee.Doc, assignment, eos.Name("assigned"))
+			checkEdge(t, env, assignment, assignee.Doc, eos.Name("assignee"))
+			checkEdge(t, env, assignment, role, eos.Name("role"))
+			checkEdge(t, env, role, assignment, eos.Name("assignment"))
+
+			//  root ---- passedprops        ---->   role_assignment
+			checkEdge(t, env, env.Root, assignment, eos.Name("passedprops"))
+
+			trxID, err = dao.ProposeEdit(env.ctx, &env.api, env.DAO, assignee.Member, assignment, test.edit)
+			assert.NilError(t, err)
+
+			// retrieve the document we just created
+			editProp, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
+			assert.NilError(t, err)
+			assert.Equal(t, editProp.Creator, proposer.Member)
+
+			voteToPassTD(t, env, editProp)
+
+			t.Log("Member: ", closer.Member, " is closing extension proposal	: ", editProp.Hash.String())
+			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, editProp.Hash)
+			assert.NilError(t, err)
+
+			pause(t, 1000000000, "", "Waiting before fetching assignment again")
+
+			assignment, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
+			assert.NilError(t, err)
+
+			newPeriodCount, err := editProp.GetContent("period_count")
+			assert.NilError(t, err)
+
+			newPeriodCountValue, err := newPeriodCount.Int64()
+			assert.NilError(t, err)
+
+			assert.Equal(t, int64(12), newPeriodCountValue)
+
+			pause(t, 10*env.PeriodPause, "", "Waiting before fetching assignment again")
+
+			//Wait for all the periods to finish
+			//Should fail since this assignment is now expired
+			trxID, err = dao.ProposeEdit(env.ctx, &env.api, env.DAO, assignee.Member, assignment, test.failedit)
+			assert.ErrorContains(t, err, "There has to be at least 1 remaining period before editing an assignment")
+		}
+	})
+}
+
 const base_assigment_adjust_x1 = `
 {
   "content_groups": [
@@ -1130,7 +1271,7 @@ const assignment2 = `{
                 "label": "period_count",
                 "value": [
                     "int64",
-                    25
+                    10
                 ]
             },
             {
@@ -1437,3 +1578,83 @@ const assignment8 = `{
         ]
     ]
 }`
+
+const assignment2_edit = `
+{
+	"content_groups": [
+			[
+					{
+							"label": "content_group_label",
+							"value": [
+									"string",
+									"details"
+							]
+					},
+					{
+							"label": "title",
+							"value": [
+									"string",
+									"Edited title"
+							]
+					},
+					{
+							"label": "description",
+							"value": [
+									"string",
+									"New description"
+							]
+					},
+					{
+						"label": "ballot_title",
+							"value": [
+									"string",
+									"Proposal to edit xxxx"
+						]
+					},
+					{
+						"label": "ballot_description",
+							"value": [
+									"string",
+									"Description of the proposal"
+						]
+					},
+					{
+							"label": "period_count",
+							"value": [
+									"int64",
+									12
+							]
+					}
+			]
+	]
+}
+`
+const fail_assignment2_edit = `
+{
+	"content_groups": [
+			[
+					{
+							"label": "content_group_label",
+							"value": [
+									"string",
+									"details"
+							]
+					},
+					{
+							"label": "ballot_title",
+							"value": [
+									"string",
+									"Extend assignment periods"
+							]
+					},
+					{
+							"label": "period_count",
+							"value": [
+									"int64",
+									28
+							]
+					}
+			]
+	]
+}
+`

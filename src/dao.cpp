@@ -80,14 +80,14 @@ namespace hypha
       /**
       * Checks if the assignment has the original_approved_date item
       */
-      if (auto [_, approvedItem] = assignment.getContentWrapper().get(DETAILS, common::APPROVED_DATE); 
+      if (auto [_, approvedItem] = assignment.getContentWrapper().get(SYSTEM, common::APPROVED_DATE); 
           approvedItem == nullptr) 
       {
         auto approvedDate = assignment.getApprovedTime();
 
-        auto details = assignment.getContentWrapper().getGroupOrFail(DETAILS);
+        auto system = assignment.getContentWrapper().getGroupOrFail(SYSTEM);
 
-        ContentWrapper::insertOrReplace(*details, Content{common::APPROVED_DATE, approvedDate});
+        ContentWrapper::insertOrReplace(*system, Content{common::APPROVED_DATE, approvedDate});
         
         auto newDoc = getGraph().updateDocument(assignment.getCreator(), 
                                                 assignment.getHash(),
@@ -613,14 +613,14 @@ namespace hypha
         /**
         * Checks if the assignment has the original_approved_date item
         */
-        if (auto [_, approvedItem] = assignment.getContentWrapper().get(DETAILS, common::APPROVED_DATE); 
+        if (auto [_, approvedItem] = assignment.getContentWrapper().get(SYSTEM, common::APPROVED_DATE); 
             approvedItem == nullptr) 
         {
           auto approvedDate = assignment.getApprovedTime();
 
-          auto details = assignment.getContentWrapper().getGroupOrFail(DETAILS);
+          auto system = assignment.getContentWrapper().getGroupOrFail(SYSTEM);
 
-          ContentWrapper::insertOrReplace(*details, Content{common::APPROVED_DATE, approvedDate});
+          ContentWrapper::insertOrReplace(*system, Content{common::APPROVED_DATE, approvedDate});
           
           auto newDoc = getGraph().updateDocument(assignment.getCreator(), 
                                                   assignment.getHash(),

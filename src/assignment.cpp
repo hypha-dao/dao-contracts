@@ -131,7 +131,7 @@ namespace hypha
             return std::get<eosio::time_point>(legacyCreatedDate->value);
         }
         //All assignments should eventually contain this item 
-        else if (auto [approvedIdx, approvedDate] = cw.get(detailsIdx, common::APPROVED_DATE);
+        else if (auto [approvedIdx, approvedDate] = cw.get(SYSTEM, common::APPROVED_DATE);
                  approvedDate)
         {
           return approvedDate->getAs<eosio::time_point>();

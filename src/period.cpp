@@ -122,4 +122,24 @@ namespace hypha
         eosio::check(exists, "End of calendar has been reached. Contact administrator to add more time periods.");
         return Period(m_dao, period.getToNode());
     }
+
+    Period Period::getNthPeriodAfter(int64_t count)
+    {
+        Period next = *this;
+
+        while (count-- > 0)
+        {
+            if (auto [hasNext, edge] = Edge::getIfExists(m_dao->get_self(), next.getHash(), common::NEXT);
+                hasNext) 
+            {
+                next = Period(m_dao, edge.getToNode());
+            }
+            else
+            {
+                eosio::check(false, "End of calendar has been reached. Contact administrator to add more time periods.");
+            }
+        }
+
+        return next;
+    }
 } // namespace hypha

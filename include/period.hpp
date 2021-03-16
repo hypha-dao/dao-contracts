@@ -36,6 +36,8 @@ namespace hypha
 
         Period next();
 
+        Period getNthPeriodAfter(int64_t count);
+
         static Period asOf(dao *dao, eosio::time_point moment);
         static Period current(dao *dao);
         bool isEnd();
