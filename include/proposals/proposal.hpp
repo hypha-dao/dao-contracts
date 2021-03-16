@@ -39,14 +39,20 @@ namespace hypha
 
         ContentGroup makeSystemGroup(const name &proposer,
                                        const name &proposal_type,
-                                       const string &proposal_title);
+                                       const string &decide_title,
+                                       const string &decide_desc,
+                                       const string &decide_content);
 
         ContentGroup makeBallotGroup();
         ContentGroup makeBallotOptionsGroup();
 
+        name registerBallot(const name &proposer,
+                            const std::map<string, string> &strings);
         void updateVoteTally(Document& proposal, const eosio::name creator);
 
         bool didPass(const eosio::checksum256 &tallyHash);
+        name registerBallot(const name &proposer,
+                            const string &title, const string &description, const string &content);
 
     private:
         bool oldDidPass(const eosio::name &ballotId);
