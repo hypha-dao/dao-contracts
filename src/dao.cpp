@@ -135,9 +135,9 @@ namespace hypha
       int64_t periodEndSec = periodToClaim.value().getEndTime().sec_since_epoch();
 
       // Pro-rate the payment if the assignment was created during the period being claimed
-      float first_phase_ratio_calc = 1.f; // pro-rate based on elapsed % of the first phase
+      //float first_phase_ratio_calc = 1.f; // pro-rate based on elapsed % of the first phase
 
-      eosio::check(first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
+      //eosio::check(first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
 
       asset deferredSeeds;
       asset husd;
@@ -216,13 +216,13 @@ namespace hypha
             // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
             // If there is an explicit INSTANT SEEDS amount, support sending it
             husd = (husd.is_valid() ? husd : eosio::asset{0, common::S_HUSD}) +
-                   adjustAsset(assignment.getSalaryAmount(&common::S_HUSD), first_phase_ratio_calc * commitmentMultiplier);
+                   adjustAsset(assignment.getSalaryAmount(&common::S_HUSD), commitmentMultiplier);
 
             hvoice = (hvoice.is_valid() ? hvoice : eosio::asset{0, common::S_HVOICE}) +
-                     adjustAsset(assignment.getSalaryAmount(&common::S_HVOICE), first_phase_ratio_calc * commitmentMultiplier);
+                     adjustAsset(assignment.getSalaryAmount(&common::S_HVOICE), commitmentMultiplier);
 
             hypha = (hypha.is_valid() ? hypha : eosio::asset{0, common::S_HYPHA}) +
-                    adjustAsset(assignment.getSalaryAmount(&common::S_HYPHA), first_phase_ratio_calc * commitmentMultiplier);
+                    adjustAsset(assignment.getSalaryAmount(&common::S_HYPHA), commitmentMultiplier);
          }
 
          //If the last used time share is different from current time share
