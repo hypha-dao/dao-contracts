@@ -20,6 +20,7 @@ namespace hypha
 
         Document propose(const eosio::name &proposer, ContentGroups &contentGroups);
 
+        void vote(const eosio::name &voter, const std::string vote, Document& proposal);
         void close(Document &proposal);
 
         dao &m_dao;
@@ -42,12 +43,19 @@ namespace hypha
                                        const string &decide_desc,
                                        const string &decide_content);
 
-        bool didPass(const name &ballot_id);
+        ContentGroup makeBallotGroup();
+        ContentGroup makeBallotOptionsGroup();
 
         name registerBallot(const name &proposer,
                             const std::map<string, string> &strings);
+        void updateVoteTally(Document& proposal, const eosio::name creator);
 
+        bool didPass(const eosio::checksum256 &tallyHash);
         name registerBallot(const name &proposer,
                             const string &title, const string &description, const string &content);
+
+    private:
+        bool oldDidPass(const eosio::name &ballotId);
+
     };
 } // namespace hypha

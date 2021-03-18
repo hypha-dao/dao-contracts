@@ -131,6 +131,28 @@ func ClaimNextPeriod(t *testing.T, env *Environment, claimer eos.AccountName, as
 	return trxID, err
 }
 
+type AdjustData struct {
+	Issuer     eos.AccountName         `json:"issuer"`
+	AdjustInfo []docgraph.ContentGroup `json:"adjust_info"`
+}
+
+func AdjustCommitment(env *Environment, assignee eos.AccountName, adjustInfo []docgraph.ContentGroup) (string, error) {
+
+	actions := []*eos.Action{{
+		Account: env.DAO,
+		Name:    eos.ActN("adjustcmtmnt"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: assignee, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionData(AdjustData{
+			Issuer:     assignee,
+			AdjustInfo: adjustInfo,
+		}),
+	}}
+
+	return eostest.ExecTrx(env.ctx, &env.api, actions)
+}
+
 func pause(t *testing.T, seconds time.Duration, headline, prefix string) {
 	if headline != "" {
 		t.Log(headline)
@@ -180,14 +202,16 @@ func CreateAssignment(t *testing.T, env *Environment, role *docgraph.Document,
 	checkEdge(t, env, proposer.Doc, assignment, eos.Name("owns"))
 	checkEdge(t, env, assignment, proposer.Doc, eos.Name("ownedby"))
 
-	ballot, err := assignment.GetContent("ballot_id")
-	assert.NilError(t, err)
-	voteToPassTD(t, env, ballot.Impl.(eos.Name))
+	voteToPassTD(t, env, assignment)
 
 	t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
 	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
 	assert.NilError(t, err)
 
+	pause(t, 1000000000, "", "Waiting before fetching role")
+	assignment, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
+	assert.NilError(t, err)
+	assert.Equal(t, assignment.Creator, proposer.Member)
 	// verify that the edges are created correctly
 	// Graph structure post creating proposal:
 	// update graph edges:
@@ -214,22 +238,31 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content
 	assert.NilError(t, err)
 	assert.Equal(t, role.Creator, proposer.Member)
 
+	votetally, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("votetally"))
+	assert.NilError(t, err)
+
 	// verify that the edges are created correctly
 	// Graph structure post creating proposal:
 	// root 		---proposal---> 	propDocument
 	// member 		---owns-------> 	propDocument
 	// propDocument ---ownedby----> 	member
+	// propDocument ---votetally-->     voteTally
 	checkEdge(t, env, env.Root, role, eos.Name("proposal"))
 	checkEdge(t, env, proposer.Doc, role, eos.Name("owns"))
 	checkEdge(t, env, role, proposer.Doc, eos.Name("ownedby"))
+	checkEdge(t, env, role, votetally, eos.Name("votetally"))
 
-	ballot, err := role.GetContent("ballot_id")
-	assert.NilError(t, err)
-	voteToPassTD(t, env, ballot.Impl.(eos.Name))
+	voteToPassTD(t, env, role)
 
 	t.Log("Member: ", closer.Member, " is closing role proposal	: ", role.Hash.String())
 	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)
 	assert.NilError(t, err)
+
+	pause(t, 1000000000, "", "Waiting before fetching role")
+	//Must fetch again since the hash changes on proposal close
+	role, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("role"))
+	assert.NilError(t, err)
+	assert.Equal(t, role.Creator, proposer.Member)
 
 	// verify that the edges are created correctly
 	// Graph structure post creating proposal:
@@ -304,16 +337,49 @@ func checkEdge(t *testing.T, env *Environment, fromEdge, toEdge docgraph.Documen
 	assert.Check(t, exists)
 }
 
-func voteToPassTD(t *testing.T, env *Environment, ballot eos.Name) {
-	t.Log("Voting all members to 'pass' on ballot: " + ballot)
-
-	_, err := dao.TelosDecideVote(env.ctx, &env.api, env.TelosDecide, env.Alice.Member, ballot, eos.Name("pass"))
+func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, voter Member) docgraph.Document {
+	// Wait 1s - If we don't, some Edges are not found.
+	pause(t, 1000000000, "", "Waiting before fetching last vote")
+	vote, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("vote"))
 	assert.NilError(t, err)
 
+	// verify that the edges are created correctly
+	// Graph structure post voting:
+	// voter 		---vote-------> 	vote
+	// propDocument ---vote-------> 	vote
+	// vote			---ownedby----> 	voter
+	// vote		    ---voteon----->     propDocument
+	checkEdge(t, env, voter.Doc, vote, eos.Name("vote"))
+	checkEdge(t, env, proposal, vote, eos.Name("vote"))
+	checkEdge(t, env, vote, voter.Doc, eos.Name("ownedby"))
+	checkEdge(t, env, vote, proposal, eos.Name("voteon"))
+
+	return vote
+}
+
+func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document) {
+	proposal_hash := proposal.Hash
+	t.Log("Voting all members to 'pass' on proposal: " + proposal_hash.String())
+
+	_, err := dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", proposal_hash)
+	assert.NilError(t, err)
+	checkLastVote(t, env, proposal, env.Alice)
+
 	for _, member := range env.Members {
-		_, err = dao.TelosDecideVote(env.ctx, &env.api, env.TelosDecide, member.Member, ballot, eos.Name("pass"))
+		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, member.Member, "pass", proposal_hash)
 		assert.NilError(t, err)
+		checkLastVote(t, env, proposal, member)
 	}
-	t.Log("Allowing the ballot voting period to lapse")
-	pause(t, env.VotingPause, "", "Voting...")
+}
+
+func ReplaceContent(d *docgraph.Document, label string, value *docgraph.FlexValue) error {
+	for _, contentGroup := range d.ContentGroups {
+		for i := range contentGroup {
+			if contentGroup[i].Label == label {
+				contentGroup[i].Value = value
+				return nil
+			}
+		}
+	}
+	return nil
 }

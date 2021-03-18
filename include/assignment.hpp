@@ -8,6 +8,7 @@
 namespace hypha
 {
     class dao;
+    class TimeShare;
 
     class Assignment : public Document
     {
@@ -20,20 +21,21 @@ namespace hypha
         Member getAssignee();
         eosio::name &getType();
         eosio::time_point getApprovedTime();
+        int64_t getPeriodCount();
 
-        eosio::asset getSalaryAmount (const eosio::symbol* symbol, Period* period);
         eosio::asset getSalaryAmount (const eosio::symbol* symbol);
 
-        eosio::asset calcDSeedsSalary (Period* period);
+        TimeShare getInitialTimeShare();
+        TimeShare getCurrentTimeShare();
+        TimeShare getLastTimeShare();
+
         eosio::asset calcLiquidSeedsSalary ();
         eosio::asset calcHusdSalary ();
         eosio::asset calcHyphaSalary ();
 
         dao *m_dao;
-        // ContentWrapper contentWrapper;
 
     private: 
         eosio::asset getAsset (const symbol* symbol, const std::string &key);
-       
     };
 } // namespace hypha

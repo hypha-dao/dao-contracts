@@ -9,6 +9,7 @@ add_contract( dao dao
                 period.cpp
                 member.cpp
                 assignment.cpp
+                time_share.cpp
                 payers/payer.cpp
                 payers/escrow_payer.cpp
                 payers/husd_payer.cpp
@@ -20,6 +21,7 @@ add_contract( dao dao
                 proposals/role_proposal.cpp
                 proposals/badge_proposal.cpp
                 proposals/badge_assignment_proposal.cpp
+                proposals/ass_extend_proposal.cpp
                 proposals/assignment_proposal.cpp
                 proposals/payout_proposal.cpp
                 proposals/attestation_proposal.cpp

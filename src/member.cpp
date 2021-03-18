@@ -7,22 +7,24 @@
 #include <document_graph/util.hpp>
 #include <payers/payer.hpp>
 #include <util.hpp>
+#include <dao.hpp>
+#include <payers/payer.hpp>
 
 namespace hypha
 {
-    Member::Member(const eosio::name contract, const eosio::name &creator, const eosio::name &member)
-        : Document(contract, contract, defaultContent(member))
+    Member::Member(dao& dao, const eosio::name &creator, const eosio::name &member)
+        : Document(dao.get_self(), dao.get_self(), defaultContent(member)), m_dao(dao)
     {
     }
 
-    Member::Member(const eosio::name contract, const eosio::checksum256 &hash)
-        : Document(contract, hash)
+    Member::Member(dao& dao, const eosio::checksum256 &hash)
+        : Document(dao.get_self(), hash), m_dao(dao)
     {
     }
 
-    Member Member::get(const eosio::name &contract, const eosio::name &member)
+    Member Member::get(dao& dao, const eosio::name &member)
     {
-        return Member(contract, Member::calcHash(member));
+        return Member(dao, Member::calcHash(member));
     }
 
     ContentGroups Member::defaultContent(const eosio::name &member)
@@ -90,6 +92,18 @@ namespace hypha
             eosio::name("trailservice"), eosio::name("mint"),
             std::make_tuple(getAccount(), genesis_voice, memo))
             .send();
+
+
+        // TODO: issue new HVOICE token here
+        // name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
+
+        // hypha::issueToken(
+        //     hyphaHvoice,
+        //     getContract(),
+        //     getAccount(),
+        //     genesis_voice,
+        //     memo
+        // );
 
         Document paymentReceipt(getContract(), getContract(), Payer::defaultReceipt(getAccount(), genesis_voice, memo));
 

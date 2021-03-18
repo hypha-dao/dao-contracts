@@ -2,7 +2,6 @@ package dao_test
 
 import (
 	"testing"
-
 	"github.com/hypha-dao/document-graph/docgraph"
 )
 

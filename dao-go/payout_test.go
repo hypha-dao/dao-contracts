@@ -44,7 +44,7 @@ func TestPayoutProposal(t *testing.T) {
 				deferred:            75,
 				payout:              payout1,
 				expectedHusd:        "2500.00 HUSD",
-				expectedHvoice:      "10001.00 HVOICE", // member has one HVOICE to start
+				expectedHvoice:      "10000.00 HVOICE",
 				expectedHypha:       "1875.00 HYPHA",
 				expectedSeedsEscrow: "380069.2480 SEEDS",
 			},
@@ -56,7 +56,7 @@ func TestPayoutProposal(t *testing.T) {
 				deferred:            55,
 				payout:              payout1,
 				expectedHusd:        "3.26 HUSD",
-				expectedHvoice:      "8.25 HVOICE", // member has one HVOICE to start
+				expectedHvoice:      "7.25 HVOICE",
 				expectedHypha:       "0.99 HYPHA",
 				expectedSeedsEscrow: "201.6900 SEEDS",
 			},
@@ -68,7 +68,7 @@ func TestPayoutProposal(t *testing.T) {
 				deferred:            0,
 				payout:              payout1,
 				expectedHusd:        "155.23 HUSD",
-				expectedHvoice:      "156.23 HVOICE", // member has one HVOICE to start
+				expectedHvoice:      "155.23 HVOICE",
 				expectedHypha:       "0.00 HYPHA",
 				expectedSeedsEscrow: "0.0000 SEEDS",
 			},
@@ -102,9 +102,7 @@ func TestPayoutProposal(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			ballot, err := payout.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+			voteToPassTD(t, env, payout)
 
 			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
@@ -134,7 +132,7 @@ func TestPayoutProposal(t *testing.T) {
 
 			balance := GetBalance(t, env, test.recipient.Member)
 			assert.Equal(t, balance.Husd.Amount, expectedHusdAsset.Amount)
-			assert.Equal(t, balance.Hvoice.Amount, expectedHvoiceAsset.Amount)
+			assert.Equal(t, balance.Hvoice.Amount, expectedHvoiceAsset.Amount + eos.Int64(env.GenesisHVOICE))
 			assert.Equal(t, balance.Hypha.Amount, expectedHyphaAsset.Amount)
 			// assert.Equal(t, balance.SeedsEscrow.Amount, expectedSeedsEscrowAsset.Amount)
 
@@ -177,7 +175,7 @@ func TestPayoutHistoricalPeriod(t *testing.T) {
 				deferred:            75,
 				payout:              payout_historical,
 				expectedHusd:        "2500.00 HUSD",
-				expectedHvoice:      "10001.00 HVOICE", // member has one HVOICE to start
+				expectedHvoice:      "10000.00 HVOICE",
 				expectedHypha:       "1875.00 HYPHA",
 				expectedSeedsEscrow: "380069.2480 SEEDS",
 			},
@@ -210,9 +208,7 @@ func TestPayoutHistoricalPeriod(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			ballot, err := payout.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+			voteToPassTD(t, env, payout)
 
 			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
@@ -242,7 +238,7 @@ func TestPayoutHistoricalPeriod(t *testing.T) {
 
 			balance := GetBalance(t, env, test.recipient.Member)
 			assert.Equal(t, balance.Husd.Amount, expectedHusdAsset.Amount)
-			assert.Equal(t, balance.Hvoice.Amount, expectedHvoiceAsset.Amount)
+			assert.Equal(t, balance.Hvoice.Amount, expectedHvoiceAsset.Amount + eos.Int64(env.GenesisHVOICE))
 			assert.Equal(t, balance.Hypha.Amount, expectedHyphaAsset.Amount)
 			// assert.Equal(t, balance.SeedsEscrow.Amount, expectedSeedsEscrowAsset.Amount)
 
@@ -280,7 +276,7 @@ func TestCustomPayout(t *testing.T) {
 				recipient:           env.Members[0],
 				payout:              payout_custom,
 				expectedHusd:        "12.50 HUSD",
-				expectedHvoice:      "2.50 HVOICE", // member has one HVOICE to start
+				expectedHvoice:      "1.50 HVOICE",
 				expectedHypha:       "0.00 HYPHA",
 				expectedSeedsEscrow: "400.0000 SEEDS",
 			},
@@ -330,9 +326,7 @@ func TestCustomPayout(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			ballot, err := payout.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+			voteToPassTD(t, env, payout)
 
 			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
@@ -362,7 +356,7 @@ func TestCustomPayout(t *testing.T) {
 
 			balance := GetBalance(t, env, test.recipient.Member)
 			assert.Equal(t, balance.Husd.Amount, expectedHusdAsset.Amount)
-			assert.Equal(t, balance.Hvoice.Amount, expectedHvoiceAsset.Amount)
+			assert.Equal(t, balance.Hvoice.Amount, expectedHvoiceAsset.Amount + eos.Int64(env.GenesisHVOICE))
 			assert.Equal(t, balance.Hypha.Amount, expectedHyphaAsset.Amount)
 			// assert.Equal(t, balance.SeedsEscrow.Amount, expectedSeedsEscrowAsset.Amount)
 
@@ -442,9 +436,7 @@ func TestUnknownAssetPayout(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			ballot, err := payout.GetContent("ballot_id")
-			assert.NilError(t, err)
-			voteToPassTD(t, env, ballot.Impl.(eos.Name))
+			voteToPassTD(t, env, payout)
 
 			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
 			_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)

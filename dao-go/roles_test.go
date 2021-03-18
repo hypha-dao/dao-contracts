@@ -103,7 +103,7 @@ const role1 = `{
                 "label": "min_time_share_x100",
                 "value": [
                   "int64",
-                  100
+                  50
                 ]
             },
             {

@@ -45,15 +45,22 @@ namespace common
     static constexpr name ATTESTATION = name("attestation");
     static constexpr name EDIT = name("edit");
     static constexpr name ORIGINAL = name("original");
+    static constexpr name EXTENSION = name("extension");
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
+    constexpr        auto APPROVED_DATE = "original_approved_date";
+    constexpr        auto BALLOT_TITLE = "ballot_title";
+    constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
     static constexpr name PERIOD = name("period");
     static constexpr name START = name ("start");
     static constexpr name NEXT = name ("next");
     static constexpr name PAYMENT = name("payment");
     static constexpr name PAID = name ("paid");
     static constexpr name CLAIMED = name ("claimed");
+
+    static constexpr name VOTE = name ("vote");
+    static constexpr name VOTE_ON = name ("voteon");
 
     // document types
     static constexpr name ALERT = name ("alert");
@@ -70,6 +77,16 @@ namespace common
     static constexpr name BALLOT_TYPE_TELOS_DECIDE = name("telosdecide");
 
     static constexpr name GROUP_TYPE_OPTION = name("option");
+
+    constexpr name LAST_TIME_SHARE = name("lastimeshare");
+    constexpr name CURRENT_TIME_SHARE = name("curtimeshare");
+    constexpr name INIT_TIME_SHARE = name("initimeshare");
+    constexpr name NEXT_TIME_SHARE = name("nextimeshare");
+    constexpr name TIME_SHARE_LABEL = name("timeshare");
+
+    static constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
+    static constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
+    static constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
 
 // content keys
 // keys used with settings
@@ -108,6 +125,8 @@ namespace common
 #define ASSIGNMENT_STRING "assignment"
 #define SYSTEM "system"
 #define BALLOT_ID "ballot_id"
+#define BALLOT "ballot"
+#define BALLOT_OPTIONS "ballot_options"
 #define BALLOT_TYPE "ballot_type"
 
 // setting document
@@ -117,6 +136,8 @@ namespace common
 #define HUSD_TOKEN_CONTRACT "husd_token_contract"
 #define TREASURY_CONTRACT "treasury_contract"
 #define HYPHA_TOKEN_CONTRACT "hypha_token_contract"
+#define HVOICE_TOKEN_CONTRACT "hvoice_token_contract"
+
 #define UPDATED_DATE "updated_date"
 #define SEEDS_DEFERRAL_FACTOR_X100 "seeds_deferral_factor_x100"
 #define HYPHA_DEFERRAL_FACTOR_X100 "hypha_deferral_factor_x100"
@@ -143,9 +164,11 @@ namespace common
 
 #define EVENT "event"
 
+#define TIME_SHARE_START_DATE "start_date"
 #define FULL_TIME_CAPACITY "fulltime_capacity_x100"
 #define ANNUAL_USD_SALARY "annual_usd_salary"
 #define TIME_SHARE "time_share_x100"
+#define NEW_TIME_SHARE "new_time_share_x100"
 #define MIN_TIME_SHARE "min_time_share_x100"
 #define MIN_DEFERRED "min_deferred_x100"
 #define DEFERRED "deferred_perc_x100"
@@ -156,5 +179,10 @@ namespace common
 #define HUSD_SALARY_PER_PERIOD "husd_salary_per_phase"
 #define HVOICE_SALARY_PER_PERIOD "hvoice_salary_per_phase"
 #define SETTINGS "settings"
+
+#define VOTE_POWER "vote_power"
+#define VOTE_LABEL "vote"
+#define VOTER_LABEL "voter"
+#define EXPIRATION_LABEL "expiration"
 
 }; // namespace common

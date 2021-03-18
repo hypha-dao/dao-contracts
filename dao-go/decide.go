@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"time"
 
 	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
@@ -192,6 +193,67 @@ func RegVoter(ctx context.Context, api *eos.API, telosDecide, registrant eos.Acc
 		Name:    eos.ActN("regvoter"),
 		Authorization: []eos.PermissionLevel{
 			{Actor: registrant, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
+	}}
+
+	return eostest.ExecTrx(ctx, api, actions)
+}
+
+func CreateBallot(ctx context.Context, api *eos.API, telosDecide, creator eos.AccountName, ballotId string) (string, error) {
+	hvoice, _ := eos.NewAssetFromString("1.00 HVOICE")
+
+	actionData := make(map[string]interface{})
+	actionData["ballot_name"] = ballotId
+	actionData["category"] = "poll"
+	actionData["publisher"] = creator
+	actionData["treasury_symbol"] = hvoice.Symbol.String()
+	actionData["voting_method"] = "1token1vote"
+	actionData["initial_options"] = []string{
+		"pass",
+		"fail",
+		"abstain",
+	}
+
+	actionBinary, err := api.ABIJSONToBin(ctx, telosDecide, eos.Name("newballot"), actionData)
+	if err != nil {
+		return "abi error", err
+	}
+
+	actions := []*eos.Action{{
+		Account: telosDecide,
+		Name:    eos.ActN("newballot"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: creator, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
+	}}
+
+	return eostest.ExecTrx(ctx, api, actions)
+}
+
+func OpenBallot(ctx context.Context, api *eos.API, telosDecide, creator eos.AccountName, ballotId string, expiration int) (string, error) {
+
+	endtime := time.Now().UTC().Add(time.Second * time.Duration(expiration)).Format(time.RFC3339)
+	sz := len(endtime)
+	if sz > 0 && endtime[sz-1] == 'Z' {
+		endtime = endtime[:sz-1]
+	}
+
+	actionData := make(map[string]interface{})
+	actionData["ballot_name"] = ballotId
+	actionData["end_time"] = endtime
+
+	actionBinary, err := api.ABIJSONToBin(ctx, telosDecide, eos.Name("openvoting"), actionData)
+	if err != nil {
+		return "abi error", err
+	}
+
+	actions := []*eos.Action{{
+		Account: telosDecide,
+		Name:    eos.ActN("openvoting"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: creator, Permission: eos.PN("active")},
 		},
 		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
 	}}

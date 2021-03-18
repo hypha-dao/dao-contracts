@@ -6,16 +6,19 @@
 
 namespace hypha
 {
+
+    class dao;
+
     class Member : public Document
     {
     public:
-        Member(const eosio::name contract, const eosio::name &creator, const eosio::name &member);
-        Member(const eosio::name contract, const eosio::checksum256 &hash);
+        Member(dao& dao, const eosio::name &creator, const eosio::name &member);
+        Member(dao& dao, const eosio::checksum256 &hash);
 
-        static Member get (const eosio::name &contract, const eosio::name &member);
+        static Member get (dao& dao, const eosio::name &member);
 
         static const bool isMember(const eosio::name &rootNode, const eosio::name &member);
-        static Member getOrNew (eosio::name contract, const eosio::name &creator, const eosio::name &member);
+        static Member getOrNew (dao& dao, const eosio::name &creator, const eosio::name &member);
         static const eosio::checksum256 calcHash(const eosio::name &member);
 
         eosio::name getAccount ();
@@ -24,5 +27,6 @@ namespace hypha
 
     private: 
         static ContentGroups defaultContent (const eosio::name &member);
+        dao& m_dao;
     };
 } // namespace hypha

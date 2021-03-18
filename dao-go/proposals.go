@@ -15,6 +15,13 @@ type CloseDocProp struct {
 	ProposalHash eos.Checksum256 `json:"proposal_hash"`
 }
 
+//VoteProposal votes for a proposal (native ballot)
+type VoteProposal struct {
+	Voter        eos.AccountName `json:"voter"`
+	ProposalHash eos.Checksum256 `json:"proposal_hash"`
+	Vote         string          `json:"vote"`
+}
+
 // Vote represents a set of options being cast as a vote to Telos Decide
 type Vote struct {
 	Voter      eos.AccountName `json:"voter"`
@@ -242,6 +249,30 @@ func ProposeAssignment(ctx context.Context, api *eos.API,
 	})
 }
 
+func ProposeAssExtension(ctx context.Context, api *eos.API,
+	contract, proposer eos.AccountName, assignmentHash string, additionalPeriods int) (string, error) {
+
+	actionData := make(map[string]interface{})
+	actionData["assignment_hash"] = assignmentHash
+	actionData["additional_periods"] = additionalPeriods
+
+	actionBinary, err := api.ABIJSONToBin(ctx, contract, eos.Name("proposeextend"), actionData)
+	if err != nil {
+		return string(""), fmt.Errorf("ProposeBadge : %v", err)
+	}
+
+	actions := []*eos.Action{{
+		Account: contract,
+		Name:    eos.ActN("proposeextend"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: proposer, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
+	}}
+
+	return eostest.ExecTrx(ctx, api, actions)
+}
+
 // ProposeBadge proposes the badge to the specified DAO contract
 func ProposeBadge(ctx context.Context, api *eos.API, contract, proposer eos.AccountName, content string) (string, error) {
 
@@ -346,6 +377,28 @@ func DocumentVote(ctx context.Context, api *eos.API,
 	startPeriod, endPeriod uint64) error {
 
 	return nil
+}
+
+// ProposalVote
+func ProposalVote(
+	ctx context.Context, api *eos.API,
+	contract, voter eos.AccountName,
+	vote string, proposalHash eos.Checksum256) (string, error) {
+
+	actions := []*eos.Action{{
+		Account: contract,
+		Name:    eos.ActN("vote"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: voter, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionData(&VoteProposal{
+			Voter:        voter,
+			ProposalHash: proposalHash,
+			Vote:         vote,
+		}),
+	}}
+
+	return eostest.ExecTrx(ctx, api, actions)
 }
 
 // CloseProposal ...

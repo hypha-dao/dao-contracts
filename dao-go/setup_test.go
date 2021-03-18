@@ -1,5 +1,27 @@
 package dao_test
 
+import "testing"
+
+// import (
+// 	"fmt"
+// 	"io/ioutil"
+// 	"testing"
+
+// 	"github.com/eoscanada/eos-go"
+// 	"github.com/hypha-dao/dao-contracts/dao-go"
+// 	"gotest.tools/assert"
+// )
+
+func TestSetup(t *testing.T) {
+	teardownTestCase := setupTestCase(t)
+	defer teardownTestCase(t)
+
+	env = SetupEnvironment(t)
+
+	t.Log(env.String())
+	t.Log("\nDAO Environment Setup complete\n")
+}
+
 // func TestSetup(t *testing.T) {
 // 	teardownTestCase := setupTestCase(t)
 // 	defer teardownTestCase(t)

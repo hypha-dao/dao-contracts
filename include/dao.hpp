@@ -74,6 +74,7 @@ namespace hypha
       }
 
       ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
+      ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote);
       ACTION closedocprop(const checksum256 &proposal_hash);
       ACTION setsetting(const string &key, const Content::FlexValue &value);
       ACTION remsetting(const string &key);
@@ -82,6 +83,7 @@ namespace hypha
       // ACTION claimpay(const eosio::checksum256 &hash);
       // ACTION claimpayper(const eosio::checksum256 &assignment_hash, const eosio::checksum256 &period_hash);
       ACTION claimnextper(const eosio::checksum256 &assignment_hash);
+      ACTION proposeextend (const eosio::checksum256 &assignment_hash, const int64_t additional_periods);
 
       ACTION apply(const eosio::name &applicant, const std::string &content);
       ACTION enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content);
@@ -126,9 +128,12 @@ namespace hypha
          return def;
       }
 
+      ACTION adjustcmtmnt(name issuer, ContentGroups& adjust_info);
+
       ACTION createroot(const std::string &notes);
       ACTION erasedoc(const eosio::checksum256 &hash);
       ACTION killedge(const uint64_t id);
+      ACTION newedge(eosio::name & creator, const checksum256 &from_node, const checksum256 &to_node, const name &edge_name);
       ACTION updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value);
       // ACTION nbadge (const name& owner, const ContentGroups& contentGroups);
       // ACTION nbadass(const name& owner, const ContentGroups& contentGroups);

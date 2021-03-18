@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
+	"testing"
 	"time"
 
 	eostest "github.com/digital-scarcity/eos-go-test"
@@ -20,6 +21,22 @@ type updateDoc struct {
 	Group string             `json:"group"`
 	Key   string             `json:"key"`
 	Value docgraph.FlexValue `json:"value"`
+}
+
+type docGroups struct {
+	ContentGroups []docgraph.ContentGroup  `json:"content_groups"`
+}
+
+func ReplaceContent2(groups []docgraph.ContentGroup, label string, value *docgraph.FlexValue) error {
+	for _, contentGroup := range groups {
+		for i := range contentGroup {
+			if contentGroup[i].Label == label {
+				contentGroup[i].Value = value
+				return nil
+			}
+		}
+	}
+	return nil
 }
 
 func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountName) error {
@@ -133,8 +150,6 @@ func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountNa
 // UpdatePeriods ...
 func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) error {
 
-	// get all documents
-	// if type is period, update
 	documents, err := docgraph.GetAllDocuments(ctx, api, contract)
 	if err != nil {
 		return fmt.Errorf("cannot get all documents %v", err)
@@ -153,11 +168,8 @@ func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) 
 				return fmt.Errorf("cannot get start_time %v", err)
 			}
 
-			startTimePoint, err := startTime.TimePoint()
-			if err != nil {
-				return fmt.Errorf("cannot get start time_point %v", err)
-			}
-
+			startTimePoint := startTime.Impl.(eos.TimePoint)
+			
 			fmt.Println("Start time point: ", startTimePoint.String())
 			unixTime := time.Unix(int64(startTimePoint)/1000000, 0).UTC()
 			fmt.Println("Starting " + unixTime.Format("2006 Jan 02"))
@@ -488,20 +500,19 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("error retrieving ballot %v", err)
 	}
-
-	_, err = dao.TelosDecideVote(ctx, api, telosDecide, member, ballot.Impl.(eos.Name), eos.Name("pass"))
+	_, err = TelosDecideVote(ctx, api, telosDecide, member, ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : " + string(member))
 	}
 	pause(defaultPause(), "Building block...", "")
 
-	_, err = dao.TelosDecideVote(ctx, api, telosDecide, eos.AN("alice"), ballot.Impl.(eos.Name), eos.Name("pass"))
+	_, err = TelosDecideVote(ctx, api, telosDecide, eos.AN("alice"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : alice")
 	}
 	pause(defaultPause(), "Building block...", "")
 
-	_, err = dao.TelosDecideVote(ctx, api, telosDecide, eos.AN("johnnyhypha1"), ballot.Impl.(eos.Name), eos.Name("pass"))
+	_, err = TelosDecideVote(ctx, api, telosDecide, eos.AN("johnnyhypha1"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : johnnyhypha1")
 	}
@@ -513,7 +524,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 		memberNameIn := "mem" + strconv.Itoa(index) + ".hypha"
 		//memberNameIn := "member" + strconv.Itoa(index)
 
-		_, err := dao.TelosDecideVote(ctx, api, telosDecide, eos.AN(memberNameIn), ballot.Impl.(eos.Name), eos.Name("pass"))
+		_, err := TelosDecideVote(ctx, api, telosDecide, eos.AN(memberNameIn), ballot.Impl.(eos.Name), eos.Name("pass"))
 		if err != nil {
 			return docgraph.Document{}, fmt.Errorf("error voting via telos decide %v", err)
 		}
@@ -534,7 +545,8 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 
 	votingPause := time.Duration((5 + votingPeriodDuration.Impl.(int64)) * 1000000000)
 	pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
-	_, err = dao.CloseProposal(ctx, api, contract, member, proposal.Hash)
+
+	_, err = CloseProposal(ctx, api, contract, member, proposal.Hash)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("cannot close proposal %v", err)
 	}
@@ -610,6 +622,23 @@ func CreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, 
 		ProposalType:  assignmentType,
 		ContentGroups: proposalDoc.ContentGroups,
 	})
+}
+
+//Creates an assignment without the INIT_TIME_SHARE, CURRENT_TIME_SHARE & LAST_TIME_SHARE nodes
+func CreateOldAssignment(t* testing.T, ctx context.Context, api *eos.API, contract, member eos.AccountName, memberDocHash, roleDocHash, startPeriodHash eos.Checksum256, assignment string) (docgraph.Document, error) {
+	
+	_, err := ProposeAssignment(ctx, api, contract, member, member, roleDocHash, startPeriodHash, assignment)
+	if (err != nil) {
+		return docgraph.Document{}, err
+	}
+
+	// retrieve the document we just created
+	proposal, err := docgraph.GetLastDocumentOfEdge(ctx, api, contract, eos.Name("proposal"))
+	if (err != nil) {
+		return docgraph.Document{}, err
+	}
+
+	return proposal, nil
 }
 
 // CreatePayout ...
