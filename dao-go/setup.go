@@ -245,26 +245,26 @@ func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) 
 // CreatePretend ...
 func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName) (docgraph.Document, error) {
 
-	roleFilename := "/Users/max/dev/hypha/daoctl/testing/role.json"
+	roleFilename := "fixtures/role.json"
 	roleData, err := ioutil.ReadFile(roleFilename)
 	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to read file: %v %v", roleFilename, err)
+		return docgraph.Document{}, fmt.Errorf("unable to read file: %v %v", roleFilename, err)
 	}
 
 	role, err := CreateRole(ctx, api, contract, telosDecide, member, roleData)
 	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to create role: %v", err)
+		return docgraph.Document{}, fmt.Errorf("unable to create role: %v", err)
 	}
 	fmt.Println("Created role document	: ", role.Hash.String())
 
-	assignmentData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/assignment.json")
+	assignmentData, err := ioutil.ReadFile("fixtures/assignment.json")
 	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to read file: %v", err)
+		return docgraph.Document{}, fmt.Errorf("unable to read file: %v", err)
 	}
 
 	roleAssignment, err := CreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("role"), eos.Name("assignment"), assignmentData)
 	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to create assignment: %v", err)
+		return docgraph.Document{}, fmt.Errorf("unable to create assignment: %v", err)
 	}
 	fmt.Println("Created role assignment document	: ", roleAssignment.Hash.String())
 
@@ -272,38 +272,41 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 	time.Sleep(defaultPeriodDuration())
 
 	_, err = claimNextPeriod(ctx, api, contract, member, roleAssignment)
-
-	payoutData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/payout.json")
 	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to read payout file: %v", err)
+		return docgraph.Document{}, fmt.Errorf("unable to claim pay on assignment: %v %v", roleAssignment.Hash.String(), err)
+	}
+
+	payoutData, err := ioutil.ReadFile("fixtures/payout.json")
+	if err != nil {
+		return docgraph.Document{}, fmt.Errorf("unable to read payout file: %v", err)
 	}
 
 	payAmt, _ := eos.NewAssetFromString("1000.00 USD")
 	payout, err := CreatePayout(ctx, api, contract, telosDecide, member, member, payAmt, 50, payoutData)
 	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to create payout: %v", err)
+		return docgraph.Document{}, fmt.Errorf("unable to create payout: %v", err)
 	}
 	fmt.Println("Created payout document	: ", payout.Hash.String())
 
-	badgeData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/badge.json")
+	badgeData, err := ioutil.ReadFile("fixtures/badge.json")
 	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to read badge file: %v", err)
+		return docgraph.Document{}, fmt.Errorf("unable to read badge file: %v", err)
 	}
 
 	badge, err := CreateBadge(ctx, api, contract, telosDecide, member, badgeData)
 	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to create badge: %v", err)
+		return docgraph.Document{}, fmt.Errorf("unable to create badge: %v", err)
 	}
 	fmt.Println("Created badge document	: ", badge.Hash.String())
 
-	badgeAssignmentData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/badge-assignment.json")
+	badgeAssignmentData, err := ioutil.ReadFile("fixtures/badge-assignment.json")
 	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to read badge assignment file: %v", err)
+		return docgraph.Document{}, fmt.Errorf("unable to read badge assignment file: %v", err)
 	}
 
 	badgeAssignment, err := CreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("badge"), eos.Name("assignbadge"), badgeAssignmentData)
 	if err != nil {
-		return docgraph.Document{}, fmt.Errorf("Unable to create badge assignment: %v", err)
+		return docgraph.Document{}, fmt.Errorf("unable to create badge assignment: %v", err)
 	}
 	fmt.Println("Created badge assignment document	: ", badgeAssignment.Hash.String())
 	return roleAssignment, nil
@@ -494,6 +497,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("error retrieving proposal document %v", err)
 	}
+	fmt.Println("Retrieved proposal document to close: " + proposal.Hash.String())
 
 	ballot, err := proposal.GetContent("ballot_id")
 	if err != nil {
@@ -545,6 +549,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	votingPause := time.Duration((5 + votingPeriodDuration.Impl.(int64)) * 1000000000)
 	pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
 
+	fmt.Println("Closing proposal: " + proposal.Hash.String())
 	_, err = CloseProposal(ctx, api, contract, member, proposal.Hash)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("cannot close proposal %v", err)

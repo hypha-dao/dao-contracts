@@ -40,7 +40,7 @@ func TestSetup(t *testing.T) {
 // 	// dao.EnrollMembers(env.ctx, &env.api, env.DAO)
 
 // 	mem2 := env.Members[2].Member
-// 	roleFilename := "/Users/max/dev/hypha/daoctl/testing/role.json"
+// 	roleFilename := "fixtures/role.json"
 // 	roleData, err := ioutil.ReadFile(roleFilename)
 // 	if err != nil {
 // 		fmt.Println("Unable to read file: ", roleFilename)
@@ -53,7 +53,7 @@ func TestSetup(t *testing.T) {
 // 	}
 // 	fmt.Println("Created role document	: ", role.Hash.String())
 
-// 	assignmentData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/assignment.json")
+// 	assignmentData, err := ioutil.ReadFile("fixtures/assignment.json")
 // 	if err != nil {
 // 		fmt.Println("Unable to read file: ", assignmentData)
 // 		return
@@ -68,7 +68,7 @@ func TestSetup(t *testing.T) {
 // 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
 // 	assert.NilError(t, err)
 
-// 	payoutData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/payout.json")
+// 	payoutData, err := ioutil.ReadFile("fixtures/payout.json")
 // 	if err != nil {
 // 		fmt.Println("Unable to read file: ", payoutData)
 // 		return
@@ -81,7 +81,7 @@ func TestSetup(t *testing.T) {
 // 	}
 // 	fmt.Println("Created payout document	: ", payout.Hash.String())
 
-// 	badgeData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/badge.json")
+// 	badgeData, err := ioutil.ReadFile("fixtures/badge.json")
 // 	if err != nil {
 // 		panic(err)
 // 	}
@@ -92,7 +92,7 @@ func TestSetup(t *testing.T) {
 // 	}
 // 	fmt.Println("Created badge document	: ", badge.Hash.String())
 
-// 	badgeAssignmentData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/badge-assignment.json")
+// 	badgeAssignmentData, err := ioutil.ReadFile("fixtures/badge-assignment.json")
 // 	if err != nil {
 // 		panic(err)
 // 	}
