@@ -11,7 +11,6 @@ import (
 
 	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
-	"github.com/hypha-dao/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"github.com/spf13/viper"
 )
@@ -24,7 +23,7 @@ type updateDoc struct {
 }
 
 type docGroups struct {
-	ContentGroups []docgraph.ContentGroup  `json:"content_groups"`
+	ContentGroups []docgraph.ContentGroup `json:"content_groups"`
 }
 
 func ReplaceContent2(groups []docgraph.ContentGroup, label string, value *docgraph.FlexValue) error {
@@ -169,7 +168,7 @@ func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) 
 			}
 
 			startTimePoint := startTime.Impl.(eos.TimePoint)
-			
+
 			fmt.Println("Start time point: ", startTimePoint.String())
 			unixTime := time.Unix(int64(startTimePoint)/1000000, 0).UTC()
 			fmt.Println("Starting " + unixTime.Format("2006 Jan 02"))
@@ -246,17 +245,17 @@ func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) 
 // CreatePretend ...
 func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName) (docgraph.Document, error) {
 
-	// roleFilename := "/Users/max/dev/hypha/daoctl/testing/role.json"
-	// roleData, err := ioutil.ReadFile(roleFilename)
-	// if err != nil {
-	// 	return docgraph.Document{}, fmt.Errorf("Unable to read file: %v %v", roleFilename, err)
-	// }
+	roleFilename := "/Users/max/dev/hypha/daoctl/testing/role.json"
+	roleData, err := ioutil.ReadFile(roleFilename)
+	if err != nil {
+		return docgraph.Document{}, fmt.Errorf("Unable to read file: %v %v", roleFilename, err)
+	}
 
-	// role, err := CreateRole(ctx, api, contract, telosDecide, member, roleData)
-	// if err != nil {
-	// 	return docgraph.Document{}, fmt.Errorf("Unable to create role: %v", err)
-	// }
-	// fmt.Println("Created role document	: ", role.Hash.String())
+	role, err := CreateRole(ctx, api, contract, telosDecide, member, roleData)
+	if err != nil {
+		return docgraph.Document{}, fmt.Errorf("Unable to create role: %v", err)
+	}
+	fmt.Println("Created role document	: ", role.Hash.String())
 
 	assignmentData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/assignment.json")
 	if err != nil {
@@ -269,10 +268,10 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 	}
 	fmt.Println("Created role assignment document	: ", roleAssignment.Hash.String())
 
-	// fmt.Println("Waiting for a period to lapse...")
-	// time.Sleep(defaultPeriodDuration())
+	fmt.Println("Waiting for a period to lapse...")
+	time.Sleep(defaultPeriodDuration())
 
-	// _, err = claimNextPeriod(ctx, api, contract, member, roleAssignment)
+	_, err = claimNextPeriod(ctx, api, contract, member, roleAssignment)
 
 	payoutData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/payout.json")
 	if err != nil {
@@ -307,7 +306,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("Unable to create badge assignment: %v", err)
 	}
 	fmt.Println("Created badge assignment document	: ", badgeAssignment.Hash.String())
-	return badgeAssignment, nil //roleAssignment, nil
+	return roleAssignment, nil
 }
 
 type claimNext struct {
@@ -625,16 +624,16 @@ func CreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, 
 }
 
 //Creates an assignment without the INIT_TIME_SHARE, CURRENT_TIME_SHARE & LAST_TIME_SHARE nodes
-func CreateOldAssignment(t* testing.T, ctx context.Context, api *eos.API, contract, member eos.AccountName, memberDocHash, roleDocHash, startPeriodHash eos.Checksum256, assignment string) (docgraph.Document, error) {
-	
+func CreateOldAssignment(t *testing.T, ctx context.Context, api *eos.API, contract, member eos.AccountName, memberDocHash, roleDocHash, startPeriodHash eos.Checksum256, assignment string) (docgraph.Document, error) {
+
 	_, err := ProposeAssignment(ctx, api, contract, member, member, roleDocHash, startPeriodHash, assignment)
-	if (err != nil) {
+	if err != nil {
 		return docgraph.Document{}, err
 	}
 
 	// retrieve the document we just created
 	proposal, err := docgraph.GetLastDocumentOfEdge(ctx, api, contract, eos.Name("proposal"))
-	if (err != nil) {
+	if err != nil {
 		return docgraph.Document{}, err
 	}
 
