@@ -28,28 +28,28 @@ namespace hypha
 
         std::map<std::string, eosio::asset> optionsTally;
         std::vector<std::string> optionsTallyOrdered;
-        for (auto it = contentOptions->begin(); it != contentOptions->end(); ++it) 
+        for (auto option : *contentOptions) 
         {
-            if (it->label != CONTENT_GROUP_LABEL) {
-                optionsTally[it->label] = asset(0, common::S_HVOICE);
-                optionsTallyOrdered.push_back(it->label);
+            if (option.label != CONTENT_GROUP_LABEL) {
+                optionsTally[option.label] = asset(0, common::S_HVOICE);
+                optionsTallyOrdered.push_back(option.label);
             }
         }
 
         std::vector<Edge> edges = dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
-        for (auto itr = edges.begin(); itr != edges.end(); ++itr) {
-            eosio::checksum256 voteHash = itr->getToNode();
+        for (auto edge : edges) {
+            eosio::checksum256 voteHash = edge.getToNode();
             Vote voteDocument(dao, voteHash);
 
             optionsTally[voteDocument.getVote()] += voteDocument.getPower();
         }
 
         ContentGroups tallyContentGroups;
-        for (auto it = optionsTallyOrdered.begin(); it != optionsTallyOrdered.end(); ++it) 
+        for (auto option : optionsTallyOrdered) 
         {
             tallyContentGroups.push_back(ContentGroup{
-                Content(CONTENT_GROUP_LABEL, *it),
-                Content(VOTE_POWER, optionsTally[*it])
+                Content(CONTENT_GROUP_LABEL, option),
+                Content(VOTE_POWER, optionsTally[option])
             });
         }
 

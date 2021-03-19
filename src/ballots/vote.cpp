@@ -34,16 +34,18 @@ namespace hypha
         );
 
         std::vector<Edge> votes = dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
-        for (auto votesIt = votes.begin(); votesIt != votes.end(); ++votesIt) {
-            if (votesIt->getCreator() == voter) {
+        for (auto vote : votes) {
+            if (vote.getCreator() == voter) {
                 eosio::checksum256 voterHash = Member::calcHash(voter);
-                Document voteDocument(dao.get_self(), votesIt->getToNode());
+                Document voteDocument(dao.get_self(), vote.getToNode());
 
                 // Already voted, erase edges and allow to vote again.
                 Edge::get(dao.get_self(), voterHash, voteDocument.getHash(), common::VOTE).erase();
                 Edge::get(dao.get_self(), proposal.getHash(), voteDocument.getHash(), common::VOTE).erase();
                 Edge::get(dao.get_self(), voteDocument.getHash(), voterHash, common::OWNED_BY).erase();
                 Edge::get(dao.get_self(), voteDocument.getHash(), proposal.getHash(), common::VOTE_ON).erase();
+
+                break;
             }
         }
 
