@@ -268,8 +268,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 	}
 	fmt.Println("Created role assignment document	: ", roleAssignment.Hash.String())
 
-	fmt.Println("Waiting for a period to lapse...")
-	time.Sleep(defaultPeriodDuration())
+	pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
 
 	_, err = claimNextPeriod(ctx, api, contract, member, roleAssignment)
 	if err != nil {
@@ -333,8 +332,8 @@ func claimNextPeriod(ctx context.Context, api *eos.API, contract, claimer eos.Ac
 	trxID, err := eostest.ExecTrx(ctx, api, actions)
 
 	if err != nil {
-		fmt.Println("Waiting for a period to lapse...")
-		time.Sleep(time.Second * 7)
+		pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
+
 		actions := []*eos.Action{{
 			Account: contract,
 			Name:    eos.ActN("claimnextper"),
@@ -554,7 +553,14 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("cannot close proposal %v", err)
 	}
-	return proposal, nil
+
+	passedProposal, err := docgraph.GetLastDocumentOfEdge(ctx, api, contract, eos.Name("passedprops"))
+	if err != nil {
+		return docgraph.Document{}, fmt.Errorf("error retrieving passed proposal document %v", err)
+	}
+	fmt.Println("Retrieved passed proposal document to close: " + passedProposal.Hash.String())
+
+	return passedProposal, nil
 }
 
 func createParent(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, parentType eos.Name, data []byte) (docgraph.Document, error) {

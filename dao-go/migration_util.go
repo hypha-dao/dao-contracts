@@ -24,7 +24,7 @@ func defaultPeriodDuration() time.Duration {
 	if viper.IsSet("periodDuration") {
 		return viper.GetDuration("periodDuration")
 	}
-	return time.Second * 6
+	return time.Second * 130
 }
 
 // DefaultProgressBar ...
