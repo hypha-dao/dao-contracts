@@ -47,9 +47,9 @@ namespace hypha
 
         bool didPass(const eosio::checksum256 &tallyHash);
 
-    private:
         string getTitle(ContentWrapper cw) const;
         string getDescription(ContentWrapper cw) const;
+    private:
         bool oldDidPass(const eosio::name &ballotId);
 
     };
