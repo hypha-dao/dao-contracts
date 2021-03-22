@@ -55,6 +55,8 @@ namespace hypha
                             const string &title, const string &description, const string &content);
 
     private:
+        string getTitle(ContentWrapper cw) const;
+        string getDescription(ContentWrapper cw) const;
         bool oldDidPass(const eosio::name &ballotId);
 
     };
