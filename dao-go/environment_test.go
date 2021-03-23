@@ -150,11 +150,11 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 
 	env.api.SetSigner(keyBag)
 
-	env.VotingDurationSeconds = 2
+	env.VotingDurationSeconds = 30
 	env.SeedsDeferralFactor = 100
 	env.HyphaDeferralFactor = 25
 
-	env.PeriodDuration, _ = time.ParseDuration("10s")
+	env.PeriodDuration, _ = time.ParseDuration("120s")
 	env.NumPeriods = 20
 
 	// pauses

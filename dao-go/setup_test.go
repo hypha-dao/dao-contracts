@@ -1,6 +1,12 @@
 package dao_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/hypha-dao/dao-contracts/dao-go"
+
+	"gotest.tools/assert"
+)
 
 // import (
 // 	"fmt"
@@ -8,7 +14,6 @@ import "testing"
 // 	"testing"
 
 // 	"github.com/eoscanada/eos-go"
-// 	"github.com/hypha-dao/dao-contracts/dao-go"
 // 	"gotest.tools/assert"
 // )
 
@@ -35,7 +40,7 @@ func TestSetup(t *testing.T) {
 // 	// dao.EnrollMembers(env.ctx, &env.api, env.DAO)
 
 // 	mem2 := env.Members[2].Member
-// 	roleFilename := "/Users/max/dev/hypha/daoctl/testing/role.json"
+// 	roleFilename := "fixtures/role.json"
 // 	roleData, err := ioutil.ReadFile(roleFilename)
 // 	if err != nil {
 // 		fmt.Println("Unable to read file: ", roleFilename)
@@ -48,7 +53,7 @@ func TestSetup(t *testing.T) {
 // 	}
 // 	fmt.Println("Created role document	: ", role.Hash.String())
 
-// 	assignmentData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/assignment.json")
+// 	assignmentData, err := ioutil.ReadFile("fixtures/assignment.json")
 // 	if err != nil {
 // 		fmt.Println("Unable to read file: ", assignmentData)
 // 		return
@@ -63,7 +68,7 @@ func TestSetup(t *testing.T) {
 // 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
 // 	assert.NilError(t, err)
 
-// 	payoutData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/payout.json")
+// 	payoutData, err := ioutil.ReadFile("fixtures/payout.json")
 // 	if err != nil {
 // 		fmt.Println("Unable to read file: ", payoutData)
 // 		return
@@ -76,7 +81,7 @@ func TestSetup(t *testing.T) {
 // 	}
 // 	fmt.Println("Created payout document	: ", payout.Hash.String())
 
-// 	badgeData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/badge.json")
+// 	badgeData, err := ioutil.ReadFile("fixtures/badge.json")
 // 	if err != nil {
 // 		panic(err)
 // 	}
@@ -87,7 +92,7 @@ func TestSetup(t *testing.T) {
 // 	}
 // 	fmt.Println("Created badge document	: ", badge.Hash.String())
 
-// 	badgeAssignmentData, err := ioutil.ReadFile("/Users/max/dev/hypha/daoctl/testing/badge-assignment.json")
+// 	badgeAssignmentData, err := ioutil.ReadFile("fixtures/badge-assignment.json")
 // 	if err != nil {
 // 		panic(err)
 // 	}
@@ -105,40 +110,40 @@ func TestSetup(t *testing.T) {
 // 	assert.NilError(t, err)
 // }
 
-// func TestPretend(t *testing.T) {
-// 	teardownTestCase := setupTestCase(t)
-// 	defer teardownTestCase(t)
+func TestPretend(t *testing.T) {
+	teardownTestCase := setupTestCase(t)
+	defer teardownTestCase(t)
 
-// 	env = SetupEnvironment(t)
+	env = SetupEnvironment(t)
 
-// 	t.Log(env.String())
-// 	t.Log("\nDAO Environment Setup complete\n")
+	t.Log(env.String())
+	t.Log("\nDAO Environment Setup complete\n")
 
-// 	// enroll the test members
-// 	//dao.EnrollMembers(env.ctx, &env.api, env.DAO)
+	// enroll the test members
+	//dao.EnrollMembers(env.ctx, &env.api, env.DAO)
 
-// 	mem2 := env.Members[2].Member
-// 	roleAssignment, err := dao.CreatePretend(env.ctx, &env.api, env.DAO, env.TelosDecide, mem2)
-// 	assert.NilError(t, err)
+	mem2 := env.Members[2].Member
+	roleAssignment, err := dao.CreatePretend(env.ctx, &env.api, env.DAO, env.TelosDecide, mem2)
+	assert.NilError(t, err)
 
-// 	t.Log("Waiting for a period to lapse...")
-// 	pause(t, env.PeriodPause, "", "Waiting...")
+	t.Log("Waiting for a period to lapse...")
+	pause(t, env.PeriodPause, "", "Waiting...")
 
-// 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
-// 	assert.NilError(t, err)
+	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
+	assert.NilError(t, err)
 
-// 	t.Log("Waiting for a period to lapse...")
-// 	pause(t, env.PeriodPause, "", "Waiting...")
+	t.Log("Waiting for a period to lapse...")
+	pause(t, env.PeriodPause, "", "Waiting...")
 
-// 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
-// 	assert.NilError(t, err)
+	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
+	assert.NilError(t, err)
 
-// 	t.Log("Waiting for a period to lapse...")
-// 	pause(t, env.PeriodPause, "", "Waiting...")
+	t.Log("Waiting for a period to lapse...")
+	pause(t, env.PeriodPause, "", "Waiting...")
 
-// 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
-// 	assert.NilError(t, err)
-// }
+	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
+	assert.NilError(t, err)
+}
 
 // func TestReset2(t *testing.T) {
 // 	teardownTestCase := setupTestCase(t)

@@ -5,8 +5,8 @@
 
 namespace hypha {
 
-TimeShare::TimeShare(name contract, name creator, int64_t timeShare, time_point startDate) 
-: Document(contract, creator, constructContentGroups(timeShare, startDate))
+TimeShare::TimeShare(name contract, name creator, int64_t timeShare, time_point startDate, checksum256 assignment) 
+: Document(contract, creator, constructContentGroups(timeShare, startDate, assignment))
 {
   
 }
@@ -27,13 +27,14 @@ std::optional<TimeShare> TimeShare::getNext(name contract)
   return std::nullopt;
 }
 
-ContentGroups TimeShare::constructContentGroups(int64_t timeShare, time_point startDate) 
+ContentGroups TimeShare::constructContentGroups(int64_t timeShare, time_point startDate, checksum256 assignment) 
 {
   return {
     ContentGroup {
       Content(CONTENT_GROUP_LABEL, DETAILS),
       Content(TIME_SHARE, timeShare),
       Content(TIME_SHARE_START_DATE, startDate),
+      Content(ASSIGNMENT_STRING, assignment)
     },
     ContentGroup {
       Content(CONTENT_GROUP_LABEL, SYSTEM),

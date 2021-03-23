@@ -26,8 +26,8 @@ namespace hypha
 
         contentGroups.push_back(makeSystemGroup(proposer,
                                                 getProposalType(),
-                                                proposalContent.getOrFail(DETAILS, TITLE)->getAs<std::string>(),
-                                                proposalContent.getOrFail(DETAILS, DESCRIPTION)->getAs<std::string>(),
+                                                getTitle(proposalContent),
+                                                getDescription(proposalContent),
                                                 getBallotContent(proposalContent)));
         
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
@@ -365,6 +365,39 @@ namespace hypha
             .send();
 
         return ballotId;
+    }
+
+    string Proposal::getTitle(ContentWrapper cw) const
+    {
+      
+        auto [titleIdx, title] = cw.get(DETAILS, TITLE);
+
+        auto [ballotTitleIdx, ballotTitle] = cw.get(DETAILS, common::BALLOT_TITLE);
+
+        eosio::check(
+          title != nullptr || ballotTitle != nullptr,
+          to_str("Proposal [details] group must contain at least one of the following items [", 
+                  TITLE, ", ", common::BALLOT_TITLE, "]")
+        );
+
+        return title != nullptr ? title->getAs<std::string>() : 
+                                  ballotTitle->getAs<std::string>();
+    }
+
+    string Proposal::getDescription(ContentWrapper cw) const
+    {
+        auto [descIdx, desc] = cw.get(DETAILS, DESCRIPTION);
+
+        auto [ballotDescIdx, ballotDesc] = cw.get(DETAILS, common::BALLOT_DESCRIPTION);
+
+        eosio::check(
+          desc != nullptr || ballotDesc != nullptr,
+          to_str("Proposal [details] group must contain at least one of the following items [", 
+                  DESCRIPTION, ", ", common::BALLOT_DESCRIPTION, "]")
+        );
+
+        return desc != nullptr ? desc->getAs<std::string>() : 
+                                 ballotDesc->getAs<std::string>();
     }
 
     name Proposal::registerBallot(const name &proposer,

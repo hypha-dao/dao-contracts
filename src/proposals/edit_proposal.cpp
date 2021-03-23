@@ -146,7 +146,18 @@ namespace hypha
 
     std::string EditProposal::getBallotContent (ContentWrapper &contentWrapper)
     {
-        return contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>();
+        auto [titleIdx, title] = contentWrapper.get(DETAILS, TITLE);
+
+        auto [ballotTitleIdx, ballotTitle] = contentWrapper.get(DETAILS, common::BALLOT_TITLE);
+
+        eosio::check(
+          title != nullptr || ballotTitle != nullptr,
+          to_str("Proposal [details] group must contain at least one of the following items [", 
+                  TITLE, ", ", common::BALLOT_TITLE, "]")
+        );
+
+        return title != nullptr ? title->getAs<std::string>() : 
+                                  ballotTitle->getAs<std::string>();
     }
     
     name EditProposal::getProposalType () 
