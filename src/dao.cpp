@@ -110,7 +110,7 @@ namespace hypha
 
          //Set starting date to approval date.
          auto approvedDate = assignment.getApprovedTime();
-         TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate);
+         TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate, assignment.getHash());
 
          Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
          Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
@@ -643,7 +643,7 @@ namespace hypha
 
           //Set starting date to approval date.
           auto approvedDate = assignment.getApprovedTime();
-          TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate);
+          TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate, assignment.getHash());
 
           Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
           Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
@@ -682,7 +682,7 @@ namespace hypha
                          "New time share start date must be greater than the previous time share");
          }
 
-         TimeShare newTimeShareDoc(get_self(), issuer, newTimeShare, startDate);
+         TimeShare newTimeShareDoc(get_self(), issuer, newTimeShare, startDate, assignment.getHash());
 
          Edge::write(get_self(), get_self(), lastTimeShareEdge.getToNode(), newTimeShareDoc.getHash(), common::NEXT_TIME_SHARE);
 
