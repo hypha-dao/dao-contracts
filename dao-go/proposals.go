@@ -349,6 +349,17 @@ func ProposeBadgeAssignment(ctx context.Context, api *eos.API,
 	return eostest.ExecTrx(ctx, api, actions)
 }
 
+func VotePass(ctx context.Context, api *eos.API, contract,
+	telosDecide, voter eos.AccountName, proposal *docgraph.Document) (string, error) {
+
+	ballot, err := proposal.GetContent("ballot_id")
+	if err == nil {
+		// if ballot_id exists, we are using TelosDecide
+		return TelosDecideVote(ctx, api, telosDecide, voter, ballot.Impl.(eos.Name), eos.Name("pass"))
+	}
+	return ProposalVote(ctx, api, contract, voter, "pass", proposal.Hash)
+}
+
 // TelosDecideVote ...
 func TelosDecideVote(ctx context.Context, api *eos.API,
 	telosDecide, voter eos.AccountName, ballot,
