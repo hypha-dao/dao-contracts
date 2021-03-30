@@ -56,7 +56,7 @@ func InitTD(ctx context.Context, api *eos.API, telosDecide eos.AccountName) (str
 		}),
 	}}
 
-	_, err := eostest.ExecTrx(ctx, api, actions)
+	_, err := eostest.ExecWithRetry(ctx, api, actions)
 	if err != nil {
 		return "error", fmt.Errorf("cannot init telos decide %v", err)
 	}
@@ -78,7 +78,7 @@ func InitTD(ctx context.Context, api *eos.API, telosDecide eos.AccountName) (str
 		}
 		fees = append(fees, &fee)
 	}
-	return eostest.ExecTrx(ctx, api, fees)
+	return eostest.ExecWithRetry(ctx, api, fees)
 }
 
 type tDTreasury struct {
@@ -102,7 +102,7 @@ func NewTreasury(ctx context.Context, api *eos.API, telosDecide, treasuryManager
 			Access:    eos.Name("public"),
 		}),
 	}}
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 type transferP struct {
@@ -128,7 +128,7 @@ func Transfer(ctx context.Context, api *eos.API, token, from, to eos.AccountName
 			Memo:     memo,
 		}),
 	}}
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 type issuance struct {
@@ -152,7 +152,7 @@ func Issue(ctx context.Context, api *eos.API, token, issuer eos.AccountName, amo
 			Memo:     "memo",
 		}),
 	}}
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 // Mint ...
@@ -170,7 +170,7 @@ func Mint(ctx context.Context, api *eos.API, telosDecide, issuer, receiver eos.A
 			Memo:     "memo",
 		}),
 	}}
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 // RegVoter ...
@@ -197,7 +197,7 @@ func RegVoter(ctx context.Context, api *eos.API, telosDecide, registrant eos.Acc
 		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 func CreateBallot(ctx context.Context, api *eos.API, telosDecide, creator eos.AccountName, ballotId string) (string, error) {
@@ -229,7 +229,7 @@ func CreateBallot(ctx context.Context, api *eos.API, telosDecide, creator eos.Ac
 		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 func OpenBallot(ctx context.Context, api *eos.API, telosDecide, creator eos.AccountName, ballotId string, expiration int) (string, error) {
@@ -258,5 +258,5 @@ func OpenBallot(ctx context.Context, api *eos.API, telosDecide, creator eos.Acco
 		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }

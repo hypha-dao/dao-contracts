@@ -193,7 +193,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 			Waits: []eos.WaitWeight{},
 		}, "owner")}
 
-	_, err = eostest.ExecTrx(env.ctx, &env.api, bankPermissionActions)
+	_, err = eostest.ExecWithRetry(env.ctx, &env.api, bankPermissionActions)
 	assert.NilError(t, err)
 
 	_, env.HusdToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "husd.hypha")
@@ -399,7 +399,7 @@ func CreateHVoiceToken(ctx context.Context, t *testing.T, api *eos.API, contract
 	}}
 
 	t.Log("Created Token : ", contract, " 		: ", maxSupply.String(), " (-1 means unlimited)")
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 func SaveGraph(ctx context.Context, api *eos.API, contract eos.AccountName, folderName string) error {

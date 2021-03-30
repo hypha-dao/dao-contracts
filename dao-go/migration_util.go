@@ -96,7 +96,7 @@ func EraseAllDocuments(ctx context.Context, api *eos.API, contract eos.AccountNa
 				}),
 			}}
 
-			_, err := eostest.ExecTrx(ctx, api, actions)
+			_, err := eostest.ExecWithRetry(ctx, api, actions)
 			if err != nil {
 				// too many false positives
 				fmt.Println("\nFailed to erase : ", document.Hash.String())

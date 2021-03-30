@@ -101,7 +101,7 @@ func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountNa
 	// 	},
 	// }
 
-	// _, err = eostest.ExecTrx(ctx, api, actions)
+	// _, err = eostest.ExecWithRetry(ctx, api, actions)
 	// if err != nil {
 	// 	fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
 	// 	fmt.Println(err)
@@ -129,7 +129,7 @@ func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountNa
 	// 			},
 	// 		}
 
-	// 		_, err = eostest.ExecTrx(ctx, api, actions2)
+	// 		_, err = eostest.ExecWithRetry(ctx, api, actions2)
 	// 		if err != nil {
 	// 			fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
 	// 			fmt.Println(err)
@@ -228,7 +228,7 @@ func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) 
 				},
 			}
 
-			_, err = eostest.ExecTrx(ctx, api, actions)
+			_, err = eostest.ExecWithRetry(ctx, api, actions)
 			if err != nil {
 				fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
 				fmt.Println(err)
@@ -329,7 +329,7 @@ func claimNextPeriod(ctx context.Context, api *eos.API, contract, claimer eos.Ac
 		}),
 	}}
 
-	trxID, err := eostest.ExecTrx(ctx, api, actions)
+	trxID, err := eostest.ExecWithRetry(ctx, api, actions)
 
 	if err != nil {
 		pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
@@ -345,7 +345,7 @@ func claimNextPeriod(ctx context.Context, api *eos.API, contract, claimer eos.Ac
 			}),
 		}}
 
-		trxID, err = eostest.ExecTrx(ctx, api, actions)
+		trxID, err = eostest.ExecWithRetry(ctx, api, actions)
 	}
 
 	return trxID, err
@@ -480,7 +480,7 @@ func proposeAndPass(ctx context.Context, api *eos.API,
 		},
 		ActionData: eos.NewActionData(proposal)}}
 
-	trxID, err := eostest.ExecTrx(ctx, api, actions)
+	trxID, err := eostest.ExecWithRetry(ctx, api, actions)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("error proposeAndPass %v", err)
 	}

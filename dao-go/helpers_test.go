@@ -109,7 +109,7 @@ func ClaimNextPeriod(t *testing.T, env *Environment, claimer eos.AccountName, as
 		}),
 	}}
 
-	trxID, err := eostest.ExecTrx(env.ctx, &env.api, actions)
+	trxID, err := eostest.ExecWithRetry(env.ctx, &env.api, actions)
 
 	if err != nil {
 		t.Log("Waiting for a period to lapse...")
@@ -125,7 +125,7 @@ func ClaimNextPeriod(t *testing.T, env *Environment, claimer eos.AccountName, as
 			}),
 		}}
 
-		trxID, err = eostest.ExecTrx(env.ctx, &env.api, actions)
+		trxID, err = eostest.ExecWithRetry(env.ctx, &env.api, actions)
 	}
 
 	return trxID, err
@@ -150,7 +150,7 @@ func AdjustCommitment(env *Environment, assignee eos.AccountName, adjustInfo []d
 		}),
 	}}
 
-	return eostest.ExecTrx(env.ctx, &env.api, actions)
+	return eostest.ExecWithRetry(env.ctx, &env.api, actions)
 }
 
 func pause(t *testing.T, seconds time.Duration, headline, prefix string) {
@@ -297,7 +297,7 @@ func loadSeedsTablesFromProd(t *testing.T, env *Environment, prodEndpoint string
 		ActionData: eos.NewActionData(config[0])}}
 
 	t.Log("Copying configuration table from production for 	: " + string(env.SeedsExchange))
-	_, err := eostest.ExecTrx(env.ctx, &env.api, actions)
+	_, err := eostest.ExecWithRetry(env.ctx, &env.api, actions)
 	assert.NilError(t, err)
 
 	var priceHistory []dao.SeedsPriceHistory
@@ -323,7 +323,7 @@ func loadSeedsTablesFromProd(t *testing.T, env *Environment, prodEndpoint string
 			ActionData: eos.NewActionData(record)},
 		}
 
-		_, err := eostest.ExecTrx(env.ctx, &env.api, actions)
+		_, err := eostest.ExecWithRetry(env.ctx, &env.api, actions)
 		assert.NilError(t, err)
 	}
 }

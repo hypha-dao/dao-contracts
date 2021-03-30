@@ -169,7 +169,7 @@ func TestPretend(t *testing.T) {
 // 		// 	}),
 // 		// }}
 
-// 		// trxID, err := eostest.ExecTrx(env.ctx, &env.api, actions)
+// 		// trxID, err := eostest.ExecWithRetry(env.ctx, &env.api, actions)
 // 		// assert.NilError(t, err)
 
 // 		// t.Log("Reset successful: " + trxID)

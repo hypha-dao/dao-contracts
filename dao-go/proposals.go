@@ -48,7 +48,7 @@ func Propose(ctx context.Context, api *eos.API,
 		},
 		ActionData: eos.NewActionData(proposal)}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 // ProposePayout ...
@@ -270,7 +270,7 @@ func ProposeAssExtension(ctx context.Context, api *eos.API,
 		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 // ProposeBadge proposes the badge to the specified DAO contract
@@ -298,7 +298,7 @@ func ProposeBadge(ctx context.Context, api *eos.API, contract, proposer eos.Acco
 		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 // ProposeBadgeAssignment proposes the badge assignment to the specified DAO contract
@@ -346,7 +346,7 @@ func ProposeBadgeAssignment(ctx context.Context, api *eos.API,
 			ContentGroups: badgeAssignmentDoc.ContentGroups,
 		})}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 func VotePass(ctx context.Context, api *eos.API, contract,
@@ -378,7 +378,7 @@ func TelosDecideVote(ctx context.Context, api *eos.API,
 		}),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 // DocumentVote ....
@@ -409,7 +409,7 @@ func ProposalVote(
 		}),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 // CloseProposal ...
@@ -427,5 +427,5 @@ func CloseProposal(ctx context.Context, api *eos.API, contract, closer eos.Accou
 		}),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
