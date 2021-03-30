@@ -53,8 +53,8 @@ namespace hypha
                 Edge::get(dao.get_self(), voteDocument.getHash(), voterHash, common::OWNED_BY).erase();
                 Edge::get(dao.get_self(), voteDocument.getHash(), proposal.getHash(), common::VOTE_ON).erase();
 
-                if (dao.getGraph().hasEdges(voterHash)) {
-                    dao.getGraph().eraseDocument(voterHash, false);
+                if (dao.getGraph().hasEdges(voteDocument.getHash())) {
+                    dao.getGraph().eraseDocument(voteDocument.getHash(), false);
                 }
 
                 break;
