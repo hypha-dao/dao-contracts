@@ -55,10 +55,12 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// alice votes "pass"
 		t.Log("alice votes pass")
+		before_date := time.Now().UTC()
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", role.Hash)
 		assert.NilError(t, err)
 		voteDocument := checkLastVote(t, env, role, env.Alice)
-		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "pass")
+		after_date := time.Now().UTC()
+		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "pass", before_date, after_date)
 
 		// New tally should be different. We have 1 vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
@@ -66,10 +68,12 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// alice changes his mind and votes "fail"
 		t.Log("alice votes fail")
+		before_date = time.Now().UTC()
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "fail", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Alice)
-		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail")
+		after_date = time.Now().UTC()
+		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail", before_date, after_date)
 
 		// New tally should be different. We have a different vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
@@ -77,50 +81,60 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// alice decides to vote again for "fail". Just in case ;-)
 		t.Log("alice votes fail (again)")
+		before_date = time.Now().UTC()
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "fail", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Alice)
-		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail")
+		after_date = time.Now().UTC()
+		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail", before_date, after_date)
 
 		// Tally should be the same. It was the same vote
 		voteTally = AssertSameLastTally(t, voteTally)
 		AssertTally(t, voteTally, "0.00 HVOICE", "0.00 HVOICE", "101.00 HVOICE")
 
 		// Member1 decides to vote pass
+		before_date = time.Now().UTC()
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[0])
-		AssertVote(t, voteDocument, "mem1.hypha", "2.00 HVOICE", "pass")
+		after_date = time.Now().UTC()
+		AssertVote(t, voteDocument, "mem1.hypha", "2.00 HVOICE", "pass", before_date, after_date)
 
 		// Tally should be different. We have a new vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
 		AssertTally(t, voteTally, "2.00 HVOICE", "0.00 HVOICE", "101.00 HVOICE")
 
 		// Member2 decides to vote fail
+		before_date = time.Now().UTC()
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[1].Member, "fail", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[1])
-		AssertVote(t, voteDocument, "mem2.hypha", "2.00 HVOICE", "fail")
+		after_date = time.Now().UTC()
+		AssertVote(t, voteDocument, "mem2.hypha", "2.00 HVOICE", "fail", before_date, after_date)
 
 		// Tally should be different. We have a new vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
 		AssertTally(t, voteTally, "2.00 HVOICE", "0.00 HVOICE", "103.00 HVOICE")
 
 		// Member1 decides to vote pass (again)
+		before_date = time.Now().UTC()
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[0])
-		AssertVote(t, voteDocument, "mem1.hypha", "2.00 HVOICE", "pass")
+		after_date = time.Now().UTC()
+		AssertVote(t, voteDocument, "mem1.hypha", "2.00 HVOICE", "pass", before_date, after_date)
 
 		// Tally should be the same.
 		voteTally = AssertSameLastTally(t, voteTally)
 		AssertTally(t, voteTally, "2.00 HVOICE", "0.00 HVOICE", "103.00 HVOICE")
 
 		// Member3 decides to vote abstain
+		before_date = time.Now().UTC()
 		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Members[2].Member, "abstain", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[2])
-		AssertVote(t, voteDocument, "mem3.hypha", "2.00 HVOICE", "abstain")
+		after_date = time.Now().UTC()
+		AssertVote(t, voteDocument, "mem3.hypha", "2.00 HVOICE", "abstain", before_date, after_date)
 
 		// Tally should be the different.
 		voteTally = AssertDifferentLastTally(t, voteTally)
@@ -310,7 +324,18 @@ func AssertTally(t *testing.T, tallyDocument docgraph.Document, passPower string
 	}))
 }
 
-func AssertVote(t *testing.T, voteDocument docgraph.Document, voter string, votePower string, vote string) {
+func AssertVote(t *testing.T, voteDocument docgraph.Document, voter string, votePower string, vote string, before, after time.Time) {
+	// date should be between before and after
+	dateNode, err := voteDocument.GetContentFromGroup("vote", "date")
+	assert.NilError(t, err)
+	dateString := dateNode.String()
+
+	// Based off time.RFC3339
+	date, err := time.Parse("2006-01-02T15:04:05.000", dateString)
+	assert.NilError(t, err)
+
+	assert.Assert(t, before.Unix() <= int64(date.Unix()) && after.Unix() >= int64(date.Unix()))
+
 	assert.Assert(t, voteDocument.IsEqual(docgraph.Document{
 		ContentGroups: []docgraph.ContentGroup{
 			docgraph.ContentGroup{
@@ -347,6 +372,15 @@ func AssertVote(t *testing.T, voteDocument docgraph.Document, voter string, vote
 						BaseVariant: eos.BaseVariant{
 							TypeID: docgraph.GetVariants().TypeID("string"),
 							Impl:   vote,
+						},
+					},
+				},
+				docgraph.ContentItem{
+					Label: "date",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("time_point"),
+							Impl:   dateNode.String(),
 						},
 					},
 				},
