@@ -27,6 +27,7 @@ add_contract( dao dao
                 proposals/payout_proposal.cpp
                 proposals/attestation_proposal.cpp
                 proposals/edit_proposal.cpp
+                proposals/suspend_proposal.cpp
                 proposals/proposal_factory.cpp
                 ballots/vote.cpp
                 ballots/vote_tally.cpp

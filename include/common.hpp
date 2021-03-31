@@ -46,6 +46,7 @@ namespace common
     static constexpr name EDIT = name("edit");
     static constexpr name ORIGINAL = name("original");
     static constexpr name EXTENSION = name("extension");
+    constexpr        name SUSPEND = name("suspend");
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
@@ -83,6 +84,8 @@ namespace common
     constexpr name INIT_TIME_SHARE = name("initimeshare");
     constexpr name NEXT_TIME_SHARE = name("nextimeshare");
     constexpr name TIME_SHARE_LABEL = name("timeshare");
+    constexpr auto ADJUST_MODIFIER = "modifier";
+    constexpr auto MOD_WITHDRAW = "withdraw";
 
     static constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
     static constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");

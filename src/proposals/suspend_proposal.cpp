@@ -6,19 +6,19 @@
 
 #include <common.hpp>
 #include <util.hpp>
-#include <proposals/edit_proposal.hpp>
+#include <proposals/suspend_proposal.hpp>
 #include <assignment.hpp>
 #include <period.hpp>
 
 namespace hypha
 {
 
-    void EditProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
+    void SuspendProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     { 
       
     }
 
-    void EditProposal::postProposeImpl (Document &proposal) 
+    void SuspendProposal::postProposeImpl (Document &proposal) 
     {
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
@@ -81,7 +81,7 @@ namespace hypha
         Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), original.getHash(), common::ORIGINAL);
     }
 
-    void EditProposal::passImpl(Document &proposal)
+    void SuspendProposal::passImpl(Document &proposal)
     {
         // merge the original with the edits and save
         ContentWrapper proposalContent = proposal.getContentWrapper();
@@ -144,14 +144,14 @@ namespace hypha
         proposalContent.getContentGroups() = std::move(originalContents);
     }
 
-    std::string EditProposal::getBallotContent (ContentWrapper &contentWrapper)
+    std::string SuspendProposal::getBallotContent (ContentWrapper &contentWrapper)
     {
         return getTitle(contentWrapper);
     }
     
-    name EditProposal::getProposalType () 
+    name SuspendProposal::getProposalType () 
     {
-        return common::EDIT;
+        return common::SUSPEND;
     }
 
 } // namespace hypha

@@ -123,7 +123,7 @@ namespace hypha
         return Period(m_dao, period.getToNode());
     }
 
-    Period Period::getNthPeriodAfter(int64_t count)
+    Period Period::getNthPeriodAfter(int64_t count) const
     {
         Period next = *this;
 
@@ -141,5 +141,29 @@ namespace hypha
         }
 
         return next;
+    }
+
+    int64_t Period::getPeriodCountTo(Period& other)
+    {
+      auto otherStartSec = other.getStartTime().sec_since_epoch();
+      auto currentStartSec = getStartTime().sec_since_epoch();
+
+      bool isAfterOther = currentStartSec > otherStartSec;
+
+      auto startPeriod = isAfterOther ? other : *this;
+      auto& endPeriod = isAfterOther ? *this : other;
+
+      int64_t count = 0;
+
+      while (startPeriod.getHash() != endPeriod.getHash()) {
+        ++count;
+        startPeriod = startPeriod.next();
+      }
+
+      if (isAfterOther) {
+        count *= -1;
+      }
+
+      return count;
     }
 } // namespace hypha

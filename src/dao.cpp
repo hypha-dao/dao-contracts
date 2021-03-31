@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/util.hpp>
 #include <proposals/proposal.hpp>
@@ -69,6 +71,62 @@ namespace hypha
       // propose the extension
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, common::EXTENSION));
       proposal->propose(assignee, contentGroups);
+   }
+
+   void dao::withdraw(name owner, eosio::checksum256 hash) 
+   {
+     eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+     
+     Assignment assignment(this, hash);
+
+     eosio::name assignee = assignment.getAssignee().getAccount();
+
+     eosio::check(assignee == owner, to_str("Only the member [", assignee.to_string() ,"] can withdraw the assignment [", readableHash(hash), "]"));
+
+     eosio::require_auth(owner);
+
+     auto cw = assignment.getContentWrapper();
+
+     auto originalPeriods = assignment.getPeriodCount();
+
+     //Calculate the number of periods since start period to the current period
+     auto currentPeriod = Period::current(this);
+    
+     auto periodsToCurrent = assignment.getStartPeriod().getPeriodCountTo(currentPeriod);
+
+     periodsToCurrent = std::max(periodsToCurrent, int64_t(0)) + 1;
+
+     eosio::check(
+       originalPeriods >= periodsToCurrent,
+       to_str("Withdrawal of expired assignment: ", hash, " is not allowed")
+     );
+
+     if (originalPeriods != periodsToCurrent) {
+
+      auto detailsGroup = cw.getGroupOrFail(DETAILS);
+
+      ContentWrapper::insertOrReplace(*detailsGroup, Content { START_PERIOD, periodsToCurrent });
+
+      hash = m_documentGraph.updateDocument(assignee, hash, cw.getContentGroups()).getHash();
+     } 
+     //This has to be the last step, since adjustcmtmnt could change the assignment hash
+     //to old assignments
+     ContentGroups adjust {
+       ContentGroup {
+         Content { "assignment", hash },
+         Content { "new_time_share_x100", 0 },
+         Content { "modifier", common::MOD_WITHDRAW },
+       }
+     };
+
+     adjustcmtmnt(owner, adjust);
+   }
+
+   void dao::suspend(name proposer, eosio::checksum256 hash)
+   {
+     eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+
    }
 
    void dao::claimnextper(const eosio::checksum256 &assignment_hash)
@@ -582,6 +640,7 @@ namespace hypha
   *   Group Assignment 0 Details: [
   *     assignment: [checksum256]
   *     new_time_share_x100: [int64_t] min_time_share_x100 <= new_time_share_x100 <= time_share_x100
+  *     modifier: [withdraw]
   *   ],
   *   Group Assignment 1 Details: [
   *     assignment: [checksum256]
@@ -595,8 +654,6 @@ namespace hypha
   */
    ACTION dao::adjustcmtmnt(name issuer, ContentGroups &adjust_info)
    {
-      //TODO: Test utility function to_str
-      //eosio::check(false, to_str("Test: ", 22, name(" abc "), 3.4, NEW_TIME_SHARE));
       require_auth(issuer);
 
       ContentWrapper cw(adjust_info);
@@ -659,12 +716,28 @@ namespace hypha
          int64_t originalTimeShare = assignmentCW.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
          int64_t minTimeShare = role.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
          int64_t newTimeShare = cw.getOrFail(i, NEW_TIME_SHARE).second->getAs<int64_t>();
+         
+         auto [modifierIdx, modifier] = cw.get(i, common::ADJUST_MODIFIER);
 
-         eosio::check(newTimeShare >= minTimeShare,
-                      NEW_TIME_SHARE + string(" must be greater than or equal to: ") + std::to_string(minTimeShare) + string(" You submitted: ") + std::to_string(newTimeShare));
-         eosio::check(newTimeShare <= originalTimeShare,
-                      NEW_TIME_SHARE + string(" must be less than or equal to original time_share_x100: ") + std::to_string(originalTimeShare) + string(" You submitted: ") + std::to_string(newTimeShare));
+         bool checkNewTimeShareMinMax = true;
+         
+         if (modifier != nullptr) 
+         {
+           string modifierType = modifier->getAs<string>();
+           if (modifierType == common::MOD_WITHDRAW) 
+           {
+             checkNewTimeShareMinMax = false;
+           }
+         }
+         
+         if (checkNewTimeShareMinMax) 
+         {
 
+          eosio::check(newTimeShare >= minTimeShare,
+                        to_str(NEW_TIME_SHARE, " must be greater than or equal to: ", minTimeShare, " You submitted: ") + std::to_string(newTimeShare));
+          eosio::check(newTimeShare <= originalTimeShare,
+                        NEW_TIME_SHARE + string(" must be less than or equal to original time_share_x100: ") + std::to_string(originalTimeShare) + string(" You submitted: ") + std::to_string(newTimeShare));
+         }
          //Update lasttimeshare
          Edge lastTimeShareEdge = Edge::get(get_self(), assignment.getHash(), common::LAST_TIME_SHARE);
 

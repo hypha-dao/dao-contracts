@@ -9,7 +9,7 @@ namespace hypha
 {
     class dao;
     class TimeShare;
-
+    
     class Assignment : public Document
     {
     public:
@@ -18,6 +18,7 @@ namespace hypha
 
         std::optional<Period> getNextClaimablePeriod ();
         bool isClaimed (Period* period);
+        Period getStartPeriod();
         Member getAssignee();
         eosio::name &getType();
         eosio::time_point getApprovedTime();

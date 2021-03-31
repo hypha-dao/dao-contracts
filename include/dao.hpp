@@ -130,6 +130,9 @@ namespace hypha
 
       ACTION adjustcmtmnt(name issuer, ContentGroups& adjust_info);
 
+      ACTION withdraw(name owner, eosio::checksum256 hash);
+      ACTION suspend(name proposer, eosio::checksum256 hash);
+
       ACTION createroot(const std::string &notes);
       ACTION erasedoc(const eosio::checksum256 &hash);
       ACTION killedge(const uint64_t id);

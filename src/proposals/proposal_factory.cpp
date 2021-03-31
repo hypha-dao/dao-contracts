@@ -7,7 +7,9 @@
 #include <proposals/assignment_proposal.hpp>
 #include <proposals/attestation_proposal.hpp>
 #include <proposals/edit_proposal.hpp>
+#include <proposals/suspend_proposal.hpp>
 #include <proposals/ass_extend_proposal.hpp>
+
 #include <common.hpp>
 
 namespace hypha
@@ -33,6 +35,9 @@ namespace hypha
 
         case common::ATTESTATION.value:
             return new AttestationProposal(dao);
+
+        case common::SUSPEND.value: 
+            return new SuspendProposal(dao);
 
         case common::EDIT.value:
             return new EditProposal(dao);
