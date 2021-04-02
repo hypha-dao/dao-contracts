@@ -19,6 +19,7 @@ namespace hypha
         std::optional<Period> getNextClaimablePeriod ();
         bool isClaimed (Period* period);
         Period getStartPeriod();
+        Period getLastPeriod();
         Member getAssignee();
         eosio::name &getType();
         eosio::time_point getApprovedTime();

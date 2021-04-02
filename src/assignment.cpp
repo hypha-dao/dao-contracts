@@ -214,6 +214,13 @@ namespace hypha
       return Period(m_dao, getContentWrapper().getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
     }
     
+    Period Assignment::getLastPeriod()
+    {
+      auto start = getStartPeriod();
+      auto periods = getPeriodCount();
+      return start.getNthPeriodAfter(periods-1);
+    }
+
     TimeShare Assignment::getInitialTimeShare() 
     {
       Edge initialEdge = Edge::get(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);

@@ -111,24 +111,51 @@ func ClaimNextPeriod(t *testing.T, env *Environment, claimer eos.AccountName, as
 
 	trxID, err := eostest.ExecWithRetry(env.ctx, &env.api, actions)
 
-	if err != nil {
-		t.Log("Waiting for a period to lapse...")
-		pause(t, env.PeriodPause, "", "Waiting...")
-		actions := []*eos.Action{{
-			Account: env.DAO,
-			Name:    eos.ActN("claimnextper"),
-			Authorization: []eos.PermissionLevel{
-				{Actor: claimer, Permission: eos.PN("active")},
-			},
-			ActionData: eos.NewActionData(claimNext{
-				AssignmentHash: assignment.Hash,
-			}),
-		}}
-
-		trxID, err = eostest.ExecWithRetry(env.ctx, &env.api, actions)
-	}
-
 	return trxID, err
+}
+
+type WithdrawData struct {
+	Owner eos.AccountName `json:"owner"`
+	Hash eos.Checksum256 `json:"hash"`
+}
+
+func WithdrawAssignment(env *Environment, owner eos.AccountName, hash eos.Checksum256) (string, error) {
+	actions := []*eos.Action{{
+		Account: env.DAO,
+		Name:    eos.ActN("withdraw"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: owner, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionData(WithdrawData{
+			Owner:     owner,
+			Hash: 		 hash,
+		}),
+	}}
+
+	return eostest.ExecWithRetry(env.ctx, &env.api, actions)
+}
+
+type SuspendData struct {
+	Proposer eos.AccountName `json:"proposer"`
+	Hash eos.Checksum256 `json:"hash"`
+	Reason string `json:"reason"`	
+}
+
+func SuspendAssignment(env *Environment, proposer eos.AccountName, hash eos.Checksum256, reason string) (string, error) {
+	actions := []*eos.Action{{
+		Account: env.DAO,
+		Name:    eos.ActN("suspend"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: proposer, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionData(SuspendData{
+			Proposer:     proposer,
+			Hash:         hash,
+			Reason:  			reason,
+		}),
+	}}
+
+	return eostest.ExecWithRetry(env.ctx, &env.api, actions)
 }
 
 type AdjustData struct {

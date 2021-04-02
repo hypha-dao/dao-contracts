@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include <eosio/eosio.hpp>
 #include <eosio/name.hpp>
 #include <eosio/contract.hpp>
@@ -19,6 +21,8 @@ using eosio::name;
 
 namespace hypha
 {
+   class Assignment;
+
    CONTRACT dao : public eosio::contract
    {
    public:
@@ -131,7 +135,7 @@ namespace hypha
       ACTION adjustcmtmnt(name issuer, ContentGroups& adjust_info);
 
       ACTION withdraw(name owner, eosio::checksum256 hash);
-      ACTION suspend(name proposer, eosio::checksum256 hash);
+      ACTION suspend(name proposer, eosio::checksum256 hash, string reason);
 
       ACTION createroot(const std::string &notes);
       ACTION erasedoc(const eosio::checksum256 &hash);
@@ -152,6 +156,11 @@ namespace hypha
       void makePayment(const eosio::checksum256 &fromNode, const eosio::name &recipient,
                        const eosio::asset &quantity, const string &memo,
                        const eosio::name &paymentType);
+
+      void modifyCommitment(Assignment& assignment, 
+                            int64_t commitment,
+                            std::optional<eosio::time_point> fixedStartDate,
+                            std::string_view modifier);
 
    private:
       DocumentGraph m_documentGraph = DocumentGraph(get_self());

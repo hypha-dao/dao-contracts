@@ -125,6 +125,11 @@ namespace hypha
 
     Period Period::getNthPeriodAfter(int64_t count) const
     {
+        eosio::check(
+          count >= 0, 
+          "Period::getNthPeriodAfter: Count has to be greater or equal to 0"
+        );
+
         Period next = *this;
 
         while (count-- > 0)
