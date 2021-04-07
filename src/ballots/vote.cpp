@@ -4,7 +4,7 @@
 #include <document_graph/edge.hpp>
 #include <member.hpp>
 #include <util.hpp>
-#include <trail.hpp>
+#include <hypha_voice.hpp>
 
 #define CONTENT_GROUP_LABEL_VOTE "vote"
 #define VOTE_DATE "date"
@@ -37,7 +37,7 @@ namespace hypha
         auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
 
         eosio::check(
-            time_point_sec(current_time_point()) <= expiration,
+            eosio::time_point_sec(eosio::current_time_point()) <= expiration,
             "Voting has expired for this proposal"
         );
 
@@ -62,11 +62,12 @@ namespace hypha
         }
 
         // Fetch vote power
-        name trailContract = dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
-        trailservice::trail::voters_table v_t(trailContract, voter.value);
+        // Todo: Need to ensure that the balance does not need a decay.
+        name hvoiceContract = dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
+        hypha::voice::accounts v_t(hvoiceContract, voter.value);
         auto v_itr = v_t.find(common::S_HVOICE.code().raw());
-        check(v_itr != v_t.end(), "No HVOICE found");
-        asset votePower = v_itr->liquid;
+        eosio::check(v_itr != v_t.end(), "No HVOICE found");
+        asset votePower = v_itr->balance;
 
         ContentGroups contentGroups{
             ContentGroup{
@@ -74,7 +75,7 @@ namespace hypha
                 Content(VOTER_LABEL, voter),
                 Content(VOTE_POWER, votePower),
                 Content(VOTE_LABEL, vote),
-                Content(VOTE_DATE, time_point_sec(current_time_point()))
+                Content(VOTE_DATE, eosio::time_point_sec(eosio::current_time_point()))
             }
         };
 

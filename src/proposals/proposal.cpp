@@ -11,6 +11,7 @@
 #include <document_graph/edge.hpp>
 #include <dao.hpp>
 #include <trail.hpp>
+#include <hypha_voice.hpp>
 #include <util.hpp>
 
 using namespace eosio;
@@ -154,13 +155,12 @@ namespace hypha
 
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
-        // Todo: This should be using hypha.voice
-        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
-        trailservice::trail::treasuries_table t_t(trailContract, trailContract.value);
-        auto t_itr = t_t.find(common::S_HVOICE.code().raw());
-        check(t_itr != t_t.end(), "Treasury: " + common::S_HVOICE.code().to_string() + " not found.");
+        name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
+        hypha::voice::stats stats_t(hvoiceContract, common::S_HVOICE.code().raw());
+        auto stat_itr = stats_t.find(common::S_HVOICE.code().raw());
+        check(stat_itr != stats_t.end(), "No HVOICE found");
 
-        asset quorum_threshold = adjustAsset(t_itr->supply, 0.20000000);
+        asset quorum_threshold = adjustAsset(stat_itr->supply, 0.20000000);
 
         VoteTally tally(m_dao, tallyHash);
 
