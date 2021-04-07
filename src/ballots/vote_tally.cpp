@@ -21,7 +21,13 @@ namespace hypha
     {
         auto [exists, oldTally] = Edge::getIfExists(dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
         if (exists) {
+            auto oldTallyNode = oldTally.to_node;
             oldTally.erase();
+
+            if (!dao.getGraph().hasEdges(oldTallyNode)) {
+                dao.getGraph().eraseDocument(oldTallyNode, false);
+            }
+            
         }
 
         ContentGroup* contentOptions = proposal.getContentWrapper().getGroupOrFail(BALLOT_OPTIONS);

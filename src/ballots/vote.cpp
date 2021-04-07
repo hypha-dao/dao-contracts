@@ -7,6 +7,7 @@
 #include <trail.hpp>
 
 #define CONTENT_GROUP_LABEL_VOTE "vote"
+#define VOTE_DATE "date"
 
 namespace hypha 
 {
@@ -33,6 +34,13 @@ namespace hypha
             "Only allowed to vote active proposals"
         );
 
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+
+        eosio::check(
+            time_point_sec(current_time_point()) <= expiration,
+            "Voting has expired for this proposal"
+        );
+
         std::vector<Edge> votes = dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
         for (auto vote : votes) {
             if (vote.getCreator() == voter) {
@@ -44,6 +52,10 @@ namespace hypha
                 Edge::get(dao.get_self(), proposal.getHash(), voteDocument.getHash(), common::VOTE).erase();
                 Edge::get(dao.get_self(), voteDocument.getHash(), voterHash, common::OWNED_BY).erase();
                 Edge::get(dao.get_self(), voteDocument.getHash(), proposal.getHash(), common::VOTE_ON).erase();
+
+                if (!dao.getGraph().hasEdges(voteDocument.getHash())) {
+                    dao.getGraph().eraseDocument(voteDocument.getHash(), false);
+                }
 
                 break;
             }
@@ -61,7 +73,8 @@ namespace hypha
                 Content(CONTENT_GROUP_LABEL, CONTENT_GROUP_LABEL_VOTE),
                 Content(VOTER_LABEL, voter),
                 Content(VOTE_POWER, votePower),
-                Content(VOTE_LABEL, vote)
+                Content(VOTE_LABEL, vote),
+                Content(VOTE_DATE, time_point_sec(current_time_point()))
             }
         };
 
