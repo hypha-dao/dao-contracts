@@ -321,7 +321,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 		assert.NilError(t, err)
 
 		aliceTokens, _ := eos.NewAssetFromString("100.00 HVOICE")
-		env.Alice, err = SetupMember(t, env.ctx, &env.api, env.DAO, env.TelosDecide, "alice", aliceTokens)
+		env.Alice, err = SetupMember(t, env.ctx, &env.api, env.DAO, env.TelosDecide, env.HvoiceToken, "alice", aliceTokens)
 		assert.NilError(t, err)
 
 		index := 1
@@ -329,7 +329,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 
 			memberNameIn := "mem" + strconv.Itoa(index) + ".hypha"
 
-			newMember, err := SetupMember(t, env.ctx, &env.api, env.DAO, env.TelosDecide, memberNameIn, daoTokens)
+			newMember, err := SetupMember(t, env.ctx, &env.api, env.DAO, env.TelosDecide, env.HvoiceToken, memberNameIn, daoTokens)
 			assert.NilError(t, err)
 
 			env.Members = append(env.Members, newMember)
@@ -343,7 +343,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 }
 
 func SetupMember(t *testing.T, ctx context.Context, api *eos.API,
-	contract, telosDecide eos.AccountName, memberName string, hvoice eos.Asset) (Member, error) {
+	contract, telosDecide, hyphaVoice eos.AccountName, memberName string, hvoice eos.Asset) (Member, error) {
 
 	t.Log("Creating and enrolling new member  		: ", memberName, " 	with voting power	: ", hvoice.String())
 	memberAccount, err := eostest.CreateAccountFromString(ctx, api, memberName, eostest.DefaultKey())
@@ -353,6 +353,11 @@ func SetupMember(t *testing.T, ctx context.Context, api *eos.API,
 	assert.NilError(t, err)
 
 	_, err = dao.Mint(ctx, api, telosDecide, contract, memberAccount, hvoice)
+	assert.NilError(t, err)
+
+	_, err = dao.IssueHVoice(ctx, api, hyphaVoice, contract, contract, hvoice)
+	assert.NilError(t, err)
+	_, err = dao.TransferHVoice(ctx, api, hyphaVoice, contract, contract, memberAccount, hvoice)
 	assert.NilError(t, err)
 
 	_, err = dao.Apply(ctx, api, contract, memberAccount, "apply to DAO")
