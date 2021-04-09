@@ -8,7 +8,7 @@ jobs:
         with:
           submodules: recursive
       - name: "Build"
-        uses: docker://josejulio/hypha-builder:latest
+        uses: docker://josejulio/hypha-builder:release_1.7.x
         env:
           CODE: "/github/workspace/"
           PATCH_WASM_LD: "1"
