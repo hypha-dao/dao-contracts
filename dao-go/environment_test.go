@@ -246,7 +246,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 
 	// Hvoice doesn't have any limit (max supply should be -1)
 	hvoiceMaxSupply, _ := eos.NewAssetFromString("-1.00 HVOICE")
-	_, err = CreateHVoiceToken(env.ctx, t, &env.api, env.HvoiceToken, env.DAO, hvoiceMaxSupply, 5, 0.5)
+	_, err = CreateHVoiceToken(env.ctx, t, &env.api, env.HvoiceToken, env.DAO, hvoiceMaxSupply, 5, 5000000)
 	assert.NilError(t, err)
 
 	seedsMaxSupply, _ := eos.NewAssetFromString("1000000000.0000 SEEDS")
@@ -381,12 +381,12 @@ func SetupMember(t *testing.T, ctx context.Context, api *eos.API,
 	}, nil
 }
 
-func CreateHVoiceToken(ctx context.Context, t *testing.T, api *eos.API, contract, issuer eos.AccountName, maxSupply eos.Asset, decayPeriod eos.Uint64, decayPerPeriod float32) (string, error) {
+func CreateHVoiceToken(ctx context.Context, t *testing.T, api *eos.API, contract, issuer eos.AccountName, maxSupply eos.Asset, decayPeriod eos.Uint64, decayPerPeriodX10M eos.Uint64) (string, error) {
 	type tokenCreate struct {
-		Issuer         eos.AccountName
-		MaxSupply      eos.Asset
-		DecayPeriod    eos.Uint64
-		DecayPerPeriod float32
+		Issuer              eos.AccountName
+		MaxSupply           eos.Asset
+		DecayPeriod         eos.Uint64
+		DecayPerPeriodX10M  eos.Uint64
 	}
 
 	actions := []*eos.Action{{
@@ -396,10 +396,10 @@ func CreateHVoiceToken(ctx context.Context, t *testing.T, api *eos.API, contract
 			{Actor: contract, Permission: eos.PN("active")},
 		},
 		ActionData: eos.NewActionData(tokenCreate{
-			Issuer:         issuer,
-			MaxSupply:      maxSupply,
-			DecayPeriod:    decayPeriod,
-			DecayPerPeriod: decayPerPeriod,
+			Issuer:                issuer,
+			MaxSupply:             maxSupply,
+			DecayPeriod:           decayPeriod,
+			DecayPerPeriodX10M:    decayPerPeriodX10M,
 		}),
 	}}
 
