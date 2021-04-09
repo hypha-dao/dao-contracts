@@ -141,6 +141,7 @@ func TestProposalDocumentVote(t *testing.T) {
 		AssertTally(t, voteTally, "2.00 HVOICE", "2.00 HVOICE", "103.00 HVOICE")
 
 		t.Log("Member: ", closer.Member, " is closing role proposal	: ", role.Hash.String())
+		pause(t, env.VotingPause, "", "Waiting for ballot to finish")
 		_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)
 		assert.NilError(t, err)
 
