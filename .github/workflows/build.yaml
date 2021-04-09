@@ -11,3 +11,4 @@ jobs:
         uses: docker://josejulio/hypha-builder:latest
         env:
           CODE: "/github/workspace/"
+          PATCH_WASM_LD: "1"
