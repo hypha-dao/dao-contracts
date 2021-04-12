@@ -50,23 +50,17 @@ namespace hypha
                   std::to_string(currentPeriodCount) + "; proposed: " + std::to_string(newPeriodCount)
                 );    
             }
-            
-            //TODO: Check if we have at least 1+ period remaining, 
-            //otherwise we deny the edit/extension                         
-            auto startPeriodHash = assignment.getContentWrapper()
-                                             .getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>();
-
-            auto startPeriod = Period(&m_dao, startPeriodHash);
-
+                           
             auto currentTimeSecs = eosio::current_time_point().sec_since_epoch();
 
-            auto lastPeriodStartSecs = startPeriod.getNthPeriodAfter(currentPeriodCount-1)
+            auto lastPeriodStartSecs = assignment.getLastPeriod()
                                                   .getStartTime()
                                                   .sec_since_epoch();
 
             eosio::check(
               lastPeriodStartSecs > currentTimeSecs, 
-              "There has to be at least 1 remaining period before editing an assignment"
+              "There has to be at least 1 remaining period before editing/extending an assignment"
+              ", create a new one instead"
             );
             
             original = std::move(*static_cast<Document*>(&assignment));
@@ -76,7 +70,6 @@ namespace hypha
             original = Document(m_dao.get_self(), originalDocHash);
         }
 
-        //TODO: This edge has to be cleaned up when the proposal fails
         // connect the edit proposal to the original
         Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), original.getHash(), common::ORIGINAL);
     }
@@ -146,18 +139,7 @@ namespace hypha
 
     std::string EditProposal::getBallotContent (ContentWrapper &contentWrapper)
     {
-        auto [titleIdx, title] = contentWrapper.get(DETAILS, TITLE);
-
-        auto [ballotTitleIdx, ballotTitle] = contentWrapper.get(DETAILS, common::BALLOT_TITLE);
-
-        eosio::check(
-          title != nullptr || ballotTitle != nullptr,
-          to_str("Proposal [details] group must contain at least one of the following items [", 
-                  TITLE, ", ", common::BALLOT_TITLE, "]")
-        );
-
-        return title != nullptr ? title->getAs<std::string>() : 
-                                  ballotTitle->getAs<std::string>();
+        return getTitle(contentWrapper);
     }
     
     name EditProposal::getProposalType () 

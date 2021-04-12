@@ -9,6 +9,7 @@
 #include <eosio/multi_index.hpp>
 
 #include <document_graph/content_wrapper.hpp>
+#include <document_graph/util.hpp>
 
 namespace hypha
 {
@@ -98,6 +99,9 @@ namespace hypha
       }
       else if constexpr (supports_call_to_string<T>::value) {
         return arg.to_string();
+      }
+      else if constexpr (std::is_same_v<T, eosio::checksum256>) {
+        return readableHash(arg);
       }
       else {
         return arg;
