@@ -2,6 +2,8 @@
 
 EOSIO contracts for managing a decentralized autonomous organization on EOSIO chains.
 
+![Status](https://github.com/hypha-dao/dao-contracts/actions/workflows/build.yml/badge.svg?branch=develop)
+
 ## Getting Started
 
 #### Dependencies
