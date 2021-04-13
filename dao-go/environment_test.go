@@ -18,8 +18,6 @@ import (
 	"gotest.tools/assert"
 )
 
-var exchangeWasm, exchangeAbi string
-
 var daoHome = ".."
 var daoPrefix = daoHome + "/build/dao/dao."
 var docPrefix = daoHome + "/build/doc/docs/docs."
@@ -134,9 +132,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	monitorPrefix := artifactsHome + "/monitor/monitor."
 	escrowPrefix := artifactsHome + "/escrow/escrow."
 	voicePrefix := artifactsHome + "/voice/voice."
-
-	exchangeWasm = "mocks/seedsexchg/build/seedsexchg/seedsexchg.wasm"
-	exchangeAbi = "mocks/seedsexchg/build/seedsexchg/seedsexchg.abi"
+	exchangePrefix := artifactsHome + "/seedsexchg/seedsexchg."
 
 	var env Environment
 
@@ -223,7 +219,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	assert.NilError(t, err)
 
 	t.Log("Deploying SeedsExchange contract to 		: ", env.SeedsExchange)
-	_, err = eostest.SetContract(env.ctx, &env.api, env.SeedsExchange, exchangeWasm, exchangeAbi)
+	_, err = eostest.SetContract(env.ctx, &env.api, env.SeedsExchange, exchangePrefix+"wasm", exchangePrefix+"abi")
 	assert.NilError(t, err)
 	loadSeedsTablesFromProd(t, &env, "https://api.telos.kitchen")
 
@@ -231,11 +227,17 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	_, err = eostest.SetContract(env.ctx, &env.api, env.Events, monitorPrefix+"wasm", monitorPrefix+"abi")
 	assert.NilError(t, err)
 
+	pause(t, time.Second * 10, "Build block...", "")
 	_, err = dao.CreateRoot(env.ctx, &env.api, env.DAO)
 	assert.NilError(t, err)
+	pause(t, time.Second * 10, "Build block...", "")
 	env.Root, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, "52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91")
-	assert.NilError(t, err)
 
+	pause(t, time.Second * 10, "Build block...", "")
+	env.Root, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, "52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91")
+
+	assert.NilError(t, err)
+	
 	husdMaxSupply, _ := eos.NewAssetFromString("1000000000.00 HUSD")
 	_, err = eostest.DeployAndCreateToken(env.ctx, t, &env.api, artifactsHome, env.HusdToken, env.Bank, husdMaxSupply)
 	assert.NilError(t, err)
