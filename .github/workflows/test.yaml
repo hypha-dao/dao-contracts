@@ -14,6 +14,11 @@ jobs:
         env:
           CODE: "/github/workspace/"
           PATCH_WASM_LD: "1"
+      - run "echo $CODE"
+      - run "echo $CODE"
+        env:
+          CODE: "new CODE"
+      - run "echo $CODE"
       - name: "Build mocks"
         uses: docker://josejulio/hypha-builder:release_1.7.x
         with:
