@@ -48,8 +48,8 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "decay_per_period",
-                    "type": "float32"
+                    "name": "decay_per_period_x10M",
+                    "type": "uint64"
                 }
             ]
         },
@@ -70,8 +70,8 @@
                     "type": "name"
                 },
                 {
-                    "name": "decay_per_period",
-                    "type": "float32"
+                    "name": "decay_per_period_x10M",
+                    "type": "uint64"
                 },
                 {
                     "name": "decay_period",
@@ -90,6 +90,16 @@
                 {
                     "name": "symbol",
                     "type": "symbol"
+                }
+            ]
+        },
+        {
+            "name": "del",
+            "base": "",
+            "fields": [
+                {
+                    "name": "symbol",
+                    "type": "asset"
                 }
             ]
         },
@@ -180,6 +190,11 @@
         {
             "name": "decay",
             "type": "decay",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "del",
+            "type": "del",
             "ricardian_contract": ""
         },
         {
