@@ -17,6 +17,6 @@ jobs:
       - name: "Test"
         uses: docker://josejulio/hypha-test:release_2.0.x
         with:
-          args: "-v -timeout 1h"
+          args: "-v -timeout 6h"
         env:
-          CODE: "/github/workspace/"
+          CODE: "/github/workspace/dao-go"
