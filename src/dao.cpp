@@ -761,7 +761,7 @@ namespace hypha
       int64_t originalTimeShare = assignmentCW.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
       int64_t minTimeShare = role.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
               
-      bool checkNewTimeShareMin = true;
+      bool checkNewTimeShareMin = false;
       
       if (modifier == common::MOD_WITHDRAW) 
       {
