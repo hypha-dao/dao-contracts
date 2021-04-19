@@ -16,7 +16,8 @@ jobs:
           PATCH_WASM_LD: "1"
       - name: "Test"
         uses: docker://josejulio/hypha-test:release_2.0.x
-        with:
-          args: "-v -timeout 6h"
         env:
           CODE: "/github/workspace/dao-go"
+          INTERACTIVE_MODE: "false"
+        with:
+          args: "-v -timeout 6h"

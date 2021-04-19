@@ -1,0 +1,138 @@
+info  2021-04-19T22:28:36.105 nodeos    chain_plugin.cpp:628          plugin_initialize    ] initializing chain plugin
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:459          operator()           ] Support for builtin protocol feature 'PREACTIVATE_FEATURE' (with digest of '0ec7e080177b2c02b278d5088611686b49d739925a92d9bfcacd7fc6b74053bd') is enabled without activation restrictions
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'ONLY_LINK_TO_EXISTING_PERMISSION' (with digest of '1a99a59d87e06e09ec5b028a9cbb7749b4a5ad8819004365d02dc4379a8b7241') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'FORWARD_SETCODE' (with digest of '2652f5f96006294109b3dd0bbde63693f55324af452b799ee137a81a905eed25') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'WTMSIG_BLOCK_SIGNATURES' (with digest of '299dcb6af692324b899b39f16d5a530a33062804e41f09dc97e9f156b4476707') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'REPLACE_DEFERRED' (with digest of 'ef43112c6543b88db2283a2e077278c315ae2c84719a8b25f25cc88565fbea99') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'NO_DUPLICATE_DEFERRED_ID' (with digest of '4a90c00d55454dc5b059055ca213579c6ea856967712a56017487886a4d4cc0f') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'RAM_RESTRICTIONS' (with digest of '4e7bf348da00a945489b2a681749eb56f5de00b900014e137ddae39f48f69d67') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'WEBAUTHN_KEY' (with digest of '4fca8bd82bbd181e714e283f83e1b45d95ca5af40fb89ad3977b653c448f78c2') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'DISALLOW_EMPTY_PRODUCER_SCHEDULE' (with digest of '68dcaa34c0517d19666e6b33add67351d8c5f69e999ca1e37931bc410a297428') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'ONLY_BILL_FIRST_AUTHORIZER' (with digest of '8ba52fe7a3956c5cd3a656a3174b931d3bb2abb45578befc59f283ecd816a405') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'RESTRICT_ACTION_TO_SELF' (with digest of 'ad9e3d8f650687709fd68f4b90b41f7d825a365b02c23a636cef88ac2ac00c43') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'FIX_LINKAUTH_RESTRICTION' (with digest of 'e0fb64b1085cc5538970158d05a009c24e276fb94e1a0bf6a528b48fbc4ff526') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:446          operator()           ] Support for builtin protocol feature 'GET_SENDER' (with digest of 'f0af56d2c5a48d60a4a5b5c903edfb7db3a736a94ed589d0b797df33ff9d3e1d') is enabled with preactivation required
+info  2021-04-19T22:28:36.106 nodeos    chain_plugin.cpp:830          plugin_initialize    ] Deleting state database and blocks
+info  2021-04-19T22:28:36.108 nodeos    chain_plugin.cpp:1025         plugin_initialize    ] Starting fresh blockchain state using default genesis state.
+info  2021-04-19T22:28:36.695 nodeos    platform_timer_accurac:62     compute_and_print_ti ] Checktime timer accuracy: min:1us max:38us mean:5us stddev:4us
+info  2021-04-19T22:28:36.696 nodeos    http_plugin.cpp:742           plugin_initialize    ] configured http to listen on 127.0.0.1:8888
+warn  2021-04-19T22:28:36.696 nodeos    history_plugin.cpp:317        plugin_initialize    ] --filter-on * enabled. This can fill shared_mem, causing nodeos to stop.
+info  2021-04-19T22:28:36.696 nodeos    main.cpp:106                  main                 ] nodeos version v2.0.11 v2.0.11-934d9d62368a172445db03c51e52a23c09757e4a
+info  2021-04-19T22:28:36.696 nodeos    main.cpp:107                  main                 ] nodeos using configuration file /.local/share/eosio/nodeos/config/config.ini
+info  2021-04-19T22:28:36.696 nodeos    main.cpp:108                  main                 ] nodeos data directory is /.local/share/eosio/nodeos/data
+warn  2021-04-19T22:28:36.696 nodeos    controller.cpp:580            startup              ] No existing chain state or fork database. Initializing fresh blockchain state and resetting fork database.
+warn  2021-04-19T22:28:36.696 nodeos    controller.cpp:450            initialize_blockchai ] Initializing new blockchain with genesis state
+info  2021-04-19T22:28:36.733 nodeos    chain_plugin.cpp:1166         plugin_startup       ] starting chain in read/write mode
+info  2021-04-19T22:28:36.733 nodeos    chain_plugin.cpp:1171         plugin_startup       ] Blockchain started; head block is #1, genesis timestamp is 2018-06-01T12:00:00.000
+info  2021-04-19T22:28:36.733 nodeos    producer_plugin.cpp:969       plugin_startup       ] producer plugin:  plugin_startup() begin
+info  2021-04-19T22:28:36.733 nodeos    producer_plugin.cpp:994       plugin_startup       ] Launching block production for 1 producers at 2021-04-19T22:28:36.733.
+info  2021-04-19T22:28:36.733 nodeos    producer_plugin.cpp:1005      plugin_startup       ] producer plugin:  plugin_startup() end
+info  2021-04-19T22:28:36.734 nodeos    producer_api_plugin.cp:89     plugin_startup       ] starting producer_api_plugin
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/add_greylist_accounts
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/create_snapshot
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/get_account_ram_corrections
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/get_greylist
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/get_integrity_hash
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/get_runtime_options
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/get_scheduled_protocol_feature_activations
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/get_supported_protocol_features
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/get_whitelist_blacklist
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/pause
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/paused
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/remove_greylist_accounts
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/resume
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/schedule_protocol_feature_activations
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/set_whitelist_blacklist
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/producer/update_runtime_options
+info  2021-04-19T22:28:36.734 nodeos    chain_api_plugin.cpp:105      plugin_startup       ] starting chain_api_plugin
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_info
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/abi_bin_to_json
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/abi_json_to_bin
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_abi
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_account
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_activated_protocol_features
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_block
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_block_header_state
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_code
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_code_hash
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_currency_balance
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_currency_stats
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_producer_schedule
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_producers
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_raw_abi
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_raw_code_and_abi
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_required_keys
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_scheduled_transactions
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_table_by_scope
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_table_rows
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/get_transaction_id
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/push_block
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/push_transaction
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/push_transactions
+info  2021-04-19T22:28:36.734 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/chain/send_transaction
+info  2021-04-19T22:28:36.735 nodeos    history_api_plugin.cpp:34     plugin_startup       ] starting history_api_plugin
+info  2021-04-19T22:28:36.735 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/history/get_actions
+info  2021-04-19T22:28:36.735 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/history/get_controlled_accounts
+info  2021-04-19T22:28:36.735 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/history/get_key_accounts
+info  2021-04-19T22:28:36.735 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/history/get_transaction
+info  2021-04-19T22:28:36.735 nodeos    net_plugin.cpp:3481           plugin_startup       ] my node_id is 7e82f8f2c3e14a256f022869acde576eff591a3825c00ee5d2d7147feb3b64ef
+info  2021-04-19T22:28:36.735 nodeos    net_plugin.cpp:3537           plugin_startup       ] starting listener, max clients is 25
+info  2021-04-19T22:28:36.735 nodeos    http_plugin.cpp:821           operator()           ] start listening for http requests
+info  2021-04-19T22:28:36.735 nodeos    http_plugin.cpp:927           add_handler          ] add api url: /v1/node/get_supported_apis
+info  2021-04-19T22:28:36.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 508ffe4cf97063c0... #2 @ 2021-04-19T22:28:37.000 signed by eosio [trxs: 0, lib: 1, confirmed: 0]
+info  2021-04-19T22:28:37.410 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block ff4f32662f894765... #3 @ 2021-04-19T22:28:37.500 signed by eosio [trxs: 22, lib: 2, confirmed: 0]
+info  2021-04-19T22:28:37.912 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 742f9fea9f56346e... #4 @ 2021-04-19T22:28:38.000 signed by eosio [trxs: 4, lib: 3, confirmed: 0]
+info  2021-04-19T22:28:38.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block ad6d2af0953b9826... #5 @ 2021-04-19T22:28:38.500 signed by eosio [trxs: 1, lib: 4, confirmed: 0]
+info  2021-04-19T22:28:38.903 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block df2488991f231e7b... #6 @ 2021-04-19T22:28:39.000 signed by eosio [trxs: 47, lib: 5, confirmed: 0]
+info  2021-04-19T22:28:39.405 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 012d3e845dec6413... #7 @ 2021-04-19T22:28:39.500 signed by eosio [trxs: 1, lib: 6, confirmed: 0]
+info  2021-04-19T22:28:39.902 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 27880950f2117e0e... #8 @ 2021-04-19T22:28:40.000 signed by eosio [trxs: 0, lib: 7, confirmed: 0]
+info  2021-04-19T22:28:40.400 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 4d827295551d415a... #9 @ 2021-04-19T22:28:40.500 signed by eosio [trxs: 0, lib: 8, confirmed: 0]
+info  2021-04-19T22:28:40.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 00a0a6fa0172b7c2... #10 @ 2021-04-19T22:28:41.000 signed by eosio [trxs: 0, lib: 9, confirmed: 0]
+info  2021-04-19T22:28:41.302 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block dcb2c968ed54545a... #11 @ 2021-04-19T22:28:41.500 signed by eosio [trxs: 0, lib: 10, confirmed: 0]
+info  2021-04-19T22:28:41.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block bbec787f138195c9... #12 @ 2021-04-19T22:28:42.000 signed by eosio [trxs: 0, lib: 11, confirmed: 0]
+info  2021-04-19T22:28:42.400 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 2737e3edd6dc0336... #13 @ 2021-04-19T22:28:42.500 signed by eosio [trxs: 0, lib: 12, confirmed: 0]
+info  2021-04-19T22:28:42.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block e178dd9288ce59be... #14 @ 2021-04-19T22:28:43.000 signed by eosio [trxs: 0, lib: 13, confirmed: 0]
+info  2021-04-19T22:28:43.400 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block dac7de8b1ad83f20... #15 @ 2021-04-19T22:28:43.500 signed by eosio [trxs: 0, lib: 14, confirmed: 0]
+info  2021-04-19T22:28:43.900 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block da1db5ad0f362faa... #16 @ 2021-04-19T22:28:44.000 signed by eosio [trxs: 0, lib: 15, confirmed: 0]
+info  2021-04-19T22:28:44.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 4d01280f9764e4e3... #17 @ 2021-04-19T22:28:44.500 signed by eosio [trxs: 0, lib: 16, confirmed: 0]
+info  2021-04-19T22:28:44.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 5b6f5aece3b65566... #18 @ 2021-04-19T22:28:45.000 signed by eosio [trxs: 0, lib: 17, confirmed: 0]
+info  2021-04-19T22:28:45.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block a48a16839272e9d6... #19 @ 2021-04-19T22:28:45.500 signed by eosio [trxs: 0, lib: 18, confirmed: 0]
+info  2021-04-19T22:28:45.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block bda46718d08b54c3... #20 @ 2021-04-19T22:28:46.000 signed by eosio [trxs: 0, lib: 19, confirmed: 0]
+info  2021-04-19T22:28:46.400 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 55974a0f8a2c9757... #21 @ 2021-04-19T22:28:46.500 signed by eosio [trxs: 0, lib: 20, confirmed: 0]
+info  2021-04-19T22:28:46.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 057109db14e6bf52... #22 @ 2021-04-19T22:28:47.000 signed by eosio [trxs: 0, lib: 21, confirmed: 0]
+info  2021-04-19T22:28:47.301 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block d87d053241981bc0... #23 @ 2021-04-19T22:28:47.500 signed by eosio [trxs: 0, lib: 22, confirmed: 0]
+info  2021-04-19T22:28:47.900 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block d2d5f327cec90a1c... #24 @ 2021-04-19T22:28:48.000 signed by eosio [trxs: 0, lib: 23, confirmed: 0]
+info  2021-04-19T22:28:48.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 29dd2a6b15bff779... #25 @ 2021-04-19T22:28:48.500 signed by eosio [trxs: 0, lib: 24, confirmed: 0]
+info  2021-04-19T22:28:48.900 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 395e925ea8186a85... #26 @ 2021-04-19T22:28:49.000 signed by eosio [trxs: 0, lib: 25, confirmed: 0]
+info  2021-04-19T22:28:49.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block c61869f0103eba9b... #27 @ 2021-04-19T22:28:49.500 signed by eosio [trxs: 1, lib: 26, confirmed: 0]
+info  2021-04-19T22:28:49.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block cbe9408d10d28345... #28 @ 2021-04-19T22:28:50.000 signed by eosio [trxs: 0, lib: 27, confirmed: 0]
+info  2021-04-19T22:28:50.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block f12648565d0dd8dc... #29 @ 2021-04-19T22:28:50.500 signed by eosio [trxs: 0, lib: 28, confirmed: 0]
+info  2021-04-19T22:28:50.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block ade8ef79e1248704... #30 @ 2021-04-19T22:28:51.000 signed by eosio [trxs: 0, lib: 29, confirmed: 0]
+info  2021-04-19T22:28:51.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block ea4457cae4f6bf57... #31 @ 2021-04-19T22:28:51.500 signed by eosio [trxs: 0, lib: 30, confirmed: 0]
+info  2021-04-19T22:28:51.900 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block d1672652234d5b94... #32 @ 2021-04-19T22:28:52.000 signed by eosio [trxs: 0, lib: 31, confirmed: 0]
+info  2021-04-19T22:28:52.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block a5214e6f53a946bc... #33 @ 2021-04-19T22:28:52.500 signed by eosio [trxs: 0, lib: 32, confirmed: 0]
+info  2021-04-19T22:28:52.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 0276fc41738fad62... #34 @ 2021-04-19T22:28:53.000 signed by eosio [trxs: 0, lib: 33, confirmed: 0]
+info  2021-04-19T22:28:53.302 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block ee30fdc065bbac8b... #35 @ 2021-04-19T22:28:53.500 signed by eosio [trxs: 0, lib: 34, confirmed: 0]
+info  2021-04-19T22:28:53.900 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 4331dcd428ac05ce... #36 @ 2021-04-19T22:28:54.000 signed by eosio [trxs: 0, lib: 35, confirmed: 0]
+info  2021-04-19T22:28:54.400 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block f95226aff9901d6d... #37 @ 2021-04-19T22:28:54.500 signed by eosio [trxs: 0, lib: 36, confirmed: 0]
+info  2021-04-19T22:28:54.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 9e3f538ba441f4a3... #38 @ 2021-04-19T22:28:55.000 signed by eosio [trxs: 0, lib: 37, confirmed: 0]
+info  2021-04-19T22:28:55.400 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block d62d6d7914512554... #39 @ 2021-04-19T22:28:55.500 signed by eosio [trxs: 0, lib: 38, confirmed: 0]
+info  2021-04-19T22:28:55.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 7ef84680b3d62ce4... #40 @ 2021-04-19T22:28:56.000 signed by eosio [trxs: 0, lib: 39, confirmed: 0]
+info  2021-04-19T22:28:56.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block eccbf659bc04b442... #41 @ 2021-04-19T22:28:56.500 signed by eosio [trxs: 0, lib: 40, confirmed: 0]
+info  2021-04-19T22:28:56.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 6b64a578fa811716... #42 @ 2021-04-19T22:28:57.000 signed by eosio [trxs: 0, lib: 41, confirmed: 0]
+info  2021-04-19T22:28:57.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 73bd80f578354e09... #43 @ 2021-04-19T22:28:57.500 signed by eosio [trxs: 0, lib: 42, confirmed: 0]
+info  2021-04-19T22:28:57.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 0763d83712eff742... #44 @ 2021-04-19T22:28:58.000 signed by eosio [trxs: 0, lib: 43, confirmed: 0]
+info  2021-04-19T22:28:58.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block fc7025787cd92906... #45 @ 2021-04-19T22:28:58.500 signed by eosio [trxs: 0, lib: 44, confirmed: 0]
+info  2021-04-19T22:28:58.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 1445b7c02f8bc461... #46 @ 2021-04-19T22:28:59.000 signed by eosio [trxs: 0, lib: 45, confirmed: 0]
+info  2021-04-19T22:28:59.301 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 01a2b6e0980aee6c... #47 @ 2021-04-19T22:28:59.500 signed by eosio [trxs: 0, lib: 46, confirmed: 0]
+info  2021-04-19T22:28:59.902 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 891b83fa1023dbcc... #48 @ 2021-04-19T22:29:00.000 signed by eosio [trxs: 0, lib: 47, confirmed: 0]
+info  2021-04-19T22:29:00.402 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 815cec4df0e6d719... #49 @ 2021-04-19T22:29:00.500 signed by eosio [trxs: 0, lib: 48, confirmed: 0]
+info  2021-04-19T22:29:00.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block d0f6b24a6d44f732... #50 @ 2021-04-19T22:29:01.000 signed by eosio [trxs: 0, lib: 49, confirmed: 0]
+info  2021-04-19T22:29:01.400 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block a8973fe44a1da3f9... #51 @ 2021-04-19T22:29:01.500 signed by eosio [trxs: 0, lib: 50, confirmed: 0]
+info  2021-04-19T22:29:01.900 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 78a27bf19f5c03ad... #52 @ 2021-04-19T22:29:02.000 signed by eosio [trxs: 0, lib: 51, confirmed: 0]
+info  2021-04-19T22:29:02.401 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 3430b5daac08438d... #53 @ 2021-04-19T22:29:02.500 signed by eosio [trxs: 0, lib: 52, confirmed: 0]
+info  2021-04-19T22:29:02.901 nodeos    producer_plugin.cpp:2224      produce_block        ] Produced block 39fd0e4bac58d399... #54 @ 2021-04-19T22:29:03.000 signed by eosio [trxs: 0, lib: 53, confirmed: 0]
+info  2021-04-19T22:29:03.088 nodeos    net_plugin.cpp:3583           plugin_shutdown      ] shutdown..
+info  2021-04-19T22:29:03.088 nodeos    net_plugin.cpp:3600           plugin_shutdown      ] close 0 connections
+info  2021-04-19T22:29:03.088 nodeos    net_plugin.cpp:3620           plugin_shutdown      ] exit shutdown
+info  2021-04-19T22:29:03.164 nodeos    main.cpp:149                  main                 ] nodeos successfully exiting

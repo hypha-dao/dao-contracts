@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
 	"github.com/hypha-dao/dao-contracts/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
@@ -236,7 +237,7 @@ func TestCloseOldProposal(t *testing.T) {
 		assert.NilError(t, err)
 		_, err = dao.OpenBallot(env.ctx, &env.api, env.TelosDecide, env.DAO, "hypha1....1g", 2)
 		assert.NilError(t, err)
-		pause(t, time.Second*3, "", "Waiting before closing")
+		eostest.Pause(time.Second*3, "", "Waiting before closing")
 
 		// Close proposal
 		t.Log("Member: ", env.Alice.Member, " is closing role proposal	: ", doc.Hash.String())

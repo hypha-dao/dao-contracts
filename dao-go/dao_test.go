@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gotest.tools/assert"
+	eostest "github.com/digital-scarcity/eos-go-test"
 )
 
 var env *Environment
@@ -24,7 +25,7 @@ func setupTestCase(t *testing.T) func(t *testing.T) {
 
 	_, err := exec.Command("sh", "-c", "pkill -SIGINT nodeos").Output()
 	if err == nil {
-		pause(t, time.Second, "Killing nodeos ...", "")
+		eostest.Pause(time.Second, "Killing nodeos ...", "")
 	}
 
 	t.Log("Starting nodeos from 'nodeos.sh' script ...")
@@ -41,7 +42,7 @@ func setupTestCase(t *testing.T) func(t *testing.T) {
 
 	t.Log("nodeos PID: ", cmd.Process.Pid)
 
-	pause(t, time.Second, "", "")
+	eostest.Pause(time.Second, "", "")
 
 	return func(t *testing.T) {
 		t.Log(" **********    Payments   **********")

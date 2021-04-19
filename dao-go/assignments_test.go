@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+  eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
 	"github.com/hypha-dao/dao-contracts/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
@@ -212,7 +213,7 @@ func TestAdjustCommitment(t *testing.T) {
       //Wait Half Period to close the proposal and test the special
       //case when approved time overlaps in the first period
       t.Log("Waiting for a period to lapse...")
-      pause(t, env.VotingPause, "", "Waiting...")
+      eostest.Pause(t, env.VotingPause, "", "Waiting...")
 
       _, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
       assert.NilError(t, err)
@@ -299,7 +300,7 @@ func TestAdjustCommitment(t *testing.T) {
 
       //Claim first period
       t.Log("Waiting for a period to lapse...")
-      pause(t, env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause, "", "Waiting...")
 
       //This should get partial payment since the approved time should be > than
       //the start time of the period
@@ -325,7 +326,7 @@ func TestAdjustCommitment(t *testing.T) {
 
       //Claim second period
       t.Log("Waiting for a period to lapse...")
-      pause(t, env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause, "", "Waiting...")
 
       //This should get full payment since the first 50% adjustment takes
       //place on the next period
@@ -337,7 +338,7 @@ func TestAdjustCommitment(t *testing.T) {
 
       //Claim third period
       t.Log("Waiting for another period to lapse...")
-      pause(t, env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause, "", "Waiting...")
 
       //This should get full payment for the first half of the period
       //and then half payment for the last half of the period
@@ -358,7 +359,7 @@ func TestAdjustCommitment(t *testing.T) {
 
       //Claim last period
       t.Log("Waiting for another period to lapse...")
-      pause(t, env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause, "", "Waiting...")
 
       //This should get half payment for the first third,
       //full payment on the second third &
@@ -484,7 +485,7 @@ func TestWithdrawAssignment(t *testing.T) {
 
       //Claim first period
       t.Log("Waiting for 2 periods to lapse...")
-      pause(t, env.PeriodPause * 2, "", "Waiting...")
+      eostest.Pause(env.PeriodPause * 2, "", "Waiting...")
 
       //This should get half payment since we changed the commitment to half
       //the start time of the period
@@ -519,7 +520,7 @@ func TestWithdrawAssignment(t *testing.T) {
 			for claimed {
 				//Claim next
 				t.Log("Waiting for another period to lapse...")
-				pause(t, env.PeriodPause, "", "Waiting...")
+				eostest.Pause(env.PeriodPause, "", "Waiting...")
 
 				_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
 
@@ -643,7 +644,7 @@ func TestSuspendAssignment(t *testing.T) {
 
       //Claim first period
       t.Log("Waiting for 2 periods to lapse...")
-      pause(t, env.PeriodPause * 2, "", "Waiting...")
+      eostest.Pause(env.PeriodPause * 2, "", "Waiting...")
 
       //This should get half payment since we changed the commitment to half
       //the start time of the period
@@ -687,7 +688,7 @@ func TestSuspendAssignment(t *testing.T) {
 			for claimed {
 				//Claim next
 				t.Log("Waiting for another period to lapse...")
-				pause(t, env.PeriodPause, "", "Waiting...")
+				eostest.Pause(env.PeriodPause, "", "Waiting...")
 
 				_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
 
@@ -1036,7 +1037,7 @@ func TestOldAssignmentsPayClaim(t *testing.T) {
 
       //Emulate voting period
       t.Log("Waiting for a period to lapse...")
-      pause(t, env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause, "", "Waiting...")
 
       //Manually create the edges for passed assignments
       ExecuteDocgraphCall(t, env, func() {
@@ -1074,7 +1075,7 @@ func TestOldAssignmentsPayClaim(t *testing.T) {
       //checkEdge(t, env, env.Root, assignment, eos.Name("passedprops"))
 
       t.Log("Waiting for a period to lapse...")
-      pause(t, env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause, "", "Waiting...")
 
       _, err = ClaimNextPeriod(t, env, proposer.Member, assignment)
       assert.NilError(t, err)
@@ -1108,7 +1109,7 @@ func TestOldAssignmentsPayClaim(t *testing.T) {
       //assert.Assert(t, payments[len(payments)-1].SeedsEscrow.Amount > 0)
 
       t.Log("Waiting for a period to lapse...")
-      pause(t, env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause, "", "Waiting...")
 
       _, err = ClaimNextPeriod(t, env, proposer.Member, assignment)
       assert.NilError(t, err)
@@ -1214,7 +1215,7 @@ func TestAssignmentPayClaim(t *testing.T) {
       checkEdge(t, env, env.Root, assignment, eos.Name("passedprops"))
 
       t.Log("Waiting for a period to lapse...")
-      pause(t, env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause, "", "Waiting...")
 
       _, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
       assert.NilError(t, err)
@@ -1242,7 +1243,7 @@ func TestAssignmentPayClaim(t *testing.T) {
       assert.Assert(t, payments[len(payments)-1].SeedsEscrow.Amount > 0)
 
       t.Log("Waiting for a period to lapse...")
-      pause(t, env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause, "", "Waiting...")
 
       _, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
       assert.NilError(t, err)
@@ -1336,7 +1337,7 @@ func TestAssignmentExtensionProposal(t *testing.T) {
       _, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
       assert.NilError(t, err)
 
-      pause(t, 1000000000, "", "Waiting before fetching assignment again")
+      eostest.Pause(1000000000, "", "Waiting before fetching assignment again")
 
       // Assignment hash will change due origina_approved_date item begin added the first time
       // we claim with an old assignment
@@ -1470,7 +1471,7 @@ func TestAssignmentEditProposal(t *testing.T) {
       _, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
       assert.NilError(t, err)
 
-      pause(t, 1000000000, "", "Waiting before fetching assignment again")
+      eostest.Pause(1000000000, "", "Waiting before fetching assignment again")
 
       // Assignment hash will change due origina_approved_date item begin added the first time
       // we claim with an old assignment
@@ -1506,7 +1507,7 @@ func TestAssignmentEditProposal(t *testing.T) {
       _, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, editProp.Hash)
       assert.NilError(t, err)
 
-      pause(t, 1000000000, "", "Waiting before fetching assignment again")
+      eostest.Pause(1000000000, "", "Waiting before fetching assignment again")
 
       assignment, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
       assert.NilError(t, err)
@@ -1519,7 +1520,7 @@ func TestAssignmentEditProposal(t *testing.T) {
 
       assert.Equal(t, int64(12), newPeriodCountValue)
 
-      pause(t, time.Duration(newPeriodCountValue)*env.PeriodPause, "", "Waiting before fetching assignment again")
+      eostest.Pause(time.Duration(newPeriodCountValue)*env.PeriodPause, "", "Waiting before fetching assignment again")
 
       //Wait for all the periods to finish
       //Should fail since this assignment is now expired

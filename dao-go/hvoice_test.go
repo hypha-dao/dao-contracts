@@ -3,6 +3,7 @@ package dao_test
 import (
 	"testing"
 
+    eostest "github.com/digital-scarcity/eos-go-test"
     "github.com/eoscanada/eos-go"
 	"github.com/hypha-dao/dao-contracts/dao-go"
 	"gotest.tools/assert"
@@ -64,7 +65,7 @@ func TestHvoiceIssuingAndTransfering(t *testing.T) {
         assert.NilError(t, err)
 
         // Wait 6 seconds (Decay is every 5 seconds and decays 50%).
-        pause(t, 6000000000, "", "Waiting for a decay")
+        eostest.Pause(6000000000, "", "Waiting for a decay")
 
         // Issued 105.00 (not yet decayed until a transaction takes place)
         stats, err = dao.GetHvoiceIssued(env.ctx, &env.api, env.HvoiceToken, hvoiceAsset.Symbol)

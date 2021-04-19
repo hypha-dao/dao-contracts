@@ -45,21 +45,6 @@ func DefaultProgressBar(counter int) *progressbar.ProgressBar {
 	// 	}))
 }
 
-func pause(seconds time.Duration, headline, prefix string) {
-	if headline != "" {
-		fmt.Println(headline)
-	}
-
-	bar := DefaultProgressBar(100)
-
-	chunk := seconds / 100
-	for i := 0; i < 100; i++ {
-		bar.Add(1)
-		time.Sleep(chunk)
-	}
-	fmt.Println()
-}
-
 type eraseDoc struct {
 	Hash eos.Checksum256 `json:"hash"`
 }

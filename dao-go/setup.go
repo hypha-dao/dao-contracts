@@ -268,7 +268,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 	}
 	fmt.Println("Created role assignment document	: ", roleAssignment.Hash.String())
 
-	pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
+	eostest.Pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
 
 	_, err = claimNextPeriod(ctx, api, contract, member, roleAssignment)
 	if err != nil {
@@ -332,7 +332,7 @@ func claimNextPeriod(ctx context.Context, api *eos.API, contract, claimer eos.Ac
 	trxID, err := eostest.ExecWithRetry(ctx, api, actions)
 
 	if err != nil {
-		pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
+		eostest.Pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
 
 		actions := []*eos.Action{{
 			Account: contract,
@@ -388,7 +388,7 @@ func enrollMember(ctx context.Context, api *eos.API, contract, member eos.Accoun
 	}
 	fmt.Println("Completed the apply transaction: " + trxID)
 
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	trxID, err = Enroll(ctx, api, contract, contract, member)
 	if err != nil {
@@ -396,7 +396,7 @@ func enrollMember(ctx context.Context, api *eos.API, contract, member eos.Accoun
 	}
 	fmt.Println("Completed the enroll transaction: " + trxID)
 
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	memberDoc, err := docgraph.GetLastDocumentOfEdge(ctx, api, contract, "member")
 	if err != nil {
@@ -506,19 +506,19 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	if err == nil {
 		fmt.Println("Member voted : " + string(member))
 	}
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	_, err = TelosDecideVote(ctx, api, telosDecide, eos.AN("alice"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : alice")
 	}
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	_, err = TelosDecideVote(ctx, api, telosDecide, eos.AN("johnnyhypha1"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : johnnyhypha1")
 	}
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	index := 1
 	for index < 5 {
@@ -530,7 +530,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 		if err != nil {
 			return docgraph.Document{}, fmt.Errorf("error voting via telos decide %v", err)
 		}
-		pause(defaultPause(), "Building block...", "")
+		eostest.Pause(defaultPause(), "Building block...", "")
 		fmt.Println("Member voted : " + string(memberNameIn))
 		index++
 	}
@@ -546,7 +546,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	}
 
 	votingPause := time.Duration((5 + votingPeriodDuration.Impl.(int64)) * 1000000000)
-	pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
+	eostest.Pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
 
 	fmt.Println("Closing proposal: " + proposal.Hash.String())
 	_, err = CloseProposal(ctx, api, contract, member, proposal.Hash)
@@ -595,7 +595,7 @@ func CreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, 
 		return docgraph.Document{}, fmt.Errorf("cannot unmarshal error: %v ", err)
 	}
 
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	// e.g. a "role" is parent to a "role assignment"
 	// e.g. a "badge" is parent to a "badge assignment"

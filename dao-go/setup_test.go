@@ -3,6 +3,7 @@ package dao_test
 import (
 	"testing"
 
+	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/hypha-dao/dao-contracts/dao-go"
 
 	"gotest.tools/assert"
@@ -127,19 +128,19 @@ func TestPretend(t *testing.T) {
 	assert.NilError(t, err)
 
 	t.Log("Waiting for a period to lapse...")
-	pause(t, env.PeriodPause, "", "Waiting...")
+	eostest.Pause(env.PeriodPause, "", "Waiting...")
 
 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
 	assert.NilError(t, err)
 
 	t.Log("Waiting for a period to lapse...")
-	pause(t, env.PeriodPause, "", "Waiting...")
+	eostest.Pause(env.PeriodPause, "", "Waiting...")
 
 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
 	assert.NilError(t, err)
 
 	t.Log("Waiting for a period to lapse...")
-	pause(t, env.PeriodPause, "", "Waiting...")
+	eostest.Pause(env.PeriodPause, "", "Waiting...")
 
 	_, err = ClaimNextPeriod(t, env, mem2, roleAssignment)
 	assert.NilError(t, err)

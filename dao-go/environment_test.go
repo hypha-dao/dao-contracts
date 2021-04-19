@@ -227,13 +227,13 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	_, err = eostest.SetContract(env.ctx, &env.api, env.Events, monitorPrefix+"wasm", monitorPrefix+"abi")
 	assert.NilError(t, err)
 
-	pause(t, time.Second * 10, "Build block...", "")
+	eostest.Pause(time.Second * 10, "Build block...", "")
 	_, err = dao.CreateRoot(env.ctx, &env.api, env.DAO)
 	assert.NilError(t, err)
-	pause(t, time.Second * 10, "Build block...", "")
+	eostest.Pause(time.Second * 10, "Build block...", "")
 	env.Root, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, "52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91")
 
-	pause(t, time.Second * 10, "Build block...", "")
+	eostest.Pause(time.Second * 10, "Build block...", "")
 	env.Root, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, "52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91")
 
 	assert.NilError(t, err)
@@ -368,7 +368,7 @@ func SetupMember(t *testing.T, ctx context.Context, api *eos.API,
 	_, err = dao.Enroll(ctx, api, contract, contract, memberAccount)
 	assert.NilError(t, err)
 
-	pause(t, time.Second, "Build block...", "")
+	eostest.Pause(time.Second, "Build block...", "")
 
 	memberDoc, err := docgraph.GetLastDocumentOfEdge(ctx, api, contract, "member")
 	assert.NilError(t, err)

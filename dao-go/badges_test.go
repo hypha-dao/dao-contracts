@@ -3,6 +3,7 @@ package dao_test
 import (
 	"testing"
 
+    eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
 	"github.com/hypha-dao/dao-contracts/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
@@ -42,7 +43,7 @@ func TestBadgeProposals(t *testing.T) {
 
 	// Claiming the first period
 	t.Log("Waiting for a period to lapse and claiming the first period pay...")
-	pause(t, env.PeriodPause, "", "Waiting...")
+	eostest.Pause(env.PeriodPause, "", "Waiting...")
 	_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
 	assert.NilError(t, err)
 
@@ -51,7 +52,7 @@ func TestBadgeProposals(t *testing.T) {
 
 	// Claiming the second period
 	t.Log("Waiting for a period to lapse and claiming the second period pay...")
-	pause(t, env.PeriodPause, "", "Waiting...")
+	eostest.Pause(env.PeriodPause, "", "Waiting...")
 	_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
 	assert.NilError(t, err)
 
@@ -120,7 +121,7 @@ func TestBadgeProposals(t *testing.T) {
 				checkEdge(t, env, env.Root, badgeDoc, eos.Name("badge"))
 
 				t.Log("Member: ", proposer.Member, " is submitting badge assignment proposal for	: "+string(assignee.Member)+"; badge: "+badgeDoc.Hash.String())
-				pause(t, env.ChainResponsePause, "", "")
+				eostest.Pause(env.ChainResponsePause, "", "")
 
 				_, err = dao.ProposeBadgeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, badgeDoc.Hash, env.Periods[0].Hash, test.badge_assignment)
 				assert.NilError(t, err)
@@ -151,7 +152,7 @@ func TestBadgeProposals(t *testing.T) {
 
 				// Claiming the next period
 				t.Log("Waiting for a period to lapse before claiming the next period pay...")
-				pause(t, env.PeriodPause, "", "Waiting...")
+				eostest.Pause(env.PeriodPause, "", "Waiting...")
 				_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
 				assert.NilError(t, err)
 
