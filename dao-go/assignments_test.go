@@ -43,6 +43,29 @@ func GetAdjustInfo(assignment eos.Checksum256, timeShare int64, startDate eos.Ti
     }}
 }
 
+func GetAdjustInfWithoutStartDate(assignment eos.Checksum256, timeShare int64) []docgraph.ContentGroup {
+
+  return []docgraph.ContentGroup{
+    {
+      {
+        Label: "assignment",
+        Value: &docgraph.FlexValue{
+          BaseVariant: eos.BaseVariant{
+            TypeID: docgraph.GetVariants().TypeID("checksum256"),
+            Impl:   assignment,
+          }},
+      },
+      {
+        Label: "new_time_share_x100",
+        Value: &docgraph.FlexValue{
+          BaseVariant: eos.BaseVariant{
+            TypeID: docgraph.GetVariants().TypeID("int64"),
+            Impl:   timeShare,
+          }},
+      },
+    }}
+}
+
 //Used to calculate token compensation with 3 adjustments over the same
 //period
 func CalculateTotalCompensation(alfa, beta, gamma, totalByPeriod float32) float32 {
@@ -58,7 +81,13 @@ func CreateAdjustmentAfter(commitment, startSecs int64, offsetSecs time.Duration
 
   adjustStartDate := eos.TimePoint(time.Add(offsetSecs).UnixNano() / 1000)
 
-  var adjustInfo = GetAdjustInfo(assignment.Hash, commitment, adjustStartDate)
+  var adjustInfo []docgraph.ContentGroup
+
+	if startSecs != 0 {
+		adjustInfo = GetAdjustInfo(assignment.Hash, commitment, adjustStartDate)
+	} else {
+		adjustInfo = GetAdjustInfWithoutStartDate(assignment.Hash, commitment)
+	}
 
   _, err := AdjustCommitment(env, assignee.Member, adjustInfo)
 
@@ -217,6 +246,15 @@ func TestAdjustCommitment(t *testing.T) {
         env.PeriodDuration*5/2,
         &assignment,
         &assignee, env, t)
+				
+			{
+				//This should throw an error since the current commitment is already 50
+				adjustInfo := GetAdjustInfWithoutStartDate(assignment.Hash, int64(50))
+		
+				_, err = AdjustCommitment(env, assignee.Member, adjustInfo)
+
+				assert.ErrorContains(t, err, "must be different than current commitment")	
+			}
 
       //Create Adjustment 3.33 Periods after start period
       CreateAdjustmentAfter(int64(100),

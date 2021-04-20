@@ -281,6 +281,8 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content
 
 	voteToPassTD(t, env, role)
 
+	pause(t, env.VotingPause, "", "Waiting for voting period to finish...")
+
 	t.Log("Member: ", closer.Member, " is closing role proposal	: ", role.Hash.String())
 	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)
 	assert.NilError(t, err)
