@@ -1,4 +1,4 @@
-package dao_test
+package dao
 
 import (
 	"os"

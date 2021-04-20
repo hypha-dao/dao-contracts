@@ -1,10 +1,9 @@
-package dao_test
+package dao
 
 import (
 	"testing"
 
 	eostest "github.com/digital-scarcity/eos-go-test"
-	"github.com/hypha-dao/dao-contracts/dao-go"
 
 	"gotest.tools/assert"
 )
@@ -124,7 +123,7 @@ func TestPretend(t *testing.T) {
 	//dao.EnrollMembers(env.ctx, &env.api, env.DAO)
 
 	mem2 := env.Members[2].Member
-	roleAssignment, err := dao.CreatePretend(env.ctx, &env.api, env.DAO, env.TelosDecide, mem2)
+	roleAssignment, err := CreatePretend(env.ctx, &env.api, env.DAO, env.TelosDecide, mem2)
 	assert.NilError(t, err)
 
 	t.Log("Waiting for a period to lapse...")

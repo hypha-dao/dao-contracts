@@ -1,4 +1,4 @@
-package dao_test
+package dao
 
 import (
 	"testing"
@@ -6,7 +6,6 @@ import (
 
 	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
-	"github.com/hypha-dao/dao-contracts/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"gotest.tools/assert"
 )
@@ -51,7 +50,7 @@ func NewBalance() Balance {
 }
 
 func CalcLastPayment(t *testing.T, env *Environment, prevBal Balance, acct eos.AccountName) Balance {
-	currentBalance := GetBalance(t, env, acct)
+	currentBalance := HelperGetBalance(t, env, acct)
 	return Balance{
 		SnapshotTime: time.Now(),
 		Hypha:        currentBalance.Hypha.Sub(prevBal.Hypha),
@@ -61,14 +60,14 @@ func CalcLastPayment(t *testing.T, env *Environment, prevBal Balance, acct eos.A
 	}
 }
 
-func GetBalance(t *testing.T, env *Environment, acct eos.AccountName) Balance {
+func HelperGetBalance(t *testing.T, env *Environment, acct eos.AccountName) Balance {
 
 	return Balance{
 		SnapshotTime: time.Now(),
-		Hypha:        dao.GetBalance(env.ctx, &env.api, string(env.HyphaToken), string(acct)),
-		Husd:         dao.GetBalance(env.ctx, &env.api, string(env.HusdToken), string(acct)),
-		Hvoice:       dao.GetVotingPower(env.ctx, &env.api, env.TelosDecide, acct),
-		SeedsEscrow:  dao.GetEscrowBalance(env.ctx, &env.api, string(env.SeedsEscrow), string(acct)),
+		Hypha:        GetBalance(env.ctx, &env.api, string(env.HyphaToken), string(acct)),
+		Husd:         GetBalance(env.ctx, &env.api, string(env.HusdToken), string(acct)),
+		Hvoice:       GetVotingPower(env.ctx, &env.api, env.TelosDecide, acct),
+		SeedsEscrow:  GetEscrowBalance(env.ctx, &env.api, string(env.SeedsEscrow), string(acct)),
 	}
 }
 
@@ -87,7 +86,7 @@ func IsClaimed(env *Environment, assignment docgraph.Document, periodHash eos.Ch
 	return false
 }
 
-type claimNext struct {
+type helperClaimNext struct {
 	AssignmentHash eos.Checksum256 `json:"assignment_hash"`
 }
 
@@ -101,7 +100,7 @@ func ClaimNextPeriod(t *testing.T, env *Environment, claimer eos.AccountName, as
 			{Actor: claimer, Permission: eos.PN("active")},
 		},
 		// ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
-		ActionData: eos.NewActionData(claimNext{
+		ActionData: eos.NewActionData(helperClaimNext{
 			AssignmentHash: assignment.Hash,
 		}),
 	}}
@@ -180,7 +179,7 @@ func AdjustCommitment(env *Environment, assignee eos.AccountName, adjustInfo []d
 func CreateAssignment(t *testing.T, env *Environment, role *docgraph.Document,
 	proposer, closer, assignee Member, content string) docgraph.Document {
 
-	trxID, err := dao.ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, env.Periods[0].Hash, content)
+	trxID, err := ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, role.Hash, env.Periods[0].Hash, content)
 	t.Log("Assignment proposed: ", trxID)
 	assert.NilError(t, err)
 
@@ -201,7 +200,7 @@ func CreateAssignment(t *testing.T, env *Environment, role *docgraph.Document,
 	voteToPassTD(t, env, assignment)
 
 	t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
-	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
+	_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
 	assert.NilError(t, err)
 
 	eostest.Pause(1000000000, "", "Waiting before fetching role")
@@ -226,7 +225,7 @@ func CreateAssignment(t *testing.T, env *Environment, role *docgraph.Document,
 }
 
 func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content string) docgraph.Document {
-	_, err := dao.ProposeRole(env.ctx, &env.api, env.DAO, proposer.Member, content)
+	_, err := ProposeRole(env.ctx, &env.api, env.DAO, proposer.Member, content)
 	assert.NilError(t, err)
 
 	// retrieve the document we just created
@@ -253,7 +252,7 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content
 	pause(t, env.VotingPause, "", "Waiting for voting period to finish...")
 
 	t.Log("Member: ", closer.Member, " is closing role proposal	: ", role.Hash.String())
-	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)
+	_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)
 	assert.NilError(t, err)
 
 	eostest.Pause(1000000000, "", "Waiting before fetching role")
@@ -274,7 +273,7 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content
 func loadSeedsTablesFromProd(t *testing.T, env *Environment, prodEndpoint string) {
 	prodApi := *eos.New(prodEndpoint)
 
-	var config []dao.SeedsExchConfigTable
+	var config []SeedsExchConfigTable
 	var request eos.GetTableRowsRequest
 	request.Code = "tlosto.seeds"
 	request.Scope = "tlosto.seeds"
@@ -298,7 +297,7 @@ func loadSeedsTablesFromProd(t *testing.T, env *Environment, prodEndpoint string
 	_, err := eostest.ExecWithRetry(env.ctx, &env.api, actions)
 	assert.NilError(t, err)
 
-	var priceHistory []dao.SeedsPriceHistory
+	var priceHistory []SeedsPriceHistory
 	var request2 eos.GetTableRowsRequest
 	request2.Code = "tlosto.seeds"
 	request2.Scope = "tlosto.seeds"
@@ -359,12 +358,12 @@ func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document) {
 	proposal_hash := proposal.Hash
 	t.Log("Voting all members to 'pass' on proposal: " + proposal_hash.String())
 
-	_, err := dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", proposal_hash)
+	_, err := ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", proposal_hash)
 	assert.NilError(t, err)
 	checkLastVote(t, env, proposal, env.Alice)
 
 	for _, member := range env.Members {
-		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, member.Member, "pass", proposal_hash)
+		_, err = ProposalVote(env.ctx, &env.api, env.DAO, member.Member, "pass", proposal_hash)
 		assert.NilError(t, err)
 		checkLastVote(t, env, proposal, member)
 	}

@@ -1,11 +1,10 @@
-package dao_test
+package dao
 
 import (
 	"testing"
 
     eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
-	"github.com/hypha-dao/dao-contracts/dao-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	testassert "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
@@ -48,7 +47,7 @@ func TestBadgeProposals(t *testing.T) {
 	assert.NilError(t, err)
 
 	payments = append(payments, CalcLastPayment(t, env, balances[len(balances)-1], assignee.Member))
-	balances = append(balances, GetBalance(t, env, assignee.Member))
+	balances = append(balances, HelperGetBalance(t, env, assignee.Member))
 
 	// Claiming the second period
 	t.Log("Waiting for a period to lapse and claiming the second period pay...")
@@ -57,7 +56,7 @@ func TestBadgeProposals(t *testing.T) {
 	assert.NilError(t, err)
 
 	payments = append(payments, CalcLastPayment(t, env, balances[len(balances)-1], assignee.Member))
-	balances = append(balances, GetBalance(t, env, assignee.Member))
+	balances = append(balances, HelperGetBalance(t, env, assignee.Member))
 
 	t.Run("Badge proposals", func(t *testing.T) {
 
@@ -88,7 +87,7 @@ func TestBadgeProposals(t *testing.T) {
 			t.Run(test.name, func(t *testing.T) {
 
 				t.Log("\nStarting test: ", test.name)
-				_, err := dao.ProposeBadge(env.ctx, &env.api, env.DAO, proposer.Member, test.badge)
+				_, err := ProposeBadge(env.ctx, &env.api, env.DAO, proposer.Member, test.badge)
 				assert.NilError(t, err)
 
 				// retrieve the document we just created
@@ -112,7 +111,7 @@ func TestBadgeProposals(t *testing.T) {
 				voteToPassTD(t, env, badgeDoc)
 
 				t.Log("Member: ", closer.Member, " is closing badge proposal	: ", badgeDoc.Hash.String())
-				_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, badgeDoc.Hash)
+				_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, badgeDoc.Hash)
 				assert.NilError(t, err)
 
 				// verify that the edges are created correctly
@@ -123,7 +122,7 @@ func TestBadgeProposals(t *testing.T) {
 				t.Log("Member: ", proposer.Member, " is submitting badge assignment proposal for	: "+string(assignee.Member)+"; badge: "+badgeDoc.Hash.String())
 				eostest.Pause(env.ChainResponsePause, "", "")
 
-				_, err = dao.ProposeBadgeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, badgeDoc.Hash, env.Periods[0].Hash, test.badge_assignment)
+				_, err = ProposeBadgeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, badgeDoc.Hash, env.Periods[0].Hash, test.badge_assignment)
 				assert.NilError(t, err)
 
 				badgeAssignmentDoc, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
@@ -132,7 +131,7 @@ func TestBadgeProposals(t *testing.T) {
 				voteToPassTD(t, env, badgeAssignmentDoc)
 
 				t.Log("Member: ", closer.Member, " is closing badge assignment proposal	: ", badgeAssignmentDoc.Hash.String())
-				_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, badgeAssignmentDoc.Hash)
+				_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, badgeAssignmentDoc.Hash)
 				assert.NilError(t, err)
 
 				// verify that the edges are created correctly
@@ -158,7 +157,7 @@ func TestBadgeProposals(t *testing.T) {
 
 				// last balances are greater than the prior balances
 				payments = append(payments, CalcLastPayment(t, env, balances[len(balances)-1], assignee.Member))
-				balances = append(balances, GetBalance(t, env, assignee.Member))
+				balances = append(balances, HelperGetBalance(t, env, assignee.Member))
 
 				// balances are greater than before
 				assert.Assert(t, balances[len(balances)-1].Hypha.Amount > balances[len(balances)-2].Hypha.Amount)

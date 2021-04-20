@@ -251,7 +251,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("unable to read file: %v %v", roleFilename, err)
 	}
 
-	role, err := CreateRole(ctx, api, contract, telosDecide, member, roleData)
+	role, err := SetupCreateRole(ctx, api, contract, telosDecide, member, roleData)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("unable to create role: %v", err)
 	}
@@ -262,7 +262,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("unable to read file: %v", err)
 	}
 
-	roleAssignment, err := CreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("role"), eos.Name("assignment"), assignmentData)
+	roleAssignment, err := SetupCreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("role"), eos.Name("assignment"), assignmentData)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("unable to create assignment: %v", err)
 	}
@@ -292,7 +292,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("unable to read badge file: %v", err)
 	}
 
-	badge, err := CreateBadge(ctx, api, contract, telosDecide, member, badgeData)
+	badge, err := SetupCreateBadge(ctx, api, contract, telosDecide, member, badgeData)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("unable to create badge: %v", err)
 	}
@@ -303,7 +303,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("unable to read badge assignment file: %v", err)
 	}
 
-	badgeAssignment, err := CreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("badge"), eos.Name("assignbadge"), badgeAssignmentData)
+	badgeAssignment, err := SetupCreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("badge"), eos.Name("assignbadge"), badgeAssignmentData)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("unable to create badge assignment: %v", err)
 	}
@@ -578,17 +578,17 @@ func createParent(ctx context.Context, api *eos.API, contract, telosDecide, memb
 }
 
 // CreateRole ...
-func CreateRole(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, data []byte) (docgraph.Document, error) {
+func SetupCreateRole(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, data []byte) (docgraph.Document, error) {
 	return createParent(ctx, api, contract, telosDecide, member, eos.Name("role"), data)
 }
 
 // CreateBadge ...
-func CreateBadge(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, data []byte) (docgraph.Document, error) {
+func SetupCreateBadge(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, data []byte) (docgraph.Document, error) {
 	return createParent(ctx, api, contract, telosDecide, member, eos.Name("badge"), data)
 }
 
 // CreateAssignment ...
-func CreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, parentType, assignmentType eos.Name, data []byte) (docgraph.Document, error) {
+func SetupCreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, parentType, assignmentType eos.Name, data []byte) (docgraph.Document, error) {
 	var proposalDoc docgraph.Document
 	err := json.Unmarshal([]byte(data), &proposalDoc)
 	if err != nil {
