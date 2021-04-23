@@ -379,7 +379,6 @@ func TestAdjustCommitment(t *testing.T) {
 }
 
 func TestWithdrawAssignment(t *testing.T) {
-  t.Skip("Skipping failing test")
   teardownTestCase := setupTestCase(t)
   defer teardownTestCase(t)
 
@@ -539,7 +538,6 @@ func TestWithdrawAssignment(t *testing.T) {
 }
 
 func TestSuspendAssignment(t *testing.T) {
-  t.Skip("Skipping failing test")
   teardownTestCase := setupTestCase(t)
   defer teardownTestCase(t)
 
@@ -708,7 +706,6 @@ func TestSuspendAssignment(t *testing.T) {
 }
 
 func TestAssignmentProposalDocument(t *testing.T) {
-  t.Skip("Skipping failing test")
   teardownTestCase := setupTestCase(t)
   defer teardownTestCase(t)
 
@@ -931,7 +928,6 @@ func TestAssignmentProposalDocument(t *testing.T) {
 }
 
 func TestAssignmentDefaults(t *testing.T) {
-  t.Skip("Skipping failing test")
   teardownTestCase := setupTestCase(t)
   defer teardownTestCase(t)
 
@@ -1395,7 +1391,6 @@ func TestAssignmentExtensionProposal(t *testing.T) {
 }
 
 func TestAssignmentEditProposal(t *testing.T) {
-  t.Skip("Skipping failing test")
   teardownTestCase := setupTestCase(t)
   defer teardownTestCase(t)
 
