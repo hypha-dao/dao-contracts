@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
+	"os"
 
 	"github.com/alexeyco/simpletable"
 	eostest "github.com/digital-scarcity/eos-go-test"
@@ -426,6 +427,7 @@ func SaveGraph(ctx context.Context, api *eos.API, contract eos.AccountName, fold
 		return fmt.Errorf("Unable to marshal json: %v", err)
 	}
 
+	_ = os.Mkdir(folderName, os.ModePerm)
 	documentsFile := folderName + "/documents.json"
 	err = ioutil.WriteFile(documentsFile, data, 0644)
 	if err != nil {
