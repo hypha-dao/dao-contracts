@@ -106,7 +106,7 @@ func TestProposalDocumentVote(t *testing.T) {
 		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail", before_date, after_date)
 
 		// New tally should be different. We have a different vote
-		pause(t, time.Second * 2, "", "Waiting before fetching last tally")
+		eostest.Pause(time.Second * 2, "", "Waiting before fetching last tally")
 		voteTally = AssertDifferentLastTally(t, voteTally)
 		AssertTally(t, voteTally, "0.00 HVOICE", "0.00 HVOICE", "101.00 HVOICE")
 
