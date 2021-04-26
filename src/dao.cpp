@@ -759,13 +759,14 @@ namespace hypha
 
       //Check min_time_share_x100 <= new_time_share_x100 <= time_share_x100
       int64_t originalTimeShare = assignmentCW.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-      int64_t minTimeShare = role.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
+      int64_t minTimeShare = 0;
+      //role.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
               
       bool checkNewTimeShareMin = true;
       
       if (modifier == common::MOD_WITHDRAW) 
       {
-        checkNewTimeShareMin = false;
+        //checkNewTimeShareMin = false;
       }
       
       if (checkNewTimeShareMin) 
@@ -786,9 +787,10 @@ namespace hypha
 
       time_point startDate = eosio::current_time_point();
 
+      TimeShare lastTimeShare(get_self(), lastTimeShareEdge.getToNode());
+
       if (fixedStartDate)
       {
-        TimeShare lastTimeShare(get_self(), lastTimeShareEdge.getToNode());
         time_point lastStartDate = lastTimeShare.getContentWrapper()
                                                 .getOrFail(DETAILS, TIME_SHARE_START_DATE)
                                                 ->getAs<time_point>();
@@ -797,6 +799,15 @@ namespace hypha
         eosio::check(lastStartDate.sec_since_epoch() < startDate.sec_since_epoch(),
                       "New time share start date must be greater than the previous time share start date");
       }
+
+      int64_t lastTimeSharex100 = lastTimeShare.getContentWrapper()
+                                               .getOrFail(DETAILS, TIME_SHARE)
+                                               ->getAs<int64_t>();
+
+      eosio::check(
+        lastTimeSharex100 != commitment,
+        to_str("New commitment: [", commitment, "] must be different than current commitment: [", lastTimeSharex100, "]")
+      );
 
       TimeShare newTimeShareDoc(get_self(), 
                                 assignment.getAssignee().getAccount(), 

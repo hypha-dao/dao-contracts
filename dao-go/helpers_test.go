@@ -281,6 +281,8 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content
 
 	voteToPassTD(t, env, role)
 
+	pause(t, env.VotingPause, "", "Waiting for voting period to finish...")
+
 	t.Log("Member: ", closer.Member, " is closing role proposal	: ", role.Hash.String())
 	_, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)
 	assert.NilError(t, err)
@@ -409,4 +411,20 @@ func ReplaceContent(d *docgraph.Document, label string, value *docgraph.FlexValu
 		}
 	}
 	return nil
+}
+
+// Max returns the larger of x or y.
+func Max(x, y float32) float32 {
+	if x < y {
+		return y
+	}	
+	return x
+}
+
+// Min returns the smaller of x or y.
+func Min(x, y float32) float32 {
+	if x > y {
+			return y
+	}
+	return x
 }
