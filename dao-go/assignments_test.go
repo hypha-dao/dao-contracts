@@ -212,7 +212,7 @@ func TestAdjustCommitment(t *testing.T) {
       //Wait Half Period to close the proposal and test the special
       //case when approved time overlaps in the first period
       t.Log("Waiting for a period to lapse...")
-      pause(t, env.PeriodPause/2, "", "Waiting...")
+      pause(t, env.VotingPause, "", "Waiting...")
 
       _, err = dao.CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
       assert.NilError(t, err)
@@ -312,7 +312,11 @@ func TestAdjustCommitment(t *testing.T) {
         approvedTime, err := initTimeShare.GetContent("start_date")
         approvedSecs := int64(approvedTime.Impl.(eos.TimePoint)) / 1000000
         periodDuration = float32(firstPeriodEndSecs - firstPeriodStartSecs)
-        timeFactor := float32(firstPeriodEndSecs-approvedSecs) / periodDuration
+				
+				var timeFactor float32
+				
+        timeFactor = Min(float32(firstPeriodEndSecs-approvedSecs), periodDuration) / periodDuration
+
         ValidateLastReceipt(int64(totalHUSD*timeFactor),
           int64(totalHYPHA*timeFactor),
           int64(totalHVOICE*timeFactor),
