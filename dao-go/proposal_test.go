@@ -40,7 +40,7 @@ func TestProposalDocumentVote(t *testing.T) {
 		assert.NilError(t, err)
 
 		// Create a second document to test some cases
-		_, err = dao.ProposeRole(env.ctx, &env.api, env.DAO, proposer.Member, role2)
+		_, err = ProposeRole(env.ctx, &env.api, env.DAO, proposer.Member, role2)
 		assert.NilError(t, err)
 		otherRole, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
 		assert.NilError(t, err)
@@ -85,7 +85,7 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// Voting on otherRole
 		t.Log("alice votes pass on other role")
-		_, err = dao.ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", otherRole.Hash)
+		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", otherRole.Hash)
 		// zero-votes tally should no longer exist
 		_, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, voteTally2.Hash.String())
 		assert.ErrorContains(t, err, "document not found")

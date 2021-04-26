@@ -213,7 +213,7 @@ func TestAdjustCommitment(t *testing.T) {
       //Wait Half Period to close the proposal and test the special
       //case when approved time overlaps in the first period
       t.Log("Waiting for a period to lapse...")
-      eostest.Pause(t, env.VotingPause, "", "Waiting...")
+      eostest.Pause(env.VotingPause, "", "Waiting...")
 
       _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
       assert.NilError(t, err)
