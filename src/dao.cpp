@@ -323,8 +323,16 @@ namespace hypha
       eosio::check(hvoice.is_valid(), "fatal error: HVOICE has to be a valid asset");
       eosio::check(hypha.is_valid(), "fatal error: HYPHA has to be a valid asset");
 
-      string memo = "Payment for assignment " + readableHash(assignment.getHash()) + "; Period: " + readableHash(periodToClaim.value().getHash());
+      string assignmentNodeLabel = "";
+      if (auto [idx, assignmentLabel] = assignment.getContentWrapper().get(DETAILS, NODE_LABEL); assignmentLabel)
+      {
+         eosio::check(std::holds_alternative<std::string>(assignmentLabel->value), "fatal error: assignment content item type is expected to be a string: " + assignmentLabel->label);
+         assignmentNodeLabel = std::get<std::string>(assignmentLabel->value);
+      }
 
+      string memo = "[assignment_label:" + assignmentNodeLabel + ",period_label:" + periodToClaim.value().getNodeLabel()
+               + ",assignment_hash:" + readableHash(assignment.getHash()) + ",period_hash:" + readableHash(periodToClaim.value().getHash()) + "]";
+      
       // creating a single struct improves performance for table queries here
       AssetBatch ab{};
       ab.hypha = hypha;
