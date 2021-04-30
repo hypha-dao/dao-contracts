@@ -230,8 +230,6 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	eostest.Pause(time.Second * 10, "Build block...", "")
 	_, err = CreateRoot(env.ctx, &env.api, env.DAO)
 	assert.NilError(t, err)
-	eostest.Pause(time.Second * 10, "Build block...", "")
-	env.Root, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, "52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91")
 
 	eostest.Pause(time.Second * 10, "Build block...", "")
 	env.Root, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, "52a7ff82bd6f53b31285e97d6806d886eefb650e79754784e9d923d3df347c91")
