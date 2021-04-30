@@ -347,7 +347,7 @@ func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, v
 	return vote
 }
 
-func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document, closer* Member) (error) {
+func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document, closer Member) (error) {
 	proposal_hash := proposal.Hash
 	t.Log("Voting all members to 'pass' on proposal: " + proposal_hash.String())
 
