@@ -361,9 +361,9 @@ func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document, cl
 		checkLastVote(t, env, proposal, member)
 	}
 
-	Pause(env.VotingPause, "", "Waiting for ballot to finish")
+	eostest.Pause(env.VotingPause, "", "Waiting for ballot to finish")
 	t.Log("Member: ", closer.Member, " is closing proposal	: ", proposal.Hash.String())
-	_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
+	_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
 
 	return err
 }
