@@ -102,10 +102,7 @@ func TestPayoutProposal(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			voteToPassTD(t, env, payout)
-
-			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
-			_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
+			err = voteToPassTD(t, env, payout, closer)
 			assert.NilError(t, err)
 
 			// verify that the edges are created correctly
@@ -209,10 +206,7 @@ func TestPayoutHistoricalPeriod(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			voteToPassTD(t, env, payout)
-
-			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
-			_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
+			err = voteToPassTD(t, env, payout, closer)
 			assert.NilError(t, err)
 
 			// verify that the edges are created correctly
@@ -328,10 +322,7 @@ func TestCustomPayout(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			voteToPassTD(t, env, payout)
-
-			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
-			_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
+			err = voteToPassTD(t, env, payout, closer)
 			assert.NilError(t, err)
 
 			// verify that the edges are created correctly
@@ -438,10 +429,7 @@ func TestUnknownAssetPayout(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, payout, eos.Name("owns"))
 			checkEdge(t, env, payout, proposer.Doc, eos.Name("ownedby"))
 
-			voteToPassTD(t, env, payout)
-
-			t.Log("Member: ", closer.Member, " is closing payout proposal	: ", payout.Hash.String())
-			_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
+			err = voteToPassTD(t, env, payout, closer)
 			assert.ErrorContains(t, err, "Unknown")
 		}
 	})

@@ -78,10 +78,7 @@ func TestEditProposal(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, attestation, eos.Name("owns"))
 			checkEdge(t, env, attestation, proposer.Doc, eos.Name("ownedby"))
 
-			voteToPassTD(t, env, attestation)
-
-			t.Log("Member: ", closer.Member, " is closing attestation proposal	: ", attestation.Hash.String())
-			_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, attestation.Hash)
+			err = voteToPassTD(t, env, attestation, closer)
 			assert.NilError(t, err)
 
 			_, err = ProposeEdit(env.ctx, &env.api, env.DAO, proposer.Member, attestation, test.edit)
@@ -106,10 +103,7 @@ func TestEditProposal(t *testing.T) {
 			checkEdge(t, env, proposer.Doc, edit, eos.Name("owns"))
 			checkEdge(t, env, edit, proposer.Doc, eos.Name("ownedby"))
 
-			voteToPassTD(t, env, edit)
-
-			t.Log("Member: ", closer.Member, " is closing edit proposal	: ", edit.Hash.String())
-			_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, edit.Hash)
+			err = voteToPassTD(t, env, edit, closer)
 			assert.NilError(t, err)
 
 			merged, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("attestation"))

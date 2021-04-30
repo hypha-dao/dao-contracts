@@ -208,14 +208,7 @@ func TestAdjustCommitment(t *testing.T) {
       proposal, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
       assert.NilError(t, err)
 
-      voteToPassTD(t, env, proposal)
-
-      //Wait Half Period to close the proposal and test the special
-      //case when approved time overlaps in the first period
-      t.Log("Waiting for a period to lapse...")
-      eostest.Pause(env.VotingPause, "", "Waiting...")
-
-      _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
+      err = voteToPassTD(t, env, proposal, closer)
       assert.NilError(t, err)
 
       assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
@@ -430,9 +423,7 @@ func TestWithdrawAssignment(t *testing.T) {
       proposal, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
       assert.NilError(t, err)
 
-      voteToPassTD(t, env, proposal)
-
-      _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
+      err = voteToPassTD(t, env, proposal, closer)
       assert.NilError(t, err)
 
       assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
@@ -589,9 +580,7 @@ func TestSuspendAssignment(t *testing.T) {
       proposal, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
       assert.NilError(t, err)
 
-      voteToPassTD(t, env, proposal)
-
-      _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
+      err = voteToPassTD(t, env, proposal, closer)
       assert.NilError(t, err)
 
       assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
@@ -675,9 +664,7 @@ func TestSuspendAssignment(t *testing.T) {
       proposal, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
       assert.NilError(t, err)
 
-			voteToPassTD(t, env, proposal)
-
-      _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, proposal.Hash)
+			err = voteToPassTD(t, env, proposal, closer)
       assert.NilError(t, err)
 
 			assignment, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
@@ -854,10 +841,7 @@ func TestAssignmentProposalDocument(t *testing.T) {
       // }
       // assert.Check(t, exists)
 
-      voteToPassTD(t, env, assignment)
-
-      t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
-      _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
+      err = voteToPassTD(t, env, assignment, closer)
       assert.NilError(t, err)
 
       assignment, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
@@ -1196,10 +1180,7 @@ func TestAssignmentPayClaim(t *testing.T) {
       checkEdge(t, env, proposer.Doc, assignment, eos.Name("owns"))
       checkEdge(t, env, assignment, proposer.Doc, eos.Name("ownedby"))
 
-      voteToPassTD(t, env, assignment)
-
-      t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
-      _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
+      err = voteToPassTD(t, env, assignment, closer)
       assert.NilError(t, err)
 
       // verify that the edges are created correctly
@@ -1335,10 +1316,7 @@ func TestAssignmentExtensionProposal(t *testing.T) {
       checkEdge(t, env, proposer.Doc, assignment, eos.Name("owns"))
       checkEdge(t, env, assignment, proposer.Doc, eos.Name("ownedby"))
 
-      voteToPassTD(t, env, assignment)
-
-      t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
-      _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
+      err = voteToPassTD(t, env, assignment, closer)
       assert.NilError(t, err)
 
       eostest.Pause(1000000000, "", "Waiting before fetching assignment again")
@@ -1371,10 +1349,7 @@ func TestAssignmentExtensionProposal(t *testing.T) {
       assert.NilError(t, err)
       assert.Equal(t, extensionProp.Creator, proposer.Member)
 
-      voteToPassTD(t, env, extensionProp)
-
-      t.Log("Member: ", closer.Member, " is closing extension proposal	: ", extensionProp.Hash.String())
-      _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, extensionProp.Hash)
+      err = voteToPassTD(t, env, extensionProp, closer)
       assert.NilError(t, err)
 
       originalPeriodCountValue, err := originalPeriodCount.Int64()
@@ -1469,10 +1444,7 @@ func TestAssignmentEditProposal(t *testing.T) {
       checkEdge(t, env, proposer.Doc, assignment, eos.Name("owns"))
       checkEdge(t, env, assignment, proposer.Doc, eos.Name("ownedby"))
 
-      voteToPassTD(t, env, assignment)
-
-      t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
-      _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
+      err = voteToPassTD(t, env, assignment, closer)
       assert.NilError(t, err)
 
       eostest.Pause(1000000000, "", "Waiting before fetching assignment again")
@@ -1505,10 +1477,7 @@ func TestAssignmentEditProposal(t *testing.T) {
       assert.NilError(t, err)
       assert.Equal(t, editProp.Creator, proposer.Member)
 
-      voteToPassTD(t, env, editProp)
-
-      t.Log("Member: ", closer.Member, " is closing extension proposal	: ", editProp.Hash.String())
-      _, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, editProp.Hash)
+      err = voteToPassTD(t, env, editProp, closer)
       assert.NilError(t, err)
 
       eostest.Pause(1000000000, "", "Waiting before fetching assignment again")

@@ -197,10 +197,7 @@ func CreateAssignment(t *testing.T, env *Environment, role *docgraph.Document,
 	checkEdge(t, env, proposer.Doc, assignment, eos.Name("owns"))
 	checkEdge(t, env, assignment, proposer.Doc, eos.Name("ownedby"))
 
-	voteToPassTD(t, env, assignment)
-
-	t.Log("Member: ", closer.Member, " is closing assignment proposal	: ", assignment.Hash.String())
-	_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, assignment.Hash)
+	err = voteToPassTD(t, env, assignment, closer)
 	assert.NilError(t, err)
 
 	eostest.Pause(1000000000, "", "Waiting before fetching role")
@@ -247,12 +244,8 @@ func CreateRole(t *testing.T, env *Environment, proposer, closer Member, content
 	checkEdge(t, env, role, proposer.Doc, eos.Name("ownedby"))
 	checkEdge(t, env, role, votetally, eos.Name("votetally"))
 
-	voteToPassTD(t, env, role)
 
-	eostest.Pause(env.VotingPause, "", "Waiting for voting period to finish...")
-
-	t.Log("Member: ", closer.Member, " is closing role proposal	: ", role.Hash.String())
-	_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, role.Hash)
+	err = voteToPassTD(t, env, role, closer)
 	assert.NilError(t, err)
 
 	eostest.Pause(1000000000, "", "Waiting before fetching role")
@@ -354,7 +347,7 @@ func checkLastVote(t *testing.T, env *Environment, proposal docgraph.Document, v
 	return vote
 }
 
-func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document) {
+func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document, closer* Member) (error) {
 	proposal_hash := proposal.Hash
 	t.Log("Voting all members to 'pass' on proposal: " + proposal_hash.String())
 
@@ -367,6 +360,12 @@ func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document) {
 		assert.NilError(t, err)
 		checkLastVote(t, env, proposal, member)
 	}
+
+	Pause(env.VotingPause, "", "Waiting for ballot to finish")
+	t.Log("Member: ", closer.Member, " is closing proposal	: ", proposal.Hash.String())
+	_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, payout.Hash)
+
+	return err
 }
 
 func ReplaceContent(d *docgraph.Document, label string, value *docgraph.FlexValue) error {

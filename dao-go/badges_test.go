@@ -108,10 +108,7 @@ func TestBadgeProposals(t *testing.T) {
 				checkEdge(t, env, proposer.Doc, badgeDoc, eos.Name("owns"))
 				checkEdge(t, env, badgeDoc, proposer.Doc, eos.Name("ownedby"))
 
-				voteToPassTD(t, env, badgeDoc)
-
-				t.Log("Member: ", closer.Member, " is closing badge proposal	: ", badgeDoc.Hash.String())
-				_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, badgeDoc.Hash)
+                err = voteToPassTD(t, env, badgeDoc, closer)
 				assert.NilError(t, err)
 
 				// verify that the edges are created correctly
@@ -128,10 +125,7 @@ func TestBadgeProposals(t *testing.T) {
 				badgeAssignmentDoc, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
 				assert.NilError(t, err)
 
-				voteToPassTD(t, env, badgeAssignmentDoc)
-
-				t.Log("Member: ", closer.Member, " is closing badge assignment proposal	: ", badgeAssignmentDoc.Hash.String())
-				_, err = CloseProposal(env.ctx, &env.api, env.DAO, closer.Member, badgeAssignmentDoc.Hash)
+                err = voteToPassTD(t, env, badgeAssignmentDoc, closer)
 				assert.NilError(t, err)
 
 				// verify that the edges are created correctly
