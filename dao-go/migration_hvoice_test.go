@@ -21,10 +21,16 @@ func TestHvoiceMigration(t *testing.T) {
     t.Run("Test Hvoice migration", func(t *testing.T) {
         hvoiceAsset, _ := eos.NewAssetFromString("1.00 HVOICE")
 
-        // Initial issued is 5.00 (Alice, mem1, mem2, mem3, mem4) all have a genesis of 1.00 each
+        // Initial issued is: 109.00
+        // Alice: 100.00
+        // mem1:    1.00
+        // mem2:    1.00
+        // mem3:    1.00
+        // mem4:    1.00
+        //  all have a genesis of 1.00 each
         stats, err := GetHvoiceIssued(env.ctx, &env.api, env.HvoiceToken, hvoiceAsset.Symbol)
         assert.NilError(t, err)
-        assert.Equal(t, stats.Supply.Amount, eos.Int64(500))
+        assert.Equal(t, stats.Supply.Amount, eos.Int64(10900))
 
         _ ,err = MigrateHVoice(env.ctx, &env.api, env.HvoiceToken, env.DAO, env.TelosDecide)
         assert.NilError(t, err)
