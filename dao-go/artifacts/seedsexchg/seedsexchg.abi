@@ -1,0 +1,129 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "configtable",
+            "base": "",
+            "fields": [
+                {
+                    "name": "seeds_per_usd",
+                    "type": "asset"
+                },
+                {
+                    "name": "tlos_per_usd",
+                    "type": "asset"
+                },
+                {
+                    "name": "citizen_limit",
+                    "type": "asset"
+                },
+                {
+                    "name": "resident_limit",
+                    "type": "asset"
+                },
+                {
+                    "name": "visitor_limit",
+                    "type": "asset"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "inshistory",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seeds_usd",
+                    "type": "asset"
+                },
+                {
+                    "name": "date",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "price_history_table",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seeds_usd",
+                    "type": "asset"
+                },
+                {
+                    "name": "date",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "updateconfig",
+            "base": "",
+            "fields": [
+                {
+                    "name": "seeds_per_usd",
+                    "type": "asset"
+                },
+                {
+                    "name": "tlos_per_usd",
+                    "type": "asset"
+                },
+                {
+                    "name": "citizen_limit",
+                    "type": "asset"
+                },
+                {
+                    "name": "resident_limit",
+                    "type": "asset"
+                },
+                {
+                    "name": "visitor_limit",
+                    "type": "asset"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "inshistory",
+            "type": "inshistory",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "updateconfig",
+            "type": "updateconfig",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "config",
+            "type": "configtable",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "pricehistory",
+            "type": "price_history_table",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}

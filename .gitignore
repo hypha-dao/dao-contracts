@@ -15,6 +15,7 @@ eosc-vault.json
 **/*_project-prefix*
 **/test_results
 dao-go/nodeos.log
+dao-go/nodeos-go.log
 dao-go/testlog.txt
 main.go
 main1.go

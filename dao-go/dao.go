@@ -95,7 +95,7 @@ func AddPeriods(ctx context.Context, api *eos.API, daoContract eos.AccountName,
 	periods := make([]docgraph.Document, numPeriods)
 
 	fmt.Println("\nAdding periods: " + strconv.Itoa(len(periods)))
-	bar := DefaultProgressBar(len(periods))
+	bar := eostest.DefaultProgressBar("Adding periods", len(periods))
 
 	for i := 0; i < numPeriods; i++ {
 		startTime = eos.TimePoint((marker.UnixNano() / 1000) + 1)
