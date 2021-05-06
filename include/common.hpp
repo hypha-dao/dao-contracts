@@ -46,6 +46,7 @@ namespace common
     static constexpr name EDIT = name("edit");
     static constexpr name ORIGINAL = name("original");
     static constexpr name EXTENSION = name("extension");
+    constexpr        name SUSPEND = name("suspend");
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
@@ -83,6 +84,8 @@ namespace common
     constexpr name INIT_TIME_SHARE = name("initimeshare");
     constexpr name NEXT_TIME_SHARE = name("nextimeshare");
     constexpr name TIME_SHARE_LABEL = name("timeshare");
+    constexpr auto ADJUST_MODIFIER = "modifier";
+    constexpr auto MOD_WITHDRAW = "withdraw";
 
     static constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
     static constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
@@ -124,7 +127,6 @@ namespace common
 #define MEMBER_STRING "member"
 #define ASSIGNMENT_STRING "assignment"
 #define SYSTEM "system"
-#define BALLOT_ID "ballot_id"
 #define BALLOT "ballot"
 #define BALLOT_OPTIONS "ballot_options"
 #define BALLOT_TYPE "ballot_type"
@@ -141,7 +143,6 @@ namespace common
 #define UPDATED_DATE "updated_date"
 #define SEEDS_DEFERRAL_FACTOR_X100 "seeds_deferral_factor_x100"
 #define HYPHA_DEFERRAL_FACTOR_X100 "hypha_deferral_factor_x100"
-#define LAST_BALLOT_ID "last_ballot_id"
 #define LAST_SENDER_ID "last_sender_id"
 #define VOTING_DURATION_SEC "voting_duration_sec"
 #define PUBLISHER_CONTRACT "publisher_contract"

@@ -93,17 +93,15 @@ namespace hypha
             std::make_tuple(getAccount(), genesis_voice, memo))
             .send();
 
+        name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
 
-        // TODO: issue new HVOICE token here
-        // name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
-
-        // hypha::issueToken(
-        //     hyphaHvoice,
-        //     getContract(),
-        //     getAccount(),
-        //     genesis_voice,
-        //     memo
-        // );
+        hypha::issueToken(
+            hyphaHvoice,
+            getContract(),
+            getAccount(),
+            genesis_voice,
+            memo
+        );
 
         Document paymentReceipt(getContract(), getContract(), Payer::defaultReceipt(getAccount(), genesis_voice, memo));
 

@@ -1,0 +1,16 @@
+name: "Build"
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@master"
+        with:
+          submodules: recursive
+      - name: "Build"
+        uses: docker://josejulio/hypha-builder:release_1.7.x
+        with:
+          args: " -j2 VERBOSE=1 "
+        env:
+          CODE: "/github/workspace/"
+          PATCH_WASM_LD: "1"

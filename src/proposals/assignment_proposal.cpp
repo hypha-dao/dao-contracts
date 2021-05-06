@@ -128,6 +128,11 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
         Edge::write(m_dao.get_self(), m_dao.get_self(), role.getHash(), proposal.getHash(), common::ASSIGNMENT);
 
+        //Start period edge
+        // assignment ---- start ----> period
+        eosio::checksum256 startPeriod = contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>();
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), startPeriod, common::START);
+
         //Initial time share for proposal
         int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
         

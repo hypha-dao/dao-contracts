@@ -5,6 +5,7 @@ find_package(eosio.cdt)
 
 add_contract( dao dao 
                 dao.cpp
+                typed_document.cpp
                 util.cpp 
                 period.cpp
                 member.cpp
@@ -26,7 +27,10 @@ add_contract( dao dao
                 proposals/payout_proposal.cpp
                 proposals/attestation_proposal.cpp
                 proposals/edit_proposal.cpp
+                proposals/suspend_proposal.cpp
                 proposals/proposal_factory.cpp
+                ballots/vote.cpp
+                ballots/vote_tally.cpp
                 ../document-graph/src/document_graph/document_graph.cpp 
                 ../document-graph/src/document_graph/document.cpp 
                 ../document-graph/src/document_graph/content_wrapper.cpp

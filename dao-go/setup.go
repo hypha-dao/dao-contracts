@@ -101,7 +101,7 @@ func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountNa
 	// 	},
 	// }
 
-	// _, err = eostest.ExecTrx(ctx, api, actions)
+	// _, err = eostest.ExecWithRetry(ctx, api, actions)
 	// if err != nil {
 	// 	fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
 	// 	fmt.Println(err)
@@ -129,7 +129,7 @@ func UpdateAssignments(ctx context.Context, api *eos.API, contract eos.AccountNa
 	// 			},
 	// 		}
 
-	// 		_, err = eostest.ExecTrx(ctx, api, actions2)
+	// 		_, err = eostest.ExecWithRetry(ctx, api, actions2)
 	// 		if err != nil {
 	// 			fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
 	// 			fmt.Println(err)
@@ -228,7 +228,7 @@ func UpdatePeriods(ctx context.Context, api *eos.API, contract eos.AccountName) 
 				},
 			}
 
-			_, err = eostest.ExecTrx(ctx, api, actions)
+			_, err = eostest.ExecWithRetry(ctx, api, actions)
 			if err != nil {
 				fmt.Println("\n\nFAILED to update document: ", d.Hash.String())
 				fmt.Println(err)
@@ -251,7 +251,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("unable to read file: %v %v", roleFilename, err)
 	}
 
-	role, err := CreateRole(ctx, api, contract, telosDecide, member, roleData)
+	role, err := SetupCreateRole(ctx, api, contract, telosDecide, member, roleData)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("unable to create role: %v", err)
 	}
@@ -262,13 +262,13 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("unable to read file: %v", err)
 	}
 
-	roleAssignment, err := CreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("role"), eos.Name("assignment"), assignmentData)
+	roleAssignment, err := SetupCreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("role"), eos.Name("assignment"), assignmentData)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("unable to create assignment: %v", err)
 	}
 	fmt.Println("Created role assignment document	: ", roleAssignment.Hash.String())
 
-	pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
+	eostest.Pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
 
 	_, err = claimNextPeriod(ctx, api, contract, member, roleAssignment)
 	if err != nil {
@@ -292,7 +292,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("unable to read badge file: %v", err)
 	}
 
-	badge, err := CreateBadge(ctx, api, contract, telosDecide, member, badgeData)
+	badge, err := SetupCreateBadge(ctx, api, contract, telosDecide, member, badgeData)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("unable to create badge: %v", err)
 	}
@@ -303,7 +303,7 @@ func CreatePretend(ctx context.Context, api *eos.API, contract, telosDecide, mem
 		return docgraph.Document{}, fmt.Errorf("unable to read badge assignment file: %v", err)
 	}
 
-	badgeAssignment, err := CreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("badge"), eos.Name("assignbadge"), badgeAssignmentData)
+	badgeAssignment, err := SetupCreateAssignment(ctx, api, contract, telosDecide, member, eos.Name("badge"), eos.Name("assignbadge"), badgeAssignmentData)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("unable to create badge assignment: %v", err)
 	}
@@ -329,10 +329,10 @@ func claimNextPeriod(ctx context.Context, api *eos.API, contract, claimer eos.Ac
 		}),
 	}}
 
-	trxID, err := eostest.ExecTrx(ctx, api, actions)
+	trxID, err := eostest.ExecWithRetry(ctx, api, actions)
 
 	if err != nil {
-		pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
+		eostest.Pause(defaultPeriodDuration(), "", "Waiting for a period to lapse")
 
 		actions := []*eos.Action{{
 			Account: contract,
@@ -345,7 +345,7 @@ func claimNextPeriod(ctx context.Context, api *eos.API, contract, claimer eos.Ac
 			}),
 		}}
 
-		trxID, err = eostest.ExecTrx(ctx, api, actions)
+		trxID, err = eostest.ExecWithRetry(ctx, api, actions)
 	}
 
 	return trxID, err
@@ -388,7 +388,7 @@ func enrollMember(ctx context.Context, api *eos.API, contract, member eos.Accoun
 	}
 	fmt.Println("Completed the apply transaction: " + trxID)
 
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	trxID, err = Enroll(ctx, api, contract, contract, member)
 	if err != nil {
@@ -396,7 +396,7 @@ func enrollMember(ctx context.Context, api *eos.API, contract, member eos.Accoun
 	}
 	fmt.Println("Completed the enroll transaction: " + trxID)
 
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	memberDoc, err := docgraph.GetLastDocumentOfEdge(ctx, api, contract, "member")
 	if err != nil {
@@ -480,7 +480,7 @@ func proposeAndPass(ctx context.Context, api *eos.API,
 		},
 		ActionData: eos.NewActionData(proposal)}}
 
-	trxID, err := eostest.ExecTrx(ctx, api, actions)
+	trxID, err := eostest.ExecWithRetry(ctx, api, actions)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("error proposeAndPass %v", err)
 	}
@@ -506,19 +506,19 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	if err == nil {
 		fmt.Println("Member voted : " + string(member))
 	}
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	_, err = TelosDecideVote(ctx, api, telosDecide, eos.AN("alice"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : alice")
 	}
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	_, err = TelosDecideVote(ctx, api, telosDecide, eos.AN("johnnyhypha1"), ballot.Impl.(eos.Name), eos.Name("pass"))
 	if err == nil {
 		fmt.Println("Member voted : johnnyhypha1")
 	}
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	index := 1
 	for index < 5 {
@@ -530,7 +530,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 		if err != nil {
 			return docgraph.Document{}, fmt.Errorf("error voting via telos decide %v", err)
 		}
-		pause(defaultPause(), "Building block...", "")
+		eostest.Pause(defaultPause(), "Building block...", "")
 		fmt.Println("Member voted : " + string(memberNameIn))
 		index++
 	}
@@ -546,7 +546,7 @@ func closeLastProposal(ctx context.Context, api *eos.API, contract, telosDecide,
 	}
 
 	votingPause := time.Duration((5 + votingPeriodDuration.Impl.(int64)) * 1000000000)
-	pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
+	eostest.Pause(votingPause, "Waiting on voting period to lapse: "+strconv.Itoa(int(5+votingPeriodDuration.Impl.(int64)))+" seconds", "")
 
 	fmt.Println("Closing proposal: " + proposal.Hash.String())
 	_, err = CloseProposal(ctx, api, contract, member, proposal.Hash)
@@ -578,24 +578,24 @@ func createParent(ctx context.Context, api *eos.API, contract, telosDecide, memb
 }
 
 // CreateRole ...
-func CreateRole(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, data []byte) (docgraph.Document, error) {
+func SetupCreateRole(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, data []byte) (docgraph.Document, error) {
 	return createParent(ctx, api, contract, telosDecide, member, eos.Name("role"), data)
 }
 
 // CreateBadge ...
-func CreateBadge(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, data []byte) (docgraph.Document, error) {
+func SetupCreateBadge(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, data []byte) (docgraph.Document, error) {
 	return createParent(ctx, api, contract, telosDecide, member, eos.Name("badge"), data)
 }
 
 // CreateAssignment ...
-func CreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, parentType, assignmentType eos.Name, data []byte) (docgraph.Document, error) {
+func SetupCreateAssignment(ctx context.Context, api *eos.API, contract, telosDecide, member eos.AccountName, parentType, assignmentType eos.Name, data []byte) (docgraph.Document, error) {
 	var proposalDoc docgraph.Document
 	err := json.Unmarshal([]byte(data), &proposalDoc)
 	if err != nil {
 		return docgraph.Document{}, fmt.Errorf("cannot unmarshal error: %v ", err)
 	}
 
-	pause(defaultPause(), "Building block...", "")
+	eostest.Pause(defaultPause(), "Building block...", "")
 
 	// e.g. a "role" is parent to a "role assignment"
 	// e.g. a "badge" is parent to a "badge assignment"

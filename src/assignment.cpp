@@ -157,7 +157,7 @@ namespace hypha
     std::optional<Period> Assignment::getNextClaimablePeriod()
     {
         // Ensure that the claimed period is within the approved period count
-        Period period(m_dao, getContentWrapper().getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+        Period period = getStartPeriod();
         int64_t periodCount = getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
         int64_t counter = 0;
 
@@ -208,7 +208,19 @@ namespace hypha
 
         return eosio::asset{0, *symbol};
     }
+
+    Period Assignment::getStartPeriod()
+    {
+      return Period(m_dao, getContentWrapper().getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+    }
     
+    Period Assignment::getLastPeriod()
+    {
+      auto start = getStartPeriod();
+      auto periods = getPeriodCount();
+      return start.getNthPeriodAfter(periods-1);
+    }
+
     TimeShare Assignment::getInitialTimeShare() 
     {
       Edge initialEdge = Edge::get(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);

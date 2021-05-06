@@ -33,7 +33,7 @@ func SetSetting(ctx context.Context, api *eos.API, contract eos.AccountName, con
 		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 // RemSetting ...
@@ -57,7 +57,7 @@ func RemSetting(ctx context.Context, api *eos.API, contract eos.AccountName, set
 		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
 	}}
 
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 // SetNameSetting is a helper for setting a single name type configuration item
@@ -95,7 +95,7 @@ func AddPeriods(ctx context.Context, api *eos.API, daoContract eos.AccountName,
 	periods := make([]docgraph.Document, numPeriods)
 
 	fmt.Println("\nAdding periods: " + strconv.Itoa(len(periods)))
-	bar := DefaultProgressBar(len(periods))
+	bar := eostest.DefaultProgressBar("Adding periods", len(periods))
 
 	for i := 0; i < numPeriods; i++ {
 		startTime = eos.TimePoint((marker.UnixNano() / 1000) + 1)
@@ -115,7 +115,7 @@ func AddPeriods(ctx context.Context, api *eos.API, daoContract eos.AccountName,
 		startTime = eos.TimePoint(marker.Add(periodDuration).UnixNano() / 1000)
 		marker = marker.Add(periodDuration).Add(time.Millisecond)
 
-		_, err := eostest.ExecTrx(ctx, api, []*eos.Action{&addPeriodAction})
+		_, err := eostest.ExecWithRetry(ctx, api, []*eos.Action{&addPeriodAction})
 		if err != nil {
 			return periods, fmt.Errorf("cannot add period: %v", err)
 		}
@@ -149,7 +149,7 @@ func Apply(ctx context.Context, api *eos.API, contract eos.AccountName,
 			Notes:     notes,
 		}),
 	}}
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 type enrollParm struct {
@@ -172,7 +172,7 @@ func Enroll(ctx context.Context, api *eos.API, contract eos.AccountName, enrolle
 			Content:   string("enroll in dao"),
 		}),
 	}}
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 // CreateRoot creates the root node
@@ -193,7 +193,7 @@ func CreateRoot(ctx context.Context, api *eos.API, contract eos.AccountName) (st
 		},
 		ActionData: eos.NewActionDataFromHexData([]byte(actionBinary)),
 	}}
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 type claim struct {
@@ -215,7 +215,7 @@ func ClaimPay(ctx context.Context, api *eos.API, contract, claimer eos.AccountNa
 			PeriodID:       periodID,
 		}),
 	}}
-	return eostest.ExecTrx(ctx, api, actions)
+	return eostest.ExecWithRetry(ctx, api, actions)
 }
 
 type balance struct {

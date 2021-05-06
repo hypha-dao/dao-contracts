@@ -1,6 +1,8 @@
 #include <eosio/action.hpp>
 
 #include <proposals/proposal.hpp>
+#include <ballots/vote.hpp>
+#include <ballots/vote_tally.hpp>
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/content.hpp>
 #include <document_graph/document.hpp>
@@ -9,6 +11,7 @@
 #include <document_graph/edge.hpp>
 #include <dao.hpp>
 #include <trail.hpp>
+#include <hypha_voice.hpp>
 #include <util.hpp>
 
 using namespace eosio;
@@ -27,9 +30,11 @@ namespace hypha
         contentGroups.push_back(makeSystemGroup(proposer,
                                                 getProposalType(),
                                                 getTitle(proposalContent),
-                                                getDescription(proposalContent),
-                                                getBallotContent(proposalContent)));
+                                                getDescription(proposalContent)));
         
+        contentGroups.push_back(makeBallotGroup());
+        contentGroups.push_back(makeBallotOptionsGroup());
+
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
         // creates the document, or the graph NODE
@@ -45,6 +50,9 @@ namespace hypha
         // the DHO also links to the document as a proposal, another graph EDGE
         Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
 
+        // Sets an empty tally
+        VoteTally(m_dao, proposalNode);
+
         postProposeImpl(proposalNode);
 
         return proposalNode;
@@ -54,64 +62,19 @@ namespace hypha
 
     void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal)
     {
-        proposal.getContentWrapper().getOrFail(BALLOT_OPTIONS, vote, "Invalid vote");
-
-        eosio::check(
-            Edge::exists(m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::PROPOSAL),
-            "Only allowed to vote active proposals"
-        );
-
-        std::vector<Edge> votes = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
-        for (auto votesIt = votes.begin(); votesIt != votes.end(); ++votesIt) {
-            if (votesIt->getCreator() == voter) {
-                eosio::checksum256 voterHash = Member::calcHash(voter);
-                Document voteDocument(m_dao.get_self(), votesIt->getToNode());
-
-                // Already voted, erase edges and allow to vote again.
-                Edge::get(m_dao.get_self(), voterHash, voteDocument.getHash(), common::VOTE).erase();
-                Edge::get(m_dao.get_self(), proposal.getHash(), voteDocument.getHash(), common::VOTE).erase();
-                Edge::get(m_dao.get_self(), voteDocument.getHash(), voterHash, common::OWNED_BY).erase();
-                Edge::get(m_dao.get_self(), voteDocument.getHash(), proposal.getHash(), common::VOTE_ON).erase();
-            }
-        }
-
-        // Fetch vote power
-        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
-        trailservice::trail::voters_table v_t(trailContract, voter.value);
-        auto v_itr = v_t.find(common::S_HVOICE.code().raw());
-        check(v_itr != v_t.end(), "No HVOICE found");
-        asset votePower = v_itr->liquid;
-
-        ContentGroups contentGroups{
-            ContentGroup{
-                Content(VOTER_LABEL, voter),
-                Content(VOTE_POWER, votePower),
-                Content(VOTE_LABEL, vote)
-            }
-        };
-
-        eosio::checksum256 voterHash = Member::calcHash(voter);
-        Document voteDocument = Document::getOrNew(m_dao.get_self(), m_dao.get_self(), contentGroups);
-
-        // an edge from the member to the vote named vote
-        // Note: This edge could already exist, as voteDocument is likely to be re-used.
-        Edge::getOrNew(m_dao.get_self(), voter, voterHash, voteDocument.getHash(), common::VOTE);
-
-        // an edge from the proposal to the vote named vote
-        Edge::write(m_dao.get_self(), voter, proposal.getHash(), voteDocument.getHash(), common::VOTE);
-
-        // an edge from the vote to the member named ownedby
-        // Note: This edge could already exist, as voteDocument is likely to be re-used.
-        Edge::getOrNew(m_dao.get_self(), voter, voteDocument.getHash(), voterHash, common::OWNED_BY);
-
-        // an edge from the vote to the proposal named voteon
-        Edge::write(m_dao.get_self(), voter, voteDocument.getHash(), proposal.getHash(), common::VOTE_ON);
-
-        updateVoteTally(proposal, voter);
+        Vote(m_dao, voter, vote, proposal);
+        VoteTally(m_dao, proposal);
     }
 
     void Proposal::close(Document &proposal)
     {
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+
+        eosio::check(
+            eosio::time_point_sec(eosio::current_time_point()) > expiration,
+            "Voting is still active for this proposal"
+        );
+
         eosio::checksum256 root = getRoot(m_dao.get_self());
 
         Edge edge = Edge::get(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL);
@@ -165,16 +128,15 @@ namespace hypha
 
     ContentGroup Proposal::makeSystemGroup(const name &proposer,
                                            const name &proposal_type,
-                                           const string &decide_title,
-                                           const string &decide_desc,
-                                           const string &decide_content)
+                                           const string &proposal_title,
+                                           const string &proposal_description)
     {
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, SYSTEM),
             Content(CLIENT_VERSION, m_dao.getSettingOrDefault<std::string>(CLIENT_VERSION, DEFAULT_VERSION)),
             Content(CONTRACT_VERSION, m_dao.getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)),
-            Content(BALLOT_ID, registerBallot(proposer, decide_title, decide_desc, decide_content)),
-            Content(NODE_LABEL, decide_title),
+            Content(NODE_LABEL, proposal_title),
+            Content(DESCRIPTION, proposal_description),
             Content(TYPE, proposal_type)};
     }
 
@@ -198,75 +160,22 @@ namespace hypha
         };
     }
 
-    void Proposal::updateVoteTally(Document& proposal, const eosio::name creator)
-    {
-        auto [exists, oldTally] = Edge::getIfExists(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
-        if (exists) {
-            oldTally.erase();
-        }
-
-        ContentGroup* contentOptions = proposal.getContentWrapper().getGroupOrFail(BALLOT_OPTIONS);
-
-        std::map<std::string, eosio::asset> optionsTally;
-        std::vector<std::string> optionsTallyOrdered;
-        for (auto it = contentOptions->begin(); it != contentOptions->end(); ++it) 
-        {
-            if (it->label != CONTENT_GROUP_LABEL) {
-                optionsTally[it->label] = asset(0, common::S_HVOICE);
-                optionsTallyOrdered.push_back(it->label);
-            }
-        }
-
-        
-        std::vector<Edge> edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
-        for (auto itr = edges.begin(); itr != edges.end(); ++itr) {
-            eosio::checksum256 voteHash = itr->getToNode();
-            Document voteDocument(m_dao.get_self(), voteHash);
-            ContentGroup group = voteDocument.getContentGroups().front();
-            std::string vote;
-            eosio::asset power;
-            for (ContentGroup::const_iterator contentIt = group.begin(); contentIt != group.end(); ++contentIt)  {
-                if (contentIt->label == VOTE_POWER) {
-                    power = contentIt->getAs<eosio::asset>();
-                } else if (contentIt->label == VOTE_LABEL) {
-                    vote = contentIt->getAs<std::string>();
-                }
-            }
-
-            optionsTally[vote] += power;
-        }
-        
-
-        ContentGroups tallyContentGroups;
-        for (auto it = optionsTallyOrdered.begin(); it != optionsTallyOrdered.end(); ++it) 
-        {
-            tallyContentGroups.push_back(ContentGroup{
-                Content(CONTENT_GROUP_LABEL, *it),
-                Content(VOTE_POWER, optionsTally[*it])
-            });
-        }
-
-        // Who is the creator? The last voter? the contract?
-        Document document = Document::getOrNew(m_dao.get_self(), m_dao.get_self(), tallyContentGroups);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), document.getHash(), common::VOTE_TALLY);
-    }
-
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
-        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
+        name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
+        hypha::voice::stats stats_t(hvoiceContract, common::S_HVOICE.code().raw());
+        auto stat_itr = stats_t.find(common::S_HVOICE.code().raw());
+        check(stat_itr != stats_t.end(), "No HVOICE found");
 
-        trailservice::trail::treasuries_table t_t(trailContract, trailContract.value);
-        auto t_itr = t_t.find(common::S_HVOICE.code().raw());
-        check(t_itr != t_t.end(), "Treasury: " + common::S_HVOICE.code().to_string() + " not found.");
+        asset quorum_threshold = adjustAsset(stat_itr->supply, 0.20000000);
 
-        asset quorum_threshold = adjustAsset(t_itr->supply, 0.20000000);
-
-        Document tally(m_dao.get_self(), tallyHash);
+        VoteTally tally(m_dao, tallyHash);
 
         // Currently get pass/fail
-        asset votes_pass = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), VOTE_POWER)->getAs<eosio::asset>();
-        asset votes_abstain = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_ABSTAIN.to_string(), VOTE_POWER)->getAs<eosio::asset>();
-        asset votes_fail = tally.getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+        // Todo: Abstract this part into VoteTally class
+        asset votes_pass = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+        asset votes_abstain = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_ABSTAIN.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+        asset votes_fail = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs<eosio::asset>();
 
         asset total = votes_pass + votes_abstain + votes_fail;
         bool passed = false;
@@ -313,60 +222,6 @@ namespace hypha
 
     }
 
-    name Proposal::registerBallot(const name &proposer,
-                                  const string &title, const string &description, const string &content)
-    {
-        check(has_auth(proposer) || has_auth(m_dao.get_self()), "Authentication failed. Must have authority from proposer: " +
-                                                                    proposer.to_string() + "@active or " + m_dao.get_self().to_string() + "@active.");
-
-        // increment the ballot_id
-        name ballotId = name(m_dao.getSettingOrFail<eosio::name>(LAST_BALLOT_ID).value + 1);
-        m_dao.setSetting(LAST_BALLOT_ID, ballotId);
-
-        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
-
-        trailservice::trail::ballots_table b_t(trailContract, trailContract.value);
-        auto b_itr = b_t.find(ballotId.value);
-        check(b_itr == b_t.end(), "ballot_id: " + ballotId.to_string() + " has already been used.");
-
-        vector<name> options;
-        options.push_back(name("pass"));
-        options.push_back(name("fail"));
-        options.push_back(name("abstain"));
-
-        action(
-            permission_level{m_dao.get_self(), name("active")},
-            trailContract, name("newballot"),
-            std::make_tuple(
-                ballotId,
-                name("poll"),
-                m_dao.get_self(),
-                common::S_HVOICE,
-                name("1token1vote"),
-                options))
-            .send();
-
-        action(
-            permission_level{m_dao.get_self(), name("active")},
-            trailContract, name("editdetails"),
-            std::make_tuple(
-                ballotId,
-                title,
-                description.substr(0, std::min(description.length(), size_t(25))),
-                content))
-            .send();
-
-        auto expiration = time_point_sec(current_time_point()) + m_dao.getSettingOrFail<int64_t>(VOTING_DURATION_SEC);
-
-        action(
-            permission_level{m_dao.get_self(), name("active")},
-            trailContract, name("openvoting"),
-            std::make_tuple(ballotId, expiration))
-            .send();
-
-        return ballotId;
-    }
-
     string Proposal::getTitle(ContentWrapper cw) const
     {
       
@@ -399,14 +254,4 @@ namespace hypha
         return desc != nullptr ? desc->getAs<std::string>() : 
                                  ballotDesc->getAs<std::string>();
     }
-
-    name Proposal::registerBallot(const name &proposer,
-                                  const map<string, string> &strings)
-    {
-        return registerBallot(proposer,
-                              strings.at(TITLE),
-                              strings.at(DESCRIPTION),
-                              strings.at(CONTENT));
-    }
-
 } // namespace hypha
