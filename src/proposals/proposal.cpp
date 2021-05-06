@@ -68,19 +68,21 @@ namespace hypha
 
     void Proposal::close(Document &proposal)
     {
-        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+        auto [ isNew, voteTallyEdge ] = Edge::getIfExists(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
 
-        eosio::check(
-            eosio::time_point_sec(eosio::current_time_point()) > expiration,
-            "Voting is still active for this proposal"
-        );
+        if (isNew) {
+            auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+            eosio::check(
+                eosio::time_point_sec(eosio::current_time_point()) > expiration,
+                "Voting is still active for this proposal"
+            );
+        }
 
         eosio::checksum256 root = getRoot(m_dao.get_self());
 
         Edge edge = Edge::get(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL);
         edge.erase();
 
-        auto [ isNew, voteTallyEdge ] = Edge::getIfExists(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
         bool proposalDidPass;
 
         if (isNew) {
