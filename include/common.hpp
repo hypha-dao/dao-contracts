@@ -75,7 +75,6 @@ namespace common
     static constexpr name DHO = name ("dho");
 
     static constexpr name BALLOT_TYPE_OPTIONS = name("options");
-    static constexpr name BALLOT_TYPE_TELOS_DECIDE = name("telosdecide");
 
     static constexpr name GROUP_TYPE_OPTION = name("option");
 
@@ -132,7 +131,6 @@ namespace common
 #define BALLOT_TYPE "ballot_type"
 
 // setting document
-#define TELOS_DECIDE_CONTRACT "telos_decide_contract"
 #define SEEDS_TOKEN_CONTRACT "seeds_token_contract"
 #define SEEDS_ESCROW_CONTRACT "seeds_escrow_contract"
 #define HUSD_TOKEN_CONTRACT "husd_token_contract"
