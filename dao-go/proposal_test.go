@@ -91,7 +91,7 @@ func TestProposalDocumentVote(t *testing.T) {
 		t.Log("alice votes pass on other role")
 		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", otherRole.Hash)
 		// zero-votes tally should no longer exist
-		eostest.Pause(time.Second, "", "Waiting for block")
+		eostest.Pause(time.Second * 2, "", "Waiting for block")
 		_, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, voteTally2.Hash.String())
 		assert.ErrorContains(t, err, "document not found")
 
