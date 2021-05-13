@@ -8,10 +8,6 @@ contracts:
     abi: dao-go/artifacts/decide/decide.abi
     name: decide
     wasm: dao-go/artifacts/decide/decide.wasm
-  docs:
-    abi: document-graph/build/docs/docs.abi
-    name: docs
-    wasm: document-graph/build/docs/docs.wasm
   escrow:
     abi: dao-go/artifacts/escrow/escrow.abi
     name: escrow
