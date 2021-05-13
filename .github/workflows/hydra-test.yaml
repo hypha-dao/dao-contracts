@@ -1,4 +1,4 @@
-name: CI
+name: test-hydra
 
 on:
   push:
@@ -26,3 +26,5 @@ jobs:
           CODE: "/github/workspace/"
           PATCH_WASM_LD: "1"
       - run: yarn test
+        env:
+          HYDRA_AUTH: ${{ secrets.HYDRA_AUTH }}
