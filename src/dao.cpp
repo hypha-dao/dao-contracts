@@ -330,6 +330,11 @@ namespace hypha
          assignmentNodeLabel = std::get<std::string>(assignmentLabel->value);
       }
 
+      //If node_label is not present for any reason fallback to the assignment hash
+      if (assignmentNodeLabel.empty()) {
+        assignmentNodeLabel = to_str(assignment.getHash());
+      }
+
       string memo = assignmentNodeLabel + ", period: " + periodToClaim.value().getNodeLabel();      
 
       // string memo = "[assignment_label:" + assignmentNodeLabel + ",period_label:" + periodToClaim.value().getNodeLabel()
