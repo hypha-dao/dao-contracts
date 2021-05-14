@@ -330,8 +330,10 @@ namespace hypha
          assignmentNodeLabel = std::get<std::string>(assignmentLabel->value);
       }
 
-      string memo = "[assignment_label:" + assignmentNodeLabel + ",period_label:" + periodToClaim.value().getNodeLabel()
-               + ",assignment_hash:" + readableHash(assignment.getHash()) + ",period_hash:" + readableHash(periodToClaim.value().getHash()) + "]";
+      string memo = assignmentNodeLabel + ", period: " + periodToClaim.value().getNodeLabel();      
+
+      // string memo = "[assignment_label:" + assignmentNodeLabel + ",period_label:" + periodToClaim.value().getNodeLabel()
+      //          + ",assignment_hash:" + readableHash(assignment.getHash()) + ",period_hash:" + readableHash(periodToClaim.value().getHash()) + "]";
       
       // creating a single struct improves performance for table queries here
       AssetBatch ab{};
