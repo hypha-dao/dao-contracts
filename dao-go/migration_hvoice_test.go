@@ -27,31 +27,30 @@ func TestHvoiceMigration(t *testing.T) {
         // mem2:    1.00
         // mem3:    1.00
         // mem4:    1.00
-        //  all have a genesis of 1.00 each
+        // 1 genesis
         stats, err := GetHvoiceIssued(env.ctx, &env.api, env.HvoiceToken, hvoiceAsset.Symbol)
         assert.NilError(t, err)
         assert.Equal(t, stats.Supply.Amount, eos.Int64(10900))
 
+        // This will take what we have in telos and apply to our current contract
+        // Which is the initial issued minus the genesis (because telos is no longer connected)
         _ ,err = MigrateHVoice(env.ctx, &env.api, env.HvoiceToken, env.DAO, env.TelosDecide)
         assert.NilError(t, err)
 
         for _, member := range env.Members {
             AccountDetails, err := GetMemberHVoiceAccount(env.ctx, &env.api, env.HvoiceToken, member.Member)
             assert.NilError(t, err)
-            // 1.00 hvoice was added somewhere...
-            assert.Equal(t, AccountDetails.Balance.Amount, eos.Int64(200))
+            assert.Equal(t, AccountDetails.Balance.Amount, eos.Int64(100))
         }
 
         AccountDetails, err := GetMemberHVoiceAccount(env.ctx, &env.api, env.HvoiceToken, env.Alice.Member)
         assert.NilError(t, err)
-        assert.Equal(t, AccountDetails.Balance.Amount, eos.Int64(10100))
+        assert.Equal(t, AccountDetails.Balance.Amount, eos.Int64(10000))
 
-        // All accounts started with 1.00 hvoice (because of the genesis hvoice)
         // All telos started with 1.00 hvoice except for Alice (100.00)
-        // 1.00 hvoice was added somewhere to all the accounts
         stats, err = GetHvoiceIssued(env.ctx, &env.api, env.HvoiceToken, hvoiceAsset.Symbol)
         assert.NilError(t, err)
-        assert.Equal(t, stats.Supply.Amount, eos.Int64(10900))
+        assert.Equal(t, stats.Supply.Amount, eos.Int64(10400))
 
     })
 }

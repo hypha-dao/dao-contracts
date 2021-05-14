@@ -10,7 +10,6 @@
 #include <common.hpp>
 #include <document_graph/edge.hpp>
 #include <dao.hpp>
-#include <trail.hpp>
 #include <hypha_voice.hpp>
 #include <util.hpp>
 
@@ -68,15 +67,13 @@ namespace hypha
 
     void Proposal::close(Document &proposal)
     {
-        auto [ isNew, voteTallyEdge ] = Edge::getIfExists(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
+        auto voteTallyEdge = Edge::get(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
 
-        if (isNew) {
-            auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
-            eosio::check(
-                eosio::time_point_sec(eosio::current_time_point()) > expiration,
-                "Voting is still active for this proposal"
-            );
-        }
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+        eosio::check(
+            eosio::time_point_sec(eosio::current_time_point()) > expiration,
+            "Voting is still active for this proposal"
+        );
 
         eosio::checksum256 root = getRoot(m_dao.get_self());
 
@@ -85,16 +82,9 @@ namespace hypha
 
         bool proposalDidPass;
 
-        if (isNew) {
-            auto ballotHash = voteTallyEdge.getToNode();
-            proposalDidPass = didPass(ballotHash);
-        } else {
-            // Backwards compatiblity to old ballots
-            name ballot_id = proposal.getContentWrapper().getOrFail(SYSTEM, "ballot_id")->getAs<eosio::name>();
-            proposalDidPass = oldDidPass(ballot_id);
-        }
+        auto ballotHash = voteTallyEdge.getToNode();
+        proposalDidPass = didPass(ballotHash);
 
-        
         if (proposalDidPass)
         {
 
@@ -116,15 +106,6 @@ namespace hypha
         {
             // create edge for FAILED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::FAILED_PROPS);
-        }
-
-        if (!isNew) {
-            name ballot_id = proposal.getContentWrapper().getOrFail(SYSTEM, "ballot_id")->getAs<eosio::name>();
-            eosio::action(
-            eosio::permission_level{m_dao.get_self(), name("active")},
-            m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT), name("closevoting"),
-            std::make_tuple(ballot_id, true))
-            .send();
         }
     }
 
@@ -190,38 +171,6 @@ namespace hypha
         {
             return false;
         }
-    }
-
-    // Copy of the old didPass method. Should be removed later and code above cleaned when old ballots 
-    // are no longer supported (because all should finish eventually)
-    bool Proposal::oldDidPass(const eosio::name &ballotId)
-    { 
-        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
-        trailservice::trail::ballots_table b_t(trailContract, trailContract.value);
-        auto b_itr = b_t.find(ballotId.value);
-        check(b_itr != b_t.end(), "ballot_id: " + ballotId.to_string() + " not found.");
-
-        trailservice::trail::treasuries_table t_t(trailContract, trailContract.value);
-        auto t_itr = t_t.find(common::S_HVOICE.code().raw());
-        check(t_itr != t_t.end(), "Treasury: " + common::S_HVOICE.code().to_string() + " not found.");
-
-        asset quorum_threshold = adjustAsset(t_itr->supply, 0.20000000);
-        map<name, asset> votes = b_itr->options;
-        asset votes_pass = votes.at(name("pass"));
-        asset votes_fail = votes.at(name("fail"));
-        asset votes_abstain = votes.at(name("abstain"));
-
-        bool passed = false;
-        if (b_itr->total_raw_weight >= quorum_threshold &&      // must meet quorum
-            adjustAsset(votes_pass, 0.2500000000) > votes_fail) // must have 80% of the vote power
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-
     }
 
     string Proposal::getTitle(ContentWrapper cw) const
