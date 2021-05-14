@@ -324,10 +324,15 @@ namespace hypha
       eosio::check(hypha.is_valid(), "fatal error: HYPHA has to be a valid asset");
 
       string assignmentNodeLabel = "";
-      if (auto [idx, assignmentLabel] = assignment.getContentWrapper().get(DETAILS, NODE_LABEL); assignmentLabel)
+      if (auto [idx, assignmentLabel] = assignment.getContentWrapper().get(SYSTEM, NODE_LABEL); assignmentLabel)
       {
          eosio::check(std::holds_alternative<std::string>(assignmentLabel->value), "fatal error: assignment content item type is expected to be a string: " + assignmentLabel->label);
          assignmentNodeLabel = std::get<std::string>(assignmentLabel->value);
+      }
+
+      //If node_label is not present for any reason fallback to the assignment hash
+      if (assignmentNodeLabel.empty()) {
+        assignmentNodeLabel = to_str(assignment.getHash());
       }
 
       string memo = assignmentNodeLabel + ", period: " + periodToClaim.value().getNodeLabel();      
