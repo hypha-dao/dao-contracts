@@ -3,6 +3,7 @@
 #include <common.hpp>
 #include <document_graph/edge.hpp>
 #include <ballots/vote.hpp>
+#include <logger/logger.hpp>
 
 namespace hypha
 {
@@ -10,7 +11,7 @@ namespace hypha
     VoteTally::VoteTally(dao& dao, const eosio::checksum256& hash)
     : TypedDocument(dao, hash)
     {
-
+      TRACE_FUNCTION()
     }
 
     VoteTally::VoteTally(
@@ -19,6 +20,7 @@ namespace hypha
     )
     : TypedDocument(dao)
     {
+        TRACE_FUNCTION()
         auto [exists, oldTally] = Edge::getIfExists(dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
         if (exists) {
             auto oldTallyNode = oldTally.to_node;

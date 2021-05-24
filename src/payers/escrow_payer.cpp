@@ -4,6 +4,7 @@
 #include <eosio/asset.hpp>
 #include <eosio/crypto.hpp>
 #include <document_graph/document.hpp>
+#include <logger/logger.hpp>
 
 #include <common.hpp>
 
@@ -14,6 +15,7 @@ namespace hypha
                                   const eosio::asset &quantity,
                                   const string &memo)
     {
+        TRACE_FUNCTION()
         eosio::action(
             eosio::permission_level{m_dao.get_self(), name("active")},
             m_dao.getSettingOrFail<name>(SEEDS_TOKEN_CONTRACT),

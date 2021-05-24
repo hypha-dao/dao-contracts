@@ -9,6 +9,7 @@
 #include <util.hpp>
 #include <dao.hpp>
 #include <payers/payer.hpp>
+#include <logger/logger.hpp>
 
 namespace hypha
 {
@@ -59,12 +60,14 @@ namespace hypha
 
     void Member::apply(const eosio::checksum256 &applyTo, const std::string content)
     {
+        TRACE_FUNCTION()
         Edge::write(getContract(), getAccount(), applyTo, getHash(), common::APPLICANT);
         Edge::write(getContract(), getAccount(), getHash(), applyTo, common::APPLICANT_OF);
     }
 
     void Member::enroll(const eosio::name &enroller, const std::string &content)
     {
+        TRACE_FUNCTION()
         // TODO: make this multi-member, it may not be "root"
         eosio::checksum256 root = getRoot(getContract());
 
@@ -109,6 +112,7 @@ namespace hypha
 
     eosio::name Member::getAccount()
     {
+        TRACE_FUNCTION()
         return getContentWrapper().getOrFail(DETAILS, MEMBER_STRING)->getAs<eosio::name>();
     }
 
