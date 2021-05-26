@@ -92,7 +92,7 @@ func TestProposalDocumentVote(t *testing.T) {
 		t.Log("alice votes pass on other role")
 		_, err = ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", otherRole.Hash)
 		// zero-votes tally should no longer exist
-		eostest.Pause(time.Second * 2, "", "Waiting for block")
+		eostest.Pause(time.Second * 3, "", "Waiting for block")
 		_, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, voteTally2.Hash.String())
 		assert.ErrorContains(t, err, "document not found")
 
@@ -112,7 +112,7 @@ func TestProposalDocumentVote(t *testing.T) {
 		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail", before_date, after_date, "")
 
 		// New tally should be different. We have a different vote
-		eostest.Pause(time.Second * 2, "", "Waiting before fetching last tally")
+		eostest.Pause(time.Second * 3, "", "Waiting before fetching last tally")
 		voteTally = AssertDifferentLastTally(t, voteTally)
 		AssertTally(t, voteTally, "0.00 HVOICE", "0.00 HVOICE", "101.00 HVOICE")
 
@@ -257,7 +257,7 @@ func voteToPassOldBallot(t *testing.T, env *Environment, ballot eos.Name) {
 }
 
 func AssertDifferentLastTally(t *testing.T, tally docgraph.Document) docgraph.Document {
-	eostest.Pause(time.Second * 2, "", "Waiting for block")
+	eostest.Pause(time.Second * 3, "", "Waiting for block")
 	lastTally, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("votetally"))
 	assert.NilError(t, err)
 	assert.Assert(t, tally.Hash.String() != lastTally.Hash.String())
@@ -265,7 +265,7 @@ func AssertDifferentLastTally(t *testing.T, tally docgraph.Document) docgraph.Do
 }
 
 func AssertSameLastTally(t *testing.T, tally docgraph.Document) docgraph.Document {
-	eostest.Pause(time.Second * 2, "", "Waiting for block")
+	eostest.Pause(time.Second * 3, "", "Waiting for block")
 	lastTally, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("votetally"))
 	assert.NilError(t, err)
 	assert.Assert(t, tally.Hash.String() == lastTally.Hash.String())

@@ -86,13 +86,6 @@ namespace hypha
         eosio::asset genesis_voice{100, common::S_HVOICE};
         std::string memo{"genesis voice issuance during enrollment"};
 
-        eosio::action(
-            eosio::permission_level{getContract(), eosio::name("active")},
-            // TODO: hard-code TD contract
-            eosio::name("trailservice"), eosio::name("mint"),
-            std::make_tuple(getAccount(), genesis_voice, memo))
-            .send();
-
         name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
 
         hypha::issueToken(

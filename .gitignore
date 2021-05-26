@@ -19,6 +19,6 @@ dao-go/nodeos-go.log
 dao-go/testlog.txt
 main.go
 main1.go
-*.json
+/dao-go/**/*.json
 dao-contracts
 migration.sh

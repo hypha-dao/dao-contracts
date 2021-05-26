@@ -1,0 +1,30 @@
+name: test-hydra
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+            submodules: recursive
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12'
+          check-latest: true
+      - uses: bahmutov/npm-install@v1
+      - name: "Build"
+        uses: docker://josejulio/hypha-builder:release_1.7.x
+        with:
+          args: " -j2 VERBOSE=1 "
+        env:
+          CODE: "/github/workspace/"
+          PATCH_WASM_LD: "1"
+      - run: yarn test
+        env:
+          HYDRA_AUTH: ${{ secrets.HYDRA_AUTH }}
