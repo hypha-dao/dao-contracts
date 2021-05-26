@@ -27,14 +27,14 @@ namespace hypha
       proposal->propose(proposer, content_groups);
    }
 
-   void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote)
+   void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote, string notes)
    {
       eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
       Document docprop(get_self(), proposal_hash);
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
       Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
-      proposal->vote(voter, vote, docprop);
+      proposal->vote(voter, vote, docprop, notes);
    }
 
    void dao::closedocprop(const checksum256 &proposal_hash)

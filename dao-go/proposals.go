@@ -20,6 +20,7 @@ type VoteProposal struct {
 	Voter        eos.AccountName `json:"voter"`
 	ProposalHash eos.Checksum256 `json:"proposal_hash"`
 	Vote         string          `json:"vote"`
+	Notes		 string	         `json:"notes"`
 }
 
 // Vote represents a set of options being cast as a vote to Telos Decide
@@ -357,7 +358,7 @@ func VotePass(ctx context.Context, api *eos.API, contract,
 		// if ballot_id exists, we are using TelosDecide
 		return TelosDecideVote(ctx, api, telosDecide, voter, ballot.Impl.(eos.Name), eos.Name("pass"))
 	}
-	return ProposalVote(ctx, api, contract, voter, "pass", proposal.Hash)
+	return ProposalVoteWithoutNotes(ctx, api, contract, voter, "pass", proposal.Hash)
 }
 
 // TelosDecideVote ...
@@ -392,6 +393,29 @@ func DocumentVote(ctx context.Context, api *eos.API,
 
 // ProposalVote
 func ProposalVote(
+	ctx context.Context, api *eos.API,
+	contract, voter eos.AccountName,
+	vote string, proposalHash eos.Checksum256, notes string) (string, error) {
+
+	actions := []*eos.Action{{
+		Account: contract,
+		Name:    eos.ActN("vote"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: voter, Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionData(&VoteProposal{
+			Voter:        voter,
+			ProposalHash: proposalHash,
+			Vote:         vote,
+			Notes: 		  notes,
+		}),
+	}}
+
+	return eostest.ExecWithRetry(ctx, api, actions)
+}
+
+// ProposalVote
+func ProposalVoteWithoutNotes(
 	ctx context.Context, api *eos.API,
 	contract, voter eos.AccountName,
 	vote string, proposalHash eos.Checksum256) (string, error) {
