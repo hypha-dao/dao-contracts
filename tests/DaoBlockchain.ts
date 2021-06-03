@@ -1,6 +1,7 @@
 import { loadConfig, Blockchain, Contract } from '@klevoya/hydra';
 import { THydraConfig } from '@klevoya/hydra/lib/config/hydra';
 import Account from '@klevoya/hydra/lib/main/account';
+import { Document } from './types/Document';
 
 export interface DaoSettings {
     votingDurationSeconds: number;
@@ -146,6 +147,10 @@ export class DaoBlockchain extends Blockchain {
             key: 'treasury_contract',
             value: [ 'name', this.peerContracts.bank.accountName ]
         });
+    }
+
+    public getDaoDocuments(): Array<Document> {
+        return this.dao.getTableRowsScoped('documents')['dao'];
     }
 
 }
