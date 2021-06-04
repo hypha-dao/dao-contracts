@@ -1,6 +1,12 @@
 
 export interface Document {
+    id: string;
+    hash: string;
+    creator: string;
     content_groups: ContentGroups;
+    certificates: Array<unknown>,
+    created_date: string;
+    contract: string;
 }
 
 export type ContentGroups = Array<ContentGroup>;

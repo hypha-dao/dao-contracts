@@ -5,13 +5,40 @@ type BuilderFunction<T> = (builder: T) => void;
 export class DocumentBuilder {
 
     private _contentGroups: ContentGroups;
+    private _id: string;
+    private _hash: string;
+    private _creator: string;
+    private _certificates: Array<unknown>;
+    private _created_date: string;
+    private _contract: string;
 
     private constructor() {
         this._contentGroups = [];
+        this._id = '';
+        this._hash = '';
+        this._creator = '';
+        this._certificates = [];
+        this._created_date = '';
+        this._contract = '';
     }
 
     public static builder(): DocumentBuilder {
         return new DocumentBuilder();
+    }
+
+    public id(id: string): DocumentBuilder {
+        this._id = id;
+        return this;
+    }
+
+    public hash(hash: string): DocumentBuilder {
+        this._hash = hash;
+        return this;
+    }
+
+    public contract(contract: string): DocumentBuilder {
+        this._contract = contract;
+        return this;
     }
 
     public contentGroup(builderFunction: BuilderFunction<ContentGroupBuilder>): DocumentBuilder {
@@ -22,9 +49,25 @@ export class DocumentBuilder {
         return this;
     }
 
+    public created_date(created_date: string): DocumentBuilder {
+        this._created_date = created_date;
+        return this;
+    }
+
+    public creator(creator: string): DocumentBuilder {
+        this._creator = creator;
+        return this;
+    }
+
     public build(): Document {
         return {
-            content_groups: this._contentGroups
+            id: this._id,
+            hash: this._hash,
+            creator: this._creator,
+            content_groups: this._contentGroups,
+            certificates: this._certificates,
+            created_date: this._created_date,
+            contract: this._contract
         };
     }
 

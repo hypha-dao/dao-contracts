@@ -16,8 +16,8 @@ export const getSystemContentGroup = (document: Document): ContentGroup | undefi
     return getContentGroupByLabel(document, SYSTEM_CONTENT_GROUP_LABEL);
 }
 
-export const getDocumentByType = (documents: Array<Document>, documentType: string): Document => {
-    return documents.find(document => {
+export const getDocumentsByType = (documents: Array<Document>, documentType: string): Array<Document> => {
+    return documents.filter(document => {
         const system = getSystemContentGroup(document);
         if (system) {
             return system.find(

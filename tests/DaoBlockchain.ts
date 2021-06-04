@@ -54,6 +54,12 @@ export class DaoBlockchain extends Blockchain {
                     const member: Account = await blockchain.createMember(`mem${index + 1}.hypha`);
                     blockchain.members.push(member);
                 }
+
+                // Member 0 is always awarded 99 HVOICE (for a total of 100)
+                if (testSettings.createMembers > 0) {
+                    await blockchain.increaseVoice(blockchain.members[0].accountName, '99.00 HVOICE');
+                }
+
             }
         }
 
@@ -103,6 +109,21 @@ export class DaoBlockchain extends Blockchain {
         });
 
         return account;
+    }
+
+    async increaseVoice(accountName: string, quantity: string) {
+        await this.peerContracts.voice.contract.issue({
+            to: this.dao.accountName,
+            quantity,
+            memo: 'Increasing voice'
+        }, DaoBlockchain.getAccountPermission(this.dao));
+
+        await this.peerContracts.voice.contract.transfer({
+            from: this.dao.accountName,
+            to: accountName,
+            quantity,
+            memo: 'Increasing voice'
+        }, DaoBlockchain.getAccountPermission(this.dao));
     }
 
     async setup() {

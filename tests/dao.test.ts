@@ -2,7 +2,7 @@ import { loadConfig, Blockchain } from '@klevoya/hydra';
 import { DaoBlockchain } from './DaoBlockchain';
 import { setupEnvironment } from './setup';
 import { Document, ContentType, makeStringContent, makeAssetContent, makeInt64Content, makeNameContent, makeContentGroup } from './types/Document';
-import { getDocumentByType } from './utils/Dao';
+import { getDocumentsByType } from './utils/Dao';
 import { DocumentBuilder } from './utils/DocumentBuilder';
 
 const config = loadConfig("hydra.yml");
@@ -39,7 +39,7 @@ describe("dao", () => {
     });
 
     const documents = environment.getDaoDocuments();
-    const votetally = getDocumentByType(documents, 'vote.tally');
+    const votetallies = getDocumentsByType(documents, 'vote.tally');
 
     const expected = DocumentBuilder.builder()
     .contentGroup(builder => builder.groupLabel('pass').asset('vote_power', '0.00 HVOICE'))
@@ -48,6 +48,7 @@ describe("dao", () => {
     .contentGroup(builder => builder.groupLabel('system').name('type', 'vote.tally').string('node_label', 'VoteTally'))
     .build();
 
-    expect(votetally.content_groups).toEqual(expected.content_groups);
+    expect(votetallies.length).toEqual(1);
+    expect(votetallies[0].content_groups).toEqual(expected.content_groups);
   });
 });
