@@ -2,6 +2,7 @@
 #include <payers/payer.hpp>
 #include <member.hpp>
 #include <util.hpp>
+#include <logger/logger.hpp>
 
 namespace hypha
 {
@@ -14,6 +15,7 @@ namespace hypha
                         const string &memo)
 
     {
+        TRACE_FUNCTION()
         return payImpl(recipient, quantity, memo);
     }
 
@@ -23,6 +25,7 @@ namespace hypha
                            const eosio::asset &token_amount,
                            const string &memo)
     {
+        TRACE_FUNCTION()
         hypha::issueToken(
             token_contract,
             issuer,

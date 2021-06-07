@@ -1,5 +1,6 @@
 #include <typed_document.hpp>
 #include <dao.hpp>
+#include <logger/logger.hpp>
 
 namespace hypha
 {
@@ -7,6 +8,7 @@ namespace hypha
     TypedDocument<T>::TypedDocument(dao& dao, const eosio::checksum256& hash)
     : m_dao(dao), document(Document(dao.get_self(), hash))
     {
+        TRACE_FUNCTION()
         validate();
     }
 
@@ -20,6 +22,7 @@ namespace hypha
     template<typename std::string& T>
     const std::string& TypedDocument<T>::getNodeLabel()
     {
+        TRACE_FUNCTION()
         return document.getContentWrapper().getOrFail(
             SYSTEM, 
             NODE_LABEL, 
@@ -42,6 +45,8 @@ namespace hypha
     template<typename std::string& T>
     void TypedDocument<T>::initializeDocument(dao& dao, ContentGroups &content, bool failIfExists)
     {
+        TRACE_FUNCTION()
+        
         bool createNewDocument = failIfExists;
 
         if (!failIfExists)
@@ -64,8 +69,8 @@ namespace hypha
     {
         auto [idx, docType] = document.getContentWrapper().get(SYSTEM, TYPE);
 
-        eosio::check(idx != -1, "Content item labeled 'type' is required for this document but not found.");
-        eosio::check(docType->template getAs<eosio::name>() == eosio::name(T),
+        EOS_CHECK(idx != -1, "Content item labeled 'type' is required for this document but not found.");
+        EOS_CHECK(docType->template getAs<eosio::name>() == eosio::name(T),
                      "invalid document type. Expected: " + T +
                          "; actual: " + docType->template getAs<eosio::name>().to_string());
 

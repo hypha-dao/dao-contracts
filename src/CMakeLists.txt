@@ -3,6 +3,9 @@ project(dao)
 set(EOSIO_WASM_OLD_BEHAVIOR "Off")
 find_package(eosio.cdt)
 
+# Activate Logging
+add_compile_definitions(USE_LOGGING)
+
 add_contract( dao dao 
                 dao.cpp
                 typed_document.cpp
@@ -37,6 +40,7 @@ add_contract( dao dao
                 ../document-graph/src/document_graph/content.cpp
                 ../document-graph/src/document_graph/edge.cpp
                 ../document-graph/src/document_graph/util.cpp 
+                ../document-graph/src/logger/logger.cpp 
             )
 
 target_include_directories( dao PUBLIC ${CMAKE_SOURCE_DIR}/../include ${CMAKE_SOURCE_DIR}/../document-graph/include )

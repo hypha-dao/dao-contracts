@@ -5,8 +5,12 @@ import { DaoBlockchain } from './DaoBlockchain';
 
 const config = loadConfig("hydra.yml");
 
+const MINUTE = 60;
+const HOUR = MINUTE * 60;
+const DAY = HOUR * 24;
+
 export const setupEnvironment = async (): Promise<DaoBlockchain> => {
-    const votingDurationSeconds = 30;
+    const votingDurationSeconds = DAY;
     const periodDurations = 120;
 
     const blockchain = await DaoBlockchain.build(config, {
@@ -16,7 +20,7 @@ export const setupEnvironment = async (): Promise<DaoBlockchain> => {
             decayPerPeriodx10M: 5000000
         }
     }, {
-        createMembers: 1
+        createMembers: 3
     });
     
     return blockchain;

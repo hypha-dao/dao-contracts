@@ -12,6 +12,7 @@
 #include <dao.hpp>
 #include <hypha_voice.hpp>
 #include <util.hpp>
+#include <logger/logger.hpp>
 
 using namespace eosio;
 
@@ -22,7 +23,8 @@ namespace hypha
 
     Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups)
     {
-        eosio::check(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
+        TRACE_FUNCTION()
+        EOS_CHECK(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
@@ -61,16 +63,19 @@ namespace hypha
 
     void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal, std::optional<std::string> notes)
     {
+        TRACE_FUNCTION()
         Vote(m_dao, voter, vote, proposal, notes);
+        
         VoteTally(m_dao, proposal);
     }
 
     void Proposal::close(Document &proposal)
     {
+        TRACE_FUNCTION()
         auto voteTallyEdge = Edge::get(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
 
         auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
-        eosio::check(
+        EOS_CHECK(
             eosio::time_point_sec(eosio::current_time_point()) > expiration,
             "Voting is still active for this proposal"
         );
@@ -125,7 +130,7 @@ namespace hypha
 
     ContentGroup Proposal::makeBallotGroup()
     {
-
+        TRACE_FUNCTION()
         auto expiration = time_point_sec(current_time_point()) + m_dao.getSettingOrFail<int64_t>(VOTING_DURATION_SEC);
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, BALLOT),
@@ -145,10 +150,11 @@ namespace hypha
 
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
+        TRACE_FUNCTION()
         name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
         hypha::voice::stats stats_t(hvoiceContract, common::S_HVOICE.code().raw());
         auto stat_itr = stats_t.find(common::S_HVOICE.code().raw());
-        check(stat_itr != stats_t.end(), "No HVOICE found");
+        EOS_CHECK(stat_itr != stats_t.end(), "No HVOICE found");
 
         asset quorum_threshold = adjustAsset(stat_itr->supply, 0.20000000);
 
@@ -175,12 +181,12 @@ namespace hypha
 
     string Proposal::getTitle(ContentWrapper cw) const
     {
-      
+        TRACE_FUNCTION()
         auto [titleIdx, title] = cw.get(DETAILS, TITLE);
 
         auto [ballotTitleIdx, ballotTitle] = cw.get(DETAILS, common::BALLOT_TITLE);
 
-        eosio::check(
+        EOS_CHECK(
           title != nullptr || ballotTitle != nullptr,
           to_str("Proposal [details] group must contain at least one of the following items [", 
                   TITLE, ", ", common::BALLOT_TITLE, "]")
@@ -192,11 +198,13 @@ namespace hypha
 
     string Proposal::getDescription(ContentWrapper cw) const
     {
+        TRACE_FUNCTION()
+        
         auto [descIdx, desc] = cw.get(DETAILS, DESCRIPTION);
 
         auto [ballotDescIdx, ballotDesc] = cw.get(DETAILS, common::BALLOT_DESCRIPTION);
 
-        eosio::check(
+        EOS_CHECK(
           desc != nullptr || ballotDesc != nullptr,
           to_str("Proposal [details] group must contain at least one of the following items [", 
                   DESCRIPTION, ", ", common::BALLOT_DESCRIPTION, "]")
