@@ -1,6 +1,7 @@
 import { loadConfig, Blockchain, Contract } from '@klevoya/hydra';
 import { THydraConfig } from '@klevoya/hydra/lib/config/hydra';
 import Account from '@klevoya/hydra/lib/main/account';
+import { Document } from './types/Document';
 
 export interface DaoSettings {
     votingDurationSeconds: number;
@@ -53,6 +54,12 @@ export class DaoBlockchain extends Blockchain {
                     const member: Account = await blockchain.createMember(`mem${index + 1}.hypha`);
                     blockchain.members.push(member);
                 }
+
+                // Member 0 is always awarded 99 HVOICE (for a total of 100)
+                if (testSettings.createMembers > 0) {
+                    await blockchain.increaseVoice(blockchain.members[0].accountName, '99.00 HVOICE');
+                }
+
             }
         }
 
@@ -104,6 +111,21 @@ export class DaoBlockchain extends Blockchain {
         return account;
     }
 
+    async increaseVoice(accountName: string, quantity: string) {
+        await this.peerContracts.voice.contract.issue({
+            to: this.dao.accountName,
+            quantity,
+            memo: 'Increasing voice'
+        }, DaoBlockchain.getAccountPermission(this.dao));
+
+        await this.peerContracts.voice.contract.transfer({
+            from: this.dao.accountName,
+            to: accountName,
+            quantity,
+            memo: 'Increasing voice'
+        }, DaoBlockchain.getAccountPermission(this.dao));
+    }
+
     async setup() {
         this.dao.resetTables();
         
@@ -146,6 +168,10 @@ export class DaoBlockchain extends Blockchain {
             key: 'treasury_contract',
             value: [ 'name', this.peerContracts.bank.accountName ]
         });
+    }
+
+    public getDaoDocuments(): Array<Document> {
+        return this.dao.getTableRowsScoped('documents')['dao'];
     }
 
 }
