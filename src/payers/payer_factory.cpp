@@ -4,6 +4,7 @@
 #include <payers/seeds_payer.hpp>
 #include <payers/hvoice_payer.hpp>
 #include <payers/escrow_payer.hpp>
+#include <logger/logger.hpp>
 
 #include <common.hpp>
 
@@ -12,6 +13,8 @@ namespace hypha
 
     Payer *PayerFactory::Factory(dao &dao, const eosio::symbol &symbol, const eosio::name &paymentType)
     {
+        TRACE_FUNCTION()
+
         if (paymentType == common::ESCROW)
         {
             return new EscrowPayer(dao);
@@ -32,7 +35,7 @@ namespace hypha
             return new SeedsPayer(dao);
         }
 
-        eosio::check(false, "Unknown - symbol: " + symbol.code().to_string() + " payment type: " + paymentType.to_string());
+        EOS_CHECK(false, "Unknown - symbol: " + symbol.code().to_string() + " payment type: " + paymentType.to_string());
         return nullptr;
     }
 } // namespace hypha

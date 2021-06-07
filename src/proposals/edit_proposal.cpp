@@ -9,6 +9,7 @@
 #include <proposals/edit_proposal.hpp>
 #include <assignment.hpp>
 #include <period.hpp>
+#include <logger/logger.hpp>
 
 namespace hypha
 {
@@ -20,6 +21,7 @@ namespace hypha
 
     void EditProposal::postProposeImpl (Document &proposal) 
     {
+        TRACE_FUNCTION()
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
         // original_document is a required hash
@@ -57,7 +59,7 @@ namespace hypha
                                                   .getStartTime()
                                                   .sec_since_epoch();
 
-            eosio::check(
+            EOS_CHECK(
               lastPeriodStartSecs > currentTimeSecs, 
               "There has to be at least 1 remaining period before editing/extending an assignment"
               ", create a new one instead"
@@ -76,6 +78,7 @@ namespace hypha
 
     void EditProposal::passImpl(Document &proposal)
     {
+        TRACE_FUNCTION()
         // merge the original with the edits and save
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
@@ -116,7 +119,7 @@ namespace hypha
 
         auto edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::ORIGINAL);
         
-        eosio::check(
+        EOS_CHECK(
           edges.size() == 1, 
           "Missing edge from extension proposal: " + readableHash(proposal.getHash()) + " to original document"
         );
@@ -139,6 +142,7 @@ namespace hypha
 
     std::string EditProposal::getBallotContent (ContentWrapper &contentWrapper)
     {
+        TRACE_FUNCTION()
         return getTitle(contentWrapper);
     }
     

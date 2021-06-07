@@ -5,27 +5,29 @@
 #include <proposals/badge_assignment_proposal.hpp>
 #include <common.hpp>
 #include <member.hpp>
+#include <logger/logger.hpp>
 
 namespace hypha
 {
 
     void BadgeAssignmentProposal::proposeImpl(const name &proposer, ContentWrapper &badgeAssignment)
     {
+        TRACE_FUNCTION()
         // assignee must exist and be a DHO member
         name assignee = badgeAssignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
-        eosio::check(Member::isMember(m_dao.get_self(), assignee), "only members can be earn badges " + assignee.to_string());
+        EOS_CHECK(Member::isMember(m_dao.get_self(), assignee), "only members can be earn badges " + assignee.to_string());
 
          // badge assignment proposal must link to a valid badge
         Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
         auto badge = badgeDocument.getContentWrapper();
-        eosio::check(badge.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::BADGE_NAME,
+        EOS_CHECK(badge.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::BADGE_NAME,
                      "badge document hash provided in assignment proposal is not of type badge");
 
         // START_PERIOD - number of periods the assignment is valid for
         auto detailsGroup = badgeAssignment.getGroupOrFail(DETAILS);
         if (auto [idx, startPeriod] = badgeAssignment.get(DETAILS, START_PERIOD); startPeriod)
         {
-            eosio::check(std::holds_alternative<eosio::checksum256>(startPeriod->value),
+            EOS_CHECK(std::holds_alternative<eosio::checksum256>(startPeriod->value),
                          "fatal error: expected to be a checksum256 type: " + startPeriod->label);
 
             // verifies the period as valid
@@ -38,10 +40,10 @@ namespace hypha
         // PERIOD_COUNT - number of periods the assignment is valid for
         if (auto [idx, periodCount] = badgeAssignment.get(DETAILS, PERIOD_COUNT); periodCount)
         {
-            eosio::check(std::holds_alternative<int64_t>(periodCount->value),
+            EOS_CHECK(std::holds_alternative<int64_t>(periodCount->value),
                          "fatal error: expected to be an int64 type: " + periodCount->label);
 
-            eosio::check(std::get<int64_t>(periodCount->value) < 26, PERIOD_COUNT + 
+            EOS_CHECK(std::get<int64_t>(periodCount->value) < 26, PERIOD_COUNT + 
                 string(" must be less than 26. You submitted: ") + std::to_string(std::get<int64_t>(periodCount->value)));
 
         } else {
@@ -52,6 +54,7 @@ namespace hypha
 
     void BadgeAssignmentProposal::passImpl(Document &proposal)
     {
+        TRACE_FUNCTION()
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
         eosio::checksum256 assignee = Member::calcHash((contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>()));
@@ -78,6 +81,7 @@ namespace hypha
 
     std::string BadgeAssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)
     {
+        TRACE_FUNCTION()
         return contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>();
     }
 

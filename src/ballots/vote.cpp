@@ -5,6 +5,7 @@
 #include <member.hpp>
 #include <util.hpp>
 #include <hypha_voice.hpp>
+#include <logger/logger.hpp>
 
 #define CONTENT_GROUP_LABEL_VOTE "vote"
 #define VOTE_DATE "date"
@@ -14,7 +15,7 @@ namespace hypha
     Vote::Vote(hypha::dao& dao, const eosio::checksum256& hash)
     : TypedDocument(dao, hash)
     {
-
+        TRACE_FUNCTION()
     }
     
     Vote::Vote(
@@ -25,18 +26,19 @@ namespace hypha
     )
     : TypedDocument(dao)
     {
+        TRACE_FUNCTION()
         // Could be replaced by i.e. proposal.hasVote(vote) when proposal is no longer just a "Document"
         // the goal is to have an easier API
         proposal.getContentWrapper().getOrFail(BALLOT_OPTIONS, vote, "Invalid vote");
         
-        eosio::check(
+        EOS_CHECK(
             Edge::exists(dao.get_self(), getRoot(dao.get_self()), proposal.getHash(), common::PROPOSAL),
             "Only allowed to vote active proposals"
         );
 
         auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
 
-        eosio::check(
+        EOS_CHECK(
             eosio::time_point_sec(eosio::current_time_point()) <= expiration,
             "Voting has expired for this proposal"
         );
@@ -66,7 +68,7 @@ namespace hypha
         name hvoiceContract = dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
         hypha::voice::accounts v_t(hvoiceContract, voter.value);
         auto v_itr = v_t.find(common::S_HVOICE.code().raw());
-        eosio::check(v_itr != v_t.end(), "No HVOICE found");
+        EOS_CHECK(v_itr != v_t.end(), "No HVOICE found");
         asset votePower = v_itr->balance;
 
         ContentGroups contentGroups{
@@ -99,6 +101,7 @@ namespace hypha
 
     const std::string& Vote::getVote()
     {
+        TRACE_FUNCTION()
         return getDocument().getContentWrapper().getOrFail(
             CONTENT_GROUP_LABEL_VOTE, 
             VOTE_LABEL, 
@@ -108,6 +111,7 @@ namespace hypha
 
     const eosio::asset& Vote::getPower()
     {
+        TRACE_FUNCTION()
         return getDocument().getContentWrapper().getOrFail(
             CONTENT_GROUP_LABEL_VOTE, 
             VOTE_POWER, 
@@ -117,6 +121,7 @@ namespace hypha
 
     const eosio::name& Vote::getVoter()
     {
+        TRACE_FUNCTION()
         return getDocument().getContentWrapper().getOrFail(
             CONTENT_GROUP_LABEL_VOTE, 
             VOTER_LABEL, 
@@ -126,6 +131,7 @@ namespace hypha
 
     const std::string Vote::buildNodeLabel(ContentGroups &content)
     {
+        TRACE_FUNCTION()
         std::string vote = ContentWrapper(content).getOrFail(
             CONTENT_GROUP_LABEL_VOTE, 
             VOTE_LABEL, 

@@ -4,6 +4,8 @@
 #include <document_graph/document.hpp>
 #include <document_graph/content_wrapper.hpp>
 
+#include <logger/logger.hpp>
+
 #include <common.hpp>
 #include <util.hpp>
 #include <proposals/edit_proposal.hpp>
@@ -14,7 +16,8 @@ namespace hypha
 {
 
     void AssignmentExtensionProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
-    { 
+    {   
+        TRACE_FUNCTION()
         // the original document must be an assignment
         Assignment assignment (&m_dao, contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
 
@@ -30,6 +33,7 @@ namespace hypha
 
     void AssignmentExtensionProposal::postProposeImpl (Document &proposal) 
     {
+        TRACE_FUNCTION()
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
         // confirm that the original document exists
@@ -45,6 +49,7 @@ namespace hypha
 
     void AssignmentExtensionProposal::passImpl(Document &proposal)
     {
+        TRACE_FUNCTION()
         // merge the original with the edits and save
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
@@ -86,7 +91,7 @@ namespace hypha
         //Document original (m_dao.get_self(), proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
         auto edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::ORIGINAL);
         
-        eosio::check(
+        EOS_CHECK(
           edges.size() == 1, 
           "Missing edge from extension proposal: " + readableHash(proposal.getHash()) + " to original document"
         );

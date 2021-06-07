@@ -4,6 +4,7 @@
 #include <eosio/asset.hpp>
 #include <eosio/crypto.hpp>
 #include <document_graph/document.hpp>
+#include <logger/logger.hpp>
 
 #include <common.hpp>
 
@@ -14,7 +15,7 @@ namespace hypha
                                  const eosio::asset &quantity,
                                  const string &memo)
     {
-
+        TRACE_FUNCTION()
         issueToken(m_dao.getSettingOrFail<eosio::name>(HUSD_TOKEN_CONTRACT),
                    m_dao.getSettingOrFail<eosio::name>(TREASURY_CONTRACT),
                    recipient,

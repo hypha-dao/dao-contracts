@@ -9,13 +9,16 @@
 #include <proposals/edit_proposal.hpp>
 #include <proposals/suspend_proposal.hpp>
 #include <proposals/ass_extend_proposal.hpp>
+#include <logger/logger.hpp>
 
 #include <common.hpp>
 
 namespace hypha
 {
     Proposal* ProposalFactory::Factory(dao& dao, const name &proposal_type)
-    {
+    { 
+        TRACE_FUNCTION()
+
         switch (proposal_type.value)
         {
         case common::BADGE_NAME.value:
@@ -47,7 +50,7 @@ namespace hypha
             return new AssignmentExtensionProposal(dao);
         }
 
-        eosio::check(false, "Unknown proposal_type: " + proposal_type.to_string());
+        EOS_CHECK(false, "Unknown proposal_type: " + proposal_type.to_string());
         return nullptr;
     }
 } // namespace hypha

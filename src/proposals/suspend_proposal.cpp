@@ -11,6 +11,7 @@
 #include <proposals/suspend_proposal.hpp>
 #include <assignment.hpp>
 #include <period.hpp>
+#include <logger/logger.hpp>
 
 namespace hypha
 {
@@ -18,6 +19,7 @@ namespace hypha
     void SuspendProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     { 
       //TODO: Setup ballot_title according to document type [Assignment, Badge, etc.]
+      TRACE_FUNCTION()
 
       // original_document is a required hash
       auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
@@ -40,13 +42,13 @@ namespace hypha
                                            .getEndTime()
                                            .sec_since_epoch();
 
-        eosio::check(
+        EOS_CHECK(
           currentTimeSecs < lastPeriodEndSecs,
           "Assignment is already expired"
         );
        } break;
       default:
-        eosio::check(
+        EOS_CHECK(
           false,
           to_str("Unexpected document type for suspension: ",
                  type, ". Valid types [", common::ASSIGNMENT ,"]")
@@ -62,6 +64,7 @@ namespace hypha
 
     void SuspendProposal::postProposeImpl (Document &proposal) 
     {
+      TRACE_FUNCTION()
       auto originalDocHash = proposal.getContentWrapper()
                                      .getOrFail(DETAILS, ORIGINAL_DOCUMENT)
                                      ->getAs<eosio::checksum256>();
@@ -71,9 +74,10 @@ namespace hypha
 
     void SuspendProposal::passImpl(Document &proposal)
     {
+      TRACE_FUNCTION()
       auto edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::SUSPEND);
 
-      eosio::check(
+      EOS_CHECK(
         edges.size() == 1, 
         "Missing edge from suspension proposal: " + readableHash(proposal.getHash()) + " to document"
       );
@@ -117,7 +121,7 @@ namespace hypha
         m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
       } break;
       default: {
-        eosio::check(
+        EOS_CHECK(
           false,
           to_str("Unexpected document type for suspension: ",
                  type, ". Valid types [", common::ASSIGNMENT ,"]")
@@ -128,6 +132,7 @@ namespace hypha
 
     std::string SuspendProposal::getBallotContent (ContentWrapper &contentWrapper)
     {
+        TRACE_FUNCTION()
         return getTitle(contentWrapper);
     }
     
