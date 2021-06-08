@@ -47,6 +47,7 @@ namespace common
     static constexpr name ORIGINAL = name("original");
     static constexpr name EXTENSION = name("extension");
     constexpr        name SUSPEND = name("suspend");
+    constexpr        name SUSPENDED = name("suspended");
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");

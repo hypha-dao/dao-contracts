@@ -800,7 +800,16 @@ namespace hypha
 
       ContentWrapper assignmentCW = assignment.getContentWrapper();
 
-      Document roleDocument(get_self(), assignmentCW.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
+      //Should use the role edge instead of the role content item
+      //in case role document is modified (causes it's hash to change)
+      auto assignmentToRoleEdge = m_documentGraph.getEdgesFrom(assignment.getHash(), common::ROLE_NAME);
+      
+      EOS_CHECK(
+        !assignmentToRoleEdge.empty(),
+        to_str("Missing 'role' edge from assignment: ", assignment.getHash())
+      )
+
+      Document roleDocument(get_self(), assignmentToRoleEdge.at(0).getToNode());
       auto role = roleDocument.getContentWrapper();
 
       //Check min_time_share_x100 <= new_time_share_x100 <= time_share_x100

@@ -24,6 +24,14 @@ namespace hypha
       // original_document is a required hash
       auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
 
+      auto root = getRoot(m_dao.get_self());
+
+      //Verify if this is a passed proposal
+      EOS_CHECK(
+        Edge::exists(m_dao.get_self(), root, originalDocHash, common::PASSED_PROPS),
+        "Only passed proposals can be suspended"
+      )
+
       Document originalDoc(m_dao.get_self(), originalDocHash);
 
       ContentWrapper ocw = originalDoc.getContentWrapper();
@@ -47,6 +55,9 @@ namespace hypha
           "Assignment is already expired"
         );
        } break;
+      case common::ROLE_NAME.value:
+                 
+        break;
       default:
         EOS_CHECK(
           false,
@@ -81,6 +92,8 @@ namespace hypha
         edges.size() == 1, 
         "Missing edge from suspension proposal: " + readableHash(proposal.getHash()) + " to document"
       );
+
+      auto root = getRoot(m_dao.get_self());
 
       Document originalDoc(m_dao.get_self(), edges[0].getToNode());
 
@@ -120,6 +133,10 @@ namespace hypha
 
         m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
       } break;
+      case common::ROLE_NAME.value: {
+        //TODO: Decide how to notify the role is no longer active
+        //probably will add an 'state' field on the system group
+      }  break;
       default: {
         EOS_CHECK(
           false,
@@ -128,6 +145,9 @@ namespace hypha
         );
       } break;
       }
+
+      //root --> suspended --> proposal
+      Edge(m_dao.get_self(), m_dao.get_self(), root, originalDoc.getHash(), common::SUSPENDED);
     }
 
     std::string SuspendProposal::getBallotContent (ContentWrapper &contentWrapper)
