@@ -61,10 +61,11 @@ namespace hypha
 
     void Proposal::postProposeImpl(Document &proposal) {}
 
-    void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal)
+    void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal, std::optional<std::string> notes)
     {
         TRACE_FUNCTION()
-        Vote(m_dao, voter, vote, proposal);
+        Vote(m_dao, voter, vote, proposal, notes);
+        
         VoteTally(m_dao, proposal);
     }
 

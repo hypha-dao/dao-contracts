@@ -9,6 +9,7 @@
 
 #define CONTENT_GROUP_LABEL_VOTE "vote"
 #define VOTE_DATE "date"
+#define VOTE_NOTE "notes"
 
 namespace hypha 
 {
@@ -22,7 +23,8 @@ namespace hypha
         hypha::dao& dao, 
         const eosio::name voter, 
         std::string vote, 
-        Document& proposal
+        Document& proposal,
+        std::optional<std::string> notes
     )
     : TypedDocument(dao)
     {
@@ -77,7 +79,8 @@ namespace hypha
                 Content(VOTER_LABEL, voter),
                 Content(VOTE_POWER, votePower),
                 Content(VOTE_LABEL, vote),
-                Content(VOTE_DATE, eosio::time_point_sec(eosio::current_time_point()))
+                Content(VOTE_DATE, eosio::time_point_sec(eosio::current_time_point())),
+                Content(VOTE_NOTE, notes.value_or(""))
             }
         };
 

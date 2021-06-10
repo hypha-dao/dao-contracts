@@ -75,11 +75,12 @@ func TestProposalDocumentVote(t *testing.T) {
 		// alice votes "pass"
 		t.Log("alice votes pass")
 		before_date := time.Now().UTC()
-		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", role.Hash)
+		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", role.Hash, "my notes")
 		assert.NilError(t, err)
+		eostest.Pause(time.Second * 2, "", "Waiting for block")
 		voteDocument := checkLastVote(t, env, role, env.Alice)
 		after_date := time.Now().UTC()
-		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "pass", before_date, after_date)
+		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "pass", before_date, after_date, "my notes")
 
 		voteTally = AssertDifferentLastTally(t, voteTally)
 		AssertTally(t, voteTally, "101.00 HVOICE", "0.00 HVOICE", "0.00 HVOICE")
@@ -89,7 +90,7 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// Voting on otherRole
 		t.Log("alice votes pass on other role")
-		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", otherRole.Hash)
+		_, err = ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", otherRole.Hash)
 		// zero-votes tally should no longer exist
 		eostest.Pause(time.Second * 3, "", "Waiting for block")
 		_, err = docgraph.LoadDocument(env.ctx, &env.api, env.DAO, voteTally2.Hash.String())
@@ -104,11 +105,11 @@ func TestProposalDocumentVote(t *testing.T) {
 		// alice changes his mind and votes "fail"
 		t.Log("alice votes fail")
 		before_date = time.Now().UTC()
-		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "fail", role.Hash)
+		_, err = ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, env.Alice.Member, "fail", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Alice)
 		after_date = time.Now().UTC()
-		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail", before_date, after_date)
+		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail", before_date, after_date, "")
 
 		// New tally should be different. We have a different vote
 		eostest.Pause(time.Second * 3, "", "Waiting before fetching last tally")
@@ -118,11 +119,11 @@ func TestProposalDocumentVote(t *testing.T) {
 		// alice decides to vote again for "fail". Just in case ;-)
 		t.Log("alice votes fail (again)")
 		before_date = time.Now().UTC()
-		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "fail", role.Hash)
+		_, err = ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, env.Alice.Member, "fail", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Alice)
 		after_date = time.Now().UTC()
-		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail", before_date, after_date)
+		AssertVote(t, voteDocument, "alice", "101.00 HVOICE", "fail", before_date, after_date, "")
 
 		// Tally should be the same. It was the same vote
 		voteTally = AssertSameLastTally(t, voteTally)
@@ -130,11 +131,11 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// Member1 decides to vote pass
 		before_date = time.Now().UTC()
-		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
+		_, err = ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[0])
 		after_date = time.Now().UTC()
-		AssertVote(t, voteDocument, "mem1.hypha", "2.00 HVOICE", "pass", before_date, after_date)
+		AssertVote(t, voteDocument, "mem1.hypha", "2.00 HVOICE", "pass", before_date, after_date, "")
 
 		// Tally should be different. We have a new vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
@@ -142,11 +143,11 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// Member2 decides to vote fail
 		before_date = time.Now().UTC()
-		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Members[1].Member, "fail", role.Hash)
+		_, err = ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, env.Members[1].Member, "fail", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[1])
 		after_date = time.Now().UTC()
-		AssertVote(t, voteDocument, "mem2.hypha", "2.00 HVOICE", "fail", before_date, after_date)
+		AssertVote(t, voteDocument, "mem2.hypha", "2.00 HVOICE", "fail", before_date, after_date, "")
 
 		// Tally should be different. We have a new vote
 		voteTally = AssertDifferentLastTally(t, voteTally)
@@ -154,11 +155,11 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// Member1 decides to vote pass (again)
 		before_date = time.Now().UTC()
-		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
+		_, err = ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[0])
 		after_date = time.Now().UTC()
-		AssertVote(t, voteDocument, "mem1.hypha", "2.00 HVOICE", "pass", before_date, after_date)
+		AssertVote(t, voteDocument, "mem1.hypha", "2.00 HVOICE", "pass", before_date, after_date, "")
 
 		// Tally should be the same.
 		voteTally = AssertSameLastTally(t, voteTally)
@@ -166,11 +167,11 @@ func TestProposalDocumentVote(t *testing.T) {
 
 		// Member3 decides to vote abstain
 		before_date = time.Now().UTC()
-		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Members[2].Member, "abstain", role.Hash)
+		_, err = ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, env.Members[2].Member, "abstain", role.Hash)
 		assert.NilError(t, err)
 		voteDocument = checkLastVote(t, env, role, env.Members[2])
 		after_date = time.Now().UTC()
-		AssertVote(t, voteDocument, "mem3.hypha", "2.00 HVOICE", "abstain", before_date, after_date)
+		AssertVote(t, voteDocument, "mem3.hypha", "2.00 HVOICE", "abstain", before_date, after_date, "")
 
 		// Tally should be the different.
 		voteTally = AssertDifferentLastTally(t, voteTally)
@@ -183,7 +184,7 @@ func TestProposalDocumentVote(t *testing.T) {
 		assert.NilError(t, err)
 
 		// Member1 decides to vote pass
-		_, err = ProposalVote(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
+		_, err = ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, env.Members[0].Member, "pass", role.Hash)
 		// but can't, proposal is closed
 		assert.ErrorContains(t, err, "Only allowed to vote active proposals")
 
@@ -367,7 +368,7 @@ func AssertTally(t *testing.T, tallyDocument docgraph.Document, passPower string
 	}))
 }
 
-func AssertVote(t *testing.T, voteDocument docgraph.Document, voter string, votePower string, vote string, before, after time.Time) {
+func AssertVote(t *testing.T, voteDocument docgraph.Document, voter string, votePower string, vote string, before, after time.Time, notes string) {
 	// date should be between before and after
 	dateNode, err := voteDocument.GetContentFromGroup("vote", "date")
 	assert.NilError(t, err)
@@ -424,6 +425,15 @@ func AssertVote(t *testing.T, voteDocument docgraph.Document, voter string, vote
 						BaseVariant: eos.BaseVariant{
 							TypeID: docgraph.GetVariants().TypeID("time_point"),
 							Impl:   dateNode.String(),
+						},
+					},
+				},
+				docgraph.ContentItem{
+					Label: "notes",
+					Value: &docgraph.FlexValue{
+						BaseVariant: eos.BaseVariant{
+							TypeID: docgraph.GetVariants().TypeID("string"),
+							Impl:   notes,
 						},
 					},
 				},
