@@ -18,6 +18,15 @@
 
 namespace hypha
 {
+
+   void dao::fix (const checksum256 &hash)
+   {
+      eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+      Assignment assignment(this, hash);
+      Edge roleToAssignmentEdge = Edge::getTo(get_self(), hash, common::ASSIGNMENT);
+      Edge::getOrNew(get_self(), get_self(), hash, roleToAssignmentEdge.getFromNode(), common::ROLE_NAME);
+   }
+
    void dao::propose(const name &proposer,
                      const name &proposal_type,
                      ContentGroups &content_groups)
