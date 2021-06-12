@@ -20,7 +20,7 @@ export const setupEnvironment = async (): Promise<DaoBlockchain> => {
             decayPerPeriodx10M: 5000000
         }
     }, {
-        createMembers: 3
+        createMembers: 5
     });
     
     return blockchain;

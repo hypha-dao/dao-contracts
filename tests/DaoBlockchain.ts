@@ -2,6 +2,8 @@ import { loadConfig, Blockchain, Contract } from '@klevoya/hydra';
 import { THydraConfig } from '@klevoya/hydra/lib/config/hydra';
 import Account from '@klevoya/hydra/lib/main/account';
 import { Document } from './types/Document';
+import { Edge } from './types/Edge';
+import { getAccountPermission } from './utils/Permissions';
 
 export interface DaoSettings {
     votingDurationSeconds: number;
@@ -66,15 +68,6 @@ export class DaoBlockchain extends Blockchain {
         return blockchain;
     }
 
-    static getAccountPermission(account: Account): import('eosjs/dist/eosjs-serialize').Authorization[] {
-        return [
-            {
-                actor: account.accountName,
-                permission: 'active'
-            } 
-        ];
-    }
-
     createContract(accountName: string, templateName: string): Account {
         const account = this.createAccount(accountName);
         account.setContract(this.contractTemplates[templateName]);
@@ -100,7 +93,7 @@ export class DaoBlockchain extends Blockchain {
         await this.dao.contract.apply({
             applicant: account.accountName,
             content: 'Apply to DAO'
-        }, DaoBlockchain.getAccountPermission(account));
+        }, getAccountPermission(account));
     
         await this.dao.contract.enroll({
             enroller: this.dao.accountName,
@@ -116,14 +109,14 @@ export class DaoBlockchain extends Blockchain {
             to: this.dao.accountName,
             quantity,
             memo: 'Increasing voice'
-        }, DaoBlockchain.getAccountPermission(this.dao));
+        }, getAccountPermission(this.dao));
 
         await this.peerContracts.voice.contract.transfer({
             from: this.dao.accountName,
             to: accountName,
             quantity,
             memo: 'Increasing voice'
-        }, DaoBlockchain.getAccountPermission(this.dao));
+        }, getAccountPermission(this.dao));
     }
 
     async setup() {
@@ -172,6 +165,10 @@ export class DaoBlockchain extends Blockchain {
 
     public getDaoDocuments(): Array<Document> {
         return this.dao.getTableRowsScoped('documents')['dao'];
+    }
+
+    public getDaoEdges(): Array<Edge> {
+        return this.dao.getTableRowsScoped('edges')['dao'];
     }
 
 }
