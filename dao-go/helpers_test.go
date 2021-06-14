@@ -351,12 +351,12 @@ func voteToPassTD(t *testing.T, env *Environment, proposal docgraph.Document, cl
 	proposal_hash := proposal.Hash
 	t.Log("Voting all members to 'pass' on proposal: " + proposal_hash.String())
 
-	_, err := ProposalVote(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", proposal_hash)
+	_, err := ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, env.Alice.Member, "pass", proposal_hash)
 	assert.NilError(t, err)
 	checkLastVote(t, env, proposal, env.Alice)
 
 	for _, member := range env.Members {
-		_, err = ProposalVote(env.ctx, &env.api, env.DAO, member.Member, "pass", proposal_hash)
+		_, err = ProposalVoteWithoutNotes(env.ctx, &env.api, env.DAO, member.Member, "pass", proposal_hash)
 		assert.NilError(t, err)
 		checkLastVote(t, env, proposal, member)
 	}

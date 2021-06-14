@@ -18,6 +18,14 @@
 
 namespace hypha
 {
+   void dao::fix (const checksum256 &hash)
+   {
+      eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+      Assignment assignment(this, hash);
+      Edge roleToAssignmentEdge = Edge::getTo(get_self(), hash, common::ASSIGNMENT);
+      Edge::getOrNew(get_self(), get_self(), hash, roleToAssignmentEdge.getFromNode(), common::ROLE_NAME);
+   }
+
    void dao::propose(const name &proposer,
                      const name &proposal_type,
                      ContentGroups &content_groups)
@@ -29,7 +37,7 @@ namespace hypha
       proposal->propose(proposer, content_groups);
    }
 
-   void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote)
+   void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote, string notes)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -37,7 +45,7 @@ namespace hypha
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
       Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
-      proposal->vote(voter, vote, docprop);
+      proposal->vote(voter, vote, docprop, notes);
    }
 
    void dao::closedocprop(const checksum256 &proposal_hash)

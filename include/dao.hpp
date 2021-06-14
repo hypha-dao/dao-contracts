@@ -78,7 +78,7 @@ namespace hypha
       }
 
       ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
-      ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote);
+      ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
       ACTION closedocprop(const checksum256 &proposal_hash);
       ACTION setsetting(const string &key, const Content::FlexValue &value);
       ACTION remsetting(const string &key);
@@ -142,6 +142,7 @@ namespace hypha
       ACTION killedge(const uint64_t id);
       ACTION newedge(eosio::name & creator, const checksum256 &from_node, const checksum256 &to_node, const name &edge_name);
       ACTION updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value);
+      ACTION fix (const eosio::checksum256 &hash);
       // ACTION nbadge (const name& owner, const ContentGroups& contentGroups);
       // ACTION nbadass(const name& owner, const ContentGroups& contentGroups);
       // ACTION nbadprop (const name& owner, const ContentGroups& contentGroups);

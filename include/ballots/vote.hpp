@@ -15,7 +15,8 @@ namespace hypha
             dao& dao, 
             const eosio::name voter,
             std::string vote, 
-            Document& proposal
+            Document& proposal,
+            std::optional<std::string> notes
         );
 
         const std::string& getVote();
