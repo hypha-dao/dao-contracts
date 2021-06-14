@@ -165,7 +165,13 @@ describe('Voting', () => {
             vote: 'fail'
         });
         lastTally = getLastTally(environment, false, lastTally);
-        lastVote = testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 0 });
+        testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 0 });
+        lastVote = testLastVote(environment, {
+            vote: 'fail',
+            date: toISOString(now),
+            power: '100.00 HVOICE',
+            voter: environment.members[0].accountName
+        });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // member[1] votes to abstain
@@ -175,7 +181,13 @@ describe('Voting', () => {
             vote: 'abstain'
         });
         lastTally = getLastTally(environment, false, lastTally);
-        lastVote = testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 1 });
+        testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 1 });
+        lastVote = testLastVote(environment, {
+            vote: 'abstain',
+            date: toISOString(now),
+            power: '1.00 HVOICE',
+            voter: environment.members[1].accountName
+        });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // member[2] votes to abstain
@@ -185,7 +197,13 @@ describe('Voting', () => {
             vote: 'abstain'
         });
         lastTally = getLastTally(environment, false, lastTally);
-        lastVote = testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 2 });
+        testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 2 });
+        lastVote = testLastVote(environment, {
+            vote: 'abstain',
+            date: toISOString(now),
+            power: '1.00 HVOICE',
+            voter: environment.members[2].accountName
+        });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // member[3] votes to pass
@@ -195,7 +213,13 @@ describe('Voting', () => {
             vote: 'pass'
         });
         lastTally = getLastTally(environment, false, lastTally);
-        lastVote = testLastVoteTally(lastTally, { pass: 1, fail: 100, abstain: 2 });
+        testLastVoteTally(lastTally, { pass: 1, fail: 100, abstain: 2 });
+        lastVote = testLastVote(environment, {
+            vote: 'pass',
+            date: toISOString(now),
+            power: '1.00 HVOICE',
+            voter: environment.members[3].accountName
+        });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // member[0] changes vote to pass
@@ -205,7 +229,13 @@ describe('Voting', () => {
             vote: 'pass'
         });
         lastTally = getLastTally(environment, false, lastTally);
-        lastVote = testLastVoteTally(lastTally, { pass: 101, fail: 0, abstain: 2 });
+        lastVote = testLastVote(environment, {
+            vote: 'pass',
+            date: toISOString(now),
+            power: '100.00 HVOICE',
+            voter: environment.members[0].accountName
+        });
+        testLastVoteTally(lastTally, { pass: 101, fail: 0, abstain: 2 });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // closes proposal
