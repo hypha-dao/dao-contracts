@@ -25,7 +25,7 @@ jobs:
         env:
           CODE: "/github/workspace/"
           PATCH_WASM_LD: "1"
-      - run: mkdir -p ~/.hydra && echo $HYDRA_AUTH > ~/.hydra/auth.json && ls -lah ~/.hydra
+      - run: mkdir -p ~/.hydra && echo $HYDRA_AUTH > ~/.hydra/auth.json && ls -l ~/.hydra
         env:
           HYDRA_AUTH: ${{ secrets.HYDRA_AUTH }}
       - run: yarn test
