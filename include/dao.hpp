@@ -143,6 +143,7 @@ namespace hypha
       ACTION newedge(eosio::name & creator, const checksum256 &from_node, const checksum256 &to_node, const name &edge_name);
       ACTION updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value);
       ACTION fix (const eosio::checksum256 &hash);
+      ACTION addstate (const std::vector<eosio::checksum256>& hashes);
       // ACTION nbadge (const name& owner, const ContentGroups& contentGroups);
       // ACTION nbadass(const name& owner, const ContentGroups& contentGroups);
       // ACTION nbadprop (const name& owner, const ContentGroups& contentGroups);
