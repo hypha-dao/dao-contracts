@@ -32,6 +32,10 @@ export const getDocumentsByType = (documents: Array<Document>, documentType: str
     });
 }
 
+export const getDocumentByHash = (documents: Array<Document>, hash: string): Document => {
+    return documents.find(document => document.hash.toUpperCase() === hash.toUpperCase());
+}
+
 type EdgeFilter = Partial<Edge>;
 
 const keys: Array<keyof Edge> = [
