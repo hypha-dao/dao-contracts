@@ -92,7 +92,7 @@ namespace hypha
       auto title = ocw.getOrFail(DETAILS, TITLE)->getAs<string>();
 
       ContentWrapper::insertOrReplace(*contentWrapper.getGroupOrFail(DETAILS), 
-                                      Content { TITLE, to_str("Suspention of ", type, ":", title ) });
+                                      Content { TITLE, to_str("Suspention of ", type, ": ", title ) });
     }
 
     void SuspendProposal::postProposeImpl (Document &proposal) 
