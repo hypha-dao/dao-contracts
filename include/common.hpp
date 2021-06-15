@@ -54,6 +54,13 @@ namespace common
     constexpr        auto APPROVED_DATE = "original_approved_date";
     constexpr        auto BALLOT_TITLE = "ballot_title";
     constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
+    constexpr        auto STATE = "state";
+    constexpr        auto STATE_PROPOSED = "proposed";
+    constexpr        auto STATE_APPROVED = "approved";
+    constexpr        auto STATE_REJECTED = "rejected";
+    constexpr        auto STATE_SUSPENDED = "suspended";
+    constexpr        auto STATE_EXPIRED = "expired";
+    constexpr        auto STATE_WITHDRAWED = "withdrawed";
     static constexpr name PERIOD = name("period");
     static constexpr name START = name ("start");
     static constexpr name NEXT = name ("next");

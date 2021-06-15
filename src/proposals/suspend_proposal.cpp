@@ -18,7 +18,6 @@ namespace hypha
 
     void SuspendProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     { 
-      //TODO: Setup ballot_title according to document type [Assignment, Badge, etc.]
       TRACE_FUNCTION()
 
       // original_document is a required hash
@@ -31,10 +30,31 @@ namespace hypha
         Edge::exists(m_dao.get_self(), root, originalDocHash, common::PASSED_PROPS),
         "Only passed proposals can be suspended"
       )
-
+      
       Document originalDoc(m_dao.get_self(), originalDocHash);
 
+      if (auto [hasOpenSuspendProp, proposalHash] = hasOpenProposal(common::SUSPEND, originalDocHash);
+          hasOpenSuspendProp) {
+        EOS_CHECK(
+          false,
+          to_str("There is an open suspension proposal already:", proposalHash)  
+        )
+      }
+
       ContentWrapper ocw = originalDoc.getContentWrapper();
+
+      //TODO-J: Add state item to all active Roles/Assignments
+      //Check assignments from 2 months ago with dgraph and then send them to a fix action (should verify if they are still active or not)
+      //Check all roles that are not suspened (?)
+      auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+      EOS_CHECK(
+        state != common::STATE_WITHDRAWED && 
+        state != common::STATE_SUSPENDED &&
+        state != common::STATE_EXPIRED &&
+        state != common::STATE_REJECTED,
+        to_str("Cannot open suspend proposals on ", state, " documents")
+      )
 
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
       
@@ -56,7 +76,9 @@ namespace hypha
         );
        } break;
       case common::ROLE_NAME.value:
-                 
+
+        
+
         break;
       default:
         EOS_CHECK(
@@ -99,6 +121,14 @@ namespace hypha
 
       ContentWrapper ocw = originalDoc.getContentWrapper();
 
+      auto detailsGroup = ocw.getGroupOrFail(DETAILS);
+
+      ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_SUSPENDED });
+
+      originalDoc = m_dao.getGraph().updateDocument(originalDoc.getCreator(), 
+                                                    originalDoc.getHash(), 
+                                                    ocw.getContentGroups());
+
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
       
       switch (type.value)
@@ -124,18 +154,17 @@ namespace hypha
 
           ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
 
-          auto newHash = m_dao.getGraph().updateDocument(assignment.getCreator(), 
+          originalDoc = m_dao.getGraph().updateDocument(assignment.getCreator(), 
                                                          assignment.getHash(), 
-                                                         cw.getContentGroups()).getHash();
+                                                         cw.getContentGroups());
 
-          assignment = Assignment(&m_dao, newHash);
+          assignment = Assignment(&m_dao, originalDoc.getHash());
         }
 
         m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
       } break;
       case common::ROLE_NAME.value: {
-        //TODO: Decide how to notify the role is no longer active
-        //probably will add an 'state' field on the system group
+        
       }  break;
       default: {
         EOS_CHECK(
@@ -160,5 +189,4 @@ namespace hypha
     {
         return common::SUSPEND;
     }
-
 } // namespace hypha

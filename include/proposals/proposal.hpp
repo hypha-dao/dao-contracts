@@ -49,6 +49,8 @@ namespace hypha
 
         string getTitle(ContentWrapper cw) const;
         string getDescription(ContentWrapper cw) const;
+
+        std::pair<bool, checksum256> hasOpenProposal(name proposalType, checksum256 docHash);
     private:
         bool oldDidPass(const eosio::name &ballotId);
 
