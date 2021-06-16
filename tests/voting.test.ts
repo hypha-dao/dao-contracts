@@ -1,10 +1,9 @@
-import { DaoBlockchain } from './DaoBlockchain';
+import { DaoBlockchain } from './dao/DaoBlockchain';
 import { setupEnvironment } from './setup';
 import { Document } from './types/Document';
 import { last } from './utils/Arrays';
 import { getDocumentsByType } from './utils/Dao';
 import { DocumentBuilder } from './utils/DocumentBuilder';
-import { getAccountPermission } from './utils/Permissions';
 import { toISOString } from './utils/Date';
 import { getDaoExpect } from './utils/Expect';
 
@@ -225,7 +224,7 @@ describe('Voting', () => {
         // closes proposal
         await expect(environment.dao.contract.closedocprop({
             proposal_hash: proposal.hash
-        }, getAccountPermission(environment.members[0].account))
+        }, environment.members[0].getPermissions())
         ).rejects.toThrow(/voting is still active/i);
 
         // Sets the time to the end of proposal
@@ -236,6 +235,6 @@ describe('Voting', () => {
         // Now we can close the proposal
         environment.dao.contract.closedocprop({
             proposal_hash: proposal.hash
-        }, getAccountPermission(environment.members[0].account));
+        }, environment.members[0].getPermissions());
     });
 });

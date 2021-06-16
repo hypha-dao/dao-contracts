@@ -1,7 +1,7 @@
 import { loadConfig, Blockchain } from '@klevoya/hydra';
 import Account from '@klevoya/hydra/lib/main/account';
 import { StrictBuilder } from 'builder-pattern';
-import { DaoBlockchain, DaoSettings, TestSettings } from './DaoBlockchain';
+import { DaoBlockchain, DaoSettings, TestSettings } from './dao/DaoBlockchain';
 
 const config = loadConfig("hydra.yml");
 
