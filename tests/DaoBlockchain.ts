@@ -2,6 +2,10 @@ import { loadConfig, Blockchain, Contract } from '@klevoya/hydra';
 import { THydraConfig } from '@klevoya/hydra/lib/config/hydra';
 import Account from '@klevoya/hydra/lib/main/account';
 import { Document } from './types/Document';
+import { Edge } from './types/Edge';
+import { last } from './utils/Arrays';
+import { getDocumentByHash, getDocumentsByType } from './utils/Dao';
+import { getAccountPermission } from './utils/Permissions';
 
 export interface DaoSettings {
     votingDurationSeconds: number;
@@ -20,13 +24,22 @@ export interface DaoPeerContracts {
     bank: Account;
 }
 
+export interface Member {
+    account: Account;
+    doc: Document;
+}
+
 export class DaoBlockchain extends Blockchain {
 
     readonly config: THydraConfig;
     readonly dao: Account;
     readonly settings: DaoSettings;
     readonly peerContracts: DaoPeerContracts;
-    readonly members: Array<Account>;
+    readonly members: Array<Member>;
+
+    // There should be a better way to get this - But currently seems stable
+    readonly rootHash = 'D9B40C418C850A65B71CA55ABB0DE9B0E4646A02B95B230E3917E877610BFAE5';
+    private root: Document;
 
     private constructor(config: THydraConfig, settings: DaoSettings) {
         super(config);
@@ -51,28 +64,23 @@ export class DaoBlockchain extends Blockchain {
                 }
 
                 for (let index = 0; index < testSettings.createMembers; ++index) {
-                    const member: Account = await blockchain.createMember(`mem${index + 1}.hypha`);
-                    blockchain.members.push(member);
+                    const account: Account = await blockchain.createMember(`mem${index + 1}.hypha`);
+                    const doc = last(getDocumentsByType(blockchain.getDaoDocuments(), 'member'));
+                    blockchain.members.push({
+                        account,
+                        doc
+                    });
                 }
 
                 // Member 0 is always awarded 99 HVOICE (for a total of 100)
                 if (testSettings.createMembers > 0) {
-                    await blockchain.increaseVoice(blockchain.members[0].accountName, '99.00 HVOICE');
+                    await blockchain.increaseVoice(blockchain.members[0].account.accountName, '99.00 HVOICE');
                 }
 
             }
         }
 
         return blockchain;
-    }
-
-    static getAccountPermission(account: Account): import('eosjs/dist/eosjs-serialize').Authorization[] {
-        return [
-            {
-                actor: account.accountName,
-                permission: 'active'
-            } 
-        ];
     }
 
     createContract(accountName: string, templateName: string): Account {
@@ -100,7 +108,7 @@ export class DaoBlockchain extends Blockchain {
         await this.dao.contract.apply({
             applicant: account.accountName,
             content: 'Apply to DAO'
-        }, DaoBlockchain.getAccountPermission(account));
+        }, getAccountPermission(account));
     
         await this.dao.contract.enroll({
             enroller: this.dao.accountName,
@@ -116,14 +124,14 @@ export class DaoBlockchain extends Blockchain {
             to: this.dao.accountName,
             quantity,
             memo: 'Increasing voice'
-        }, DaoBlockchain.getAccountPermission(this.dao));
+        }, getAccountPermission(this.dao));
 
         await this.peerContracts.voice.contract.transfer({
             from: this.dao.accountName,
             to: accountName,
             quantity,
             memo: 'Increasing voice'
-        }, DaoBlockchain.getAccountPermission(this.dao));
+        }, getAccountPermission(this.dao));
     }
 
     async setup() {
@@ -168,10 +176,20 @@ export class DaoBlockchain extends Blockchain {
             key: 'treasury_contract',
             value: [ 'name', this.peerContracts.bank.accountName ]
         });
+
+        this.root = getDocumentByHash(this.getDaoDocuments(), this.rootHash);
     }
 
     public getDaoDocuments(): Array<Document> {
         return this.dao.getTableRowsScoped('documents')['dao'];
+    }
+
+    public getDaoEdges(): Array<Edge> {
+        return this.dao.getTableRowsScoped('edges')['dao'];
+    }
+
+    public getRoot(): Document {
+        return this.root;
     }
 
 }

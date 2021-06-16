@@ -1,4 +1,5 @@
 import { ContentGroup, ContentType, CONTENT_GROUP_LABEL, Document, SYSTEM_CONTENT_GROUP_LABEL } from "../types/Document"
+import { Edge } from "../types/Edge";
 
 const TYPE_LABEL = 'type';
 
@@ -30,3 +31,32 @@ export const getDocumentsByType = (documents: Array<Document>, documentType: str
         return false;
     });
 }
+
+export const getDocumentByHash = (documents: Array<Document>, hash: string): Document => {
+    return documents.find(document => document.hash.toUpperCase() === hash.toUpperCase());
+}
+
+type EdgeFilter = Partial<Edge>;
+
+const keys: Array<keyof Edge> = [
+    'contract', 'from_node', 'to_node', 'created_date', 'creator', 'edge_name'
+];
+
+export const getEdgesByFilter = (edges: Array<Edge>, filter: EdgeFilter): Array<Edge> => {
+    return edges.filter(edge => {
+        let matchOne = false;
+        let matchAll = true;
+
+        for (const key of keys) {
+            if (filter[key]) {
+                if (edge[key] === filter[key]) {
+                    matchOne = true;
+                } else {
+                    matchAll = false;
+                }
+            }
+        }
+
+        return matchOne && matchAll;
+    });
+};

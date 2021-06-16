@@ -16,7 +16,8 @@ export enum ContentType {
     STRING = 'string',
     ASSET = 'asset',
     NAME = 'name',
-    INT64 = 'int64'
+    INT64 = 'int64',
+    TIME_POINT = 'time_point'
 }
 
 type ContentValueType<T,V> = [T, V];
@@ -26,11 +27,12 @@ type ContentValueNumberType<T> = ContentValueType<T, number>;
 type ContentValueString = ContentValueStringType<ContentType.STRING>;
 type ContentValueAsset = ContentValueStringType<ContentType.ASSET>;
 type ContentValueName = ContentValueStringType<ContentType.NAME>;
+type ContentValueTimePoint = ContentValueStringType<ContentType.TIME_POINT>;
 type ContentValueInt64 = ContentValueNumberType<ContentType.INT64>;
 
 export type ContentValue = 
 // string
-ContentValueString | ContentValueAsset | ContentValueName 
+ContentValueString | ContentValueAsset | ContentValueName | ContentValueTimePoint
 // number
 | ContentValueInt64;
 
@@ -50,6 +52,7 @@ export const SYSTEM_CONTENT_GROUP_LABEL = 'system';
 export const makeStringContent = (label: string, value: string): Content  => makeContent(label, [ ContentType.STRING, value ]);
 export const makeAssetContent = (label: string, value: string): Content  => makeContent(label, [ ContentType.ASSET, value ]);
 export const makeNameContent = (label: string, value: string): Content  => makeContent(label, [ ContentType.NAME, value ]);
+export const makeTimePointContent = (label: string, value: string): Content  => makeContent(label, [ ContentType.TIME_POINT, value ]);
 export const makeInt64Content = (label: string, value: number): Content  => makeContent(label, [ ContentType.INT64, value ]);
 
 export const makeContentGroup = (groupLabel: string | undefined, ...content: ContentGroup) : ContentGroup => {
