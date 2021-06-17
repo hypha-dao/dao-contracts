@@ -10,11 +10,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - run: GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} bash .github/scripts/only_collaborators.sh
       - uses: actions/checkout@v2
         with:
             ref: ${{ github.event.pull_request.base.sha }}
             submodules: recursive
+      - run: GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} bash .github/scripts/only_collaborators.sh
       - uses: actions/setup-node@v1
         with:
           node-version: '12'
