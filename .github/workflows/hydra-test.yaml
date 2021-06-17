@@ -12,7 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-            ref: ${{ github.event.pull_request.base.sha }}
             submodules: recursive
       - run: ls -lah .github && GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} bash .github/scripts/only_collaborators.sh
       - uses: actions/setup-node@v1
