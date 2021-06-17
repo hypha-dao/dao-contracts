@@ -32,13 +32,14 @@ describe('Voting', () => {
     .contentGroup(builder => builder.groupLabel('system').name('type', 'vote.tally').string('node_label', 'VoteTally'))
     .build();
 
-    const getVote = (props: { voter: string, power: string, vote: string, date: string}) => DocumentBuilder.builder()
+    const getVote = (props: { voter: string, power: string, vote: string, date: string, notes: string}) => DocumentBuilder.builder()
     .contentGroup(builder => builder
         .groupLabel('vote')
         .name('voter', props.voter)
         .asset('vote_power', props.power)
         .string('vote', props.vote)
         .timePoint('date', props.date)
+        .string('notes', props.notes)
     )
     .contentGroup(builder => builder.groupLabel('system').name('type', 'vote').string('node_label', `Vote: ${props.vote}`))
     .build();
@@ -63,7 +64,7 @@ describe('Voting', () => {
         return votetally;
     };
 
-    const testLastVote = (environment: DaoBlockchain, props: { voter: string, power: string, vote: string, date: string}) => {
+    const testLastVote = (environment: DaoBlockchain, props: { voter: string, power: string, vote: string, date: string, notes: string}) => {
         const vote = last(getDocumentsByType(environment.getDaoDocuments(), 'vote'));
         const expected = getVote(props);
         expect(vote.content_groups).toEqual(expected.content_groups);
@@ -120,14 +121,16 @@ describe('Voting', () => {
         await expect(environment.dao.contract.vote({
             voter: environment.members[0].account.accountName,
             proposal_hash: proposal.hash,
-            vote: 'foobar'
+            vote: 'foobar',
+            notes: 'vote something wrong'
         })).rejects.toThrow(/invalid vote/i);
 
         // Now votes pass
         await environment.dao.contract.vote({
             voter: environment.members[0].account.accountName,
             proposal_hash: proposal.hash,
-            vote: 'pass'
+            vote: 'pass',
+            notes: 'vote pass'
         });
 
         
@@ -137,7 +140,8 @@ describe('Voting', () => {
             vote: 'pass',
             date: toISOString(now),
             power: '100.00 HVOICE',
-            voter: environment.members[0].account.accountName
+            voter: environment.members[0].account.accountName,
+            notes: 'vote pass'
         });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
@@ -145,7 +149,8 @@ describe('Voting', () => {
         await environment.dao.contract.vote({
             voter: environment.members[0].account.accountName,
             proposal_hash: proposal.hash,
-            vote: 'fail'
+            vote: 'fail',
+            notes: 'votes fail'
         });
         lastTally = getLastTally(environment, false, lastTally);
         testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 0 });
@@ -153,7 +158,8 @@ describe('Voting', () => {
             vote: 'fail',
             date: toISOString(now),
             power: '100.00 HVOICE',
-            voter: environment.members[0].account.accountName
+            voter: environment.members[0].account.accountName,
+            notes: 'votes fail'
         });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
@@ -161,7 +167,8 @@ describe('Voting', () => {
         await environment.dao.contract.vote({
             voter: environment.members[1].account.accountName,
             proposal_hash: proposal.hash,
-            vote: 'abstain'
+            vote: 'abstain',
+            notes: 'votes abstain'
         });
         lastTally = getLastTally(environment, false, lastTally);
         testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 1 });
@@ -169,7 +176,8 @@ describe('Voting', () => {
             vote: 'abstain',
             date: toISOString(now),
             power: '1.00 HVOICE',
-            voter: environment.members[1].account.accountName
+            voter: environment.members[1].account.accountName,
+            notes: 'votes abstain'
         });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
@@ -177,7 +185,8 @@ describe('Voting', () => {
         await environment.dao.contract.vote({
             voter: environment.members[2].account.accountName,
             proposal_hash: proposal.hash,
-            vote: 'abstain'
+            vote: 'abstain',
+            notes: 'votes abstain 2'
         });
         lastTally = getLastTally(environment, false, lastTally);
         testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 2 });
@@ -185,7 +194,8 @@ describe('Voting', () => {
             vote: 'abstain',
             date: toISOString(now),
             power: '1.00 HVOICE',
-            voter: environment.members[2].account.accountName
+            voter: environment.members[2].account.accountName,
+            notes: 'votes abstain 2'
         });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
@@ -193,7 +203,8 @@ describe('Voting', () => {
         await environment.dao.contract.vote({
             voter: environment.members[3].account.accountName,
             proposal_hash: proposal.hash,
-            vote: 'pass'
+            vote: 'pass',
+            notes: 'votes pass'
         });
         lastTally = getLastTally(environment, false, lastTally);
         testLastVoteTally(lastTally, { pass: 1, fail: 100, abstain: 2 });
@@ -201,7 +212,8 @@ describe('Voting', () => {
             vote: 'pass',
             date: toISOString(now),
             power: '1.00 HVOICE',
-            voter: environment.members[3].account.accountName
+            voter: environment.members[3].account.accountName,
+            notes: 'votes pass'
         });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
@@ -209,14 +221,16 @@ describe('Voting', () => {
         await environment.dao.contract.vote({
             voter: environment.members[0].account.accountName,
             proposal_hash: proposal.hash,
-            vote: 'pass'
+            vote: 'pass',
+            notes: 'votes pass'
         });
         lastTally = getLastTally(environment, false, lastTally);
         lastVote = testLastVote(environment, {
             vote: 'pass',
             date: toISOString(now),
             power: '100.00 HVOICE',
-            voter: environment.members[0].account.accountName
+            voter: environment.members[0].account.accountName,
+            notes: 'votes pass'
         });
         testLastVoteTally(lastTally, { pass: 101, fail: 0, abstain: 2 });
         testVoteEdges(environment, proposal, lastTally, lastVote);
@@ -236,5 +250,13 @@ describe('Voting', () => {
         environment.dao.contract.closedocprop({
             proposal_hash: proposal.hash
         }, environment.members[0].getPermissions());
+
+        // Proposal is closed, can't vote
+        await expect(environment.dao.contract.vote({
+            voter: environment.members[0].account.accountName,
+            proposal_hash: proposal.hash,
+            vote: 'pass',
+            notes: 'votes when proposal is closed'
+        })).rejects.toThrow(/voting has expired/i);
     });
 });

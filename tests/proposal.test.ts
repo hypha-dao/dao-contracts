@@ -88,7 +88,8 @@ describe('Proposal', () => {
         await environment.dao.contract.vote({
             voter: environment.members[0].account.accountName,
             proposal_hash: proposal.hash,
-            vote: 'pass'
+            vote: 'pass',
+            notes: 'vote pass'
         });
 
         // Sets the time to the end of proposal

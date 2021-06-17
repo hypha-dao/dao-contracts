@@ -12,7 +12,7 @@ describe('Voice', () => {
             to: environment.members[0].account.accountName,
             quantity: '50.00 HVOICE',
             memo: 'hvoice transfer'
-        });
+        }, environment.members[1].getPermissions());
 
     });
 });
