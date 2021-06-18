@@ -200,7 +200,12 @@ namespace hypha
        }
      };
 
-     adjustcmtmnt(owner, adjust);
+     eosio::action(
+       eosio::permission_level{owner, "active"_n},
+       get_self(),
+       "adjustcmtmnt"_n,
+       std::make_tuple(owner, adjust)
+     ).send();
    }
 
    void dao::suspend(name proposer, eosio::checksum256 hash, string reason)
@@ -818,6 +823,28 @@ namespace hypha
          auto [idx, startDate] = cw.get(i, TIME_SHARE_START_DATE);
 
          auto fixedStartDate = startDate ? std::optional<time_point>{startDate->getAs<time_point>()} : std::nullopt;
+
+         auto assignmentCW = assignment.getContentWrapper();
+
+         if (modstr.empty()) {
+           
+           auto assignmentExpirationTime = assignment.getLastPeriod().getEndTime();
+
+           EOS_CHECK(
+             assignmentExpirationTime.sec_since_epoch() < eosio::current_time_point().sec_since_epoch(),
+             to_str("Cannot adjust expired assignment: ", assignment.getHash())
+           )
+
+           auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+           EOS_CHECK(
+             state != common::STATE_WITHDRAWED && 
+             state != common::STATE_SUSPENDED &&
+             state != common::STATE_EXPIRED &&
+             state != common::STATE_REJECTED,
+             to_str("Cannot adjust commitment for ", state, " assignments")
+           )
+         }
         
          modifyCommitment(assignment, 
                           newTimeShare, 
@@ -870,8 +897,6 @@ namespace hypha
       }
 
       ContentWrapper assignmentCW = assignment.getContentWrapper();
-
-
 
       //Should use the role edge instead of the role content item
       //in case role document is modified (causes it's hash to change)
