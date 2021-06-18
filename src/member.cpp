@@ -83,7 +83,7 @@ namespace hypha
         // TODO: connect the payment receipt to the period also
         // TODO: change Payer.hpp to NOT require m_dao so this payment can be made using payer factory
 
-        eosio::asset genesis_voice{100, common::S_HVOICE};
+        eosio::asset genesis_voice{100, common::S_VOICE};
         std::string memo{"genesis voice issuance during enrollment"};
 
         eosio::action(

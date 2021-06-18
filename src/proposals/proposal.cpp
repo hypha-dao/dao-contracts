@@ -165,8 +165,8 @@ namespace hypha
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
         name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
-        hypha::voice::stats stats_t(hvoiceContract, common::S_HVOICE.code().raw());
-        auto stat_itr = stats_t.find(common::S_HVOICE.code().raw());
+        hypha::voice::stats stats_t(hvoiceContract, common::S_VOICE.code().raw());
+        auto stat_itr = stats_t.find(common::S_VOICE.code().raw());
         check(stat_itr != stats_t.end(), "No HVOICE found");
 
         asset quorum_threshold = adjustAsset(stat_itr->supply, 0.20000000);
@@ -202,8 +202,8 @@ namespace hypha
         check(b_itr != b_t.end(), "ballot_id: " + ballotId.to_string() + " not found.");
 
         trailservice::trail::treasuries_table t_t(trailContract, trailContract.value);
-        auto t_itr = t_t.find(common::S_HVOICE.code().raw());
-        check(t_itr != t_t.end(), "Treasury: " + common::S_HVOICE.code().to_string() + " not found.");
+        auto t_itr = t_t.find(common::S_VOICE.code().raw());
+        check(t_itr != t_t.end(), "Treasury: " + common::S_VOICE.code().to_string() + " not found.");
 
         asset quorum_threshold = adjustAsset(t_itr->supply, 0.20000000);
         map<name, asset> votes = b_itr->options;
