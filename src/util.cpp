@@ -30,6 +30,22 @@ namespace hypha
         return std::move(cgs);
     }
 
+    ContentGroups getDAOContent(const eosio::name &dao_name, const std::string &dao_title)
+    {
+        ContentGroups cgs ({
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, DETAILS), 
+                Content(DAO_NAME, dao_name)}, 
+                Content(TITLE, dao_title}});
+
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, SYSTEM), 
+                Content(TYPE, common::DAO), 
+                Content(NODE_LABEL, dao_title}});
+
+        return std::move(cgs);
+    }
+
     eosio::asset adjustAsset(const asset &originalAsset, const float &adjustment)
     {
         return eosio::asset{static_cast<int64_t>(originalAsset.amount * adjustment), originalAsset.symbol};

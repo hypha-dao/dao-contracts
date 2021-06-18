@@ -206,13 +206,13 @@ namespace hypha
         TRACE_FUNCTION()
         switch (symbol->code().raw())
         {
-        case common::S_HUSD.code().raw():
+        case common::S_PEG.code().raw():
             return getAsset(symbol, HUSD_SALARY_PER_PERIOD);
 
-        case common::S_HVOICE.code().raw():
+        case common::S_VOICE.code().raw():
             return getAsset(symbol, HVOICE_SALARY_PER_PERIOD);
 
-        case common::S_HYPHA.code().raw():
+        case common::S_REWARD.code().raw():
             return getAsset(symbol, HYPHA_SALARY_PER_PERIOD);
         }
 

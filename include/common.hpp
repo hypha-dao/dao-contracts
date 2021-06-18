@@ -12,10 +12,11 @@ using eosio::symbol;
 namespace common
 {
 
-    static constexpr symbol S_HYPHA("HYPHA", 2);
-    static constexpr symbol S_HVOICE("HVOICE", 2);
+    static constexpr symbol S_REWARD("BM", 2);
+    static constexpr symbol S_VOICE("BMV", 2);
+    static constexpr symbol S_PEG("BUSD", 2);
+
     static constexpr symbol S_SEEDS("SEEDS", 4);
-    static constexpr symbol S_HUSD("HUSD", 2);
     static constexpr symbol S_USD("USD", 2);
 
     static const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
@@ -73,6 +74,7 @@ namespace common
     static constexpr name PASSED_PROPS = name("passedprops");
     static constexpr name MEMBER = name("member");
     static constexpr name DHO = name ("dho");
+    static constexpr name DAO = name ("dao");
 
     static constexpr name BALLOT_TYPE_OPTIONS = name("options");
 
@@ -93,6 +95,8 @@ namespace common
 // content keys
 // keys used with settings
 #define ROOT_NODE "root_node"
+#define DAO_NAME "dao_name"
+
 #define HYPHA_DEFERRAL_FACTOR "hypha_deferral_factor_x100"
 #define CLIENT_VERSION "client_version"
 #define CONTRACT_VERSION "contract_version"

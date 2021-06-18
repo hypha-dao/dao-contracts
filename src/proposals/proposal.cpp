@@ -152,8 +152,9 @@ namespace hypha
     {
         TRACE_FUNCTION()
         name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
-        hypha::voice::stats stats_t(hvoiceContract, common::S_HVOICE.code().raw());
-        auto stat_itr = stats_t.find(common::S_HVOICE.code().raw());
+
+        hypha::voice::stats stats_t(hvoiceContract, common::S_VOICE.code().raw());
+        auto stat_itr = stats_t.find(common::S_VOICE.code().raw());
         EOS_CHECK(stat_itr != stats_t.end(), "No HVOICE found");
 
         asset quorum_threshold = adjustAsset(stat_itr->supply, 0.20000000);
@@ -178,7 +179,6 @@ namespace hypha
             return false;
         }
     }
-
     string Proposal::getTitle(ContentWrapper cw) const
     {
         TRACE_FUNCTION()

@@ -46,7 +46,7 @@ namespace hypha
 
             Content husd(HUSD_AMOUNT, calculateHusd(usd, deferred));
             Content hypha(HYPHA_AMOUNT, calculateHypha(usd, deferred));
-            Content hvoice(HVOICE_AMOUNT, asset{usd.amount, common::S_HVOICE});
+            Content hvoice(HVOICE_AMOUNT, asset{usd.amount, common::S_VOICE});
             Content seeds(ESCROW_SEEDS_AMOUNT, getSeedsAmount(m_dao.getSettingOrFail<int64_t>(SEEDS_DEFERRAL_FACTOR_X100), 
                                                               usd,
                                                               seedsPriceTimePoint,
@@ -124,7 +124,7 @@ namespace hypha
     {
         asset nonDeferredUsd = adjustAsset(usd, (float)1 - ((float)deferred / (float)100));
         // convert symbol from USD to HUSD
-        return asset{nonDeferredUsd.amount, common::S_HUSD};
+        return asset{nonDeferredUsd.amount, common::S_PEG};
     }
 
     asset PayoutProposal::calculateHypha(const asset &usd, const int64_t &deferred)
@@ -132,6 +132,6 @@ namespace hypha
         // calculate HYPHA phase salary amount
         float hypha_deferral_coeff = (float)m_dao.getSettingOrFail<int64_t>(HYPHA_DEFERRAL_FACTOR) / (float)100;
         asset deferredUsd = adjustAsset(usd, (float)(float)deferred / (float)100);
-        return adjustAsset(asset{deferredUsd.amount, common::S_HYPHA}, hypha_deferral_coeff);
+        return adjustAsset(asset{deferredUsd.amount, common::S_REWARD}, hypha_deferral_coeff);
     }
 } // namespace hypha

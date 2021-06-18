@@ -179,7 +179,7 @@ namespace hypha
         asset nonDeferredTimeShareAdjUsdPerPeriod = adjustAsset(calculateTimeShareUsdPerPeriod(annualUsd, timeShare), (float)1 - ((float)deferred / (float)100));
 
         // convert symbol from USD to HUSD
-        return asset{nonDeferredTimeShareAdjUsdPerPeriod.amount, common::S_HUSD};
+        return asset{nonDeferredTimeShareAdjUsdPerPeriod.amount, common::S_PEG};
     }
 
     asset AssignmentProposal::calculateHypha(const asset &annualUsd, const int64_t &timeShare, const int64_t &deferred)
@@ -190,11 +190,11 @@ namespace hypha
 
         float hypha_deferral_coeff = (float)m_dao.getSettingOrFail<int64_t>(HYPHA_DEFERRAL_FACTOR) / (float)100;
 
-        return adjustAsset(asset{deferredTimeShareAdjUsdPerPeriod.amount, common::S_HYPHA}, hypha_deferral_coeff);
+        return adjustAsset(asset{deferredTimeShareAdjUsdPerPeriod.amount, common::S_REWARD}, hypha_deferral_coeff);
     }
 
     asset AssignmentProposal::calculateHvoice(const asset &annualUsd, const int64_t &timeShare)
     {
-        return asset{calculateTimeShareUsdPerPeriod(annualUsd, timeShare).amount * 2, common::S_HVOICE};
+        return asset{calculateTimeShareUsdPerPeriod(annualUsd, timeShare).amount * 2, common::S_VOICE};
     }
 } // namespace hypha
