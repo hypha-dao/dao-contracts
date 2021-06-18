@@ -80,7 +80,8 @@ namespace hypha
       ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
       ACTION closedocprop(const checksum256 &proposal_hash);
-      ACTION setsetting(const string &key, const Content::FlexValue &value);
+      // ACTION setsetting(const string &key, const Content::FlexValue &value);
+      ACTION setsetting(const eosio::name &dao_name, const std::string &key, const Content::FlexValue &value);
       ACTION remsetting(const string &key);
       ACTION addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
 
@@ -99,6 +100,7 @@ namespace hypha
 
       DocumentGraph &getGraph();
       Document getSettingsDocument();
+      Document getSettingsDocument(const eosio::name &dao_name);
 
       template <class T>
       T getSettingOrFail(const std::string &setting)
@@ -138,7 +140,7 @@ namespace hypha
       ACTION suspend(name proposer, eosio::checksum256 hash, string reason);
 
       ACTION createroot(const std::string &notes);
-      ACTION createdao(const eosio::name &dao_name, const std::string &dao_long_name);
+      ACTION createdao(const eosio::name &dao_name);
 
       ACTION erasedoc(const eosio::checksum256 &hash);
       ACTION killedge(const uint64_t id);
@@ -149,7 +151,7 @@ namespace hypha
       // ACTION nbadass(const name& owner, const ContentGroups& contentGroups);
       // ACTION nbadprop (const name& owner, const ContentGroups& contentGroups);
 
-      void setSetting(const string &key, const Content::FlexValue &value);
+      void setSetting(const eosio::name &dao_name, const const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,
                            const eosio::time_point &price_time_point,

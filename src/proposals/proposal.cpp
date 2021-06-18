@@ -151,7 +151,7 @@ namespace hypha
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
         TRACE_FUNCTION()
-        name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
+        name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
         hypha::voice::stats stats_t(hvoiceContract, common::S_VOICE.code().raw());
         auto stat_itr = stats_t.find(common::S_VOICE.code().raw());

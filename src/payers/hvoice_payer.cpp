@@ -16,7 +16,7 @@ namespace hypha
                                   const string &memo)
     {
         TRACE_FUNCTION()
-        issueToken(m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT),
+        issueToken(m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT),
                    m_dao.get_self(),
                    recipient,
                    quantity,

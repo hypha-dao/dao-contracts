@@ -492,26 +492,60 @@ namespace hypha
 
    bool dao::isPaused() { return false; }
 
+   Document dao::getSettingsDocument(const eosio::name &dao_name)
+   {
+      TRACE_FUNCTION()
+      auto dao = getDAO(dao_name);
+      auto edges = m_documentGraph.getEdgesFromOrFail(dao, common::SETTINGS_EDGE);
+      EOS_CHECK(edges.size() == 1, "There should only exists only 1 settings edge from a dao node");
+      return Document(get_self(), edges[0].to_node);
+   }
+
    Document dao::getSettingsDocument()
    {
       TRACE_FUNCTION()
-      auto root = getRoot(get_self());
+      auto root = getDAO(eosio::name("bm"));
+      // auto root = getRoot(get_self());
       auto edges = m_documentGraph.getEdgesFromOrFail(root, common::SETTINGS_EDGE);
       EOS_CHECK(edges.size() == 1, "There should only exists only 1 settings edge from root node");
       return Document(get_self(), edges[0].to_node);
    }
 
-   void dao::setsetting(const string &key, const Content::FlexValue &value)
+   // void dao::setsetting(const string &key, const Content::FlexValue &value)
+   // {
+   //    TRACE_FUNCTION()
+   //    require_auth(get_self());
+   //    setSetting(key, value);
+   // }
+
+   // void dao::setSetting(const string &key, const Content::FlexValue &value)
+   // {
+   //    TRACE_FUNCTION()
+   //    auto document = getSettingsDocument();
+   //    auto oldHash = document.getHash();
+   //    auto settingContent = Content(key, value);
+   //    auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
+
+   //    ContentWrapper cw = document.getContentWrapper();
+   //    ContentGroup *settings = cw.getGroupOrFail("settings");
+
+   //    ContentWrapper::insertOrReplace(*settings, settingContent);
+   //    ContentWrapper::insertOrReplace(*settings, updateDateContent);
+
+   //    m_documentGraph.updateDocument(get_self(), oldHash, document.getContentGroups());
+   // }
+
+   void dao::setsetting(const eosio::name &dao_name, const string &key, const Content::FlexValue &value)
    {
       TRACE_FUNCTION()
       require_auth(get_self());
-      setSetting(key, value);
+      setSetting(dao_name, key, value);
    }
 
-   void dao::setSetting(const string &key, const Content::FlexValue &value)
+   void dao::setSetting(const eosio::name &dao_name, const string &key, const Content::FlexValue &value)
    {
       TRACE_FUNCTION()
-      auto document = getSettingsDocument();
+      auto document = getSettingsDocument(dao_name);
       auto oldHash = document.getHash();
       auto settingContent = Content(key, value);
       auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
@@ -628,11 +662,11 @@ namespace hypha
       m_documentGraph.updateDocument(updater, oldHash, document.getContentGroups());
    }
 
-   void dao::createdao(const eosio::name &dao_name, const std::string &dao_title)
+   void dao::createdao(const eosio::name &dao_name)
    {
       require_auth(get_self());
 
-      Document dao(get_self(), get_self(), getDAOContent(dao_name, dao_title));
+      Document dao(get_self(), get_self(), getDAOContent(dao_name));
 
       // Create the settings document as well and add an edge to it
       ContentGroups settingCgs{

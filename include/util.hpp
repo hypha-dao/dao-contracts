@@ -14,7 +14,10 @@
 namespace hypha
 {
     eosio::checksum256 getRoot(const eosio::name &contract);
+    eosio::checksum256 getDAO(const eosio::name &dao_name);
+
     ContentGroups getRootContent(const eosio::name &contract);
+    ContentGroups getDAOContent(const eosio::name &dao_name);
     eosio::asset adjustAsset(const eosio::asset &originalAsset, const float &adjustment);
     float getSeedsPriceUsd(const eosio::time_point &price_time_point);
     float getSeedsPriceUsd();

@@ -89,7 +89,7 @@ namespace hypha
         eosio::asset genesis_voice{100, common::S_VOICE};
         std::string memo{"genesis voice issuance during enrollment"};
 
-        name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
+        name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
         hypha::issueToken(
             hyphaHvoice,

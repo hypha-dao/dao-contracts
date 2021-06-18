@@ -67,7 +67,7 @@ namespace hypha
 
         // Fetch vote power
         // Todo: Need to ensure that the balance does not need a decay.
-        name hvoiceContract = dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
+        name hvoiceContract = dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
         hypha::voice::accounts v_t(hvoiceContract, voter.value);
 
         auto v_itr = v_t.find(common::S_VOICE.code().raw());

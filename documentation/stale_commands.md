@@ -300,8 +300,8 @@ cleos -u https://test.telos.kitchen push action hyphadaobali setconfig '["token.
 
 
 
-cleos -u https://eos.greymass.com push action eosio updateauth '{
-    "account": "thehyphabank",
+cleos -u https://test.telos.kitchen push action eosio updateauth '{
+    "account": "bm.hypha",
     "permission": "active",
     "parent": "owner",
     "auth": {
@@ -380,14 +380,14 @@ cleos -u https://node1.eosphere.io multisig propose sendeos '[
         }' thehyphabank 72 -p thehyphabank@owner
 
 
-cleos -u https://test.telos.kitchen push action eosio updateauth '{
-    "account": "varexrounds2",
+eosc --vault-file ~/x/test-vault.json -u https://test.telos.kitchen tx create eosio updateauth '{
+    "account": "bm.hypha",
     "permission": "active",
     "parent": "owner",
     "auth": {
         "keys": [
             {
-                "key": "EOS8aoFkEXL9QDcBUvMzHLGgn5Epzz3tQ74q5aCs4CDvw3saccPTh",
+                "key": "EOS8BGVN3Nq2aeC2qQwizoe3AsTVi5oP9pu834rwrqz7wKcz1VQEp",
                 "weight": 1
             }
         ],
@@ -395,7 +395,7 @@ cleos -u https://test.telos.kitchen push action eosio updateauth '{
         "accounts": [
             {
                 "permission": {
-                    "actor": "varexrounds2",
+                    "actor": "bm.hypha",
                     "permission": "eosio.code"
                 },
                 "weight": 1
@@ -403,7 +403,7 @@ cleos -u https://test.telos.kitchen push action eosio updateauth '{
         ],
         "waits": []
     }
-}' -p varexrounds2@owner
+}' -p bm.hypha@owner
 
 
 
