@@ -39,6 +39,7 @@ export class DaoBlockchain extends Blockchain {
     // There should be a better way to get this - But currently seems stable
     readonly rootHash = 'D9B40C418C850A65B71CA55ABB0DE9B0E4646A02B95B230E3917E877610BFAE5';
     private root: Document;
+    private setupDate: Date;
 
     private constructor(config: THydraConfig, settings: DaoSettings) {
         super(config);
@@ -136,6 +137,8 @@ export class DaoBlockchain extends Blockchain {
 
     async setup() {
         this.dao.resetTables();
+        this.setupDate = new Date();
+        this.setCurrentTime(this.setupDate);
         
         this.dao.updateAuth(`active`, `owner`, {
             accounts: [
@@ -194,8 +197,18 @@ export class DaoBlockchain extends Blockchain {
         );
     }
 
+    public getHvoiceForMember(member: string): Asset {
+        return Asset.fromString(
+            this.peerContracts.voice.getTableRowsScoped('accounts')[member][0].balance
+        );
+    }
+
     public getRoot(): Document {
         return this.root;
+    }
+
+    public getSetupDate(): Date {
+        return this.setupDate;
     }
 
 }
