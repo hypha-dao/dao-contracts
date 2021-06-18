@@ -19,13 +19,13 @@ namespace hypha
 
         switch (symbol.code().raw())
         {
-        case common::S_HUSD.code().raw():
+        case common::S_PEG.code().raw():
             return new HusdPayer(dao);
 
-        case common::S_HVOICE.code().raw():
+        case common::S_VOICE.code().raw():
             return new HvoicePayer(dao);
 
-        case common::S_HYPHA.code().raw():
+        case common::S_REWARD.code().raw():
             return new HyphaPayer(dao);
 
         case common::S_SEEDS.code().raw():

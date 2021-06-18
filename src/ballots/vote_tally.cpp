@@ -37,7 +37,7 @@ namespace hypha
         for (auto option : *contentOptions) 
         {
             if (option.label != CONTENT_GROUP_LABEL) {
-                optionsTally[option.label] = asset(0, common::S_HVOICE);
+                optionsTally[option.label] = asset(0, common::S_VOICE);
                 optionsTallyOrdered.push_back(option.label);
             }
         }

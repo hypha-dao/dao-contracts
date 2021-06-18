@@ -299,14 +299,14 @@ namespace hypha
 
             // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
             // If there is an explicit INSTANT SEEDS amount, support sending it
-            husd = (husd.is_valid() ? husd : eosio::asset{0, common::S_HUSD}) +
-                   adjustAsset(assignment.getSalaryAmount(&common::S_HUSD), commitmentMultiplier);
+            husd = (husd.is_valid() ? husd : eosio::asset{0, common::S_PEG}) +
+                   adjustAsset(assignment.getSalaryAmount(&common::S_PEG), commitmentMultiplier);
 
-            hvoice = (hvoice.is_valid() ? hvoice : eosio::asset{0, common::S_HVOICE}) +
-                     adjustAsset(assignment.getSalaryAmount(&common::S_HVOICE), commitmentMultiplier);
+            hvoice = (hvoice.is_valid() ? hvoice : eosio::asset{0, common::S_VOICE}) +
+                     adjustAsset(assignment.getSalaryAmount(&common::S_VOICE), commitmentMultiplier);
 
-            hypha = (hypha.is_valid() ? hypha : eosio::asset{0, common::S_HYPHA}) +
-                    adjustAsset(assignment.getSalaryAmount(&common::S_HYPHA), commitmentMultiplier);
+            hypha = (hypha.is_valid() ? hypha : eosio::asset{0, common::S_REWARD}) +
+                    adjustAsset(assignment.getSalaryAmount(&common::S_REWARD), commitmentMultiplier);
          }
 
          //If the last used time share is different from current time share
@@ -588,6 +588,26 @@ namespace hypha
       auto content = Content(key, value);
       ContentWrapper::insertOrReplace(*contentGroup, content);
       m_documentGraph.updateDocument(updater, oldHash, document.getContentGroups());
+   }
+
+   void dao::createdao(const eosio::name &dao_name, const std::string &dao_title)
+   {
+      require_auth(get_self());
+
+      Document dao(get_self(), get_self(), getDAOContent(dao_name, dao_title));
+
+      // Create the settings document as well and add an edge to it
+      ContentGroups settingCgs{
+          ContentGroup{
+              Content(CONTENT_GROUP_LABEL, SETTINGS)},
+            //   Content(ROOT_NODE, readableHash(dao.getHash()))},  
+          ContentGroup{
+              Content(CONTENT_GROUP_LABEL, SYSTEM),
+              Content(TYPE, common::SETTINGS_EDGE),
+              Content(NODE_LABEL, "Settings")}};
+
+      Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
+      Edge::write(get_self(), get_self(), dao.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
    }
 
    void dao::createroot(const std::string &notes)

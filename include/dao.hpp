@@ -138,6 +138,8 @@ namespace hypha
       ACTION suspend(name proposer, eosio::checksum256 hash, string reason);
 
       ACTION createroot(const std::string &notes);
+      ACTION createdao(const eosio::name &dao_name, const std::string &dao_long_name);
+
       ACTION erasedoc(const eosio::checksum256 &hash);
       ACTION killedge(const uint64_t id);
       ACTION newedge(eosio::name & creator, const checksum256 &from_node, const checksum256 &to_node, const name &edge_name);
@@ -172,9 +174,9 @@ namespace hypha
 
       struct AssetBatch
       {
-         eosio::asset hypha = eosio::asset{0, common::S_HYPHA};
-         eosio::asset voice = eosio::asset{0, common::S_HVOICE};
-         eosio::asset husd = eosio::asset{0, common::S_HUSD};
+         eosio::asset hypha = eosio::asset{0, common::S_REWARD};
+         eosio::asset voice = eosio::asset{0, common::S_VOICE};
+         eosio::asset husd = eosio::asset{0, common::S_PEG};
       };
 
       eosio::asset applyCoefficient(ContentWrapper & badge, const eosio::asset &base, const std::string &key);
