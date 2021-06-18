@@ -12,7 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
+            ref: ${{github.event.pull_request.head.ref}}
+            repository: ${{github.event.pull_request.head.repo.full_name}}
             submodules: recursive
+      - run: USER=${GITHUB_ACTOR} TOKEN=${{ secrets.GITHUB_TOKEN }} bash .github/scripts/only_collaborators.sh
       - uses: actions/setup-node@v1
         with:
           node-version: '12'
