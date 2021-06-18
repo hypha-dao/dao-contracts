@@ -31,7 +31,7 @@ namespace hypha
    {
      eosio::require_auth(get_self());
 
-     const size_t maxApplyPerAction = 30;
+     const size_t maxApplyPerAction = 10;
 
      for (size_t i = 0; i < std::min(maxApplyPerAction, hashes.size()); ++i) {
        Document doc(get_self(), hashes[i]);
@@ -50,6 +50,11 @@ namespace hypha
         }
         else if (type == common::ROLE_NAME) {
             
+        }
+
+        //TODO-J: Refactor Multi tenant
+        if (Edge::exists(get_self(), getRoot(get_self()), doc.getHash(), common::PROPOSAL)) {
+          state = common::STATE_PROPOSED;
         }
 
         cw.insertOrReplace(*details, Content{ common::STATE, state });
@@ -206,6 +211,7 @@ namespace hypha
        "Contract is paused for maintenance. Please try again later."
      );
 
+     //TODO-J: Refactor Multi-tenant
      EOS_CHECK(
        Member::isMember(get_self(), proposer), 
        to_str("Only members are allowed to propose suspensions")
@@ -864,6 +870,8 @@ namespace hypha
       }
 
       ContentWrapper assignmentCW = assignment.getContentWrapper();
+
+
 
       //Should use the role edge instead of the role content item
       //in case role document is modified (causes it's hash to change)
