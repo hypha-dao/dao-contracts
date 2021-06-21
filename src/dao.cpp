@@ -29,7 +29,7 @@ namespace hypha
    ACTION 
    dao::addstate (const std::vector<eosio::checksum256>& hashes)
    {
-     eosio::require_auth(get_self());
+     //eosio::require_auth(get_self());
 
      const size_t maxApplyPerAction = 10;
 
@@ -50,6 +50,10 @@ namespace hypha
         }
         else if (type == common::ROLE_NAME) {
             
+        }
+        else {
+          //Ignore other document types
+          continue;
         }
 
         //TODO-J: Refactor Multi tenant
