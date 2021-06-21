@@ -141,13 +141,12 @@ namespace hypha
         // update graph edges:
         //  member          ---- assigned           ---->   role_assignment
         //  role_assignment ---- assignee           ---->   member
-        //  role_assignment ---- role               ---->   role
+        //  role_assignment ---- role               ---->   role                This one already exists since postProposeImpl
         //  role            ---- role_assignment    ---->   role_assignment
         Edge::write(m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGNED);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
         Edge::write(m_dao.get_self(), m_dao.get_self(), role.getHash(), proposal.getHash(), common::ASSIGNMENT);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), role.getHash(), common::ROLE_NAME);
-
+        
         //Start period edge
         // assignment ---- start ----> period
         eosio::checksum256 startPeriod = contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>();
