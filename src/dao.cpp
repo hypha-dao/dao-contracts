@@ -832,7 +832,7 @@ namespace hypha
            auto assignmentExpirationTime = lastPeriod.getEndTime();
 
            EOS_CHECK(
-             assignmentExpirationTime.sec_since_epoch() < eosio::current_time_point().sec_since_epoch(),
+             assignmentExpirationTime.sec_since_epoch() > eosio::current_time_point().sec_since_epoch(),
              to_str("Cannot adjust expired assignment: ", assignment.getHash(), " last period: ", lastPeriod.getHash())
            )
 
