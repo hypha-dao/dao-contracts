@@ -141,10 +141,12 @@ namespace hypha
 
         auto originalPeriods = assignment.getPeriodCount();
 
+        auto startPeriod = assignment.getStartPeriod();
+
         //Calculate the number of periods since start period to the current period
-        auto currentPeriod = Period::current(&m_dao);
+        auto currentPeriod = startPeriod.getPeriodUntil(eosio::current_time_point());
         
-        auto periodsToCurrent = assignment.getStartPeriod().getPeriodCountTo(currentPeriod);
+        auto periodsToCurrent = startPeriod.getPeriodCountTo(currentPeriod);
 
         periodsToCurrent = std::min(periodsToCurrent + 1, originalPeriods);
 
