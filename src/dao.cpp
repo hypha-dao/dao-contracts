@@ -204,12 +204,7 @@ namespace hypha
        }
      };
 
-    //  eosio::action(
-    //    eosio::permission_level{owner, "active"_n},
-    //    get_self(),
-    //    "adjustcmtmnt"_n,
-    //    std::make_tuple(owner, adjust)
-    //  ).send();
+    
     adjustcmtmnt(owner, adjust);
    }
 
@@ -833,11 +828,12 @@ namespace hypha
 
          if (modstr.empty()) {
            
-           auto assignmentExpirationTime = assignment.getLastPeriod().getEndTime();
+           auto lastPeriod = assignment.getLastPeriod();
+           auto assignmentExpirationTime = lastPeriod.getEndTime();
 
            EOS_CHECK(
              assignmentExpirationTime.sec_since_epoch() < eosio::current_time_point().sec_since_epoch(),
-             to_str("Cannot adjust expired assignment: ", assignment.getHash())
+             to_str("Cannot adjust expired assignment: ", assignment.getHash(), " last period: ", lastPeriod.getHash())
            )
 
            auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
