@@ -204,12 +204,13 @@ namespace hypha
        }
      };
 
-     eosio::action(
-       eosio::permission_level{owner, "active"_n},
-       get_self(),
-       "adjustcmtmnt"_n,
-       std::make_tuple(owner, adjust)
-     ).send();
+    //  eosio::action(
+    //    eosio::permission_level{owner, "active"_n},
+    //    get_self(),
+    //    "adjustcmtmnt"_n,
+    //    std::make_tuple(owner, adjust)
+    //  ).send();
+    adjustcmtmnt(owner, adjust);
    }
 
    void dao::suspend(name proposer, eosio::checksum256 hash, string reason)
