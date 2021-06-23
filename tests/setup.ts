@@ -1,7 +1,7 @@
 import { loadConfig, Blockchain } from '@klevoya/hydra';
 import Account from '@klevoya/hydra/lib/main/account';
 import { StrictBuilder } from 'builder-pattern';
-import { DaoBlockchain, DaoSettings, TestSettings } from './DaoBlockchain';
+import { DaoBlockchain, DaoSettings, TestSettings } from './dao/DaoBlockchain';
 
 const config = loadConfig("hydra.yml");
 
@@ -16,8 +16,8 @@ export const setupEnvironment = async (settings?: Partial<DaoSettings>, testSett
     const blockchain = await DaoBlockchain.build(config, {
         votingDurationSeconds: settings?.votingDurationSeconds ?? votingDurationSeconds,
         voice: {
-            decayPeriod: settings?.voice?.decayPeriod ?? 5,
-            decayPerPeriodx10M: settings?.voice?.decayPerPeriodx10M ?? 5000000
+            decayPeriod: settings?.voice?.decayPeriod ?? DAY,
+            decayPerPeriodx10M: settings?.voice?.decayPerPeriodx10M ?? 5000000 // 50%
         }
     }, {
         createMembers: testSettings?.createMembers ?? 5

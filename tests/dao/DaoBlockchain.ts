@@ -1,11 +1,13 @@
-import { loadConfig, Blockchain, Contract } from '@klevoya/hydra';
+import { Blockchain } from '@klevoya/hydra';
 import { THydraConfig } from '@klevoya/hydra/lib/config/hydra';
 import Account from '@klevoya/hydra/lib/main/account';
-import { Document } from './types/Document';
-import { Edge } from './types/Edge';
-import { last } from './utils/Arrays';
-import { getDocumentByHash, getDocumentsByType } from './utils/Dao';
-import { getAccountPermission } from './utils/Permissions';
+import { Asset } from '../types/Asset';
+import { Document } from '../types/Document';
+import { Edge } from '../types/Edge';
+import { Member } from '../types/Member';
+import { last } from '../utils/Arrays';
+import { getDocumentByHash, getDocumentsByType } from '../utils/Dao';
+import { getAccountPermission } from '../utils/Permissions';
 
 export interface DaoSettings {
     votingDurationSeconds: number;
@@ -24,10 +26,7 @@ export interface DaoPeerContracts {
     bank: Account;
 }
 
-export interface Member {
-    account: Account;
-    doc: Document;
-}
+const HVOICE_SYMBOL = 'HVOICE';
 
 export class DaoBlockchain extends Blockchain {
 
@@ -40,6 +39,7 @@ export class DaoBlockchain extends Blockchain {
     // There should be a better way to get this - But currently seems stable
     readonly rootHash = 'D9B40C418C850A65B71CA55ABB0DE9B0E4646A02B95B230E3917E877610BFAE5';
     private root: Document;
+    private setupDate: Date;
 
     private constructor(config: THydraConfig, settings: DaoSettings) {
         super(config);
@@ -64,12 +64,8 @@ export class DaoBlockchain extends Blockchain {
                 }
 
                 for (let index = 0; index < testSettings.createMembers; ++index) {
-                    const account: Account = await blockchain.createMember(`mem${index + 1}.hypha`);
-                    const doc = last(getDocumentsByType(blockchain.getDaoDocuments(), 'member'));
-                    blockchain.members.push({
-                        account,
-                        doc
-                    });
+                    const member: Member = await blockchain.createMember(`mem${index + 1}.hypha`);
+                    blockchain.members.push(member);
                 }
 
                 // Member 0 is always awarded 99 HVOICE (for a total of 100)
@@ -89,7 +85,7 @@ export class DaoBlockchain extends Blockchain {
         return account;
     }
 
-    async createMember(accountName: string) {
+    async createMember(accountName: string): Promise<Member> {
         const account = this.createAccount(accountName);
 
         account.updateAuth(`child`, `active`, {
@@ -116,7 +112,12 @@ export class DaoBlockchain extends Blockchain {
             content: 'Enroll in dao'
         });
 
-        return account;
+        const doc = last(getDocumentsByType(this.getDaoDocuments(), 'member'));
+
+        return new Member(
+            account,
+            doc
+        );
     }
 
     async increaseVoice(accountName: string, quantity: string) {
@@ -136,6 +137,8 @@ export class DaoBlockchain extends Blockchain {
 
     async setup() {
         this.dao.resetTables();
+        this.setupDate = new Date();
+        this.setCurrentTime(this.setupDate);
         
         this.dao.updateAuth(`active`, `owner`, {
             accounts: [
@@ -188,8 +191,24 @@ export class DaoBlockchain extends Blockchain {
         return this.dao.getTableRowsScoped('edges')['dao'];
     }
 
+    public getIssuedHvoice(): Asset {
+        return Asset.fromString(
+            this.peerContracts.voice.getTableRowsScoped('stat')[HVOICE_SYMBOL][0].supply
+        );
+    }
+
+    public getHvoiceForMember(member: string): Asset {
+        return Asset.fromString(
+            this.peerContracts.voice.getTableRowsScoped('accounts')[member][0].balance
+        );
+    }
+
     public getRoot(): Document {
         return this.root;
+    }
+
+    public getSetupDate(): Date {
+        return this.setupDate;
     }
 
 }

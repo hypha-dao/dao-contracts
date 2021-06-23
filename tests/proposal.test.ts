@@ -4,7 +4,6 @@ import { last } from './utils/Arrays';
 import { getDocumentsByType } from './utils/Dao';
 import { DocumentBuilder } from './utils/DocumentBuilder';
 import { getDaoExpect } from './utils/Expect';
-import { getAccountPermission } from './utils/Permissions';
 
 describe('Proposal', () => {
     const getSampleRole = (title: string = 'Underwater Basketweaver'): Document => DocumentBuilder
@@ -55,7 +54,7 @@ describe('Proposal', () => {
         // Now we can close the proposal
         await environment.dao.contract.closedocprop({
             proposal_hash: proposal.hash
-        }, getAccountPermission(environment.members[0].account));
+        }, environment.members[0].getPermissions());
 
         daoExpect.toHaveEdge(environment.getRoot(), proposal, 'failedprops');
     });
@@ -89,7 +88,8 @@ describe('Proposal', () => {
         await environment.dao.contract.vote({
             voter: environment.members[0].account.accountName,
             proposal_hash: proposal.hash,
-            vote: 'pass'
+            vote: 'pass',
+            notes: 'vote pass'
         });
 
         // Sets the time to the end of proposal
@@ -98,7 +98,7 @@ describe('Proposal', () => {
         // Now we can close the proposal
         await environment.dao.contract.closedocprop({
             proposal_hash: proposal.hash
-        }, getAccountPermission(environment.members[0].account));
+        }, environment.members[0].getPermissions());
 
         // When passing, the proposal is updated
         proposal = last(getDocumentsByType(
