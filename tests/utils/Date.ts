@@ -1,5 +1,8 @@
 export const toISOString = (date: Date) => {
-    // The testing framework always set the mills to 000 and doesn't have the Z
-    console.log('DEBUG: Writing the raw date', date.toISOString());
-    return date.toISOString().split('.')[0] + '.000';
+    // The testing framework always rounds the  millis and doesn't have the Z
+    // 22:47:12.867Z becomes 22:47:13
+    const copy = new Date(date);
+    copy.setSeconds(Math.round(parseFloat(`${copy.getSeconds()}.${copy.getMilliseconds()}`)));
+    copy.setMilliseconds(0);
+    return copy.toISOString().split('.')[0] + '.000';
 };
