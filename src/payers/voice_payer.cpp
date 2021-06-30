@@ -1,4 +1,4 @@
-#include <payers/hypha_payer.hpp>
+#include <payers/voice_payer.hpp>
 
 #include <eosio/name.hpp>
 #include <eosio/asset.hpp>
@@ -11,12 +11,12 @@
 namespace hypha
 {
 
-    Document HyphaPayer::payImpl(const eosio::name &recipient,
-                                 const eosio::asset &quantity,
-                                 const string &memo)
+    Document HvoicePayer::payImpl(const eosio::name &recipient,
+                                  const eosio::asset &quantity,
+                                  const string &memo)
     {
         TRACE_FUNCTION()
-        issueToken(m_dao.getSettingOrFail<eosio::name>(REWARD_TOKEN_CONTRACT),
+        issueToken(m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT),
                    m_dao.get_self(),
                    recipient,
                    quantity,

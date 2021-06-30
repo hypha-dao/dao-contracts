@@ -1,8 +1,8 @@
 #include <payers/payer_factory.hpp>
 #include <payers/husd_payer.hpp>
-#include <payers/hypha_payer.hpp>
+#include <payers/reward_payer.hpp>
 #include <payers/seeds_payer.hpp>
-#include <payers/hvoice_payer.hpp>
+#include <payers/voice_payer.hpp>
 #include <payers/escrow_payer.hpp>
 #include <logger/logger.hpp>
 
