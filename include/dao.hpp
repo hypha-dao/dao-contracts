@@ -151,7 +151,7 @@ namespace hypha
       // ACTION nbadass(const name& owner, const ContentGroups& contentGroups);
       // ACTION nbadprop (const name& owner, const ContentGroups& contentGroups);
 
-      void setSetting(const eosio::name &dao_name, const const string &key, const Content::FlexValue &value);
+      void setSetting(const eosio::name &dao_name, const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,
                            const eosio::time_point &price_time_point,
