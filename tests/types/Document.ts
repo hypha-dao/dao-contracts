@@ -17,7 +17,8 @@ export enum ContentType {
     ASSET = 'asset',
     NAME = 'name',
     INT64 = 'int64',
-    TIME_POINT = 'time_point'
+    TIME_POINT = 'time_point',
+    CHECKSUM256 = 'checksum256'
 }
 
 type ContentValueType<T,V> = [T, V];
@@ -29,10 +30,11 @@ type ContentValueAsset = ContentValueStringType<ContentType.ASSET>;
 type ContentValueName = ContentValueStringType<ContentType.NAME>;
 type ContentValueTimePoint = ContentValueStringType<ContentType.TIME_POINT>;
 type ContentValueInt64 = ContentValueNumberType<ContentType.INT64>;
+type ContentValueChecksum256 = ContentValueStringType<ContentType.CHECKSUM256>;
 
 export type ContentValue = 
 // string
-ContentValueString | ContentValueAsset | ContentValueName | ContentValueTimePoint
+ContentValueString | ContentValueAsset | ContentValueName | ContentValueTimePoint | ContentValueChecksum256
 // number
 | ContentValueInt64;
 
@@ -48,12 +50,14 @@ const makeContent = (label: string, value: ContentValue): Content => ({
 
 export const CONTENT_GROUP_LABEL = 'content_group_label';
 export const SYSTEM_CONTENT_GROUP_LABEL = 'system';
+export const DETAILS_CONTENT_GROUP_LABEL = 'details';
 
 export const makeStringContent = (label: string, value: string): Content  => makeContent(label, [ ContentType.STRING, value ]);
 export const makeAssetContent = (label: string, value: string): Content  => makeContent(label, [ ContentType.ASSET, value ]);
 export const makeNameContent = (label: string, value: string): Content  => makeContent(label, [ ContentType.NAME, value ]);
 export const makeTimePointContent = (label: string, value: string): Content  => makeContent(label, [ ContentType.TIME_POINT, value ]);
 export const makeInt64Content = (label: string, value: number): Content  => makeContent(label, [ ContentType.INT64, value ]);
+export const makeChecksum256Content = (label: string, value: string): Content  => makeContent(label, [ ContentType.CHECKSUM256, value ]);
 
 export const makeContentGroup = (groupLabel: string | undefined, ...content: ContentGroup) : ContentGroup => {
     return [

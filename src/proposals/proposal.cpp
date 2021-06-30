@@ -121,6 +121,11 @@ namespace hypha
         }
         else
         {
+            //TODO: Add failImpl()
+            proposal = m_dao.getGraph().updateDocument(proposal.getCreator(), 
+                                                       proposal.getHash(),
+                                                       std::move(proposal.getContentGroups()));
+
             // create edge for FAILED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::FAILED_PROPS);
         }
