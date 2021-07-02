@@ -41,8 +41,6 @@ describe('Roles', () => {
         
         let date = nextDay(environment, new Date());
 
-        console.log("About to close failed proposal");
-
         // closes proposal
         await environment.dao.contract.closedocprop({
           proposal_hash: proposal.hash
@@ -79,45 +77,19 @@ describe('Roles', () => {
         await expect(getContent(proposalDetails, "state").value[1])
               .toBe('proposed');
 
-        await Promise.all([
-          environment.dao.contract.vote({
-            voter: environment.members[0].account.accountName,
+        for (let i = 0; i < environment.members.length; ++i) {
+          console.log("Voting to pass:", i);
+          await environment.dao.contract.vote({
+            voter: environment.members[i].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'pass',
             notes: 'votes pass'
-          }),
-          environment.dao.contract.vote({
-            voter: environment.members[1].account.accountName,
-            proposal_hash: proposal.hash,
-            vote: 'pass',
-            notes: 'votes pass'
-          }),
-          environment.dao.contract.vote({
-            voter: environment.members[2].account.accountName,
-            proposal_hash: proposal.hash,
-            vote: 'pass',
-            notes: 'votes pass'
-          }),
-          environment.dao.contract.vote({
-            voter: environment.members[3].account.accountName,
-            proposal_hash: proposal.hash,
-            vote: 'pass',
-            notes: 'votes pass'
-          }),
-          environment.dao.contract.vote({
-            voter: environment.members[4].account.accountName,
-            proposal_hash: proposal.hash,
-            vote: 'pass',
-            notes: 'votes pass'
-          })
-        ]);
-          
+          });
+        }
 
         const expiration = getContent(getContentGroupByLabel(proposal, "ballot"), "expiration");
         
         date = setDate(environment, new Date(expiration.value[1]), 15);
-
-        console.log("About to close passed proposal on:", date, 'expiration date:', expiration);
 
         // closes proposal
         await environment.dao.contract.closedocprop({
@@ -128,8 +100,6 @@ describe('Roles', () => {
           environment.getDaoDocuments(),
           'role'
         ));
-
-        console.log("Proposal after closed", JSON.stringify(proposal));
 
         proposalDetails = getDetailsGroup(proposal);
 
