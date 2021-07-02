@@ -1,4 +1,4 @@
-import { ContentGroup, ContentType, CONTENT_GROUP_LABEL, Document, SYSTEM_CONTENT_GROUP_LABEL } from "../types/Document"
+import { Content, ContentGroup, ContentType, CONTENT_GROUP_LABEL, DETAILS_CONTENT_GROUP_LABEL, Document, SYSTEM_CONTENT_GROUP_LABEL } from "../types/Document"
 import { Edge } from "../types/Edge";
 
 const TYPE_LABEL = 'type';
@@ -15,6 +15,18 @@ export const getContentGroupByLabel = (document: Document, groupLabel: string): 
 
 export const getSystemContentGroup = (document: Document): ContentGroup | undefined => {
     return getContentGroupByLabel(document, SYSTEM_CONTENT_GROUP_LABEL);
+}
+
+export const getDetailsGroup = (document: Document): ContentGroup | undefined => {
+  const group = getContentGroupByLabel(document, DETAILS_CONTENT_GROUP_LABEL);
+  if (group === undefined) {
+    throw Error('Missing details group from document');
+  }
+  return group;
+}
+
+export const getContent = (group: ContentGroup, label: string): Content | undefined => {
+  return group.find(item => item.label === label);
 }
 
 export const getDocumentsByType = (documents: Array<Document>, documentType: string): Array<Document> => {

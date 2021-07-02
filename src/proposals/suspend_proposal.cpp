@@ -18,15 +18,43 @@ namespace hypha
 
     void SuspendProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     { 
-      //TODO: Setup ballot_title according to document type [Assignment, Badge, etc.]
       TRACE_FUNCTION()
 
       // original_document is a required hash
       auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
 
+      auto root = getRoot(m_dao.get_self());
+
+      //Verify if this is a passed proposal
+      EOS_CHECK(
+        Edge::exists(m_dao.get_self(), root, originalDocHash, common::PASSED_PROPS),
+        "Only passed proposals can be suspended"
+      )
+      
       Document originalDoc(m_dao.get_self(), originalDocHash);
 
+      if (auto [hasOpenSuspendProp, proposalHash] = hasOpenProposal(common::SUSPEND, originalDocHash);
+          hasOpenSuspendProp) {
+        EOS_CHECK(
+          false,
+          to_str("There is an open suspension proposal already:", proposalHash)  
+        )
+      }
+
       ContentWrapper ocw = originalDoc.getContentWrapper();
+
+      //TODO-J: Add state item to all active Roles/Assignments
+      //Check assignments from 2 months ago with dgraph and then send them to a fix action (should verify if they are still active or not)
+      //Check all roles that are not suspened (?)
+      auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+      EOS_CHECK(
+        state != common::STATE_WITHDRAWED && 
+        state != common::STATE_SUSPENDED &&
+        state != common::STATE_EXPIRED &&
+        state != common::STATE_REJECTED,
+        to_str("Cannot open suspend proposals on ", state, " documents")
+      )
 
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
       
@@ -47,6 +75,11 @@ namespace hypha
           "Assignment is already expired"
         );
        } break;
+      case common::ROLE_NAME.value:
+
+        
+
+        break;
       default:
         EOS_CHECK(
           false,
@@ -59,7 +92,7 @@ namespace hypha
       auto title = ocw.getOrFail(DETAILS, TITLE)->getAs<string>();
 
       ContentWrapper::insertOrReplace(*contentWrapper.getGroupOrFail(DETAILS), 
-                                      Content { TITLE, to_str("Suspention of ", type, ":", title ) });
+                                      Content { TITLE, to_str("Suspension of ", type, ": ", title ) });
     }
 
     void SuspendProposal::postProposeImpl (Document &proposal) 
@@ -82,9 +115,19 @@ namespace hypha
         "Missing edge from suspension proposal: " + readableHash(proposal.getHash()) + " to document"
       );
 
+      auto root = getRoot(m_dao.get_self());
+
       Document originalDoc(m_dao.get_self(), edges[0].getToNode());
 
       ContentWrapper ocw = originalDoc.getContentWrapper();
+
+      auto detailsGroup = ocw.getGroupOrFail(DETAILS);
+
+      ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_SUSPENDED });
+
+      originalDoc = m_dao.getGraph().updateDocument(originalDoc.getCreator(), 
+                                                    originalDoc.getHash(), 
+                                                    ocw.getContentGroups());
 
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
       
@@ -98,10 +141,12 @@ namespace hypha
 
         auto originalPeriods = assignment.getPeriodCount();
 
+        auto startPeriod = assignment.getStartPeriod();
+
         //Calculate the number of periods since start period to the current period
-        auto currentPeriod = Period::current(&m_dao);
+        auto currentPeriod = startPeriod.getPeriodUntil(eosio::current_time_point());
         
-        auto periodsToCurrent = assignment.getStartPeriod().getPeriodCountTo(currentPeriod);
+        auto periodsToCurrent = startPeriod.getPeriodCountTo(currentPeriod);
 
         periodsToCurrent = std::min(periodsToCurrent + 1, originalPeriods);
 
@@ -111,15 +156,18 @@ namespace hypha
 
           ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
 
-          auto newHash = m_dao.getGraph().updateDocument(assignment.getCreator(), 
+          originalDoc = m_dao.getGraph().updateDocument(assignment.getCreator(), 
                                                          assignment.getHash(), 
-                                                         cw.getContentGroups()).getHash();
+                                                         cw.getContentGroups());
 
-          assignment = Assignment(&m_dao, newHash);
+          assignment = Assignment(&m_dao, originalDoc.getHash());
         }
 
         m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
       } break;
+      case common::ROLE_NAME.value: {
+        
+      }  break;
       default: {
         EOS_CHECK(
           false,
@@ -128,6 +176,9 @@ namespace hypha
         );
       } break;
       }
+
+      //root --> suspended --> proposal
+      Edge(m_dao.get_self(), m_dao.get_self(), root, originalDoc.getHash(), common::SUSPENDED);
     }
 
     std::string SuspendProposal::getBallotContent (ContentWrapper &contentWrapper)
@@ -140,5 +191,4 @@ namespace hypha
     {
         return common::SUSPEND;
     }
-
 } // namespace hypha

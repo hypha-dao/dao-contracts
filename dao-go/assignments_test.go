@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-  eostest "github.com/digital-scarcity/eos-go-test"
+	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"gotest.tools/assert"
@@ -156,7 +156,6 @@ func ValidateLastReceipt(targetHUSD, targetHYPHA, targetHVOICE, targetSEEDS int6
 }
 
 func TestAdjustCommitment(t *testing.T) {
-  t.Skip("Skipping failing test")
   teardownTestCase := setupTestCase(t)
   defer teardownTestCase(t)
 
@@ -293,7 +292,7 @@ func TestAdjustCommitment(t *testing.T) {
 
       //Claim first period
       t.Log("Waiting for a period to lapse...")
-      eostest.Pause(env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause*2, "", "Waiting...")
 
       //This should get partial payment since the approved time should be > than
       //the start time of the period

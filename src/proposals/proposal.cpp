@@ -36,6 +36,9 @@ namespace hypha
         contentGroups.push_back(makeBallotGroup());
         contentGroups.push_back(makeBallotOptionsGroup());
 
+        ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(DETAILS), 
+                                        Content { common::STATE, common::STATE_PROPOSED });
+
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
         // creates the document, or the graph NODE
@@ -90,14 +93,23 @@ namespace hypha
         auto ballotHash = voteTallyEdge.getToNode();
         proposalDidPass = didPass(ballotHash);
 
+        auto details = proposal.getContentWrapper().getGroupOrFail(DETAILS);
+
+        ContentWrapper::insertOrReplace(*details, Content{
+          common::STATE,
+          proposalDidPass ? common::STATE_APPROVED : common::STATE_REJECTED
+        });
+
         if (proposalDidPass)
         {
 
             auto system = proposal.getContentWrapper().getGroupOrFail(SYSTEM);
+            
             ContentWrapper::insertOrReplace(*system, Content{
               common::APPROVED_DATE,
               eosio::current_time_point()
             });
+
             // INVOKE child class close logic
             passImpl(proposal);
 
@@ -109,6 +121,11 @@ namespace hypha
         }
         else
         {
+            //TODO: Add failImpl()
+            proposal = m_dao.getGraph().updateDocument(proposal.getCreator(), 
+                                                       proposal.getHash(),
+                                                       std::move(proposal.getContentGroups()));
+
             // create edge for FAILED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::FAILED_PROPS);
         }
@@ -212,5 +229,22 @@ namespace hypha
 
         return desc != nullptr ? desc->getAs<std::string>() : 
                                  ballotDesc->getAs<std::string>();
+    }
+
+    std::pair<bool, checksum256> Proposal::hasOpenProposal(name proposalType, checksum256 docHash)
+    {
+      auto proposalEdges = m_dao.getGraph().getEdgesTo(docHash, proposalType);
+      
+      //Check if there is another existing suspend proposal open for the given document
+      for (auto& edge : proposalEdges) {
+        Document proposal(m_dao.get_self(), edge.getFromNode());
+
+        auto cw = proposal.getContentWrapper();
+        if (cw.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_PROPOSED) {
+          return { true,  edge.getFromNode() };
+        }
+      }
+
+      return { false, checksum256{} };
     }
 } // namespace hypha

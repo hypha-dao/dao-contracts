@@ -26,6 +26,58 @@ namespace hypha
       Edge::getOrNew(get_self(), get_self(), hash, roleToAssignmentEdge.getFromNode(), common::ROLE_NAME);
    }
 
+   ACTION 
+   dao::addstate (const std::vector<eosio::checksum256>& hashes)
+   {
+     //eosio::require_auth(get_self());
+
+     const size_t maxApplyPerAction = 10;
+
+     for (size_t i = 0; i < std::min(maxApplyPerAction, hashes.size()); ++i) {
+       Document doc(get_self(), hashes[i]);
+       auto cw = doc.getContentWrapper();
+       auto details = cw.getGroupOrFail(DETAILS);
+      if (!cw.exists(DETAILS, common::STATE)) {
+        auto type = cw.getOrFail(SYSTEM, TYPE)->getAs<name>();
+        //Only modify assignment/roles
+        auto state = common::STATE_APPROVED;
+        if (type == common::ASSIGNMENT) {
+          Assignment assignment(this, doc.getHash());
+          auto endTime = assignment.getLastPeriod().getEndTime().sec_since_epoch();
+          if (endTime < eosio::current_time_point().sec_since_epoch()) {
+            state = common::STATE_EXPIRED;
+          }
+        }
+        else if (type == common::ROLE_NAME) {
+            
+        }
+        else {
+          //Ignore other document types
+          continue;
+        }
+
+        //TODO-J: Refactor Multi tenant
+        if (Edge::exists(get_self(), getRoot(get_self()), doc.getHash(), common::PROPOSAL)) {
+          state = common::STATE_PROPOSED;
+        }
+
+        cw.insertOrReplace(*details, Content{ common::STATE, state });
+
+        m_documentGraph.updateDocument(get_self(), doc.getHash(), doc.getContentGroups());
+      }
+     }
+     
+     if (hashes.size() > maxApplyPerAction) {
+       std::vector<checksum256> nextBatch(hashes.begin() + maxApplyPerAction, hashes.end());
+       eosio::action(
+         eosio::permission_level{get_self(), "active"_n},
+         get_self(),
+         "addstate"_n,
+         std::make_tuple(nextBatch)
+       ).send();
+     }
+   }
+
    void dao::propose(const name &proposer,
                      const name &proposal_type,
                      ContentGroups &content_groups)
@@ -104,12 +156,24 @@ namespace hypha
 
      auto cw = assignment.getContentWrapper();
 
+     auto state = cw.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+     EOS_CHECK(
+       state != common::STATE_WITHDRAWED && 
+       state != common::STATE_SUSPENDED &&
+       state != common::STATE_EXPIRED &&
+       state != common::STATE_REJECTED,
+       to_str("Cannot withdraw ", state, " assignments")
+     )
+
      auto originalPeriods = assignment.getPeriodCount();
 
+     auto startPeriod = assignment.getStartPeriod();
+
      //Calculate the number of periods since start period to the current period
-     auto currentPeriod = Period::current(this);
+     auto currentPeriod = startPeriod.getPeriodUntil(eosio::current_time_point());
     
-     auto periodsToCurrent = assignment.getStartPeriod().getPeriodCountTo(currentPeriod);
+     auto periodsToCurrent = startPeriod.getPeriodCountTo(currentPeriod);
 
      periodsToCurrent = std::max(periodsToCurrent, int64_t(0)) + 1;
 
@@ -118,16 +182,18 @@ namespace hypha
        to_str("Withdrawal of expired assignment: ", hash, " is not allowed")
      );
 
-     if (originalPeriods != periodsToCurrent) {
-
-      auto detailsGroup = cw.getGroupOrFail(DETAILS);
-
-      ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
-
-      hash = m_documentGraph.updateDocument(assignment.getCreator(), 
-                                            hash, 
-                                            cw.getContentGroups()).getHash();
-     } 
+     auto detailsGroup = cw.getGroupOrFail(DETAILS);
+ 
+     ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
+ 
+     ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_WITHDRAWED });
+ 
+     hash = m_documentGraph.updateDocument(assignment.getCreator(), 
+                                           hash, 
+                                           cw.getContentGroups()).getHash();
+ 
+     assignment = Assignment(this, hash);
+     
      //This has to be the last step, since adjustcmtmnt could change the assignment hash
      //to old assignments
      ContentGroups adjust {
@@ -138,7 +204,8 @@ namespace hypha
        }
      };
 
-     adjustcmtmnt(owner, adjust);
+    
+    adjustcmtmnt(owner, adjust);
    }
 
    void dao::suspend(name proposer, eosio::checksum256 hash, string reason)
@@ -149,6 +216,7 @@ namespace hypha
        "Contract is paused for maintenance. Please try again later."
      );
 
+     //TODO-J: Refactor Multi-tenant
      EOS_CHECK(
        Member::isMember(get_self(), proposer), 
        to_str("Only members are allowed to propose suspensions")
@@ -755,6 +823,29 @@ namespace hypha
          auto [idx, startDate] = cw.get(i, TIME_SHARE_START_DATE);
 
          auto fixedStartDate = startDate ? std::optional<time_point>{startDate->getAs<time_point>()} : std::nullopt;
+
+         auto assignmentCW = assignment.getContentWrapper();
+
+         if (modstr.empty()) {
+           
+           auto lastPeriod = assignment.getLastPeriod();
+           auto assignmentExpirationTime = lastPeriod.getEndTime();
+
+           EOS_CHECK(
+             assignmentExpirationTime.sec_since_epoch() > eosio::current_time_point().sec_since_epoch(),
+             to_str("Cannot adjust expired assignment: ", assignment.getHash(), " last period: ", lastPeriod.getHash())
+           )
+
+           auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+           EOS_CHECK(
+             state != common::STATE_WITHDRAWED && 
+             state != common::STATE_SUSPENDED &&
+             state != common::STATE_EXPIRED &&
+             state != common::STATE_REJECTED,
+             to_str("Cannot adjust commitment for ", state, " assignments")
+           )
+         }
         
          modifyCommitment(assignment, 
                           newTimeShare, 
@@ -808,7 +899,16 @@ namespace hypha
 
       ContentWrapper assignmentCW = assignment.getContentWrapper();
 
-      Document roleDocument(get_self(), assignmentCW.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
+      //Should use the role edge instead of the role content item
+      //in case role document is modified (causes it's hash to change)
+      auto assignmentToRoleEdge = m_documentGraph.getEdgesFrom(assignment.getHash(), common::ROLE_NAME);
+      
+      EOS_CHECK(
+        !assignmentToRoleEdge.empty(),
+        to_str("Missing 'role' edge from assignment: ", assignment.getHash())
+      )
+
+      Document roleDocument(get_self(), assignmentToRoleEdge.at(0).getToNode());
       auto role = roleDocument.getContentWrapper();
 
       //Check min_time_share_x100 <= new_time_share_x100 <= time_share_x100
@@ -817,12 +917,7 @@ namespace hypha
       //role.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
               
       bool checkNewTimeShareMin = true;
-      
-      if (modifier == common::MOD_WITHDRAW) 
-      {
-        //checkNewTimeShareMin = false;
-      }
-      
+            
       if (checkNewTimeShareMin) 
       {
         EOS_CHECK(
@@ -858,10 +953,14 @@ namespace hypha
                                                .getOrFail(DETAILS, TIME_SHARE)
                                                ->getAs<int64_t>();
 
-      EOS_CHECK(
-        lastTimeSharex100 != commitment,
-        to_str("New commitment: [", commitment, "] must be different than current commitment: [", lastTimeSharex100, "]")
-      );
+      //This allows withdrawing/suspending an assignment which has a current commitment of 0
+      if (modifier != common::MOD_WITHDRAW) 
+      {
+        EOS_CHECK(
+          lastTimeSharex100 != commitment,
+          to_str("New commitment: [", commitment, "] must be different than current commitment: [", lastTimeSharex100, "]")
+        );
+      }
 
       TimeShare newTimeShareDoc(get_self(), 
                                 assignment.getAssignee().getAccount(), 
