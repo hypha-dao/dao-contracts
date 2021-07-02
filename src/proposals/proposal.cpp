@@ -152,12 +152,14 @@ namespace hypha
     {
         TRACE_FUNCTION()
         name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+        float quorumFactor = m_dao.getSettingOrFail<uint64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
+        float alignmentFactor = m_dao.getSettingOrFail<uint64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
 
         hypha::voice::stats stats_t(hvoiceContract, common::S_VOICE.code().raw());
         auto stat_itr = stats_t.find(common::S_VOICE.code().raw());
         EOS_CHECK(stat_itr != stats_t.end(), "No HVOICE found");
 
-        asset quorum_threshold = adjustAsset(stat_itr->supply, 0.20000000);
+        asset quorum_threshold = adjustAsset(stat_itr->supply, quorumFactor);
 
         VoteTally tally(m_dao, tallyHash);
 
@@ -168,9 +170,11 @@ namespace hypha
         asset votes_fail = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs<eosio::asset>();
 
         asset total = votes_pass + votes_abstain + votes_fail;
+        // pass / ( pass + fail ) > alignmentFactor
+        bool passesAlignment = votes_pass > (alignmentFactor * (votes_pass + votes_fail));
         bool passed = false;
         if (total >= quorum_threshold &&      // must meet quorum
-            adjustAsset(votes_pass, 0.2500000000) > votes_fail) // must have 80% of the vote power
+            passesAlignment)
         {
             return true;
         }

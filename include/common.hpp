@@ -147,6 +147,8 @@ namespace common
 #define HYPHA_DEFERRAL_FACTOR_X100 "hypha_deferral_factor_x100"
 #define LAST_SENDER_ID "last_sender_id"
 #define VOTING_DURATION_SEC "voting_duration_sec"
+#define VOTING_QUORUM_FACTOR_X100 "voting_quorum_x100"
+#define VOTING_ALIGNMENT_FACTOR_X100 "voting_alignment_x100"
 #define PUBLISHER_CONTRACT "publisher_contract"
 #define PAUSED "paused"
 #define ROLE_STRING "role"
