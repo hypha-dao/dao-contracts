@@ -29,52 +29,37 @@ namespace hypha
    ACTION 
    dao::addstate (const std::vector<eosio::checksum256>& hashes)
    {
-     //eosio::require_auth(get_self());
+     const size_t maxHashesPerAction = 2;
 
-     const size_t maxApplyPerAction = 10;
+     EOS_CHECK(
+       hashes.size() <= maxHashesPerAction,
+       to_str("Too many hashes: ", hashes.size(), " max: ", maxHashesPerAction)
+     )
 
-     for (size_t i = 0; i < std::min(maxApplyPerAction, hashes.size()); ++i) {
+     for (size_t i = 0; i < hashes.size(); ++i) {
        Document doc(get_self(), hashes[i]);
        auto cw = doc.getContentWrapper();
        auto details = cw.getGroupOrFail(DETAILS);
-      if (!cw.exists(DETAILS, common::STATE)) {
-        auto type = cw.getOrFail(SYSTEM, TYPE)->getAs<name>();
-        //Only modify assignment/roles
-        auto state = common::STATE_APPROVED;
-        if (type == common::ASSIGNMENT) {
-          Assignment assignment(this, doc.getHash());
-          auto endTime = assignment.getLastPeriod().getEndTime().sec_since_epoch();
-          if (endTime < eosio::current_time_point().sec_since_epoch()) {
-            state = common::STATE_EXPIRED;
-          }
-        }
-        else if (type == common::ROLE_NAME) {
-            
-        }
-        else {
-          //Ignore other document types
-          continue;
-        }
-
-        //TODO-J: Refactor Multi tenant
-        if (Edge::exists(get_self(), getRoot(get_self()), doc.getHash(), common::PROPOSAL)) {
-          state = common::STATE_PROPOSED;
-        }
-
-        cw.insertOrReplace(*details, Content{ common::STATE, state });
-
-        m_documentGraph.updateDocument(get_self(), doc.getHash(), doc.getContentGroups());
-      }
-     }
-     
-     if (hashes.size() > maxApplyPerAction) {
-       std::vector<checksum256> nextBatch(hashes.begin() + maxApplyPerAction, hashes.end());
-       eosio::action(
-         eosio::permission_level{get_self(), "active"_n},
-         get_self(),
-         "addstate"_n,
-         std::make_tuple(nextBatch)
-       ).send();
+       if (!cw.exists(DETAILS, common::STATE)) {
+         auto type = cw.getOrFail(SYSTEM, TYPE)->getAs<name>();
+         //Only modify assignment/roles
+         auto state = common::STATE_APPROVED;
+         if (type == common::ASSIGNMENT) {
+           Assignment assignment(this, doc.getHash());
+           auto endTime = assignment.getLastPeriod().getEndTime().sec_since_epoch();
+           if (endTime < eosio::current_time_point().sec_since_epoch()) {
+             state = common::STATE_EXPIRED;
+           }
+         }
+         else if (type != common::ROLE_NAME) {
+           continue;
+         }
+         if (Edge::exists(get_self(), getRoot(get_self()), doc.getHash(), common::PROPOSAL)) {
+           state = common::STATE_PROPOSED;
+         }
+         cw.insertOrReplace(*details, Content{ common::STATE, state });
+         m_documentGraph.updateDocument(get_self(), doc.getHash(), doc.getContentGroups());
+       }
      }
    }
 
@@ -914,17 +899,11 @@ namespace hypha
       //Check min_time_share_x100 <= new_time_share_x100 <= time_share_x100
       int64_t originalTimeShare = assignmentCW.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
       int64_t minTimeShare = 0;
-      //role.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
               
-      bool checkNewTimeShareMin = true;
-            
-      if (checkNewTimeShareMin) 
-      {
-        EOS_CHECK(
-          commitment >= minTimeShare,
-          to_str(NEW_TIME_SHARE, " must be greater than or equal to: ", minTimeShare, " You submitted: ", commitment)
-        );
-      }
+      EOS_CHECK(
+        commitment >= minTimeShare,
+        to_str(NEW_TIME_SHARE, " must be greater than or equal to: ", minTimeShare, " You submitted: ", commitment)
+      );
 
       EOS_CHECK(
         commitment <= originalTimeShare,

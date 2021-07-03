@@ -36,8 +36,8 @@ describe('Roles', () => {
 
         let proposalDetails = getDetailsGroup(proposal);
 
-        await expect(getContent(proposalDetails, "state").value[1])
-              .toBe('proposed');
+        expect(getContent(proposalDetails, "state").value[1])
+        .toBe('proposed');
         
         let date = nextDay(environment, new Date());
 
@@ -55,8 +55,8 @@ describe('Roles', () => {
 
         proposalDetails = getDetailsGroup(proposal);
 
-        await expect(getContent(proposalDetails, "state").value[1])
-              .toBe('rejected');
+        expect(getContent(proposalDetails, "state").value[1])
+        .toBe('rejected');
 
         //Propose the role again
        
@@ -78,7 +78,6 @@ describe('Roles', () => {
               .toBe('proposed');
 
         for (let i = 0; i < environment.members.length; ++i) {
-          console.log("Voting to pass:", i);
           await environment.dao.contract.vote({
             voter: environment.members[i].account.accountName,
             proposal_hash: proposal.hash,

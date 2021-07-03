@@ -76,9 +76,7 @@ namespace hypha
         );
        } break;
       case common::ROLE_NAME.value:
-
-        
-
+        //We don't have to do anything special for roles
         break;
       default:
         EOS_CHECK(
@@ -166,7 +164,7 @@ namespace hypha
         m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
       } break;
       case common::ROLE_NAME.value: {
-        
+        //We don't have to do anything special for roles
       }  break;
       default: {
         EOS_CHECK(

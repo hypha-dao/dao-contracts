@@ -38,7 +38,7 @@ describe('Proposal', () => {
             content_groups: getSampleRole().content_groups
         });
 
-        const proposal = last(getDocumentsByType(
+        let proposal = last(getDocumentsByType(
             environment.getDaoDocuments(),
             'role'
         ));
@@ -55,6 +55,11 @@ describe('Proposal', () => {
         await environment.dao.contract.closedocprop({
             proposal_hash: proposal.hash
         }, environment.members[0].getPermissions());
+
+        proposal = last(getDocumentsByType(
+          environment.getDaoDocuments(),
+          'role'
+        ));
 
         daoExpect.toHaveEdge(environment.getRoot(), proposal, 'failedprops');
     });
