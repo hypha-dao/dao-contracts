@@ -26,10 +26,10 @@ namespace hypha
             return new HusdPayer(dao);
 
         case common::S_VOICE.code().raw():
-            return new HvoicePayer(dao);
+            return new VoicePayer(dao);
 
         case common::S_REWARD.code().raw():
-            return new HyphaPayer(dao);
+            return new RewardPayer(dao);
 
         case common::S_SEEDS.code().raw():
             return new SeedsPayer(dao);

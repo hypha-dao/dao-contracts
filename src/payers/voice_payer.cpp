@@ -11,7 +11,7 @@
 namespace hypha
 {
 
-    Document HvoicePayer::payImpl(const eosio::name &recipient,
+    Document VoicePayer::payImpl(const eosio::name &recipient,
                                   const eosio::asset &quantity,
                                   const string &memo)
     {
