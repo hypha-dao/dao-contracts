@@ -16,7 +16,15 @@ namespace hypha
 
     void EditProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     { 
-      
+      auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
+
+      if (auto [hasOpenEditProp, proposalHash] = hasOpenProposal(common::SUSPEND, originalDocHash);
+          hasOpenEditProp) {
+        EOS_CHECK(
+          false,
+          to_str("There is an open edit proposal already:", proposalHash)  
+        )
+      }
     }
 
     void EditProposal::postProposeImpl (Document &proposal) 
@@ -71,6 +79,18 @@ namespace hypha
           // confirm that the original document exists
             original = Document(m_dao.get_self(), originalDocHash);
         }
+
+        ContentWrapper ocw = original.getContentWrapper();
+
+        auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+        EOS_CHECK(
+          state != common::STATE_WITHDRAWED &&
+          state != common::STATE_SUSPENDED &&
+          state != common::STATE_EXPIRED &&
+          state != common::STATE_REJECTED,
+          to_str("Cannot open edit proposals on ", state, " documents")
+        )
 
         // connect the edit proposal to the original
         Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), original.getHash(), common::ORIGINAL);

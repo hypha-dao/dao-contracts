@@ -23,6 +23,13 @@ namespace hypha
         Document roleDocument(m_dao.get_self(), assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
         auto role = roleDocument.getContentWrapper();
 
+        auto root = getRoot(m_dao.get_self());
+        
+        EOS_CHECK(
+          !Edge::exists(m_dao.get_self(), root, roleDocument.getHash(), common::SUSPENDED),
+          "Cannot create assignment proposal of suspened role"
+        )
+
         // role in the proposal must be of type: role
         EOS_CHECK(role.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::ROLE_NAME,
                      "role document hash provided in assignment proposal is not of type: role");
@@ -121,18 +128,25 @@ namespace hypha
         TRACE_FUNCTION()
         ContentWrapper contentWrapper = proposal.getContentWrapper();
         eosio::checksum256 assignee = Member::calcHash(contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>());
-        Document role(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
+
+        auto assignmentToRoleEdge = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::ROLE_NAME);
+      
+        EOS_CHECK(
+          !assignmentToRoleEdge.empty(),
+          to_str("Missing 'role' edge from assignment: ", proposal.getHash())
+        )
+
+        Document role(m_dao.get_self(), assignmentToRoleEdge.at(0).getToNode());
 
         // update graph edges:
         //  member          ---- assigned           ---->   role_assignment
         //  role_assignment ---- assignee           ---->   member
-        //  role_assignment ---- role               ---->   role
+        //  role_assignment ---- role               ---->   role                This one already exists since postProposeImpl
         //  role            ---- role_assignment    ---->   role_assignment
         Edge::write(m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGNED);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
         Edge::write(m_dao.get_self(), m_dao.get_self(), role.getHash(), proposal.getHash(), common::ASSIGNMENT);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), role.getHash(), common::ROLE_NAME);
-
+        
         //Start period edge
         // assignment ---- start ----> period
         eosio::checksum256 startPeriod = contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>();

@@ -1,4 +1,4 @@
-import { ContentGroup, ContentGroups, Document, makeAssetContent, makeContentGroup, makeInt64Content, makeNameContent, makeStringContent, makeTimePointContent } from "../types/Document";
+import { ContentGroup, ContentGroups, Document, makeAssetContent, makeChecksum256Content, makeContentGroup, makeInt64Content, makeNameContent, makeStringContent, makeTimePointContent } from "../types/Document";
 
 type BuilderFunction<T> = (builder: T) => void;
 
@@ -103,6 +103,14 @@ class ContentGroupBuilder {
             makeAssetContent(label, value)
         );
         return this;
+    }
+
+    public checksum256(label: string, value: string): ContentGroupBuilder {
+      this._contentGroup.push(
+        makeChecksum256Content(label, value)
+      )
+
+      return this;
     }
 
     public name(label: string, value: string): ContentGroupBuilder {
