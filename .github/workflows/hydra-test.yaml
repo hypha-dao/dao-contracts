@@ -10,7 +10,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - if: ${{ github.event_name == 'push' }}
+        uses: actions/checkout@v2
+        with:
+            submodules: recursive
+      - if: ${{ github.event_name == 'pull_request_target' }}
+        uses: actions/checkout@v2
       - if: ${{ github.event_name == 'pull_request_target' }}
         run: USER=${GITHUB_ACTOR} TOKEN=${{ secrets.GITHUB_TOKEN }} bash .github/scripts/only_collaborators.sh
       - if: ${{ github.event_name == 'pull_request_target' }}
