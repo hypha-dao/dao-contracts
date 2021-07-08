@@ -172,7 +172,6 @@ namespace hypha
         asset total = votes_pass + votes_abstain + votes_fail;
         // pass / ( pass + fail ) > alignmentFactor
         bool passesAlignment = votes_pass > (alignmentFactor * (votes_pass + votes_fail));
-        bool passed = false;
         if (total >= quorum_threshold &&      // must meet quorum
             passesAlignment)
         {
