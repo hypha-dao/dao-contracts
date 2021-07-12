@@ -32,139 +32,139 @@ describe('Roles', () => {
 
     const testRole = UnderwaterBasketweaver;
     
-    // it('Create role', async () => {
+    it('Create role', async () => {
 
-    //     const environment = await setupEnvironment({ periodCount: 2 });
+        const environment = await setupEnvironment({ periodCount: 2 });
 
-    //     const now = new Date();
+        const now = new Date();
 
-    //     environment.setCurrentTime(now);
+        environment.setCurrentTime(now);
 
-    //     await environment.dao.contract.propose({
-    //         proposer: environment.members[0].account.accountName,
-    //         proposal_type: 'role',
-    //         ...testRole
-    //     });
+        await environment.dao.contract.propose({
+            proposer: environment.members[0].account.accountName,
+            proposal_type: 'role',
+            ...testRole
+        });
         
-    //     let proposal = last(getDocumentsByType(
-    //         environment.getDaoDocuments(),
-    //         'role'
-    //     ));
+        let proposal = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'role'
+        ));
 
-    //     getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'proposal');
+        getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'proposal');
 
-    //     let proposalDetails = getDetailsGroup(proposal);
+        let proposalDetails = getDetailsGroup(proposal);
 
-    //     expect(getContent(proposalDetails, "state").value[1])
-    //     .toBe('proposed');
+        expect(getContent(proposalDetails, "state").value[1])
+        .toBe('proposed');
         
-    //     nextDay(environment, new Date());
+        nextDay(environment, new Date());
 
-    //     // closes proposal
-    //     await environment.dao.contract.closedocprop({
-    //       proposal_hash: proposal.hash
-    //     }, environment.members[0].getPermissions())
+        // closes proposal
+        await environment.dao.contract.closedocprop({
+          proposal_hash: proposal.hash
+        }, environment.members[0].getPermissions())
       
-    //     proposal = last(getDocumentsByType(
-    //       environment.getDaoDocuments(),
-    //       'role'
-    //     ));
+        proposal = last(getDocumentsByType(
+          environment.getDaoDocuments(),
+          'role'
+        ));
 
-    //     getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'failedprops');
+        getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'failedprops');
 
-    //     proposalDetails = getDetailsGroup(proposal);
+        proposalDetails = getDetailsGroup(proposal);
 
-    //     expect(getContent(proposalDetails, "state").value[1])
-    //     .toBe('rejected');
+        expect(getContent(proposalDetails, "state").value[1])
+        .toBe('rejected');
 
-    //     //Propose the role again
+        //Propose the role again
        
-    //     // Proposing
-    //     await environment.dao.contract.propose({
-    //         proposer: environment.members[0].account.accountName,
-    //         proposal_type: 'role',
-    //         ...testRole
-    //     });
+        // Proposing
+        await environment.dao.contract.propose({
+            proposer: environment.members[0].account.accountName,
+            proposal_type: 'role',
+            ...testRole
+        });
         
-    //     proposal = last(getDocumentsByType(
-    //         environment.getDaoDocuments(),
-    //         'role'
-    //     ));
+        proposal = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'role'
+        ));
 
-    //     proposalDetails = getDetailsGroup(proposal);
+        proposalDetails = getDetailsGroup(proposal);
 
-    //     expect(getContent(proposalDetails, "state").value[1])
-    //           .toBe('proposed');
+        expect(getContent(proposalDetails, "state").value[1])
+              .toBe('proposed');
 
-    //     for (let i = 0; i < environment.members.length; ++i) {
-    //       await environment.dao.contract.vote({
-    //         voter: environment.members[i].account.accountName,
-    //         proposal_hash: proposal.hash,
-    //         vote: 'pass',
-    //         notes: 'votes pass'
-    //       });
-    //     }
+        for (let i = 0; i < environment.members.length; ++i) {
+          await environment.dao.contract.vote({
+            voter: environment.members[i].account.accountName,
+            proposal_hash: proposal.hash,
+            vote: 'pass',
+            notes: 'votes pass'
+          });
+        }
 
-    //     const expiration = getContent(getContentGroupByLabel(proposal, "ballot"), "expiration");
+        const expiration = getContent(getContentGroupByLabel(proposal, "ballot"), "expiration");
         
-    //     setDate(environment, new Date(expiration.value[1]), 15);
+        setDate(environment, new Date(expiration.value[1]), 15);
 
-    //     // closes proposal
-    //     await environment.dao.contract.closedocprop({
-    //       proposal_hash: proposal.hash
-    //     }, environment.members[0].getPermissions());
+        // closes proposal
+        await environment.dao.contract.closedocprop({
+          proposal_hash: proposal.hash
+        }, environment.members[0].getPermissions());
       
-    //     proposal = last(getDocumentsByType(
-    //       environment.getDaoDocuments(),
-    //       'role'
-    //     ));
+        proposal = last(getDocumentsByType(
+          environment.getDaoDocuments(),
+          'role'
+        ));
 
-    //     proposalDetails = getDetailsGroup(proposal);
+        proposalDetails = getDetailsGroup(proposal);
 
-    //     getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'passedprops');
-    //     getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'role');
+        getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'passedprops');
+        getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'role');
 
-    //     expect(getContent(proposalDetails, "state").value[1])
-    //           .toBe('approved');
-    // });
+        expect(getContent(proposalDetails, "state").value[1])
+              .toBe('approved');
+    });
 
-    // it('Edit role', async () => {
+    it('Edit role', async () => {
 
-    //     const environment = await setupEnvironment({ periodCount: 2 });
-    //     // Time doesn't move in the test unless we set the current time.
-    //     const now = new Date();
+        const environment = await setupEnvironment({ periodCount: 2 });
+        // Time doesn't move in the test unless we set the current time.
+        const now = new Date();
 
-    //     // We have to set the initial time if we care about any timing
-    //     environment.setCurrentTime(now);
+        // We have to set the initial time if we care about any timing
+        environment.setCurrentTime(now);
 
-    //     // Proposing
-    //     let role = await proposeAndPass(testRole, 'role', environment);
+        // Proposing
+        let role = await proposeAndPass(testRole, 'role', environment);
 
-    //     const newRoleTitle = 'This role was edited';
-    //     const newRoleTimeShare = 60;
-    //     const newRoleSalary = '100000.00 USD';
+        const newRoleTitle = 'This role was edited';
+        const newRoleTimeShare = 60;
+        const newRoleSalary = '100000.00 USD';
 
-    //     await proposeAndPass(
-    //       getEditProposal(role.hash, newRoleTitle, newRoleTimeShare, newRoleSalary), 
-    //       'edit', 
-    //       environment
-    //     );
+        await proposeAndPass(
+          getEditProposal(role.hash, newRoleTitle, newRoleTimeShare, newRoleSalary), 
+          'edit', 
+          environment
+        );
 
-    //     role = last(
-    //       getDocumentsByType(environment.getDaoDocuments(), 'role')
-    //     );
+        role = last(
+          getDocumentsByType(environment.getDaoDocuments(), 'role')
+        );
 
-    //     let details = getContentGroupByLabel(role, 'details');
+        let details = getContentGroupByLabel(role, 'details');
 
-    //     expect(getContent(details, 'title').value[1])
-    //     .toBe(newRoleTitle)
+        expect(getContent(details, 'title').value[1])
+        .toBe(newRoleTitle)
 
-    //     expect(getContent(details, 'min_time_share_x100').value[1])
-    //     .toBe(newRoleTimeShare.toString())
+        expect(getContent(details, 'min_time_share_x100').value[1])
+        .toBe(newRoleTimeShare.toString())
 
-    //     expect(getContent(details, 'annual_usd_salary').value[1])
-    //     .toBe(newRoleSalary.toString())
-    // });
+        expect(getContent(details, 'annual_usd_salary').value[1])
+        .toBe(newRoleSalary.toString())
+    });
 
     it('Suspend role', async () => {
 
