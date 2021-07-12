@@ -135,7 +135,6 @@ namespace hypha
         // confirm that the original document exists
         // Use the ORIGINAL edge since the original document could have changed since this was 
         // proposed
-        //Document original (m_dao.get_self(), proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
 
         auto edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::ORIGINAL);
         
