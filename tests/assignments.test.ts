@@ -155,7 +155,7 @@ describe('Assignments', () => {
         .toBeCloseTo(usdSalaryPerPhase * 2, 1);
 
         expect(getContent(assignmentDetails, 'period_count')?.value[1])
-        .toBe("6");
+        .toBe("3");
 
         expect(getContent(getContentGroupByLabel(assignment, 'system'), 'type')?.value[1])
         .toBe("assignment");
@@ -261,7 +261,7 @@ describe('Assignments', () => {
 
         const editProp = getEditProposal(assignment.hash, 'Edited Title', 6);
 
-        let editProposal = await proposeAndPass(editProp, 'edit', environment);
+        await proposeAndPass(editProp, 'edit', environment);
 
         let editedAssignment = last(
           getDocumentsByType(environment.getDaoDocuments(), 'assignment')
