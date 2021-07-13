@@ -306,6 +306,12 @@ export class DaoBlockchain extends Blockchain {
         );
     }
 
+    public getHusdForMember(member: string): Asset {
+      return Asset.fromString(
+        this.peerContracts.husd.getTableRowsScoped('accounts')[member][0].balance
+      );
+    }
+
     public getRoot(): Document {
         return this.root;
     }

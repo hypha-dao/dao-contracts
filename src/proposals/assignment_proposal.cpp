@@ -149,17 +149,19 @@ namespace hypha
         
         //Start period edge
         // assignment ---- start ----> period
-        eosio::checksum256 startPeriod = contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>();
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), startPeriod, common::START);
+        eosio::checksum256 startPeriodHash = contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>();
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), startPeriodHash, common::START);
+
+        Period startPeriod(&m_dao, startPeriodHash);
 
         //Initial time share for proposal
         int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
         
-        //Set starting date to approval date.
+        //Set starting date to first period start_date
         TimeShare initTimeShareDoc(m_dao.get_self(), 
                                    m_dao.get_self(), 
                                    initTimeShare, 
-                                   contentWrapper.getOrFail(SYSTEM, common::APPROVED_DATE)->getAs<eosio::time_point>(),
+                                   startPeriod.getStartTime(),
                                    proposal.getHash());
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
