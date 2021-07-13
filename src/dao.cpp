@@ -231,46 +231,6 @@ namespace hypha
 
       Assignment assignment(this, assignment_hash);
 
-      /**
-      * Checks if the assignment has the original_approved_date item
-      */
-      if (auto [_, approvedItem] = assignment.getContentWrapper().get(SYSTEM, common::APPROVED_DATE); 
-          approvedItem == nullptr) 
-      {
-        auto approvedDate = assignment.getApprovedTime();
-
-        auto system = assignment.getContentWrapper().getGroupOrFail(SYSTEM);
-
-        ContentWrapper::insertOrReplace(*system, Content{common::APPROVED_DATE, approvedDate});
-        
-        auto newDoc = getGraph().updateDocument(assignment.getCreator(), 
-                                                assignment.getHash(),
-                                                std::move(assignment.getContentGroups()));
-
-        assignment = Assignment(this, newDoc.getHash());
-      }
-
-      /**
-      * Check if required edges & documents exists for this assignment, otherwise (assignments approved prior dynamic commitments)
-      */
-      if (auto [exists, edge] = Edge::getIfExists(get_self(), assignment.getHash(), common::INIT_TIME_SHARE);
-          !exists)
-      {
-         //We have to create an Inital time share document and all the edges pointing towards it
-         auto contentWrapper = assignment.getContentWrapper();
-
-         //Initial time share for proposal
-         int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-
-         //Set starting date to approval date.
-         auto approvedDate = assignment.getApprovedTime();
-         TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate, assignment.getHash());
-
-         Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
-         Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
-         Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
-      }
-
       eosio::name assignee = assignment.getAssignee().getAccount();
 
       // assignee must still be a DHO member
@@ -842,46 +802,7 @@ namespace hypha
    void dao::modifyCommitment(Assignment& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
    {
       TRACE_FUNCTION()
-      /**
-      * Checks if the assignment has the original_approved_date item
-      */
-      if (auto [_, approvedItem] = assignment.getContentWrapper().get(SYSTEM, common::APPROVED_DATE); 
-          approvedItem == nullptr) 
-      {
-        auto approvedDate = assignment.getApprovedTime();
-
-        auto system = assignment.getContentWrapper().getGroupOrFail(SYSTEM);
-
-        ContentWrapper::insertOrReplace(*system, Content{common::APPROVED_DATE, approvedDate});
-        
-        auto newDoc = getGraph().updateDocument(assignment.getCreator(), 
-                                                     assignment.getHash(),
-                                                     std::move(assignment.getContentGroups()));
-
-        assignment = Assignment(this, newDoc.getHash());
-      }
-
-      /**
-      * Check if required edges & documents exists for this assignment, otherwise (assignments approved prior dynamic commitments)
-      */
-      if (auto [exists, edge] = Edge::getIfExists(get_self(), assignment.getHash(), common::INIT_TIME_SHARE);
-          !exists)
-      {
-        //We have to create an Inital time share document and all the edges pointing towards it
-        auto contentWrapper = assignment.getContentWrapper();
-
-        //Initial time share for proposal
-        int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-
-        //Set starting date to approval date.
-        auto approvedDate = assignment.getApprovedTime();
-        TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate, assignment.getHash());
-
-        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
-        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
-        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
-      }
-
+      
       ContentWrapper assignmentCW = assignment.getContentWrapper();
 
       //Should use the role edge instead of the role content item

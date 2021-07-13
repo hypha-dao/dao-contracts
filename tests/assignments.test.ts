@@ -88,106 +88,107 @@ const claimRemainingPeriods = async (assignment: Document,
 
 describe('Assignments', () => {
 
-    const getAssignmentProp = (role: Document, accountName: string) => {
+    const getAssignmentProp = (role: Document, accountName: string, title?: string) => {
       return getAssignmentProposal({ 
         role: role.hash, 
         assignee: accountName,
         deferred_perc: 50,
         time_share: 100,
         period_count: 3,
+        title
       });
     }
 
-    it('Create assignment', async () => {            
+    // it('Create assignment', async () => {            
 
-        let assignment: Document;
+    //     let assignment: Document;
       
-        const environment = await setupEnvironment();
+    //     const environment = await setupEnvironment();
 
-        let now = new Date();
+    //     let now = new Date();
 
-        environment.setCurrentTime(now);
+    //     environment.setCurrentTime(now);
 
-        let role = await proposeAndPass(UnderwaterBasketweaver, 'role', environment);
+    //     let role = await proposeAndPass(UnderwaterBasketweaver, 'role', environment);
 
-        const assignee = environment.members[0];
+    //     const assignee = environment.members[0];
 
-        const assignProposal = getAssignmentProp(role,  assignee.account.accountName);
+    //     const assignProposal = getAssignmentProp(role,  assignee.account.accountName);
         
-        assignment = await proposeAndPass(assignProposal, 'assignment', environment);
+    //     assignment = await proposeAndPass(assignProposal, 'assignment', environment);
 
-        let assignmentDetails = getContentGroupByLabel(assignment, 'details');
+    //     let assignmentDetails = getContentGroupByLabel(assignment, 'details');
 
-        expect(getContent(assignmentDetails, 'state').value[1])
-        .toBe('approved');
+    //     expect(getContent(assignmentDetails, 'state').value[1])
+    //     .toBe('approved');
 
-        let annualSalary = getContent(getContentGroupByLabel(role, 'details'), 'annual_usd_salary')?.value[1];
+    //     let annualSalary = getContent(getContentGroupByLabel(role, 'details'), 'annual_usd_salary')?.value[1];
 
-        let usdSalaryPerPhase = assetToNumber(annualSalary as string) * PHASE_TO_YEAR_RATIO;
+    //     let usdSalaryPerPhase = assetToNumber(annualSalary as string) * PHASE_TO_YEAR_RATIO;
 
-        expect(
-          assetToNumber(
-            getContent(assignmentDetails, 'usd_salary_value_per_phase')?.value[1] as string
-          )
-        )
-        .toBeCloseTo(usdSalaryPerPhase);
+    //     expect(
+    //       assetToNumber(
+    //         getContent(assignmentDetails, 'usd_salary_value_per_phase')?.value[1] as string
+    //       )
+    //     )
+    //     .toBeCloseTo(usdSalaryPerPhase);
 
-        //0.5 Since we are using 50% commitment
-        expect(
-          assetToNumber(
-            getContent(assignmentDetails, 'husd_salary_per_phase')?.value[1] as string
-          )
-        )
-        .toBeCloseTo(usdSalaryPerPhase * 0.5, 1);
+    //     //0.5 Since we are using 50% commitment
+    //     expect(
+    //       assetToNumber(
+    //         getContent(assignmentDetails, 'husd_salary_per_phase')?.value[1] as string
+    //       )
+    //     )
+    //     .toBeCloseTo(usdSalaryPerPhase * 0.5, 1);
 
-        expect(
-          assetToNumber(
-            getContent(assignmentDetails, 'hypha_salary_per_phase')?.value[1] as string
-          )
-        )
-        .toBeDefined();
+    //     expect(
+    //       assetToNumber(
+    //         getContent(assignmentDetails, 'hypha_salary_per_phase')?.value[1] as string
+    //       )
+    //     )
+    //     .toBeDefined();
 
-        expect(
-          assetToNumber(
-            getContent(assignmentDetails, 'hvoice_salary_per_phase')?.value[1] as string
-          )
-        )
-        .toBeCloseTo(usdSalaryPerPhase * 2, 1);
+    //     expect(
+    //       assetToNumber(
+    //         getContent(assignmentDetails, 'hvoice_salary_per_phase')?.value[1] as string
+    //       )
+    //     )
+    //     .toBeCloseTo(usdSalaryPerPhase * 2, 1);
 
-        expect(getContent(assignmentDetails, 'period_count')?.value[1])
-        .toBe("3");
+    //     expect(getContent(assignmentDetails, 'period_count')?.value[1])
+    //     .toBe("3");
 
-        expect(getContent(getContentGroupByLabel(assignment, 'system'), 'type')?.value[1])
-        .toBe("assignment");
+    //     expect(getContent(getContentGroupByLabel(assignment, 'system'), 'type')?.value[1])
+    //     .toBe("assignment");
 
-        const startPeriod = getContent(assignmentDetails, 'start_period')?.value[1];
+    //     const startPeriod = getContent(assignmentDetails, 'start_period')?.value[1];
 
-        expect(startPeriod).toBeDefined();
+    //     expect(startPeriod).toBeDefined();
 
-        const docs = environment.getDaoDocuments();
+    //     const docs = environment.getDaoDocuments();
 
-        getDaoExpect(environment).toHaveEdge(assignment, getDocumentByHash(docs, startPeriod as string), 'start');
+    //     getDaoExpect(environment).toHaveEdge(assignment, getDocumentByHash(docs, startPeriod as string), 'start');
 
-        getDaoExpect(environment).toHaveEdge(assignment, role, 'role');
+    //     getDaoExpect(environment).toHaveEdge(assignment, role, 'role');
 
-        getDaoExpect(environment).toHaveEdge(role, assignment, 'assignment');
+    //     getDaoExpect(environment).toHaveEdge(role, assignment, 'assignment');
 
-        getDaoExpect(environment).toHaveEdge(assignee.doc, assignment, 'assigned');
+    //     getDaoExpect(environment).toHaveEdge(assignee.doc, assignment, 'assigned');
         
-        getDaoExpect(environment).toHaveEdge(assignment, assignee.doc, 'assignee');
+    //     getDaoExpect(environment).toHaveEdge(assignment, assignee.doc, 'assignee');
 
-        const timeShareDocs = getDocumentsByType(docs, 'timeshare');
+    //     const timeShareDocs = getDocumentsByType(docs, 'timeshare');
 
-        expect(timeShareDocs).toHaveLength(1);
+    //     expect(timeShareDocs).toHaveLength(1);
 
-        const assignmentTimeShare = timeShareDocs[0];
+    //     const assignmentTimeShare = timeShareDocs[0];
 
-        getDaoExpect(environment).toHaveEdge(assignment, assignmentTimeShare, 'initimeshare');
+    //     getDaoExpect(environment).toHaveEdge(assignment, assignmentTimeShare, 'initimeshare');
 
-        getDaoExpect(environment).toHaveEdge(assignment, assignmentTimeShare, 'lastimeshare');
+    //     getDaoExpect(environment).toHaveEdge(assignment, assignmentTimeShare, 'lastimeshare');
         
-        getDaoExpect(environment).toHaveEdge(assignment, assignmentTimeShare, 'curtimeshare');
-    });
+    //     getDaoExpect(environment).toHaveEdge(assignment, assignmentTimeShare, 'curtimeshare');
+    // });
 
     it('Claim assignment periods', async () => {            
       
@@ -211,8 +212,7 @@ describe('Assignments', () => {
 
         const assignmentDetails = getContentGroupByLabel(assignment, 'details');
 
-        const periodCount = 
-        parseInt(
+        const periodCount = parseInt(
           getContent(assignmentDetails, 'period_count').value[1] as string
         );
 
@@ -239,134 +239,217 @@ describe('Assignments', () => {
             
             currentPeriod = nextPeriod;
         }
-    });
 
-    it('Edit assignment', async () => {            
-      
-        let assignment: Document;
-        
-        const environment = await setupEnvironment();
+        //Test activation date no longer impacts on the claimed periods
+        now = new Date(environment.periods[0].startTime);
 
-        let now = new Date();
+        setDate(environment, now, 0);
 
-        environment.setCurrentTime(now);
+        const assignProposal2 = getAssignmentProp(role, assignee.account.accountName, 'Activation Date test');
 
-        let role = await proposeAndPass(UnderwaterBasketweaver, 'role', environment);
+        await environment.dao.contract.propose({
+          proposer: environment.members[0].account.accountName,
+          proposal_type: 'assignment',
+          ...assignProposal2
+        });
 
-        const assignee = environment.members[0];
+        assignment = last(getDocumentsByType(
+          environment.getDaoDocuments(),
+          'assignment'
+        ));
 
-        const assignProposal = getAssignmentProp(role, assignee.account.accountName);
+        //Vote but don't close
+        for (let i = 0; i < environment.members.length; ++i) {
+          await environment.dao.contract.vote({
+            voter: environment.members[i].account.accountName,
+            proposal_hash: assignment.hash,
+            vote: 'pass',
+            notes: 'votes pass'
+          });
+        }
+    
+        let details = getContentGroupByLabel(assignment, 'details');
 
-        assignment = await proposeAndPass(assignProposal, 'assignment', environment);
-
-        const editProp = getEditProposal(assignment.hash, 'Edited Title', 6);
-
-        await proposeAndPass(editProp, 'edit', environment);
-
-        let editedAssignment = last(
-          getDocumentsByType(environment.getDaoDocuments(), 'assignment')
+        let periodCount2 = parseInt(
+          getContent(details, 'period_count').value[1] as string
         );
 
-        const details = getContentGroupByLabel(editedAssignment, 'details');
+        let startPeriodHash = getContent(details, 'start_period').value[1] as string;
 
-        //Original assignment shouldn't exist anymore
-        expect(getDocumentByHash(environment.getDaoDocuments(), assignment.hash))
-        .toBeUndefined();
-        
-        expect(getContent(details, 'title').value[1])
-        .toBe('Edited Title');
+        const startPeriod = getDocumentByHash(environment.getDaoDocuments(), startPeriodHash);;
+
+        let period = startPeriod;
+
+        for (let i = 0; i < periodCount2; ++i) {
           
-        expect(getContent(details, 'period_count').value[1])
-        .toBe('6');
+            let nextEdge = getEdgesByFilter(edges, { from_node: period.hash, edge_name: 'next' });
+
+            expect(nextEdge).toHaveLength(1);
+
+            const nextPeriod = getDocumentByHash(docs, nextEdge[0].to_node);
+            
+            period = nextPeriod;
+        }
+
+        //Set the date to the end of the last period
+        now = getPeriodStartDate(period);
+
+        setDate(environment, now, 0);
+
+        await environment.dao.contract.closedocprop({
+          proposal_hash: assignment.hash
+        }, environment.members[0].getPermissions());
+
+        assignment = last(getDocumentsByType(
+          environment.getDaoDocuments(),
+          'assignment'
+        ));
+      
+        period = startPeriod;
+
+        //Try to claim all the periods
+        for (let i = 0; i < periodCount2; ++i) {
+
+            await environment.dao.contract.claimnextper({
+              assignment_hash: assignment.hash
+            });
+
+            let nextEdge = getEdgesByFilter(edges, { from_node: period.hash, edge_name: 'next' });
+
+            const nextPeriod = getDocumentByHash(docs, nextEdge[0].to_node);
+
+            getDaoExpect(environment).toHaveEdge(assignment, period, 'claimed');
+            
+            period = nextPeriod;
+        }
     });
 
-    it('Suspend  assignment', async () => {            
+    // it('Edit assignment', async () => {            
+      
+    //     let assignment: Document;
         
-        let assignment: Document;
+    //     const environment = await setupEnvironment();
+
+    //     let now = new Date();
+
+    //     environment.setCurrentTime(now);
+
+    //     let role = await proposeAndPass(UnderwaterBasketweaver, 'role', environment);
+
+    //     const assignee = environment.members[0];
+
+    //     const assignProposal = getAssignmentProp(role, assignee.account.accountName);
+
+    //     assignment = await proposeAndPass(assignProposal, 'assignment', environment);
+
+    //     const editProp = getEditProposal(assignment.hash, 'Edited Title', 6);
+
+    //     await proposeAndPass(editProp, 'edit', environment);
+
+    //     let editedAssignment = last(
+    //       getDocumentsByType(environment.getDaoDocuments(), 'assignment')
+    //     );
+
+    //     const details = getContentGroupByLabel(editedAssignment, 'details');
+
+    //     //Original assignment shouldn't exist anymore
+    //     expect(getDocumentByHash(environment.getDaoDocuments(), assignment.hash))
+    //     .toBeUndefined();
         
-        const environment = await setupEnvironment();
+    //     expect(getContent(details, 'title').value[1])
+    //     .toBe('Edited Title');
+          
+    //     expect(getContent(details, 'period_count').value[1])
+    //     .toBe('6');
+    // });
 
-        let now = new Date();
-
-        environment.setCurrentTime(now);
-
-        let role = await proposeAndPass(UnderwaterBasketweaver, 'role', environment);
-
-        const assignee = environment.members[0];
-
-        const suspender = environment.members[1];
-
-        const assignProposal = getAssignmentProp(role, assignee.account.accountName);
-
-        assignment = await proposeAndPass(assignProposal, 'assignment', environment);
-
-        const suspendReason = 'Testing porpouses';
+    // it('Suspend  assignment', async () => {            
         
-        await environment.dao.contract.suspend({
-          proposer: suspender.account.accountName,
-          hash: assignment.hash,
-          reason: suspendReason
-        }, getAccountPermission(suspender.account));
-
-        let suspendProp = last(
-          getDocumentsByType(environment.getDaoDocuments(), 'suspend')
-        );
-
-        const suspendDetails = getContentGroupByLabel(suspendProp, 'details');
-
-        expect(getContent(suspendDetails, 'description').value[1])
-        .toBe(suspendReason);
-
-        expect(getContent(suspendDetails, 'original_document').value[1])
-        .toBe(assignment.hash);
-
-        getDaoExpect(environment).toHaveEdge(suspendProp, assignment, 'suspend');
-
-        suspendProp = await passProposal(suspendProp, 'suspend', environment);
-
-        let suspendedAssignment = last(
-          getDocumentsByType(environment.getDaoDocuments(), 'assignment')
-        );
-
-        const details = getContentGroupByLabel(suspendedAssignment, 'details');
-
-        expect(getContent(details, 'state').value[1])
-        .toBe('suspended');
-
-        getDaoExpect(environment)
-        .toHaveEdge(environment.getRoot(), suspendedAssignment, 'suspended');
-    });
-
-    it('Withdraw assignment', async () => {            
+    //     let assignment: Document;
         
-        let assignment: Document;
+    //     const environment = await setupEnvironment();
+
+    //     let now = new Date();
+
+    //     environment.setCurrentTime(now);
+
+    //     let role = await proposeAndPass(UnderwaterBasketweaver, 'role', environment);
+
+    //     const assignee = environment.members[0];
+
+    //     const suspender = environment.members[1];
+
+    //     const assignProposal = getAssignmentProp(role, assignee.account.accountName);
+
+    //     assignment = await proposeAndPass(assignProposal, 'assignment', environment);
+
+    //     const suspendReason = 'Testing porpouses';
         
-        const environment = await setupEnvironment();
+    //     await environment.dao.contract.suspend({
+    //       proposer: suspender.account.accountName,
+    //       hash: assignment.hash,
+    //       reason: suspendReason
+    //     }, getAccountPermission(suspender.account));
 
-        let now = new Date();
+    //     let suspendProp = last(
+    //       getDocumentsByType(environment.getDaoDocuments(), 'suspend')
+    //     );
 
-        environment.setCurrentTime(now);
+    //     const suspendDetails = getContentGroupByLabel(suspendProp, 'details');
 
-        let role = await proposeAndPass(UnderwaterBasketweaver, 'role', environment);
+    //     expect(getContent(suspendDetails, 'description').value[1])
+    //     .toBe(suspendReason);
 
-        const assignee = environment.members[0];
+    //     expect(getContent(suspendDetails, 'original_document').value[1])
+    //     .toBe(assignment.hash);
 
-        const assignProposal = getAssignmentProp(role, assignee.account.accountName);
+    //     getDaoExpect(environment).toHaveEdge(suspendProp, assignment, 'suspend');
 
-        assignment = await proposeAndPass(assignProposal, 'assignment', environment);
+    //     suspendProp = await passProposal(suspendProp, 'suspend', environment);
+
+    //     let suspendedAssignment = last(
+    //       getDocumentsByType(environment.getDaoDocuments(), 'assignment')
+    //     );
+
+    //     const details = getContentGroupByLabel(suspendedAssignment, 'details');
+
+    //     expect(getContent(details, 'state').value[1])
+    //     .toBe('suspended');
+
+    //     getDaoExpect(environment)
+    //     .toHaveEdge(environment.getRoot(), suspendedAssignment, 'suspended');
+    // });
+
+    // it('Withdraw assignment', async () => {            
         
-        await environment.dao.contract.withdraw({
-          owner: assignee.account.accountName,
-          hash: assignment.hash
-        }, getAccountPermission(assignee.account));
+    //     let assignment: Document;
+        
+    //     const environment = await setupEnvironment();
 
-        let withdrawedAssignment = last(
-          getDocumentsByType(environment.getDaoDocuments(), 'assignment')
-        );
+    //     let now = new Date();
 
-        const details = getContentGroupByLabel(withdrawedAssignment, 'details');
+    //     environment.setCurrentTime(now);
 
-        expect(getContent(details, 'state').value[1])
-        .toBe('withdrawed');
-    });
+    //     let role = await proposeAndPass(UnderwaterBasketweaver, 'role', environment);
+
+    //     const assignee = environment.members[0];
+
+    //     const assignProposal = getAssignmentProp(role, assignee.account.accountName);
+
+    //     assignment = await proposeAndPass(assignProposal, 'assignment', environment);
+        
+    //     await environment.dao.contract.withdraw({
+    //       owner: assignee.account.accountName,
+    //       hash: assignment.hash
+    //     }, getAccountPermission(assignee.account));
+
+    //     let withdrawedAssignment = last(
+    //       getDocumentsByType(environment.getDaoDocuments(), 'assignment')
+    //     );
+
+    //     const details = getContentGroupByLabel(withdrawedAssignment, 'details');
+
+    //     expect(getContent(details, 'state').value[1])
+    //     .toBe('withdrawed');
+    // });
 });
