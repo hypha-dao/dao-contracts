@@ -74,8 +74,12 @@ const claimRemainingPeriods = async (assignment: Document,
           });
         }
         catch(error) {
-          console.log("Error while claiming period:", error)
-          break;
+          if (error.toString().includes('All available periods for this assignment have been claimed:')) {
+            break;
+          }
+          else {
+            throw error;
+          }
         }
 
         getDaoExpect(environment).toHaveEdge(assignment, currentPeriod, 'claimed');
