@@ -7,11 +7,11 @@ import { UnderwaterBasketweaver } from './sample-data/RoleSamples';
 import { DaoBlockchain } from './dao/DaoBlockchain';
 import { getAssignmentProposal } from './sample-data/AssignmentSamples';
 import { passProposal, proposeAndPass } from './utils/Proposal';
-import { assetToNumber } from './utils/Parsers';
 import { PHASE_TO_YEAR_RATIO } from './utils/Constants';
 import { DocumentBuilder } from './utils/DocumentBuilder';
 import { setDate } from './utils/Date';
 import { getAccountPermission } from './utils/Permissions';
+import { Asset } from './types/Asset';
 
 const getStartPeriod = (environment: DaoBlockchain, assignment: Document): Document => {
 
@@ -127,36 +127,36 @@ describe('Assignments', () => {
 
         let annualSalary = getContent(getContentGroupByLabel(role, 'details'), 'annual_usd_salary')?.value[1];
 
-        let usdSalaryPerPhase = assetToNumber(annualSalary as string) * PHASE_TO_YEAR_RATIO;
+        let usdSalaryPerPhase = Asset.fromString(annualSalary as string).amount * PHASE_TO_YEAR_RATIO;
 
         expect(
-          assetToNumber(
+          Math.floor(Asset.fromString(
             getContent(assignmentDetails, 'usd_salary_value_per_phase')?.value[1] as string
-          )
+          ).amount)
         )
-        .toBeCloseTo(usdSalaryPerPhase);
+        .toBe(Math.floor(usdSalaryPerPhase));
 
         //0.5 Since we are using 50% commitment
         expect(
-          assetToNumber(
+          Math.floor(Asset.fromString(
             getContent(assignmentDetails, 'husd_salary_per_phase')?.value[1] as string
-          )
+          ).amount)
         )
-        .toBeCloseTo(usdSalaryPerPhase * 0.5, 1);
+        .toBe(Math.floor(usdSalaryPerPhase * 0.5));
 
         expect(
-          assetToNumber(
+          Asset.fromString(
             getContent(assignmentDetails, 'hypha_salary_per_phase')?.value[1] as string
-          )
+          ).amount
         )
         .toBeDefined();
 
         expect(
-          assetToNumber(
+          Math.floor(Asset.fromString(
             getContent(assignmentDetails, 'hvoice_salary_per_phase')?.value[1] as string
-          )
+          ).amount)
         )
-        .toBeCloseTo(usdSalaryPerPhase * 2, 1);
+        .toBe(Math.floor(usdSalaryPerPhase * 2));
 
         expect(getContent(assignmentDetails, 'period_count')?.value[1])
         .toBe("3");
