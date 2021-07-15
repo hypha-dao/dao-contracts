@@ -5,6 +5,7 @@ import { Asset } from '../types/Asset';
 import { Document } from '../types/Document';
 import { Edge } from '../types/Edge';
 import { Member } from '../types/Member';
+import { Period } from '../types/Periods';
 import { last } from '../utils/Arrays';
 import { getDocumentByHash, getDocumentsByType } from '../utils/Dao';
 import { getAccountPermission } from '../utils/Permissions';
@@ -15,6 +16,9 @@ export interface DaoSettings {
         decayPeriod: number,
         decayPerPeriodx10M: number
     }
+    periodDurationSeconds: number;
+    periodCount: number;
+    hyphaDeferralFactor: number;
 }
 
 export interface TestSettings {
@@ -24,6 +28,8 @@ export interface TestSettings {
 export interface DaoPeerContracts {
     voice: Account;
     bank: Account;
+    hypha: Account;
+    husd: Account;
 }
 
 const HVOICE_SYMBOL = 'HVOICE';
@@ -35,11 +41,13 @@ export class DaoBlockchain extends Blockchain {
     readonly settings: DaoSettings;
     readonly peerContracts: DaoPeerContracts;
     readonly members: Array<Member>;
+    readonly periods: Array<Period>;
 
     // There should be a better way to get this - But currently seems stable
     readonly rootHash = 'D9B40C418C850A65B71CA55ABB0DE9B0E4646A02B95B230E3917E877610BFAE5';
     private root: Document;
     private setupDate: Date;
+    public currentDate: Date;
 
     private constructor(config: THydraConfig, settings: DaoSettings) {
         super(config);
@@ -48,9 +56,12 @@ export class DaoBlockchain extends Blockchain {
         this.settings = settings;
         this.peerContracts = {
             voice: this.createContract('hvoice.hypha', 'voice'),
-            bank:  this.createContract('bank.hypha', 'treasury')
+            bank:  this.createContract('bank.hypha', 'treasury'),
+            hypha: this.createContract('token.hypha', 'token'),
+            husd: this.createContract('husd.hypha', 'token')
         };
         this.members = [];
+        this.periods = [];
     }
 
     static async build(config: THydraConfig, settings: DaoSettings, testSettings?: TestSettings) {
@@ -71,8 +82,7 @@ export class DaoBlockchain extends Blockchain {
                 // Member 0 is always awarded 99 HVOICE (for a total of 100)
                 if (testSettings.createMembers > 0) {
                     await blockchain.increaseVoice(blockchain.members[0].account.accountName, '99.00 HVOICE');
-                }
-
+                }           
             }
         }
 
@@ -83,6 +93,38 @@ export class DaoBlockchain extends Blockchain {
         const account = this.createAccount(accountName);
         account.setContract(this.contractTemplates[templateName]);
         return account;
+    }
+
+    private async createPeriods() {
+
+      if (this.root === undefined) {
+        throw new Error('Root document has to be created before creating periods');
+      }
+
+      let predecesor = this.root.hash;
+
+      let periodDate = new Date(this.setupDate);
+
+      let numPeriods = this.settings.periodCount;
+
+      for (let i = 0; i < numPeriods; ++i) {
+
+        let label = `Period #${i + 1} of ${numPeriods}`;
+        
+        await this.dao.contract.addperiod({
+          predecessor: predecesor,
+          start_time: periodDate.toISOString().replace('Z', ''),
+          label,
+        });
+
+        let periodDoc = last(getDocumentsByType(this.getDaoDocuments(), 'period'));
+        
+        this.periods.push(new Period(new Date(periodDate), label, periodDoc));
+
+        periodDate.setSeconds(periodDate.getSeconds() + this.settings.periodDurationSeconds);
+
+        predecesor = periodDoc.hash;
+      }
     }
 
     async createMember(accountName: string): Promise<Member> {
@@ -138,6 +180,7 @@ export class DaoBlockchain extends Blockchain {
     async setup() {
         this.dao.resetTables();
         this.setupDate = new Date();
+        this.currentDate = new Date(this.setupDate);
         this.setCurrentTime(this.setupDate);
         
         this.dao.updateAuth(`active`, `owner`, {
@@ -152,6 +195,37 @@ export class DaoBlockchain extends Blockchain {
             ]
         });
 
+        this.peerContracts.bank.updateAuth(`active`, `owner`, {
+          accounts: [
+              {
+              permission: {
+                  actor: this.peerContracts.bank.accountName,
+                  permission: `eosio.code`
+              },
+              weight: 1
+              },
+              {
+                permission: {
+                    actor: this.dao.accountName,
+                    permission: `active`
+                },
+                weight: 1
+              }              
+          ]
+        });
+
+        this.peerContracts.husd.updateAuth(`active`, `owner`, {
+          accounts: [
+              {
+              permission: {
+                  actor: this.peerContracts.husd.accountName,
+                  permission: `eosio.code`
+              },
+              weight: 1
+              }
+          ]
+        });
+
         // Initialize voice contract
         await this.peerContracts.voice.contract.create({
             issuer: this.dao.accountName,
@@ -160,6 +234,18 @@ export class DaoBlockchain extends Blockchain {
             decay_per_period_x10M: this.settings.voice.decayPerPeriodx10M
         });
         
+        // Initialize voice contract
+        await this.peerContracts.husd.contract.create({
+            issuer: this.peerContracts.bank.accountName,
+            maximum_supply: '1000000000.00 HUSD'
+        });
+        
+        // Initialize voice contract
+        await this.peerContracts.hypha.contract.create({
+            issuer: this.dao.accountName,
+            maximum_supply: '1000000000.00 HYPHA'
+        });  
+    
 
         await this.dao.contract.createroot({
             notes: "notes"
@@ -174,13 +260,30 @@ export class DaoBlockchain extends Blockchain {
             key: 'hvoice_token_contract',
             value: [ 'name', this.peerContracts.voice.accountName ]
         });
+
+        await this.dao.contract.setsetting({
+            key: 'hypha_token_contract',
+            value: [ 'name', this.peerContracts.hypha.accountName ]
+        });
+
+        await this.dao.contract.setsetting({
+            key: 'husd_token_contract',
+            value: [ 'name', this.peerContracts.husd.accountName ]
+        });
     
         await this.dao.contract.setsetting({
             key: 'treasury_contract',
             value: [ 'name', this.peerContracts.bank.accountName ]
         });
 
+        await this.dao.contract.setsetting({
+            key: 'hypha_deferral_factor_x100',
+            value: [ 'int64', this.settings.hyphaDeferralFactor ]
+        });
+
         this.root = getDocumentByHash(this.getDaoDocuments(), this.rootHash);
+
+        await this.createPeriods();
     }
 
     public getDaoDocuments(): Array<Document> {
@@ -210,5 +313,5 @@ export class DaoBlockchain extends Blockchain {
     public getSetupDate(): Date {
         return this.setupDate;
     }
-
+    
 }

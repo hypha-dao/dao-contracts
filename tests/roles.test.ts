@@ -5,22 +5,41 @@ import { getContent, getContentGroupByLabel, getDetailsGroup, getDocumentsByType
 import { nextDay, setDate } from './utils/Date';
 import { getDaoExpect } from './utils/Expect';
 import { UnderwaterBasketweaver } from './sample-data/RoleSamples';
+import { DocumentBuilder } from './utils/DocumentBuilder';
+import { passProposal, proposeAndPass } from './utils/Proposal';
+import { getAccountPermission } from './utils/Permissions';
+import { getAssignmentProposal } from './sample-data/AssignmentSamples';
+
+const getEditProposal = (original: string,
+  newTitle: string, 
+  newTimeShare: number,
+  newSalary: string): Document => {
+    return DocumentBuilder
+    .builder()
+    .contentGroup(builder => {
+    builder
+    .groupLabel('details')
+    .string('title', newTitle)
+    .string('ballot_description', 'Edit role')
+    .checksum256('original_document', original)
+    .int64('min_time_share_x100', newTimeShare)
+    .asset('annual_usd_salary', newSalary)
+    })
+    .build();
+}
 
 describe('Roles', () => {
 
     const testRole = UnderwaterBasketweaver;
-    let roleDocument: Document;
     
     it('Create role', async () => {
 
-        const environment = await setupEnvironment();
-        // Time doesn't move in the test unless we set the current time.
+        const environment = await setupEnvironment({ periodCount: 2 });
+
         const now = new Date();
 
-        // We have to set the initial time if we care about any timing
         environment.setCurrentTime(now);
 
-        // Proposing
         await environment.dao.contract.propose({
             proposer: environment.members[0].account.accountName,
             proposal_type: 'role',
@@ -39,7 +58,7 @@ describe('Roles', () => {
         expect(getContent(proposalDetails, "state").value[1])
         .toBe('proposed');
         
-        let date = nextDay(environment, new Date());
+        nextDay(environment, new Date());
 
         // closes proposal
         await environment.dao.contract.closedocprop({
@@ -74,7 +93,7 @@ describe('Roles', () => {
 
         proposalDetails = getDetailsGroup(proposal);
 
-        await expect(getContent(proposalDetails, "state").value[1])
+        expect(getContent(proposalDetails, "state").value[1])
               .toBe('proposed');
 
         for (let i = 0; i < environment.members.length; ++i) {
@@ -88,7 +107,7 @@ describe('Roles', () => {
 
         const expiration = getContent(getContentGroupByLabel(proposal, "ballot"), "expiration");
         
-        date = setDate(environment, new Date(expiration.value[1]), 15);
+        setDate(environment, new Date(expiration.value[1]), 15);
 
         // closes proposal
         await environment.dao.contract.closedocprop({
@@ -105,7 +124,108 @@ describe('Roles', () => {
         getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'passedprops');
         getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'role');
 
-        await expect(getContent(proposalDetails, "state").value[1])
+        expect(getContent(proposalDetails, "state").value[1])
               .toBe('approved');
     });
+
+    it('Edit role', async () => {
+
+        const environment = await setupEnvironment({ periodCount: 2 });
+        // Time doesn't move in the test unless we set the current time.
+        const now = new Date();
+
+        // We have to set the initial time if we care about any timing
+        environment.setCurrentTime(now);
+
+        // Proposing
+        let role = await proposeAndPass(testRole, 'role', environment);
+
+        const newRoleTitle = 'This role was edited';
+        const newRoleTimeShare = 60;
+        const newRoleSalary = '100000.00 USD';
+
+        await proposeAndPass(
+          getEditProposal(role.hash, newRoleTitle, newRoleTimeShare, newRoleSalary), 
+          'edit', 
+          environment
+        );
+
+        role = last(
+          getDocumentsByType(environment.getDaoDocuments(), 'role')
+        );
+
+        let details = getContentGroupByLabel(role, 'details');
+
+        expect(getContent(details, 'title').value[1])
+        .toBe(newRoleTitle)
+
+        expect(getContent(details, 'min_time_share_x100').value[1])
+        .toBe(newRoleTimeShare.toString())
+
+        expect(getContent(details, 'annual_usd_salary').value[1])
+        .toBe(newRoleSalary.toString())
+    });
+
+    it('Suspend role', async () => {
+
+      const environment = await setupEnvironment({ periodCount: 3 });
+      
+      const now = new Date();
+
+      environment.setCurrentTime(now);
+
+      let role = await proposeAndPass(testRole, 'role', environment);
+
+      let suspender = environment.members[1];
+      
+      const suspendReason = 'Testing porpouses';
+        
+      await environment.dao.contract.suspend({
+        proposer: suspender.account.accountName,
+        hash: role.hash,
+        reason: suspendReason
+      }, getAccountPermission(suspender.account));
+
+      let suspendProp = last(
+        getDocumentsByType(environment.getDaoDocuments(), 'suspend')
+      );
+
+      const suspendDetails = getContentGroupByLabel(suspendProp, 'details');
+
+      expect(getContent(suspendDetails, 'description').value[1])
+      .toBe(suspendReason);
+
+      expect(getContent(suspendDetails, 'original_document').value[1])
+      .toBe(role.hash);
+
+      getDaoExpect(environment).toHaveEdge(suspendProp, role, 'suspend');
+
+      suspendProp = await passProposal(suspendProp, 'suspend', environment);
+
+      let suspendedRole = last(
+        getDocumentsByType(environment.getDaoDocuments(), 'role')
+      );
+
+      const details = getContentGroupByLabel(suspendedRole, 'details');
+
+      expect(getContent(details, 'state').value[1])
+      .toBe('suspended');
+
+      getDaoExpect(environment)
+      .toHaveEdge(environment.getRoot(), suspendedRole, 'suspended');
+
+      //We shouldn't be able to create assignment proposal of suspended roles
+      const assignee = environment.members[1].account;
+
+      const assignmentProp = getAssignmentProposal({
+        assignee: assignee.accountName, 
+        role: suspendedRole.hash
+      });
+
+      await expect(environment.dao.contract.propose({
+        proposer: assignee.accountName,
+        proposal_type: 'assignment',
+        ...assignmentProp
+      })).rejects.toThrow('Cannot create assignment proposal of suspened role');
+  });
 });

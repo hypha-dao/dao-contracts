@@ -22,5 +22,6 @@ export const setDate = (environment: DaoBlockchain, date: Date, offsetMinutes: n
   const next = new Date(date);
   next.setMinutes(next.getMinutes() + offsetMinutes);
   environment.setCurrentTime(next);
+  environment.currentDate = next;
   return next;
 }
