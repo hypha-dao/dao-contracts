@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 
 export interface Document {
     id: string;
@@ -64,4 +65,26 @@ export const makeContentGroup = (groupLabel: string | undefined, ...content: Con
         ...(groupLabel !== undefined ? [ makeStringContent(CONTENT_GROUP_LABEL, groupLabel) ] : []), 
         ...content
     ];
+};
+
+const fromUtc = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000);
+
+const valueToString = (value: ContentValue) => {
+    let val = value[1];
+    if (value[0] === ContentType.TIME_POINT) {
+        val = parseInt(''+fromUtc(new Date(value[1])).getTime() / 1000);
+    }
+
+    return `${value[0]},${val}`;
+};
+
+export const getHash = (document: Document) => {
+    const canonical = '[' + document.content_groups.map(cg => {
+        const content = cg.map(c => {
+            return `{${c.label}=[${valueToString(c.value)}]}`;
+        }).join(',');
+        return `[${content}]`;
+    }).join(',') + ']';
+
+    return createHash('sha256').update(canonical).digest('hex').toUpperCase();
 };
