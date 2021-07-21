@@ -1,8 +1,8 @@
 #include <payers/payer_factory.hpp>
 #include <payers/husd_payer.hpp>
-#include <payers/hypha_payer.hpp>
+#include <payers/reward_payer.hpp>
 #include <payers/seeds_payer.hpp>
-#include <payers/hvoice_payer.hpp>
+#include <payers/voice_payer.hpp>
 #include <payers/escrow_payer.hpp>
 #include <logger/logger.hpp>
 
@@ -26,10 +26,10 @@ namespace hypha
             return new HusdPayer(dao);
 
         case common::S_VOICE.code().raw():
-            return new HvoicePayer(dao);
+            return new VoicePayer(dao);
 
         case common::S_REWARD.code().raw():
-            return new HyphaPayer(dao);
+            return new RewardPayer(dao);
 
         case common::S_SEEDS.code().raw():
             return new SeedsPayer(dao);

@@ -1,4 +1,4 @@
-#include <payers/hvoice_payer.hpp>
+#include <payers/voice_payer.hpp>
 
 #include <eosio/name.hpp>
 #include <eosio/asset.hpp>
@@ -11,7 +11,7 @@
 namespace hypha
 {
 
-    Document HvoicePayer::payImpl(const eosio::name &recipient,
+    Document VoicePayer::payImpl(const eosio::name &recipient,
                                   const eosio::asset &quantity,
                                   const string &memo)
     {

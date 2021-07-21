@@ -1,4 +1,4 @@
-#include <payers/hypha_payer.hpp>
+#include <payers/reward_payer.hpp>
 
 #include <eosio/name.hpp>
 #include <eosio/asset.hpp>
@@ -11,7 +11,7 @@
 namespace hypha
 {
 
-    Document HyphaPayer::payImpl(const eosio::name &recipient,
+    Document RewardPayer::payImpl(const eosio::name &recipient,
                                  const eosio::asset &quantity,
                                  const string &memo)
     {
