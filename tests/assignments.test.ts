@@ -247,11 +247,7 @@ describe('Assignments', () => {
         //Test activation date no longer impacts on the claimed periods
         now = new Date(environment.periods[0].startTime);
 
-<<<<<<< HEAD
         setDate(environment, now, 1);
-=======
-        setDate(environment, now, 0);
->>>>>>> 8050e48f2ac6257a26ff019f5030b220808ad73d
 
         const assignProposal2 = getAssignmentProp(role, assignee.account.accountName, 'Activation Date test');
 
@@ -284,11 +280,7 @@ describe('Assignments', () => {
 
         let startPeriodHash = getContent(details, 'start_period').value[1] as string;
 
-<<<<<<< HEAD
         const startPeriod = getDocumentByHash(environment.getDaoDocuments(), startPeriodHash);
-=======
-        const startPeriod = getDocumentByHash(environment.getDaoDocuments(), startPeriodHash);;
->>>>>>> 8050e48f2ac6257a26ff019f5030b220808ad73d
 
         let period = startPeriod;
 

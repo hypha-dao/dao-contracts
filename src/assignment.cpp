@@ -142,15 +142,7 @@ namespace hypha
         {
           return approvedDate->getAs<eosio::time_point>();
         }
-        //For assignemnts approved/claimed post adjust commitment
-        else if (auto [hasTimeShare, edge] = Edge::getIfExists(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
-                 hasTimeShare)
-        {
-          return getInitialTimeShare().
-                 getContentWrapper().
-                 getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<eosio::time_point>();
-        }
-        
+                
         //Fallback for old assignments without time share document
         return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
     }
