@@ -1,13 +1,16 @@
-import { Blockchain } from '@klevoya/hydra';
+import { Blockchain, Contract } from '@klevoya/hydra';
 import { THydraConfig } from '@klevoya/hydra/lib/config/hydra';
 import Account from '@klevoya/hydra/lib/main/account';
+import { TTransaction } from '@klevoya/hydra/lib/types';
 import { Asset } from '../types/Asset';
-import { Document } from '../types/Document';
+import { Document, getHash } from '../types/Document';
 import { Edge } from '../types/Edge';
 import { Member } from '../types/Member';
 import { Period } from '../types/Periods';
 import { last } from '../utils/Arrays';
 import { getDocumentByHash, getDocumentsByType } from '../utils/Dao';
+import { toISOString } from '../utils/Date';
+import { DocumentBuilder } from '../utils/DocumentBuilder';
 import { getAccountPermission } from '../utils/Permissions';
 
 export interface DaoSettings {
@@ -101,30 +104,63 @@ export class DaoBlockchain extends Blockchain {
         throw new Error('Root document has to be created before creating periods');
       }
 
-      let predecesor = this.root.hash;
+      let predecessor = this.root.hash;
+      const periodDate = new Date(this.setupDate);
+      const numPeriods = this.settings.periodCount;
 
-      let periodDate = new Date(this.setupDate);
-
-      let numPeriods = this.settings.periodCount;
+      const data: Array<any> = [];
 
       for (let i = 0; i < numPeriods; ++i) {
+        const label = `Period #${i + 1} of ${numPeriods}`;
+        const startTime = toISOString(periodDate);
 
-        let label = `Period #${i + 1} of ${numPeriods}`;
-        
-        await this.dao.contract.addperiod({
-          predecessor: predecesor,
-          start_time: periodDate.toISOString().replace('Z', ''),
-          label,
+        data.push({
+            predecessor,
+            start_time: startTime,
+            label
         });
 
-        let periodDoc = last(getDocumentsByType(this.getDaoDocuments(), 'period'));
-        
-        this.periods.push(new Period(new Date(periodDate), label, periodDoc));
-
+        // This part depends a lot on the Period content. This is made like this to optimize the setup
+        const period: Document = DocumentBuilder
+        .builder()
+        .contentGroup(builder => 
+            builder
+            .groupLabel('details')
+            .timePoint('start_time', startTime)
+            .string('label', label)
+        )
+        .contentGroup(builder => 
+            builder
+            .groupLabel('system')
+            .name('type', 'period')
+            .string('node_label', label)
+        )
+        .build();
+        predecessor = getHash(period);
         periodDate.setSeconds(periodDate.getSeconds() + this.settings.periodDurationSeconds);
-
-        predecesor = periodDoc.hash;
       }
+
+      await this.sendTransaction({
+          actions: data.map(d => this.buildAction(this.dao, 'addperiod', d))
+      });
+
+      this.periods.push(
+          ... getDocumentsByType(this.getDaoDocuments(), 'period').map(p => new Period(p))
+      );
+    }
+
+    public buildAction(
+        account: Account, 
+        action: string, 
+        data: TTransaction['actions'][number]['data'],
+        permissions?: TTransaction['actions'][number]['authorization']
+    ): TTransaction['actions'][number] {
+        return {
+            account: account.accountName,
+            name: action,
+            authorization: permissions ?? getAccountPermission(account),
+            data
+        };
     }
 
     async createMember(accountName: string): Promise<Member> {
@@ -143,15 +179,18 @@ export class DaoBlockchain extends Blockchain {
             ]
         });
 
-        await this.dao.contract.apply({
-            applicant: account.accountName,
-            content: 'Apply to DAO'
-        }, getAccountPermission(account));
-    
-        await this.dao.contract.enroll({
-            enroller: this.dao.accountName,
-            applicant: account.accountName,
-            content: 'Enroll in dao'
+        await this.sendTransaction({
+            actions: [
+                this.buildAction(this.dao, 'apply', {
+                    applicant: account.accountName,
+                    content: 'Apply to DAO'
+                }, getAccountPermission(account)),
+                this.buildAction(this.dao, 'enroll', {
+                    enroller: this.dao.accountName,
+                    applicant: account.accountName,
+                    content: 'Enroll in dao'
+                })
+            ]
         });
 
         const doc = last(getDocumentsByType(this.getDaoDocuments(), 'member'));
@@ -163,18 +202,21 @@ export class DaoBlockchain extends Blockchain {
     }
 
     async increaseVoice(accountName: string, quantity: string) {
-        await this.peerContracts.voice.contract.issue({
-            to: this.dao.accountName,
-            quantity,
-            memo: 'Increasing voice'
-        }, getAccountPermission(this.dao));
-
-        await this.peerContracts.voice.contract.transfer({
-            from: this.dao.accountName,
-            to: accountName,
-            quantity,
-            memo: 'Increasing voice'
-        }, getAccountPermission(this.dao));
+        await this.sendTransaction({
+            actions: [
+                this.buildAction(this.peerContracts.voice, 'issue', {
+                    to: this.dao.accountName,
+                    quantity,
+                    memo: 'Increasing voice'
+                }, getAccountPermission(this.dao)),
+                this.buildAction(this.peerContracts.voice, 'transfer', {
+                    from: this.dao.accountName,
+                    to: accountName,
+                    quantity,
+                    memo: 'Increasing voice'
+                }, getAccountPermission(this.dao))
+            ]
+        });
     }
 
     async setup() {
@@ -226,63 +268,69 @@ export class DaoBlockchain extends Blockchain {
           ]
         });
 
-        // Initialize voice contract
-        await this.peerContracts.voice.contract.create({
-            issuer: this.dao.accountName,
-            maximum_supply: '-1.00 HVOICE',
-            decay_period: this.settings.voice.decayPeriod,
-            decay_per_period_x10M: this.settings.voice.decayPerPeriodx10M
+        // Initialize this all in a batch to speed it up
+        await this.sendTransaction({
+            actions: [
+                // Initialize HVOICE
+                this.buildAction(
+                    this.peerContracts.voice,
+                    'create',
+                    {
+                        issuer: this.dao.accountName,
+                        maximum_supply: '-1.00 HVOICE',
+                        decay_period: this.settings.voice.decayPeriod,
+                        decay_per_period_x10M: this.settings.voice.decayPerPeriodx10M
+                    }
+                ),
+                // Initialize HUSD
+                this.buildAction(
+                    this.peerContracts.husd,
+                    'create',
+                    {
+                        issuer: this.peerContracts.bank.accountName,
+                        maximum_supply: '1000000000.00 HUSD'
+                    }
+                ),
+                // Initialize HYPHA
+                this.buildAction(
+                    this.peerContracts.hypha,
+                    'create',
+                    {
+                        issuer: this.dao.accountName,
+                        maximum_supply: '1000000000.00 HYPHA'
+                    }
+                ),
+                // Create root
+                this.buildAction(this.dao, 'createroot', { notes: 'notes' }),
+                // Settings
+                this.buildAction(this.dao, 'setsetting', {
+                    key: 'voting_duration_sec',
+                    value: [ 'int64', this.settings.votingDurationSeconds ]
+                }),
+                this.buildAction(this.dao, 'setsetting', {
+                    key: 'hvoice_token_contract',
+                    value: [ 'name', this.peerContracts.voice.accountName ]
+                }),
+                this.buildAction(this.dao, 'setsetting', {
+                    key: 'hypha_token_contract',
+                    value: [ 'name', this.peerContracts.hypha.accountName ]
+                }),
+                this.buildAction(this.dao, 'setsetting', {
+                    key: 'husd_token_contract',
+                    value: [ 'name', this.peerContracts.husd.accountName ]
+                }),
+                this.buildAction(this.dao, 'setsetting', {
+                    key: 'treasury_contract',
+                    value: [ 'name', this.peerContracts.bank.accountName ]
+                }),
+                this.buildAction(this.dao, 'setsetting', {
+                    key: 'hypha_deferral_factor_x100',
+                    value: [ 'int64', this.settings.hyphaDeferralFactor ]
+                })
+            ]
         });
         
-        // Initialize voice contract
-        await this.peerContracts.husd.contract.create({
-            issuer: this.peerContracts.bank.accountName,
-            maximum_supply: '1000000000.00 HUSD'
-        });
-        
-        // Initialize voice contract
-        await this.peerContracts.hypha.contract.create({
-            issuer: this.dao.accountName,
-            maximum_supply: '1000000000.00 HYPHA'
-        });  
-    
-
-        await this.dao.contract.createroot({
-            notes: "notes"
-        });
-
-        await this.dao.contract.setsetting({
-            key: 'voting_duration_sec',
-            value: [ 'int64', this.settings.votingDurationSeconds ]
-        });
-    
-        await this.dao.contract.setsetting({
-            key: 'hvoice_token_contract',
-            value: [ 'name', this.peerContracts.voice.accountName ]
-        });
-
-        await this.dao.contract.setsetting({
-            key: 'hypha_token_contract',
-            value: [ 'name', this.peerContracts.hypha.accountName ]
-        });
-
-        await this.dao.contract.setsetting({
-            key: 'husd_token_contract',
-            value: [ 'name', this.peerContracts.husd.accountName ]
-        });
-    
-        await this.dao.contract.setsetting({
-            key: 'treasury_contract',
-            value: [ 'name', this.peerContracts.bank.accountName ]
-        });
-
-        await this.dao.contract.setsetting({
-            key: 'hypha_deferral_factor_x100',
-            value: [ 'int64', this.settings.hyphaDeferralFactor ]
-        });
-
         this.root = getDocumentByHash(this.getDaoDocuments(), this.rootHash);
-
         await this.createPeriods();
     }
 

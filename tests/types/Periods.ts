@@ -7,9 +7,9 @@ export class Period {
     readonly label: string;
     readonly doc: Document;
 
-    constructor(startTime: Date, label: string, doc: Document) {
-        this.startTime = startTime;
-        this.label = label;
+    constructor(doc: Document) {
         this.doc = doc;
+        this.startTime = new Date(doc.content_groups[0][1].value[1]);
+        this.label = doc.content_groups[0][2].value[1] as string;
     }
 }
