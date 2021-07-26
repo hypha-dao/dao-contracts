@@ -92,13 +92,14 @@ const claimRemainingPeriods = async (assignment: Document,
 
 describe('Assignments', () => {
 
-    const getAssignmentProp = (role: Document, accountName: string) => {
+    const getAssignmentProp = (role: Document, accountName: string, title?: string) => {
       return getAssignmentProposal({ 
         role: role.hash, 
         assignee: accountName,
         deferred_perc: 50,
         time_share: 100,
         period_count: 3,
+        title
       });
     }
 
@@ -215,8 +216,7 @@ describe('Assignments', () => {
 
         const assignmentDetails = getContentGroupByLabel(assignment, 'details');
 
-        const periodCount = 
-        parseInt(
+        const periodCount = parseInt(
           getContent(assignmentDetails, 'period_count').value[1] as string
         );
 
@@ -242,6 +242,89 @@ describe('Assignments', () => {
             getDaoExpect(environment).toHaveEdge(assignment, currentPeriod, 'claimed');
             
             currentPeriod = nextPeriod;
+        }
+
+        //Test activation date no longer impacts on the claimed periods
+        now = new Date(environment.periods[0].startTime);
+
+        setDate(environment, now, 1);
+
+        const assignProposal2 = getAssignmentProp(role, assignee.account.accountName, 'Activation Date test');
+
+        await environment.dao.contract.propose({
+          proposer: environment.members[0].account.accountName,
+          proposal_type: 'assignment',
+          ...assignProposal2
+        });
+
+        assignment = last(getDocumentsByType(
+          environment.getDaoDocuments(),
+          'assignment'
+        ));
+
+        //Vote but don't close
+        for (let i = 0; i < environment.members.length; ++i) {
+          await environment.dao.contract.vote({
+            voter: environment.members[i].account.accountName,
+            proposal_hash: assignment.hash,
+            vote: 'pass',
+            notes: 'votes pass'
+          });
+        }
+    
+        let details = getContentGroupByLabel(assignment, 'details');
+
+        let periodCount2 = parseInt(
+          getContent(details, 'period_count').value[1] as string
+        );
+
+        let startPeriodHash = getContent(details, 'start_period').value[1] as string;
+
+        const startPeriod = getDocumentByHash(environment.getDaoDocuments(), startPeriodHash);
+
+        let period = startPeriod;
+
+        for (let i = 0; i < periodCount2; ++i) {
+          
+            let nextEdge = getEdgesByFilter(edges, { from_node: period.hash, edge_name: 'next' });
+
+            expect(nextEdge).toHaveLength(1);
+
+            const nextPeriod = getDocumentByHash(docs, nextEdge[0].to_node);
+            
+            period = nextPeriod;
+        }
+
+        //Set the date to the end of the last period
+        now = getPeriodStartDate(period);
+
+        setDate(environment, now, 0);
+
+        await environment.dao.contract.closedocprop({
+          proposal_hash: assignment.hash
+        }, environment.members[0].getPermissions());
+
+        assignment = last(getDocumentsByType(
+          environment.getDaoDocuments(),
+          'assignment'
+        ));
+      
+        period = startPeriod;
+
+        //Try to claim all the periods
+        for (let i = 0; i < periodCount2; ++i) {
+
+            await environment.dao.contract.claimnextper({
+              assignment_hash: assignment.hash
+            });
+
+            let nextEdge = getEdgesByFilter(edges, { from_node: period.hash, edge_name: 'next' });
+
+            const nextPeriod = getDocumentByHash(docs, nextEdge[0].to_node);
+
+            getDaoExpect(environment).toHaveEdge(assignment, period, 'claimed');
+            
+            period = nextPeriod;
         }
     });
 

@@ -142,15 +142,7 @@ namespace hypha
         {
           return approvedDate->getAs<eosio::time_point>();
         }
-        //For assignemnts approved/claimed post adjust commitment
-        else if (auto [hasTimeShare, edge] = Edge::getIfExists(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
-                 hasTimeShare)
-        {
-          return getInitialTimeShare().
-                 getContentWrapper().
-                 getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<eosio::time_point>();
-        }
-        
+                
         //Fallback for old assignments without time share document
         return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
     }
@@ -169,17 +161,12 @@ namespace hypha
         int64_t periodCount = getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
         int64_t counter = 0;
 
-        auto approvedTime = getApprovedTime().sec_since_epoch();
         auto currentTime = eosio::current_time_point().sec_since_epoch();
 
         while (counter < periodCount)
         {
-
-            auto startTime = period.getStartTime().sec_since_epoch();
             auto endTime = period.getEndTime().sec_since_epoch();
-            if ((startTime >= approvedTime || // if period comes after assignment creation
-                 approvedTime < endTime) &&  //Or if it was approved in the middle of a period
-                 endTime <= currentTime &&   // if period has lapsed
+            if (endTime <= currentTime &&   // if period has lapsed
                 !isClaimed(&period))         // and not yet claimed
             {
                 return std::optional<Period>{period};

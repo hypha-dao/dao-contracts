@@ -104,7 +104,9 @@ namespace hypha
         Period period(dao, startEdge.getToNode());
 
         EOS_CHECK(period.getStartTime() < moment,
-                     "start_period is in the future. No period found.");
+                  util::to_str("start_period is in the future. No period found. Start period: ", 
+                               period.getStartTime().sec_since_epoch(), 
+                               " Moment: ", moment.sec_since_epoch()));
 
         while (period.getEndTime() < moment)
         {
