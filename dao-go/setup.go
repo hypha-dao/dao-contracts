@@ -466,6 +466,7 @@ func getDefaultPeriod(api *eos.API, contract eos.AccountName) docgraph.Document 
 type proposal struct {
 	Proposer      eos.AccountName         `json:"proposer"`
 	ProposalType  eos.Name                `json:"proposal_type"`
+	Publish		  bool					  `json:"publish"`
 	ContentGroups []docgraph.ContentGroup `json:"content_groups"`
 }
 
