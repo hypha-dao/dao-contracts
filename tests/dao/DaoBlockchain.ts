@@ -110,6 +110,10 @@ export class DaoBlockchain extends Blockchain {
       const periodDate = new Date(this.setupDate);
       const numPeriods = this.settings.periodCount;
 
+      if (numPeriods === 0) {
+          return;
+      }
+
       const data: Array<any> = [];
 
       for (let i = 0; i < numPeriods; ++i) {

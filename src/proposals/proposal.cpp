@@ -18,10 +18,13 @@ using namespace eosio;
 
 namespace hypha
 {
+
+    constexpr name STAGING_PROPOSAL = name("stagingprop");
+
     Proposal::Proposal(dao &contract) : m_dao{contract} {}
     Proposal::~Proposal() {}
 
-    Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups)
+    Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish)
     {
         TRACE_FUNCTION()
         EOS_CHECK(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
@@ -51,13 +54,11 @@ namespace hypha
         // the proposal was PROPOSED_BY proposer; this creates the graph EDGE
         Edge::write(m_dao.get_self(), proposer, proposalNode.getHash(), memberHash, common::OWNED_BY);
 
-        // the DHO also links to the document as a proposal, another graph EDGE
-        Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
-
-        // Sets an empty tally
-        VoteTally(m_dao, proposalNode);
-
-        postProposeImpl(proposalNode);
+        if (publish) {
+            _publish(proposer, proposalNode, root);
+        } else {
+            Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), STAGING_PROPOSAL);
+        }
 
         return proposalNode;
     }
@@ -67,6 +68,9 @@ namespace hypha
     void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal, std::optional<std::string> notes)
     {
         TRACE_FUNCTION()
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+        EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL), "Only published proposals can be voted");
+
         Vote(m_dao, voter, vote, proposal, notes);
         
         VoteTally(m_dao, proposal);
@@ -75,6 +79,9 @@ namespace hypha
     void Proposal::close(Document &proposal)
     {
         TRACE_FUNCTION()
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+        EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL), "Only published proposals can be closed");
+
         auto voteTallyEdge = Edge::get(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
 
         auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
@@ -82,8 +89,6 @@ namespace hypha
             eosio::time_point_sec(eosio::current_time_point()) > expiration,
             "Voting is still active for this proposal"
         );
-
-        eosio::checksum256 root = getRoot(m_dao.get_self());
 
         Edge edge = Edge::get(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL);
         edge.erase();
@@ -129,6 +134,35 @@ namespace hypha
             // create edge for FAILED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::FAILED_PROPS);
         }
+    }
+
+    void Proposal::publish(const eosio::name &proposer, Document &proposal)
+    {
+        TRACE_FUNCTION()
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+        eosio::checksum256 memberHash = Member::calcHash(proposer);
+
+        EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL), "Only proposes in staging can be published");
+        EOS_CHECK(Edge::exists(m_dao.get_self(), memberHash, proposal.getHash(), common::OWNS), "Only the proposer can publish the proposal");
+        Edge::get(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL).erase();
+        _publish(proposer, proposal, root);
+    }
+
+    void Proposal::remove(const eosio::name &proposer, Document &proposal)
+    {
+        TRACE_FUNCTION()
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+        eosio::checksum256 memberHash = Member::calcHash(proposer);
+
+        EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL), "Only proposes in staging can be removed");
+        EOS_CHECK(Edge::exists(m_dao.get_self(), memberHash, proposal.getHash(), common::OWNS), "Only the proposer can remove the proposal");
+        
+        // Remove edges
+        Edge::get(m_dao.get_self(), memberHash, proposal.getHash(), common::OWNS).erase();
+        Edge::get(m_dao.get_self(), proposal.getHash(), memberHash, common::OWNED_BY).erase();
+        Edge::get(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL).erase();
+        
+        // Todo: Is there any way to delete a Document?
     }
 
     ContentGroup Proposal::makeSystemGroup(const name &proposer,
@@ -246,5 +280,16 @@ namespace hypha
       }
 
       return { false, checksum256{} };
+    }
+
+    void Proposal::_publish(const eosio::name &proposer, Document &proposal, eosio::checksum256 root)
+    {
+        // the DHO also links to the document as a proposal, another graph EDGE
+        Edge::write(m_dao.get_self(), proposer, root, proposal.getHash(), common::PROPOSAL);
+
+        // Sets an empty tally
+        VoteTally(m_dao, proposal);
+
+        postProposeImpl(proposal);
     }
 } // namespace hypha

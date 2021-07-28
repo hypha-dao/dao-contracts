@@ -63,6 +63,7 @@ async (proposal: Document, type: string, environment: DaoBlockchain): Promise<Do
     await environment.dao.contract.propose({
         proposer: environment.members[0].account.accountName,
         proposal_type: type,
+        publish: true,
         ...proposal
     });
 

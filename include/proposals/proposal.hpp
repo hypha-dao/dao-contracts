@@ -18,10 +18,12 @@ namespace hypha
         Proposal(dao &contract);
         virtual ~Proposal();
 
-        Document propose(const eosio::name &proposer, ContentGroups &contentGroups);
+        Document propose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish);
 
         void vote(const eosio::name &voter, const std::string vote, Document& proposal, std::optional<std::string> notes);
         void close(Document &proposal);
+        void publish(const eosio::name &proposer, Document &proposal);
+        void remove(const eosio::name &proposer, Document &proposal);
 
         dao &m_dao;
 
@@ -53,6 +55,8 @@ namespace hypha
         std::pair<bool, checksum256> hasOpenProposal(name proposalType, checksum256 docHash);
     private:
         bool oldDidPass(const eosio::name &ballotId);
+
+        void _publish(const eosio::name &proposer, Document &proposal, eosio::checksum256 root);
 
     };
 } // namespace hypha

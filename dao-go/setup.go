@@ -573,6 +573,7 @@ func createParent(ctx context.Context, api *eos.API, contract, telosDecide, memb
 	return proposeAndPass(ctx, api, contract, telosDecide, member, proposal{
 		Proposer:      member,
 		ProposalType:  parentType,
+		Publish:       true,
 		ContentGroups: doc.ContentGroups,
 	})
 }
@@ -630,6 +631,7 @@ func SetupCreateAssignment(ctx context.Context, api *eos.API, contract, telosDec
 	return proposeAndPass(ctx, api, contract, telosDecide, member, proposal{
 		Proposer:      member,
 		ProposalType:  assignmentType,
+		Publish:       true,
 		ContentGroups: proposalDoc.ContentGroups,
 	})
 }
@@ -696,6 +698,7 @@ func CreatePayout(ctx context.Context, api *eos.API,
 	return proposeAndPass(ctx, api, contract, telosDecide, proposer, proposal{
 		Proposer:      proposer,
 		ProposalType:  eos.Name("payout"),
+		Publish:       true,
 		ContentGroups: payoutDoc.ContentGroups,
 	})
 }

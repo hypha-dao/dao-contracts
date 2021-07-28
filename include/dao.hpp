@@ -77,9 +77,12 @@ namespace hypha
          }
       }
 
-      ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
-      ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
+      ACTION propose(const name &proposer, const name &proposal_type, bool publish, ContentGroups &content_groups);
+      ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, const std::optional<string> &notes);
       ACTION closedocprop(const checksum256 &proposal_hash);
+      ACTION proposepub(const name &proposer, const checksum256 &proposal_hash);
+      ACTION proposerem(const name &proposer, const checksum256 &proposal_hash);
+
       ACTION setsetting(const string &key, const Content::FlexValue &value);
       ACTION remsetting(const string &key);
       ACTION addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);

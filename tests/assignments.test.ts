@@ -275,6 +275,7 @@ describe('Assignments', () => {
         await environment.dao.contract.propose({
           proposer: environment.members[0].account.accountName,
           proposal_type: 'assignment',
+          publish: true,
           ...assignProposal2
         });
 

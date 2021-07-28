@@ -65,16 +65,17 @@ namespace hypha
 
    void dao::propose(const name &proposer,
                      const name &proposal_type,
+                     bool publish,
                      ContentGroups &content_groups)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, proposal_type));
-      proposal->propose(proposer, content_groups);
+      proposal->propose(proposer, content_groups, publish);
    }
 
-   void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote, string notes)
+   void dao::vote(const name& voter, const checksum256 &proposal_hash, string &vote, const std::optional<string> &notes)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -95,6 +96,30 @@ namespace hypha
 
       Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
       proposal->close(docprop);
+   }
+
+   void dao::proposepub(const name &proposer, const checksum256 &proposal_hash)
+   {
+      TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+      Document docprop(get_self(), proposal_hash);
+      name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
+
+      Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
+      proposal->publish(proposer, docprop);
+   }
+
+   void dao::proposerem(const name &proposer, const checksum256 &proposal_hash)
+   {
+      TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+      Document docprop(get_self(), proposal_hash);
+      name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
+
+      Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
+      proposal->remove(proposer, docprop);
    }
 
    void dao::proposeextend(const checksum256 &assignment_hash, const int64_t additional_periods)
@@ -120,7 +145,7 @@ namespace hypha
 
       // propose the extension
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, common::EXTENSION));
-      proposal->propose(assignee, contentGroups);
+      proposal->propose(assignee, contentGroups, true);
    }
 
    void dao::withdraw(name owner, eosio::checksum256 hash) 
@@ -217,7 +242,7 @@ namespace hypha
        },
      };
 
-     propose(proposer, common::SUSPEND, cgs);
+     propose(proposer, common::SUSPEND, true, cgs);
    }
 
    void dao::claimnextper(const eosio::checksum256 &assignment_hash)
