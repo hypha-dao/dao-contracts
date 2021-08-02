@@ -26,15 +26,21 @@ async (proposal: Document, type: string, environment: DaoBlockchain): Promise<Do
 
 export const passProposal = 
 async (proposal: Document, type: string, environment: DaoBlockchain): Promise<Document> => {
-  
-  for (let i = 0; i < environment.members.length; ++i) {
-    await environment.dao.contract.vote({
-      voter: environment.members[i].account.accountName,
+
+  const voteTx = environment.members.map(m => environment.buildAction(
+    environment.dao,
+    'vote',
+    {
+      voter: m.account.accountName,
       proposal_hash: proposal.hash,
       vote: 'pass',
       notes: 'votes pass'
-    });
-  }
+    }
+  ));
+
+  await environment.sendTransaction({
+    actions: voteTx
+  });
 
   return await closeProposal(proposal, type, environment);
   

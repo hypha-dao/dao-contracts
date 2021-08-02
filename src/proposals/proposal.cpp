@@ -156,13 +156,8 @@ namespace hypha
 
         EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL), "Only proposes in staging can be removed");
         EOS_CHECK(Edge::exists(m_dao.get_self(), memberHash, proposal.getHash(), common::OWNS), "Only the proposer can remove the proposal");
-        
-        // Remove edges
-        Edge::get(m_dao.get_self(), memberHash, proposal.getHash(), common::OWNS).erase();
-        Edge::get(m_dao.get_self(), proposal.getHash(), memberHash, common::OWNED_BY).erase();
-        Edge::get(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL).erase();
-        
-        // Todo: Is there any way to delete a Document?
+
+        m_dao.getGraph().eraseDocument(proposal.getHash(), true);
     }
 
     ContentGroup Proposal::makeSystemGroup(const name &proposer,

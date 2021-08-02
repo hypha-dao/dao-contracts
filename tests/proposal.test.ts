@@ -4,6 +4,7 @@ import { last } from './utils/Arrays';
 import { getDocumentsByType } from './utils/Dao';
 import { DocumentBuilder } from './utils/DocumentBuilder';
 import { getDaoExpect } from './utils/Expect';
+import { passProposal } from './utils/Proposal';
 
 describe('Proposal', () => {
     const getSampleRole = (title: string = 'Underwater Basketweaver'): Document => DocumentBuilder
@@ -164,19 +165,27 @@ describe('Proposal', () => {
             proposal_hash: proposal.hash
         });
 
-        // now we can vote and close
-        await environment.dao.contract.vote({
-            voter: environment.members[0].account.accountName,
-            proposal_hash: proposal.hash,
-            vote: 'pass',
-            notes: 'vote pass'
-        });
+        await passProposal(proposal, 'role', environment);
 
-        environment.setCurrentTime(whenVoteExpires);
+        proposal = last(getDocumentsByType(environment.getDaoDocuments(), 'role'));
 
-        await environment.dao.contract.closedocprop({
-            proposal_hash: proposal.hash
+        // Create suspend proposal
+        await environment.dao.contract.suspend({
+            proposer: environment.members[0].account.accountName,
+            hash: proposal.hash,
+            reason: 'I would like to suspend'
         }, environment.members[0].getPermissions());
+
+        proposal = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'suspend'
+        ));
+
+        // Should be published
+        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'proposal');
+        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'stagingprop');
+        daoExpect.toHaveEdge(environment.members[0].doc, proposal, 'owns');
+        daoExpect.toHaveEdge(proposal, environment.members[0].doc, 'ownedby');
 
         // Staging proposals can also be removed
         await environment.dao.contract.propose({
@@ -196,6 +205,10 @@ describe('Proposal', () => {
             proposal_hash: proposal.hash
         });
 
+        expect(last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'role'
+        ))).not.toEqual(proposal);
         daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
         daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'stagingprop');
         daoExpect.toNotHaveEdge(environment.members[0].doc, proposal, 'owns');

@@ -145,7 +145,7 @@ namespace hypha
 
       // propose the extension
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, common::EXTENSION));
-      proposal->propose(assignee, contentGroups, true);
+      proposal->propose(assignee, contentGroups, false);
    }
 
    void dao::withdraw(name owner, eosio::checksum256 hash) 
