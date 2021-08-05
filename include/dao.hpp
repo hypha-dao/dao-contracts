@@ -82,6 +82,7 @@ namespace hypha
       ACTION closedocprop(const checksum256 &proposal_hash);
       ACTION proposepub(const name &proposer, const checksum256 &proposal_hash);
       ACTION proposerem(const name &proposer, const checksum256 &proposal_hash);
+      ACTION proposeupd(const name &proposer, const checksum256 &proposal_hash, ContentGroups &content_groups);
 
       ACTION setsetting(const string &key, const Content::FlexValue &value);
       ACTION remsetting(const string &key);

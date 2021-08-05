@@ -22,6 +22,21 @@ describe('Proposal', () => {
       .int64('min_deferred_x100', 50)
     })
     .build();
+    const getSampleRole2 = (title: string = 'Underwater Basketweaver pro'): Document => DocumentBuilder
+    .builder()
+    .contentGroup(builder => {
+      builder
+      .groupLabel('details')
+      .string('title', title)
+      .string('description', 'Weave baskets at the bottom of the sea without air')
+      .asset('annual_usd_salary', '550000.00 USD')
+      .int64('start_period', 0)
+      .int64('end_period', 9)
+      .int64('fulltime_capacity_x100', 100)
+      .int64('min_time_share_x100', 50)
+      .int64('min_deferred_x100', 50)
+    })
+    .build();
 
     it('Proposal failed', async() => {
         const environment = await setupEnvironment();
@@ -168,6 +183,24 @@ describe('Proposal', () => {
         await passProposal(proposal, 'role', environment);
 
         proposal = last(getDocumentsByType(environment.getDaoDocuments(), 'role'));
+        // can't publish
+        await expect(environment.dao.contract.proposepub({
+            proposer: environment.members[0].account.accountName,
+            proposal_hash: proposal.hash
+        })).rejects.toThrowError(/Only proposes in staging can be published/i);
+
+        // can't update
+        await expect(environment.dao.contract.proposeupd({
+            proposer: environment.members[1].account.accountName,
+            proposal_hash: proposal.hash,
+            content_groups: getSampleRole2().content_groups
+        })).rejects.toThrowError(/Only proposes in staging can be updated/i);
+
+        // can't remove
+        await expect(environment.dao.contract.proposerem({
+            proposer: environment.members[1].account.accountName,
+            proposal_hash: proposal.hash,
+        })).rejects.toThrowError(/Only proposes in staging can be removed/i);
 
         // Create suspend proposal
         await environment.dao.contract.suspend({
@@ -187,7 +220,7 @@ describe('Proposal', () => {
         daoExpect.toHaveEdge(environment.members[0].doc, proposal, 'owns');
         daoExpect.toHaveEdge(proposal, environment.members[0].doc, 'ownedby');
 
-        // Staging proposals can also be removed
+        // Staging proposals can also be updated or removed (by proposer)
         await environment.dao.contract.propose({
             proposer: environment.members[0].account.accountName,
             proposal_type: 'role',
@@ -199,6 +232,37 @@ describe('Proposal', () => {
             environment.getDaoDocuments(),
             'role'
         ));
+
+        await expect(environment.dao.contract.proposeupd({
+            proposer: environment.members[1].account.accountName,
+            proposal_hash: proposal.hash,
+            content_groups: getSampleRole2().content_groups
+        })).rejects.toThrowError(/Only the proposer can update the proposal/i);
+
+        await environment.dao.contract.proposeupd({
+            proposer: environment.members[0].account.accountName,
+            proposal_hash: proposal.hash,
+            content_groups: getSampleRole2().content_groups
+        })
+
+        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
+        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'stagingprop');
+        daoExpect.toNotHaveEdge(environment.members[0].doc, proposal, 'owns');
+        daoExpect.toNotHaveEdge(proposal, environment.members[0].doc, 'ownedby');
+
+        proposal = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'role'
+        ));
+        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
+        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'stagingprop');
+        daoExpect.toHaveEdge(environment.members[0].doc, proposal, 'owns');
+        daoExpect.toHaveEdge(proposal, environment.members[0].doc, 'ownedby');
+
+        await expect(environment.dao.contract.proposerem({
+            proposer: environment.members[1].account.accountName,
+            proposal_hash: proposal.hash,
+        })).rejects.toThrowError(/Only the proposer can remove the proposal/i);
 
         await environment.dao.contract.proposerem({
             proposer: environment.members[0].account.accountName,

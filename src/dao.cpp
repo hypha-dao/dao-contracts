@@ -122,6 +122,18 @@ namespace hypha
       proposal->remove(proposer, docprop);
    }
 
+   void dao::proposeupd(const name &proposer, const checksum256 &proposal_hash, ContentGroups &content_groups) 
+   {
+      TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+      Document docprop(get_self(), proposal_hash);
+      name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
+
+      Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
+      proposal->update(proposer, docprop, content_groups);
+   }
+
    void dao::proposeextend(const checksum256 &assignment_hash, const int64_t additional_periods)
    {
       TRACE_FUNCTION()

@@ -160,6 +160,19 @@ namespace hypha
         m_dao.getGraph().eraseDocument(proposal.getHash(), true);
     }
 
+    void Proposal::update(const eosio::name &proposer, Document &proposal, ContentGroups &contentGroups)
+    {
+        TRACE_FUNCTION()
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+        eosio::checksum256 memberHash = Member::calcHash(proposer);
+
+        EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL), "Only proposes in staging can be updated");
+        EOS_CHECK(Edge::exists(m_dao.get_self(), memberHash, proposal.getHash(), common::OWNS), "Only the proposer can update the proposal");
+
+        m_dao.getGraph().eraseDocument(proposal.getHash(), true);
+        this->propose(proposer, contentGroups, false);
+    }
+
     ContentGroup Proposal::makeSystemGroup(const name &proposer,
                                            const name &proposal_type,
                                            const string &proposal_title,
@@ -262,6 +275,7 @@ namespace hypha
 
     std::pair<bool, checksum256> Proposal::hasOpenProposal(name proposalType, checksum256 docHash)
     {
+      TRACE_FUNCTION()
       auto proposalEdges = m_dao.getGraph().getEdgesTo(docHash, proposalType);
       
       //Check if there is another existing suspend proposal open for the given document
@@ -279,6 +293,7 @@ namespace hypha
 
     void Proposal::_publish(const eosio::name &proposer, Document &proposal, eosio::checksum256 root)
     {
+        TRACE_FUNCTION()
         // the DHO also links to the document as a proposal, another graph EDGE
         Edge::write(m_dao.get_self(), proposer, root, proposal.getHash(), common::PROPOSAL);
 

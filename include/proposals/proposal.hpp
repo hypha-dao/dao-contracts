@@ -24,6 +24,7 @@ namespace hypha
         void close(Document &proposal);
         void publish(const eosio::name &proposer, Document &proposal);
         void remove(const eosio::name &proposer, Document &proposal);
+        void update(const eosio::name &proposer, Document &proposal, ContentGroups &contentGroups);
 
         dao &m_dao;
 
