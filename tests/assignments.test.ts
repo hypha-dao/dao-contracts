@@ -13,7 +13,7 @@ import { setDate } from './utils/Date';
 import { getAccountPermission } from './utils/Permissions';
 import { Asset } from './types/Asset';
 
-const getStartPeriod = (environment: DaoBlockchain, assignment: Document): Document => {
+export const getStartPeriod = (environment: DaoBlockchain, assignment: Document): Document => {
 
     const assignmentDetails = getContentGroupByLabel(assignment, 'details');
 
@@ -47,7 +47,7 @@ const getEditProposal = (original: string,
     .build();
 }
 
-const claimRemainingPeriods = async (assignment: Document,
+export const claimRemainingPeriods = async (assignment: Document,
                                      environment: DaoBlockchain): Promise<number> => {
 
     let claimedPeriods = 0;

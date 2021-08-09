@@ -31,6 +31,23 @@ async (proposal: Document, type: string, environment: DaoBlockchain): Promise<Do
   
 }
 
+export const createProposal = 
+async (proposal: Document, type: string, environment: DaoBlockchain): Promise<Document> => {
+  
+    await environment.dao.contract.propose({
+        proposer: environment.members[0].account.accountName,
+        proposal_type: type,
+        ...proposal
+    });
+
+    let propDoc = last(getDocumentsByType(
+        environment.getDaoDocuments(),
+        type
+    ));
+
+    return propDoc;
+}
+
 export const proposeAndPass = 
 async (proposal: Document, type: string, environment: DaoBlockchain): Promise<Document> => {
   
