@@ -43,7 +43,8 @@ namespace hypha
         ContentGroup makeSystemGroup(const name &proposer,
                                        const name &proposal_type,
                                        const string &proposal_title,
-                                       const string &proposal_description);
+                                       const string &proposal_description,
+                                       const name &comment_section);
 
         ContentGroup makeBallotGroup();
         ContentGroup makeBallotOptionsGroup();
@@ -58,6 +59,7 @@ namespace hypha
         bool oldDidPass(const eosio::name &ballotId);
 
         void _publish(const eosio::name &proposer, Document &proposal, eosio::checksum256 root);
+        name _newCommentSection();
 
     };
 } // namespace hypha

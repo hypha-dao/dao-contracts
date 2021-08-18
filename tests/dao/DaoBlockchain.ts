@@ -35,6 +35,7 @@ export interface DaoPeerContracts {
     bank: Account;
     hypha: Account;
     husd: Account;
+    comments: Account;
 }
 
 const HVOICE_SYMBOL = 'HVOICE';
@@ -63,7 +64,8 @@ export class DaoBlockchain extends Blockchain {
             voice: this.createContract('hvoice.hypha', 'voice'),
             bank:  this.createContract('bank.hypha', 'treasury'),
             hypha: this.createContract('token.hypha', 'token'),
-            husd: this.createContract('husd.hypha', 'token')
+            husd: this.createContract('husd.hypha', 'token'),
+            comments: this.createContract('comments', 'comments')
         };
         this.members = [];
         this.periods = [];

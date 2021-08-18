@@ -138,6 +138,9 @@ namespace common
 #define BALLOT "ballot"
 #define BALLOT_OPTIONS "ballot_options"
 #define BALLOT_TYPE "ballot_type"
+#define COMMENT_NAME "comment.name"
+#define NEXT_COMMENT_SECTION "next_comment_section"
+#define COMMENTS_CONTRACT "comments"
 
 // setting document
 #define SEEDS_TOKEN_CONTRACT "seeds_token_contract"

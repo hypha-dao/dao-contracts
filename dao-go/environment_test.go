@@ -41,6 +41,7 @@ type Environment struct {
 	Bank          eos.AccountName
 	SeedsEscrow   eos.AccountName
 	SeedsExchange eos.AccountName
+	Comments      eos.AccountName
 	Events        eos.AccountName
 	TelosDecide   eos.AccountName
 	Alice         Member
@@ -135,6 +136,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	escrowPrefix := artifactsHome + "/escrow/escrow."
 	voicePrefix := artifactsHome + "/voice/voice."
 	exchangePrefix := artifactsHome + "/seedsexchg/seedsexchg."
+	commentsPrefix := artifactsHome + "/comments/comments."
 
 	var env Environment
 
@@ -203,6 +205,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	_, env.SeedsToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "token.seeds")
 	_, env.SeedsEscrow, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "escrow.seeds")
 	_, env.SeedsExchange, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "tlosto.seeds")
+	_, env.Comments, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "comments")
 
 	_, env.TelosDecide, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "trailservice")
 
@@ -226,6 +229,10 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	_, err = eostest.SetContract(env.ctx, &env.api, env.SeedsExchange, exchangePrefix+"wasm", exchangePrefix+"abi")
 	assert.NilError(t, err)
 	loadSeedsTablesFromProd(t, &env, "https://api.telos.kitchen")
+
+	t.Log("Deploying comments contract to		   : ", env.Comments)
+	_, err = eostest.SetContract(env.ctx, &env.api, env.Comments, commentsPrefix+"wasm", commentsPrefix+"abi")
+	assert.NilError(t, err)
 
 	t.Log("Deploying Events contract to 		: ", env.Events)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.Events, monitorPrefix+"wasm", monitorPrefix+"abi")
