@@ -19,6 +19,10 @@ using namespace eosio;
 namespace hypha
 {
 
+    constexpr char COMMENT_NAME[] = "comment-name";
+    constexpr char NEXT_COMMENT_SECTION[] = "next-comment-section";
+    constexpr name COMMENTS_CONTRACT("comments");
+
     constexpr name STAGING_PROPOSAL = name("stagingprop");
 
     Proposal::Proposal(dao &contract) : m_dao{contract} {}
@@ -59,7 +63,7 @@ namespace hypha
 
         eosio::action(
             eosio::permission_level{this->m_dao.get_self(), name("active")},
-            name(COMMENTS_CONTRACT), name("addsection"),
+            COMMENTS_CONTRACT, name("addsection"),
             std::make_tuple(
                 this->m_dao.get_self(), // scope. todo: use tenant here
                 commentSection, // section
@@ -174,7 +178,7 @@ namespace hypha
 
         eosio::action(
             eosio::permission_level{this->m_dao.get_self(), name("active")},
-            name(COMMENTS_CONTRACT), name("delsection"),
+            COMMENTS_CONTRACT, name("delsection"),
             std::make_tuple(
                 this->m_dao.get_self(), // scope. todo: use tenant here
                 proposal.getContentWrapper().getOrFail(SYSTEM, COMMENT_NAME, "Proposal has no comment section")->getAs<eosio::name>() // section
