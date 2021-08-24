@@ -4,20 +4,6 @@
     "types": [],
     "structs": [
         {
-            "name": "addround",
-            "base": "",
-            "fields": [
-                {
-                    "name": "volume",
-                    "type": "uint64"
-                },
-                {
-                    "name": "seeds_per_usd",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
             "name": "configtable",
             "base": "",
             "fields": [
@@ -48,126 +34,7 @@
             ]
         },
         {
-            "name": "flags_table",
-            "base": "",
-            "fields": [
-                {
-                    "name": "param",
-                    "type": "name"
-                },
-                {
-                    "name": "value",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "incprice",
-            "base": "",
-            "fields": []
-        },
-        {
-            "name": "initrounds",
-            "base": "",
-            "fields": [
-                {
-                    "name": "volume_per_round",
-                    "type": "uint64"
-                },
-                {
-                    "name": "initial_seeds_per_usd",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "initsale",
-            "base": "",
-            "fields": []
-        },
-        {
-            "name": "migrate",
-            "base": "",
-            "fields": []
-        },
-        {
-            "name": "newpayment",
-            "base": "",
-            "fields": [
-                {
-                    "name": "recipientAccount",
-                    "type": "name"
-                },
-                {
-                    "name": "paymentSymbol",
-                    "type": "string"
-                },
-                {
-                    "name": "paymentId",
-                    "type": "string"
-                },
-                {
-                    "name": "multipliedUsdValue",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "onhusd",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "to",
-                    "type": "name"
-                },
-                {
-                    "name": "quantity",
-                    "type": "asset"
-                },
-                {
-                    "name": "memo",
-                    "type": "string"
-                }
-            ]
-        },
-        {
-            "name": "onperiod",
-            "base": "",
-            "fields": []
-        },
-        {
-            "name": "ontransfer",
-            "base": "",
-            "fields": [
-                {
-                    "name": "buyer",
-                    "type": "name"
-                },
-                {
-                    "name": "contract",
-                    "type": "name"
-                },
-                {
-                    "name": "tlos_quantity",
-                    "type": "asset"
-                },
-                {
-                    "name": "memo",
-                    "type": "string"
-                }
-            ]
-        },
-        {
-            "name": "pause",
-            "base": "",
-            "fields": []
-        },
-        {
-            "name": "payhistory_table",
+            "name": "inshistory",
             "base": "",
             "fields": [
                 {
@@ -175,20 +42,12 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "recipientAccount",
-                    "type": "name"
+                    "name": "seeds_usd",
+                    "type": "asset"
                 },
                 {
-                    "name": "paymentSymbol",
-                    "type": "string"
-                },
-                {
-                    "name": "paymentId",
-                    "type": "string"
-                },
-                {
-                    "name": "multipliedUsdValue",
-                    "type": "uint64"
+                    "name": "date",
+                    "type": "time_point"
                 }
             ]
         },
@@ -211,106 +70,17 @@
             ]
         },
         {
-            "name": "price_table",
+            "name": "updateconfig",
             "base": "",
             "fields": [
-                {
-                    "name": "id",
-                    "type": "uint64"
-                },
-                {
-                    "name": "current_round_id",
-                    "type": "uint64"
-                },
-                {
-                    "name": "current_seeds_per_usd",
-                    "type": "asset"
-                },
-                {
-                    "name": "remaining",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "priceupdate",
-            "base": "",
-            "fields": []
-        },
-        {
-            "name": "reset",
-            "base": "",
-            "fields": []
-        },
-        {
-            "name": "round_table",
-            "base": "",
-            "fields": [
-                {
-                    "name": "id",
-                    "type": "uint64"
-                },
-                {
-                    "name": "max_sold",
-                    "type": "uint64"
-                },
                 {
                     "name": "seeds_per_usd",
                     "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "setflag",
-            "base": "",
-            "fields": [
-                {
-                    "name": "flagname",
-                    "type": "name"
                 },
                 {
-                    "name": "value",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "soldtable",
-            "base": "",
-            "fields": [
-                {
-                    "name": "id",
-                    "type": "uint64"
+                    "name": "tlos_per_usd",
+                    "type": "asset"
                 },
-                {
-                    "name": "total_sold",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "stattable",
-            "base": "",
-            "fields": [
-                {
-                    "name": "buyer_account",
-                    "type": "name"
-                },
-                {
-                    "name": "seeds_purchased",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "unpause",
-            "base": "",
-            "fields": []
-        },
-        {
-            "name": "updatelimit",
-            "base": "",
-            "fields": [
                 {
                     "name": "citizen_limit",
                     "type": "asset"
@@ -324,116 +94,17 @@
                     "type": "asset"
                 }
             ]
-        },
-        {
-            "name": "updatetlos",
-            "base": "",
-            "fields": [
-                {
-                    "name": "tlos_per_usd",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "updatevol",
-            "base": "",
-            "fields": [
-                {
-                    "name": "round_id",
-                    "type": "uint64"
-                },
-                {
-                    "name": "volume",
-                    "type": "uint64"
-                }
-            ]
         }
     ],
     "actions": [
         {
-            "name": "addround",
-            "type": "addround",
+            "name": "inshistory",
+            "type": "inshistory",
             "ricardian_contract": ""
         },
         {
-            "name": "incprice",
-            "type": "incprice",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "initrounds",
-            "type": "initrounds",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "initsale",
-            "type": "initsale",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "migrate",
-            "type": "migrate",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "newpayment",
-            "type": "newpayment",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "onhusd",
-            "type": "onhusd",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "onperiod",
-            "type": "onperiod",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "ontransfer",
-            "type": "ontransfer",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "pause",
-            "type": "pause",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "priceupdate",
-            "type": "priceupdate",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "reset",
-            "type": "reset",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "setflag",
-            "type": "setflag",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "unpause",
-            "type": "unpause",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "updatelimit",
-            "type": "updatelimit",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "updatetlos",
-            "type": "updatetlos",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "updatevol",
-            "type": "updatevol",
+            "name": "updateconfig",
+            "type": "updateconfig",
             "ricardian_contract": ""
         }
     ],
@@ -446,50 +117,8 @@
             "key_types": []
         },
         {
-            "name": "dailystats",
-            "type": "stattable",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "flags",
-            "type": "flags_table",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "payhistory",
-            "type": "payhistory_table",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "price",
-            "type": "price_table",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
             "name": "pricehistory",
             "type": "price_history_table",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "rounds",
-            "type": "round_table",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "sold",
-            "type": "soldtable",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
