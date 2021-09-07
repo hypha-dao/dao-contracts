@@ -422,11 +422,16 @@ namespace hypha
         auto endPeriod = startPeriod.getNthPeriodAfter(periodCount);
         
         int64_t badgeAssignmentExpiration = endPeriod.getStartTime().sec_since_epoch();
-        if (badgeAssignmentExpiration > eosio::current_time_point().sec_since_epoch())
+
+        //Badge expiration should be compared against the claimed period instead
+        //of the current time, point since it could happen that the assignment is
+        //beign claimed after the badge assignment expired.
+        if (period.getStartTime().sec_since_epoch() < badgeAssignmentExpiration)
         {
           current_badges.push_back(badge);
         }
       }
+      
       return current_badges;
    }
 
