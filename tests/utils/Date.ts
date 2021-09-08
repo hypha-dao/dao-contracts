@@ -13,11 +13,15 @@ export const fromUTC = (date: Date) => {
 }
 
 export const toISOString = (date: Date) => {
-    // The testing framework truncates the  millis and doesn't have the Z
-    // https://github.com/EOSIO/eosjs2/blob/723b14fe384b1c8ca4f1a7437a3d3ff2087a28ba/src/eosjs-serialize.ts#L556
-    const value = Math.round(date.valueOf() / 500);
-    const roundedDate = new Date(value);
-    return roundedDate.toISOString().split('.')[0] + '.000';
+    // The testing framework rounds the  millis and doesn't have the Z
+    const copy = new Date(date);
+    
+    if (copy.getMilliseconds() >= 500) {
+      copy.setSeconds(copy.getSeconds() + 1);
+    }
+
+    copy.setMilliseconds(0);
+    return copy.toISOString().split('.')[0] + '.000';
 };
 
 export const nextDay = (environment: DaoBlockchain, date: Date, offsetMinutes: number = 10) => {
