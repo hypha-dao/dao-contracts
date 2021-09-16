@@ -2,7 +2,7 @@ import { DaoBlockchain } from "../dao/DaoBlockchain";
 import { last } from "./Arrays";
 import { Document } from '../types/Document';
 import { getContent, getContentGroupByLabel, getDocumentsByType } from "./Dao";
-import { setDate } from "./Date";
+import { setDate, fromUTC } from "./Date";
 
 export const passProposal = 
 async (proposal: Document, type: string, environment: DaoBlockchain): Promise<Document> => {
@@ -18,7 +18,11 @@ async (proposal: Document, type: string, environment: DaoBlockchain): Promise<Do
 
   const expiration = getContent(getContentGroupByLabel(proposal, "ballot"), "expiration");
 
-  setDate(environment, new Date(expiration.value[1]));
+  //Expiration comes in UTC so we have to convert it to the local machite's timezone
+  let next = fromUTC(new Date(expiration.value[1]));
+  //Add 1 second 
+  next.setSeconds(next.getSeconds() + 1);
+  setDate(environment, next);
 
   await environment.dao.contract.closedocprop({
     proposal_hash: proposal.hash

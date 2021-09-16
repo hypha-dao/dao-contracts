@@ -55,7 +55,7 @@ const masterOfPuppets: BadgeProposal = {
   title: 'Master of Puppets',
   description: 'Maintain the stability of the puppets.',
   icon: 'https://gallery.yopriceville.com/var/resizes/Free-Clipart-Pictures/Badges-and-Labels-PNG/Gold_Badge_Transparent_PNG_Image.png',
-  seeds_coefficient_x10000: 0,
+  seeds_coefficient_x10000: 10000,
   hypha_coefficient_x10000: 9000,
   hvoice_coefficient_x10000: 11000,
   husd_coefficient_x10000: 13000,

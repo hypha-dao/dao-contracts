@@ -1,5 +1,17 @@
 import { DaoBlockchain } from "../dao/DaoBlockchain";
 
+export const toUTC = (date: Date) => {
+  let utc = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(),
+                     date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds());
+ return new Date(utc);
+}
+
+export const fromUTC = (date: Date) => {
+  let local = new Date();
+  local.setTime(date.getTime()-local.getTimezoneOffset()*60000);
+  return local;
+}
+
 export const toISOString = (date: Date) => {
     // The testing framework always rounds the  millis and doesn't have the Z
     // 22:47:12.867Z becomes 22:47:13
@@ -20,7 +32,7 @@ export const nextDay = (environment: DaoBlockchain, date: Date, offsetMinutes: n
 
 export const setDate = (environment: DaoBlockchain, date: Date, offsetMinutes: number = 10) => {
   const next = new Date(date);
-  next.setMinutes(next.getMinutes() + offsetMinutes);
+  //next.setMinutes(next.getMinutes() + offsetMinutes);
   environment.setCurrentTime(next);
   environment.currentDate = next;
   return next;

@@ -1,5 +1,7 @@
 import { DocumentBuilder } from "../utils/DocumentBuilder";
 import { Document } from "../types/Document"
+import { getContent, getContentGroupByLabel, getDocumentByHash } from "../utils/Dao";
+import { DaoBlockchain } from "../dao/DaoBlockchain";
 
 export interface AssignmentProposal {
   title?: string
@@ -40,6 +42,15 @@ const getAssignmentProposal = ({
   }
 })
 .build();
+
+export const getStartPeriod = (environment: DaoBlockchain, assignment: Document): Document => {
+
+  const assignmentDetails = getContentGroupByLabel(assignment, 'details');
+
+  const startPeriod = getContent(assignmentDetails, 'start_period').value[1];
+
+  return getDocumentByHash(environment.getDaoDocuments(), startPeriod as string);
+}
 
 export {
   getAssignmentProposal,

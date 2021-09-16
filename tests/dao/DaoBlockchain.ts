@@ -9,8 +9,9 @@ import { Member } from '../types/Member';
 import { Period } from '../types/Periods';
 import { last } from '../utils/Arrays';
 import { getDocumentByHash, getDocumentsByType } from '../utils/Dao';
-import { toISOString } from '../utils/Date';
+import { toISOString, toUTC } from '../utils/Date';
 import { DocumentBuilder } from '../utils/DocumentBuilder';
+import { fixDecimals } from '../utils/Parsers';
 import { getAccountPermission } from '../utils/Permissions';
 
 export interface DaoSettings {
@@ -22,6 +23,7 @@ export interface DaoSettings {
     periodDurationSeconds: number;
     periodCount: number;
     hyphaDeferralFactor: number;
+    hyphaUSDValue: number;
 }
 
 export interface TestSettings {
@@ -326,6 +328,10 @@ export class DaoBlockchain extends Blockchain {
                 this.buildAction(this.dao, 'setsetting', {
                     key: 'hypha_deferral_factor_x100',
                     value: [ 'int64', this.settings.hyphaDeferralFactor ]
+                }),
+                this.buildAction(this.dao, 'setsetting', {
+                    key: 'hypha_usd_value',
+                    value: [ 'asset', `${fixDecimals(this.settings.hyphaUSDValue, 4)} HYPHA` ]
                 })
             ]
         });

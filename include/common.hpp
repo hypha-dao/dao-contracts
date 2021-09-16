@@ -61,6 +61,7 @@ namespace common
     constexpr        auto STATE_SUSPENDED = "suspended";
     constexpr        auto STATE_EXPIRED = "expired";
     constexpr        auto STATE_WITHDRAWED = "withdrawed";
+    constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
     static constexpr name PERIOD = name("period");
     static constexpr name START = name ("start");
     static constexpr name NEXT = name ("next");

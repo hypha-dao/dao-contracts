@@ -23,7 +23,8 @@ export const setupEnvironment = async (settings?: Partial<DaoSettings>, testSett
         },
         periodCount: settings?.periodCount ?? periodCount,
         periodDurationSeconds: settings?.periodDurationSeconds ?? periodDurationSeconds,
-        hyphaDeferralFactor: settings?.hyphaDeferralFactor ?? 3
+        hyphaDeferralFactor: settings?.hyphaDeferralFactor ?? 3,
+        hyphaUSDValue: settings?.hyphaUSDValue ?? 8
     }, {
         createMembers: testSettings?.createMembers ?? 5
     });

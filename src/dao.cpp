@@ -421,13 +421,15 @@ namespace hypha
         int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
         auto endPeriod = startPeriod.getNthPeriodAfter(periodCount);
         
+        int64_t badgeAssignmentStart = startPeriod.getStartTime().sec_since_epoch();
         int64_t badgeAssignmentExpiration = endPeriod.getStartTime().sec_since_epoch();
 
+        auto periodStartSecs = period.getStartTime().sec_since_epoch();
         //Badge expiration should be compared against the claimed period instead
         //of the current time, point since it could happen that the assignment is
         //beign claimed after the badge assignment expired.
-        if (period.getStartTime().sec_since_epoch() < badgeAssignmentExpiration)
-        {
+        if (badgeAssignmentStart <= periodStartSecs &&
+            periodStartSecs < badgeAssignmentExpiration) {
           current_badges.push_back(badge);
         }
       }
