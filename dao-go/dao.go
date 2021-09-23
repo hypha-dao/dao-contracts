@@ -79,6 +79,14 @@ func SetIntSetting(ctx context.Context, api *eos.API, contract eos.AccountName, 
 		}})
 }
 
+func SetAssetSetting(ctx context.Context, api *eos.API, contract eos.AccountName, label string, value eos.Asset) (string, error) {
+	return SetSetting(ctx, api, contract, label, &docgraph.FlexValue{
+		BaseVariant: eos.BaseVariant{
+			TypeID: docgraph.GetVariants().TypeID("asset"),
+			Impl:   value,
+		}})
+}
+
 type addPeriod struct {
 	Predecessor eos.Checksum256 `json:"predecessor"`
 	StartTime   eos.TimePoint   `json:"start_time"`
