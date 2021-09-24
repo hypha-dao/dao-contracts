@@ -14,4 +14,5 @@ nodeos -e -p eosio \
   --verbose-http-errors \
   --delete-all-blocks \
   --max-body-size=2097152 \
+  --max-block-cpu-usage-threshold-us=50000 \
   &> nodeos.log
