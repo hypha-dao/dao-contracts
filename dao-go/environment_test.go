@@ -199,15 +199,31 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	assert.NilError(t, err)
 
 	_, env.HusdToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "husd.hypha")
+	assert.NilError(t, err)
+
 	_, env.HvoiceToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "hvoice.hypha")
+	assert.NilError(t, err)
+
 	_, env.HyphaToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "token.hypha")
+	assert.NilError(t, err)
+
 	_, env.Events, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "publsh.hypha")
+	assert.NilError(t, err)
+
 	_, env.SeedsToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "token.seeds")
+	assert.NilError(t, err)
+
 	_, env.SeedsEscrow, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "escrow.seeds")
+	assert.NilError(t, err)
+
 	_, env.SeedsExchange, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "tlosto.seeds")
+	assert.NilError(t, err)
+
 	_, env.Comments, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "comments")
+	assert.NilError(t, err)
 
 	_, env.TelosDecide, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "trailservice")
+	assert.NilError(t, err)
 
 	t.Log("Deploying DAO contract to 		: ", env.DAO)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.DAO, daoPrefix+"wasm", daoPrefix+"abi")
