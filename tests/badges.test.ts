@@ -129,8 +129,6 @@ describe('Badges', () => {
           ).value[1] as string
         );
         
-        console.log("Period usd", periodUSD, periodUSD * 0.02026009582);
-
         const assignProposal = getAssignmentProp(role, assignee.account.accountName);
 
         let assignment = await proposeAndPass(assignProposal, 'assignment', environment);
@@ -190,7 +188,7 @@ describe('Badges', () => {
 
             [hyphaPayment, hvoicePayment, husdPayment] = payments;
             
-            expect(parseFloat(hyphaPayment)).toBeCloseTo(hypha, 2);
+            expect(parseFloat(hyphaPayment)).toBeCloseTo(hypha, 1);
             expect(parseFloat(hvoicePayment)).toBeCloseTo(hvoice, 1);
             expect(parseFloat(husdPayment)).toBeCloseTo(husd, 1);
           };
@@ -212,6 +210,11 @@ describe('Badges', () => {
           //Claim the assignment once or none if the badge assignment period count is
           //greater than the assignment period count
           for (let i = 0; i < Math.min(1, assignmentPeriodCount - badgeAssingPeriodCount); ++i) {
+
+            await environment.dao.contract.claimnextper({
+              assignment_hash: assignment.hash
+            });
+
             checkPayments({ hypha, husd, hvoice });
           }
         }

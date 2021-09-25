@@ -12,7 +12,7 @@ import { DocumentBuilder } from './utils/DocumentBuilder';
 import { setDate } from './utils/Date';
 import { getAccountPermission } from './utils/Permissions';
 import { Asset } from './types/Asset';
-import { assetToNumber } from './utils/Parsers';
+import { assetToNumber, getAssetContent } from './utils/Parsers';
 
 const getPeriodStartDate = (period: Document): Date => {
 
@@ -90,7 +90,7 @@ describe('Assignments', () => {
         assignee: accountName,
         deferred_perc: 50,
         time_share: 100,
-        period_count: 3,
+        period_count: 2,
         title
       });
     }
@@ -115,7 +115,7 @@ describe('Assignments', () => {
 
       [hyphaPayment, hvoicePayment, husdPayment] = payments;
       
-      expect(parseFloat(hyphaPayment)).toBeCloseTo(hypha, 2);
+      expect(parseFloat(hyphaPayment)).toBeCloseTo(hypha, 1);
       expect(parseFloat(hvoicePayment)).toBeCloseTo(hvoice, 1);
       expect(parseFloat(husdPayment)).toBeCloseTo(husd, 1);
     };
@@ -177,7 +177,7 @@ describe('Assignments', () => {
         .toBe(Math.floor(usdSalaryPerPhase * 2));
 
         expect(getContent(assignmentDetails, 'period_count')?.value[1])
-        .toBe("3");
+        .toBe("2");
 
         expect(getContent(getContentGroupByLabel(assignment, 'system'), 'type')?.value[1])
         .toBe("assignment");
@@ -214,9 +214,11 @@ describe('Assignments', () => {
     it('Claim assignment periods', async () => {            
       
         let assignment: Document;
-        
+
+        const hyphaUSDValue = 8.0;
+
         const environment = await setupEnvironment({
-          hyphaUSDValue: 8.34146
+          hyphaUSDValue
         });
 
         let now = new Date(environment.periods[0].startTime);
@@ -233,7 +235,7 @@ describe('Assignments', () => {
 
         let currentPeriod = getStartPeriod(environment, assignment);
 
-        const assignmentDetails = getContentGroupByLabel(assignment, 'details');
+        let assignmentDetails = getContentGroupByLabel(assignment, 'details');
 
         const periodCount = parseInt(
           getContent(assignmentDetails, 'period_count').value[1] as string
@@ -330,6 +332,16 @@ describe('Assignments', () => {
       
         period = startPeriod;
 
+        assignmentDetails = getContentGroupByLabel(assignment, 'details');
+
+        const husd = getAssetContent(assignmentDetails, 'husd_salary_per_phase');
+
+        const hvoice = getAssetContent(assignmentDetails, 'hvoice_salary_per_phase');
+
+        const usdSalary = getAssetContent(assignmentDetails, 'usd_salary_value_per_phase');
+
+        const hypha = (usdSalary - husd) / hyphaUSDValue;
+
         //Try to claim all the periods
         for (let i = 0; i < periodCount2; ++i) {
 
@@ -337,7 +349,7 @@ describe('Assignments', () => {
               assignment_hash: assignment.hash
             });
 
-            checkPayments({ environment, husd: 0, hypha: 0, hvoice: 0 })
+            checkPayments({ environment, husd: husd, hypha: hypha, hvoice: hvoice })
 
             let nextEdge = getEdgesByFilter(edges, { from_node: period.hash, edge_name: 'next' });
 
@@ -387,6 +399,9 @@ describe('Assignments', () => {
         expect(getContent(details, 'period_count').value[1])
         .toBe('6');
     });
+
+    //TODO: Add check on both suspend & withdraw tests to verify that
+    //assignment is not claimable after suspention/withdrawal
 
     it('Suspend  assignment', async () => {            
         
