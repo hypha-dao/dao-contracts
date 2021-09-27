@@ -6,7 +6,7 @@ import { nextDay, setDate } from './utils/Date';
 import { getDaoExpect } from './utils/Expect';
 import { UnderwaterBasketweaver } from './sample-data/RoleSamples';
 import { DocumentBuilder } from './utils/DocumentBuilder';
-import { passProposal, proposeAndPass } from './utils/Proposal';
+import { closeProposal, passProposal, proposeAndPass } from './utils/Proposal';
 import { getAccountPermission } from './utils/Permissions';
 import { getAssignmentProposal } from './sample-data/AssignmentSamples';
 
@@ -58,18 +58,8 @@ describe('Roles', () => {
         expect(getContent(proposalDetails, "state").value[1])
         .toBe('proposed');
         
-        nextDay(environment, new Date());
-
-        // closes proposal
-        await environment.dao.contract.closedocprop({
-          proposal_hash: proposal.hash
-        }, environment.members[0].getPermissions())
-      
-        proposal = last(getDocumentsByType(
-          environment.getDaoDocuments(),
-          'role'
-        ));
-
+        proposal = await closeProposal(proposal, 'role', environment);
+    
         getDaoExpect(environment).toHaveEdge(environment.getRoot(), proposal, 'failedprops');
 
         proposalDetails = getDetailsGroup(proposal);
@@ -91,33 +81,7 @@ describe('Roles', () => {
             'role'
         ));
 
-        proposalDetails = getDetailsGroup(proposal);
-
-        expect(getContent(proposalDetails, "state").value[1])
-              .toBe('proposed');
-
-        for (let i = 0; i < environment.members.length; ++i) {
-          await environment.dao.contract.vote({
-            voter: environment.members[i].account.accountName,
-            proposal_hash: proposal.hash,
-            vote: 'pass',
-            notes: 'votes pass'
-          });
-        }
-
-        const expiration = getContent(getContentGroupByLabel(proposal, "ballot"), "expiration");
-        
-        setDate(environment, new Date(expiration.value[1]), 15);
-
-        // closes proposal
-        await environment.dao.contract.closedocprop({
-          proposal_hash: proposal.hash
-        }, environment.members[0].getPermissions());
-      
-        proposal = last(getDocumentsByType(
-          environment.getDaoDocuments(),
-          'role'
-        ));
+        proposal = await passProposal(proposal, 'role', environment);
 
         proposalDetails = getDetailsGroup(proposal);
 
