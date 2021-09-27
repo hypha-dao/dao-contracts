@@ -1,5 +1,5 @@
 #!/bin/sh
-nodeos -e -p eosio \
+nodeos --genesis-json ./genesis.json -e -p eosio \
   --plugin eosio::producer_plugin  \
   --max-transaction-time 1000 \
   --plugin eosio::producer_api_plugin \
@@ -14,5 +14,4 @@ nodeos -e -p eosio \
   --verbose-http-errors \
   --delete-all-blocks \
   --max-body-size=2097152 \
-  --max-block-cpu-usage-threshold-us=50000 \
   &> nodeos.log
