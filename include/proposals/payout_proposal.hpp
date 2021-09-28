@@ -22,6 +22,8 @@ namespace hypha
         string getBallotContent(ContentWrapper &contentWrapper) override;
         name getProposalType() override;
 
+        void pay(Document &proposal, eosio::name edgeName);
+
     private:
         asset calculateHusd(const asset &usd, const int64_t &deferred);
         asset calculateHypha(const asset &usd, const int64_t &deferred);

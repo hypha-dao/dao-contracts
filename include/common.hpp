@@ -48,6 +48,7 @@ namespace common
     static constexpr name EXTENSION = name("extension");
     constexpr        name SUSPEND = name("suspend");
     constexpr        name SUSPENDED = name("suspended");
+    static constexpr name QUEST_START = name("quest.start");
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
