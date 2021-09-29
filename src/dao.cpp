@@ -402,31 +402,38 @@ namespace hypha
       std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(Member::calcHash(member), common::ASSIGN_BADGE);
       for (Edge e : badge_assignment_edges)
       {
-         Document badgeAssignmentDoc(get_self(), e.getToNode());
-         auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
-         Edge badge_edge = Edge::get(get_self(), badgeAssignmentDoc.getHash(), common::BADGE_NAME);
-         Document badge(get_self(), badge_edge.getToNode());
-         current_badges.push_back(badge);
+        Document badgeAssignmentDoc(get_self(), e.getToNode());
+        Edge badge_edge = Edge::get(get_self(), badgeAssignmentDoc.getHash(), common::BADGE_NAME);
+        
+        //Verify badge still exists
+        EOS_CHECK(
+          Document::exists(get_self(), badge_edge.getToNode()),
+          to_str("Badge document doesn't exits for badge assignment:", 
+                 badgeAssignmentDoc.getHash(),
+                 " badge:", badge_edge.getToNode())
+        )
 
-         // TODO: exclude badges that are no longer active
-         // Period startPeriod(this, badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
-         // int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
-         // int64_t counter = 0;
-         // std::optional<Period> seeker = std::optional<Period>{startPeriod};
-         // while (seeker.has_value() && counter <= periodCount)
-         // {
-         //    eosio::print (" counter : " + std::to_string(counter) + "\n");
-         //    seeker = seeker.value().next();
-         //    counter++;
-         // }
-         // std::optional<eosio::time_point> periodEndTime = seeker.value().getEndTime();
-         // EOS_CHECK(periodEndTime != std::nullopt, "End of calendar has been reached. Contact administrator to add more time periods.");
-         // int64_t badgeAssignmentExpiration = periodEndTime.value().sec_since_epoch();
-         // if (badgeAssignmentExpiration > eosio::current_time_point().sec_since_epoch())
-         // {
+        auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
+        Document badge(get_self(), badge_edge.getToNode());
+        
+        // TODO: exclude badges that are no longer active
+        Period startPeriod(this, badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+        int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
+        auto endPeriod = startPeriod.getNthPeriodAfter(periodCount);
+        
+        int64_t badgeAssignmentStart = startPeriod.getStartTime().sec_since_epoch();
+        int64_t badgeAssignmentExpiration = endPeriod.getStartTime().sec_since_epoch();
 
-         // }
+        auto periodStartSecs = period.getStartTime().sec_since_epoch();
+        //Badge expiration should be compared against the claimed period instead
+        //of the current time, point since it could happen that the assignment is
+        //beign claimed after the badge assignment expired.
+        if (badgeAssignmentStart <= periodStartSecs &&
+            periodStartSecs < badgeAssignmentExpiration) {
+          current_badges.push_back(badge);
+        }
       }
+      
       return current_badges;
    }
 

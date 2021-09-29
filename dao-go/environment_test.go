@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"testing"
 	"time"
-	"os"
 
 	"github.com/alexeyco/simpletable"
 	eostest "github.com/digital-scarcity/eos-go-test"
@@ -57,6 +57,8 @@ type Environment struct {
 	PeriodPause        time.Duration
 	VotingPause        time.Duration
 	ChainResponsePause time.Duration
+
+	HyphaUSDValue eos.Asset
 
 	Members []Member
 	Periods []docgraph.Document
@@ -152,6 +154,8 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 
 	env.PeriodDuration, _ = time.ParseDuration("120s")
 	env.NumPeriods = 20
+
+	env.HyphaUSDValue, _ = eos.NewAssetFromString("8.0000 USD")
 
 	// pauses
 	env.ChainResponsePause = time.Second
@@ -267,6 +271,9 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	assert.NilError(t, err)
 
 	_, err = SetIntSetting(env.ctx, &env.api, env.DAO, "paused", 0)
+	assert.NilError(t, err)
+
+	_, err = SetAssetSetting(env.ctx, &env.api, env.DAO, "hypha_usd_value", env.HyphaUSDValue)
 	assert.NilError(t, err)
 
 	SetNameSetting(env.ctx, &env.api, env.DAO, "hypha_token_contract", env.HyphaToken)

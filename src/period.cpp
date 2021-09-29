@@ -103,7 +103,7 @@ namespace hypha
         EOS_CHECK(exists, "Root node does not have a 'start' edge.");
         Period period(dao, startEdge.getToNode());
 
-        EOS_CHECK(period.getStartTime() < moment,
+        EOS_CHECK(period.getStartTime() <= moment,
                   util::to_str("start_period is in the future. No period found. Start period: ", 
                                period.getStartTime().sec_since_epoch(), 
                                " Moment: ", moment.sec_since_epoch()));

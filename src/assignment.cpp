@@ -1,3 +1,7 @@
+#include <assignment.hpp>
+
+#include <math.h>
+
 #include <period.hpp>
 #include <common.hpp>
 #include <util.hpp>
@@ -5,7 +9,6 @@
 #include <document_graph/edge.hpp>
 #include <document_graph/content_wrapper.hpp>
 #include <member.hpp>
-#include <assignment.hpp>
 #include <time_share.hpp>
 #include <document_graph/util.hpp>
 #include <logger/logger.hpp>
@@ -188,6 +191,51 @@ namespace hypha
         return eosio::asset{0, *symbol};
     }
 
+    eosio::asset Assignment::getHyphaSalary() 
+    {
+      auto cw = getContentWrapper();
+
+      asset usdPerPeriod = cw
+                           .getOrFail(DETAILS, USD_SALARY_PER_PERIOD)->getAs<eosio::asset>();
+
+      int64_t initialTimeshare = getInitialTimeShare()
+                                 .getContentWrapper()
+                                 .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+
+      auto usdPerPeriodCommitmentAdjusted = adjustAsset(usdPerPeriod, static_cast<float>(initialTimeshare) / 100.f);
+
+      auto deferred = static_cast<float>(cw.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>()) / 100.f;
+            
+      auto hyphaUsdVal = m_dao->getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
+
+      auto hyphaPerPeriod = adjustAsset(usdPerPeriodCommitmentAdjusted, deferred);
+      
+      {
+        //Hypha USD Value precision is fixed to 4 -> 10^4 == 10000
+        EOS_CHECK(
+          hyphaUsdVal.symbol.precision() == 4,
+          util::to_str("Expected HYPHA_USD_VALUE precision to be 4, but got:", hyphaUsdVal.symbol.precision())
+        )
+        
+        double hyphaToUsdVal = static_cast<double>(hyphaUsdVal.amount) / 10000.0;
+
+        //Usd period precision is fixed to 2 -> 10^2 == 100
+        EOS_CHECK(
+          hyphaPerPeriod.symbol.precision() == 2,
+          util::to_str("Expected ", USD_SALARY_PER_PERIOD, " precision to be 2, but got:", hyphaPerPeriod.symbol.precision())
+        )
+
+        double hyphaTokenPerPeriod = static_cast<double>(hyphaPerPeriod.amount) / 100.0;
+
+        //Hypha token value precision is fixed to 2 -> 10^2 == 100
+        hyphaPerPeriod.set_amount(static_cast<int64_t>(hyphaTokenPerPeriod / hyphaToUsdVal * 100.0));
+      }
+
+      hyphaPerPeriod.symbol = common::S_HYPHA;
+
+      return hyphaPerPeriod;
+    }
+
     eosio::asset Assignment::getSalaryAmount(const eosio::symbol *symbol)
     {
         TRACE_FUNCTION()
@@ -200,7 +248,7 @@ namespace hypha
             return getAsset(symbol, HVOICE_SALARY_PER_PERIOD);
 
         case common::S_HYPHA.code().raw():
-            return getAsset(symbol, HYPHA_SALARY_PER_PERIOD);
+            return getHyphaSalary();
         }
 
         return eosio::asset{0, *symbol};
