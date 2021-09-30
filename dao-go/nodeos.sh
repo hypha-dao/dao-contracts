@@ -13,5 +13,6 @@ nodeos --genesis-json ./genesis.json -e -p eosio \
   --http-validate-host=false \
   --verbose-http-errors \
   --delete-all-blocks \
+  --http-max-response-time-ms=5000 \
   --max-body-size=2097152 \
   &> nodeos.log
