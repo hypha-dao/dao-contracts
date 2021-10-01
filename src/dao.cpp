@@ -416,8 +416,14 @@ namespace hypha
         auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
         Document badge(get_self(), badge_edge.getToNode());
         
-        // TODO: exclude badges that are no longer active
-        Period startPeriod(this, badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+        //Check if badge assignment is old (start_period was stored as an integer)
+        //If the type of start_period is no checksum then let's skip this badge assignment
+        Content* startPeriodContent = badgeAssignment.getOrFail(DETAILS, START_PERIOD);
+        if (!std::holds_alternative<eosio::checksum256>(startPeriodContent->value)) {
+          continue;
+        }
+
+        Period startPeriod(this, startPeriodContent->getAs<eosio::checksum256>());
         int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
         auto endPeriod = startPeriod.getNthPeriodAfter(periodCount);
         
