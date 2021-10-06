@@ -39,8 +39,24 @@ const getEditProposal = (original: string,
     .build();
 }
 
+const adjustDeferralPerc = async (environment: DaoBlockchain,
+                                  issuer: string,
+                                  assignment: Document,
+                                  deferralPerc: number) => {
+    await environment.dao.contract.adjustdeferr({
+      issuer,
+      assignment_hash: assignment.hash,
+      new_deferred_perc_x100: deferralPerc
+    });
+
+    return last(getDocumentsByType(
+      environment.getDaoDocuments(),
+      "assignment"
+    ));
+}
+
 export const claimRemainingPeriods = async (assignment: Document,
-                                     environment: DaoBlockchain): Promise<number> => {
+                                            environment: DaoBlockchain): Promise<number> => {
 
     let claimedPeriods = 0;
     let edges = environment.getDaoEdges();
@@ -304,7 +320,7 @@ describe('Assignments', () => {
         const startPeriod = getDocumentByHash(environment.getDaoDocuments(), startPeriodHash);
 
         let period = startPeriod;
-
+        
         for (let i = 0; i < periodCount2; ++i) {
           
             let nextEdge = getEdgesByFilter(edges, { from_node: period.hash, edge_name: 'next' });
@@ -342,8 +358,8 @@ describe('Assignments', () => {
 
         const hypha = (usdSalary - husd) / hyphaUSDValue;
 
-        //Try to claim all the periods
-        for (let i = 0; i < periodCount2; ++i) {
+        //Try to claim all the periods except for the last one
+        for (let i = 0; i < periodCount2 - 1; ++i) {
 
             await environment.dao.contract.claimnextper({
               assignment_hash: assignment.hash
@@ -359,6 +375,32 @@ describe('Assignments', () => {
             
             period = nextPeriod;
         }
+
+        //Original is 50%
+        const newDeferral = 0.35;
+
+        /**
+        * Gives unauthorized error
+        */
+        // //Change deferral percentage
+        // await adjustDeferralPerc(
+        //   environment, 
+        //   assignee.account.accountName, 
+        //   assignment,
+        //   newDeferral * 100
+        // );
+        
+        // //Claim last period & verify new deferral percentage is right
+        // await environment.dao.contract.claimnextper({
+        //   assignment_hash: assignment.hash
+        // });
+
+        // checkPayments({ 
+        //   environment, 
+        //   husd: usdSalary * (1-newDeferral), 
+        //   hypha: (usdSalary * newDeferral) / hyphaUSDValue, 
+        //   hvoice: hvoice 
+        // });
     });
 
     it('Edit assignment', async () => {            

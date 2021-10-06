@@ -95,6 +95,8 @@ namespace common
     constexpr auto ADJUST_MODIFIER = "modifier";
     constexpr auto MOD_WITHDRAW = "withdraw";
 
+    constexpr auto APPROVED_DEFERRED = "approved_deferred_perc_x100";
+
     static constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
     static constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
     static constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");

@@ -26,8 +26,10 @@ namespace hypha
       Edge::getOrNew(get_self(), get_self(), hash, roleToAssignmentEdge.getFromNode(), common::ROLE_NAME);
    }
 
+   
+
    ACTION 
-   dao::addstate (const std::vector<eosio::checksum256>& hashes)
+   dao::fixassigns(std::vector<eosio::checksum256>& hashes)
    {
      const size_t maxHashesPerAction = 2;
 
@@ -37,28 +39,16 @@ namespace hypha
      )
 
      for (size_t i = 0; i < hashes.size(); ++i) {
-       Document doc(get_self(), hashes[i]);
-       auto cw = doc.getContentWrapper();
-       auto details = cw.getGroupOrFail(DETAILS);
-       if (!cw.exists(DETAILS, common::STATE)) {
-         auto type = cw.getOrFail(SYSTEM, TYPE)->getAs<name>();
-         //Only modify assignment/roles
-         auto state = common::STATE_APPROVED;
-         if (type == common::ASSIGNMENT) {
-           Assignment assignment(this, doc.getHash());
-           auto endTime = assignment.getLastPeriod().getEndTime().sec_since_epoch();
-           if (endTime < eosio::current_time_point().sec_since_epoch()) {
-             state = common::STATE_EXPIRED;
-           }
-         }
-         else if (type != common::ROLE_NAME) {
-           continue;
-         }
-         if (Edge::exists(get_self(), getRoot(get_self()), doc.getHash(), common::PROPOSAL)) {
-           state = common::STATE_PROPOSED;
-         }
-         cw.insertOrReplace(*details, Content{ common::STATE, state });
-         m_documentGraph.updateDocument(get_self(), doc.getHash(), doc.getContentGroups());
+       Assignment assign(this, hashes[i]);
+       auto cw = assign.getContentWrapper();
+       if (cw.getOrFail(DETAILS, common::STATE)->getAs<std::string>() == common::STATE_APPROVED && 
+           !cw.exists(DETAILS, common::APPROVED_DEFERRED)) {
+         auto details = cw.getGroupOrFail(DETAILS);
+         ContentWrapper::insertOrReplace(*details, Content{
+           common::APPROVED_DEFERRED,
+           cw.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>()
+         });
+         m_documentGraph.updateDocument(assign.getCreator(), assign.getHash(), cw.getContentGroups());
        }
      }
    }
@@ -805,6 +795,71 @@ namespace hypha
                           modstr);
       }
    }
+
+  ACTION dao::adjustdeferr(name issuer, checksum256 assignment_hash, int64_t new_deferred_perc_x100)
+  {
+    TRACE_FUNCTION()
+
+    require_auth(issuer);
+
+    Assignment assignment = Assignment(this, assignment_hash);
+
+    EOS_CHECK(
+      assignment.getAssignee().getAccount() == issuer,
+      "Only the owner of the assignment can modify it"
+    );
+
+    auto cw = assignment.getContentWrapper();
+
+    auto details = cw.getGroupOrFail(DETAILS);
+
+    auto approvedDeferredPerc = cw.getOrFail(DETAILS, common::APPROVED_DEFERRED)->getAs<int64_t>();
+
+    EOS_CHECK(
+      new_deferred_perc_x100 >= approvedDeferredPerc,
+      to_str("New percentage has to be greater or equal to approved percentage: ", approvedDeferredPerc)
+    )
+
+    const int64_t UPPER_LIMIT = 100;
+
+    EOS_CHECK(
+      approvedDeferredPerc <= new_deferred_perc_x100 && new_deferred_perc_x100 <= UPPER_LIMIT,
+      to_str("New percentage is out of valid range [", 
+             approvedDeferredPerc, " - ", UPPER_LIMIT, "]:", new_deferred_perc_x100)
+    )
+
+    asset usdPerPeriod = cw.getOrFail(DETAILS, USD_SALARY_PER_PERIOD)->getAs<eosio::asset>();
+
+    int64_t initialTimeshare = assignment.getInitialTimeShare()
+                                         .getContentWrapper()
+                                         .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+
+    auto usdPerPeriodCommitmentAdjusted = adjustAsset(usdPerPeriod, static_cast<float>(initialTimeshare) / 100.f);
+
+    auto deferred = new_deferred_perc_x100 / 100.f;
+          
+    auto husdVal = adjustAsset(usdPerPeriodCommitmentAdjusted, 1.f - deferred);
+    husdVal.symbol = common::S_HUSD;
+    
+    cw.insertOrReplace(*details, Content{
+      DEFERRED,
+      new_deferred_perc_x100
+    });
+
+    auto hyphaVal = assignment.getHyphaSalary();
+
+    cw.insertOrReplace(*details, Content{
+      HYPHA_SALARY_PER_PERIOD, 
+      hyphaVal
+    });
+
+    cw.insertOrReplace(*details, Content{
+      HUSD_SALARY_PER_PERIOD,
+      husdVal
+    });
+
+    m_documentGraph.updateDocument(issuer, assignment_hash, cw.getContentGroups());
+  }
 
    void dao::modifyCommitment(Assignment& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
    {
