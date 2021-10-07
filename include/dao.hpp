@@ -77,6 +77,7 @@ namespace hypha
          }
       }
 
+      ACTION fixassigns(std::vector<checksum256>& hashes);
       ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
       ACTION closedocprop(const checksum256 &proposal_hash);
@@ -133,6 +134,7 @@ namespace hypha
       }
 
       ACTION adjustcmtmnt(name issuer, ContentGroups& adjust_info);
+      ACTION adjustdeferr(name issuer, checksum256 assignment_hash, int64_t new_deferred_perc_x100);
 
       ACTION withdraw(name owner, eosio::checksum256 hash);
       ACTION suspend(name proposer, eosio::checksum256 hash, string reason);
@@ -143,7 +145,6 @@ namespace hypha
       ACTION newedge(eosio::name & creator, const checksum256 &from_node, const checksum256 &to_node, const name &edge_name);
       ACTION updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value);
       ACTION fix (const eosio::checksum256 &hash);
-      ACTION addstate (const std::vector<eosio::checksum256>& hashes);
       // ACTION nbadge (const name& owner, const ContentGroups& contentGroups);
       // ACTION nbadass(const name& owner, const ContentGroups& contentGroups);
       // ACTION nbadprop (const name& owner, const ContentGroups& contentGroups);

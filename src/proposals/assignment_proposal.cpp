@@ -167,6 +167,13 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
+
+        auto [detailsIdx, details] = contentWrapper.getGroup(DETAILS);
+
+        contentWrapper.insertOrReplace(*details, Content{
+          common::APPROVED_DEFERRED, 
+          contentWrapper.getOrFail(detailsIdx, DEFERRED).second->getAs<int64_t>()
+        });
     }
 
     std::string AssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)
@@ -204,9 +211,22 @@ namespace hypha
         // calculate HYPHA phase salary amount
         asset deferredTimeShareAdjUsdPerPeriod = adjustAsset(calculateTimeShareUsdPerPeriod(annualUsd, timeShare), (float)(float)deferred / (float)100);
 
-        float hypha_deferral_coeff = (float)m_dao.getSettingOrFail<int64_t>(HYPHA_DEFERRAL_FACTOR) / (float)100;
+        //float hypha_deferral_coeff = (float)m_dao.getSettingOrFail<int64_t>(HYPHA_DEFERRAL_FACTOR) / (float)100;
 
-        return adjustAsset(asset{deferredTimeShareAdjUsdPerPeriod.amount, common::S_HYPHA}, hypha_deferral_coeff);
+        auto hyphaUsdVal = m_dao.getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
+
+        //Hypha USD Value precision is fixed to 4 -> 10^4 == 10000
+        EOS_CHECK(
+          hyphaUsdVal.symbol.precision() == 4,
+          util::to_str("Expected HYPHA_USD_VALUE precision to be 4, but got:", hyphaUsdVal.symbol.precision())
+        )
+
+        auto hyphaToUsd = hyphaUsdVal.amount / 10000.0;
+
+        return asset{
+          static_cast<int64_t>(deferredTimeShareAdjUsdPerPeriod.amount / hyphaToUsd), 
+          common::S_HYPHA
+        };
     }
 
     asset AssignmentProposal::calculateHvoice(const asset &annualUsd, const int64_t &timeShare)
