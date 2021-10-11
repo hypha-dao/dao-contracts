@@ -817,9 +817,15 @@ namespace hypha
 
     auto cw = assignment.getContentWrapper();
 
-    auto details = cw.getGroupOrFail(DETAILS);
+    auto [detailsIdx, detailsGroup] = cw.getGroup(DETAILS);
 
-    auto approvedDeferredPerc = cw.getOrFail(DETAILS, common::APPROVED_DEFERRED)->getAs<int64_t>();
+    EOS_CHECK(
+      detailsGroup != nullptr,
+      "Missing details group from assignment"
+    );
+
+    auto approvedDeferredPerc = cw.getOrFail(detailsIdx, common::APPROVED_DEFERRED)
+                                  .second->getAs<int64_t>();
 
     EOS_CHECK(
       new_deferred_perc_x100 >= approvedDeferredPerc,
@@ -834,7 +840,8 @@ namespace hypha
              approvedDeferredPerc, " - ", UPPER_LIMIT, "]:", new_deferred_perc_x100)
     )
 
-    asset usdPerPeriod = cw.getOrFail(DETAILS, USD_SALARY_PER_PERIOD)->getAs<eosio::asset>();
+    asset usdPerPeriod = cw.getOrFail(detailsIdx, USD_SALARY_PER_PERIOD)
+                           .second->getAs<eosio::asset>();
 
     int64_t initialTimeshare = assignment.getInitialTimeShare()
                                          .getContentWrapper()
@@ -847,19 +854,29 @@ namespace hypha
     auto husdVal = adjustAsset(usdPerPeriodCommitmentAdjusted, 1.f - deferred);
     husdVal.symbol = common::S_HUSD;
     
-    cw.insertOrReplace(*details, Content{
+    cw.insertOrReplace(*detailsGroup, Content{
       DEFERRED,
       new_deferred_perc_x100
     });
 
-    auto hyphaVal = assignment.getHyphaSalary();
+    auto hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
 
-    cw.insertOrReplace(*details, Content{
+    EOS_CHECK(
+      hyphaUsdVal.symbol.precision() == 4,
+      util::to_str("Expected HYPHA_USD_VALUE precision to be 4, but got:", hyphaUsdVal.symbol.precision())
+    )
+
+    auto hyphaVal = adjustAsset(usdPerPeriodCommitmentAdjusted, deferred);
+
+    hyphaVal.set_amount(hyphaVal.amount / (hyphaUsdVal.amount * 0.0001));
+    hyphaVal.symbol = common::S_HYPHA;
+
+    cw.insertOrReplace(*detailsGroup, Content{
       HYPHA_SALARY_PER_PERIOD, 
       hyphaVal
     });
 
-    cw.insertOrReplace(*details, Content{
+    cw.insertOrReplace(*detailsGroup, Content{
       HUSD_SALARY_PER_PERIOD,
       husdVal
     });
