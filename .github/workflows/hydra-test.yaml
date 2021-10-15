@@ -1,0 +1,42 @@
+name: test-hydra
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request_target:
+    branches: [ master, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ github.event_name == 'push' }}
+        uses: actions/checkout@v2
+        with:
+            submodules: recursive
+      - if: ${{ github.event_name == 'pull_request_target' }}
+        uses: actions/checkout@v2
+      - if: ${{ github.event_name == 'pull_request_target' }}
+        run: USER=${GITHUB_ACTOR} TOKEN=${{ secrets.GITHUB_TOKEN }} bash .github/scripts/only_collaborators.sh
+      - if: ${{ github.event_name == 'pull_request_target' }}
+        uses: actions/checkout@v2
+        with:
+            ref: ${{github.event.pull_request.head.ref}}
+            repository: ${{github.event.pull_request.head.repo.full_name}}
+            submodules: recursive
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12'
+          check-latest: true
+      - uses: bahmutov/npm-install@v1
+      - name: "Build"
+        uses: docker://josejulio/hypha-builder:release_1.7.x
+        with:
+          args: " -j2 VERBOSE=1 "
+        env:
+          CODE: "/github/workspace/"
+          PATCH_WASM_LD: "1"
+      - run: mkdir -p ~/.hydra && echo $HYDRA_AUTH > ~/.hydra/auth.json && ls -l ~/.hydra
+        env:
+          HYDRA_AUTH: ${{ secrets.HYDRA_AUTH }}
+      - run: yarn test --forceExit --maxWorkers=4 --detectOpenHandles

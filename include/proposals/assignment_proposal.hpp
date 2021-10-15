@@ -14,9 +14,6 @@ namespace hypha {
     public:
         using Proposal::Proposal;
 
-        Document propose(const name &proposer, ContentGroups &contentGroups);
-        void close(Document &proposal);
-
     protected:
 
         void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;

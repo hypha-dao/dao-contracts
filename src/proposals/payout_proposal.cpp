@@ -7,12 +7,15 @@
 #include <proposals/payout_proposal.hpp>
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/content.hpp>
+#include <logger/logger.hpp>
+
 
 namespace hypha
 {
 
     void PayoutProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     {
+        TRACE_FUNCTION()
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
 
         // if end_period is provided, use that for the price timestamp, but
@@ -21,7 +24,7 @@ namespace hypha
 
         if (auto [idx, endPeriod] = contentWrapper.get(DETAILS, END_PERIOD); endPeriod)
         {
-            eosio::check(std::holds_alternative<eosio::checksum256>(endPeriod->value),
+            EOS_CHECK(std::holds_alternative<eosio::checksum256>(endPeriod->value),
                          "fatal error: expected to be a checksum256 type: " + endPeriod->label);
 
             Period period(&m_dao, std::get<eosio::checksum256>(endPeriod->value));
@@ -32,14 +35,14 @@ namespace hypha
         //  (deferred_perc_x100 will be required)
         if (auto [idx, usdAmount] = contentWrapper.get(DETAILS, USD_AMOUNT); usdAmount)
         {
-            eosio::check(std::holds_alternative<eosio::asset>(usdAmount->value),
+            EOS_CHECK(std::holds_alternative<eosio::asset>(usdAmount->value),
                          "fatal error: expected token type must be an asset value type: " + usdAmount->label);
             eosio::asset usd = std::get<eosio::asset>(usdAmount->value);
 
             // deferred_x100 is required and must be greater than or equal to zero and less than or equal to 10000
             int64_t deferred = contentWrapper.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>();
-            eosio::check(deferred >= 0, DEFERRED + string(" must be greater than or equal to zero. You submitted: ") + std::to_string(deferred));
-            eosio::check(deferred <= 10000, DEFERRED + string(" must be less than or equal to 10000 (=100%). You submitted: ") + std::to_string(deferred));
+            EOS_CHECK(deferred >= 0, DEFERRED + string(" must be greater than or equal to zero. You submitted: ") + std::to_string(deferred));
+            EOS_CHECK(deferred <= 10000, DEFERRED + string(" must be less than or equal to 10000 (=100%). You submitted: ") + std::to_string(deferred));
 
             Content husd(HUSD_AMOUNT, calculateHusd(usd, deferred));
             Content hypha(HYPHA_AMOUNT, calculateHypha(usd, deferred));
@@ -73,6 +76,7 @@ namespace hypha
 
     void PayoutProposal::passImpl(Document &proposal)
     {
+        TRACE_FUNCTION()
         // Graph updates:
         //  dho     ---- payout ---->   payout
         //  member  ---- payout ---->   payout
@@ -83,7 +87,7 @@ namespace hypha
 
         // recipient must exist and be a DHO member
         name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
-        eosio::check(Member::isMember(m_dao.get_self(), recipient), "only members are eligible for payouts: " + recipient.to_string());
+        EOS_CHECK(Member::isMember(m_dao.get_self(), recipient), "only members are eligible for payouts: " + recipient.to_string());
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), Member::calcHash(recipient), proposal.getHash(), common::PAYOUT);
 
@@ -107,6 +111,7 @@ namespace hypha
 
     std::string PayoutProposal::getBallotContent(ContentWrapper &contentWrapper)
     {
+        TRACE_FUNCTION()
         return contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>();
     }
 

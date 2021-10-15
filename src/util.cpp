@@ -3,6 +3,7 @@
 #include <document_graph/document.hpp>
 #include <document_graph/content_wrapper.hpp>
 #include <common.hpp>
+#include <logger/logger.hpp>
 
 #include <cmath>
 
@@ -83,6 +84,8 @@ namespace hypha
                     const eosio::asset &token_amount,
                     const string &memo)
     {
+        TRACE_FUNCTION()
+        
         eosio::action(
             eosio::permission_level{issuer, eosio::name("active")},
             token_contract, eosio::name("issue"),

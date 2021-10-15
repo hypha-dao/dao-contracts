@@ -3,6 +3,7 @@
 #include <util.hpp>
 #include <dao.hpp>
 #include <document_graph/edge.hpp>
+#include <logger/logger.hpp>
 
 namespace hypha
 {
@@ -97,12 +98,15 @@ namespace hypha
 
     Period Period::asOf(dao *dao, eosio::time_point moment)
     {
+        TRACE_FUNCTION()
         auto [exists, startEdge] = Edge::getIfExists(dao->get_self(), getRoot(dao->get_self()), common::START);
-        eosio::check(exists, "Root node does not have a 'start' edge.");
+        EOS_CHECK(exists, "Root node does not have a 'start' edge.");
         Period period(dao, startEdge.getToNode());
 
-        eosio::check(period.getStartTime() < moment,
-                     "start_period is in the future. No period found.");
+        EOS_CHECK(period.getStartTime() <= moment,
+                  util::to_str("start_period is in the future. No period found. Start period: ", 
+                               period.getStartTime().sec_since_epoch(), 
+                               " Moment: ", moment.sec_since_epoch()));
 
         while (period.getEndTime() < moment)
         {
@@ -118,16 +122,18 @@ namespace hypha
 
     Period Period::next()
     {
+        TRACE_FUNCTION()
         auto [exists, period] = Edge::getIfExists(m_dao->get_self(), getHash(), common::NEXT);
-        eosio::check(exists, "End of calendar has been reached. Contact administrator to add more time periods.");
+        EOS_CHECK(exists, "End of calendar has been reached. Contact administrator to add more time periods.");
         return Period(m_dao, period.getToNode());
     }
 
     Period Period::getNthPeriodAfter(int64_t count) const
     {
-        eosio::check(
+        TRACE_FUNCTION()
+        EOS_CHECK(
           count >= 0, 
-          "Period::getNthPeriodAfter: Count has to be greater or equal to 0"
+          "Count has to be greater or equal to 0"
         );
 
         Period next = *this;
@@ -141,7 +147,7 @@ namespace hypha
             }
             else
             {
-                eosio::check(false, "End of calendar has been reached. Contact administrator to add more time periods.");
+                EOS_CHECK(false, "End of calendar has been reached. Contact administrator to add more time periods.");
             }
         }
 
@@ -150,6 +156,7 @@ namespace hypha
 
     int64_t Period::getPeriodCountTo(Period& other)
     {
+      TRACE_FUNCTION()
       auto otherStartSec = other.getStartTime().sec_since_epoch();
       auto currentStartSec = getStartTime().sec_since_epoch();
 
@@ -170,5 +177,28 @@ namespace hypha
       }
 
       return count;
+    }
+
+    Period Period::getPeriodUntil(eosio::time_point moment)
+    {
+      TRACE_FUNCTION()
+
+      Period next = *this;
+
+      EOS_CHECK(
+        moment >= next.getStartTime(),
+        to_str("Moment must happen after period start date, [moment secs]:", 
+                moment.sec_since_epoch(), " [period]:", getHash())
+      );
+
+      while (moment > next.getEndTime()) {
+        auto [hasNext, edge] = Edge::getIfExists(m_dao->get_self(), next.getHash(), common::NEXT);
+
+        EOS_CHECK(hasNext, "End of calendar has been reached. Contact administrator to add more time periods.");
+
+        next = Period(m_dao, edge.getToNode());
+      }
+
+      return next;
     }
 } // namespace hypha

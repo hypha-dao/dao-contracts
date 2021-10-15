@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-  eostest "github.com/digital-scarcity/eos-go-test"
+	eostest "github.com/digital-scarcity/eos-go-test"
 	"github.com/eoscanada/eos-go"
 	"github.com/hypha-dao/document-graph/docgraph"
 	"gotest.tools/assert"
@@ -156,7 +156,6 @@ func ValidateLastReceipt(targetHUSD, targetHYPHA, targetHVOICE, targetSEEDS int6
 }
 
 func TestAdjustCommitment(t *testing.T) {
-  t.Skip("Skipping failing test")
   teardownTestCase := setupTestCase(t)
   defer teardownTestCase(t)
 
@@ -280,7 +279,7 @@ func TestAdjustCommitment(t *testing.T) {
       usdSalaryPerPhase := float32(3039.01)
 
       //Number of HYPHA tokens received in 1 full period
-      totalHYPHA := float32(759.75)
+      totalHYPHA := float32(379.87)
 
       //Number of HUSD tokens received in 1 full period
       totalHUSD := float32(0)
@@ -293,7 +292,7 @@ func TestAdjustCommitment(t *testing.T) {
 
       //Claim first period
       t.Log("Waiting for a period to lapse...")
-      eostest.Pause(env.PeriodPause, "", "Waiting...")
+      eostest.Pause(env.PeriodPause*2, "", "Waiting...")
 
       //This should get partial payment since the approved time should be > than
       //the start time of the period
@@ -367,327 +366,6 @@ func TestAdjustCommitment(t *testing.T) {
         newTotalHUSD := CalculateTotalCompensation(0.5, 1.0, 0.75, totalHUSD)
         ValidateLastReceipt(int64(newTotalHUSD), int64(newTotalHYPHA), int64(newTotalHVOICE), int64(newTotalSEEDS), env, t)
       }
-    }
-  })
-}
-
-func TestWithdrawAssignment(t *testing.T) {
-  teardownTestCase := setupTestCase(t)
-  defer teardownTestCase(t)
-
-  env = SetupEnvironment(t)
-  t.Log(env.String())
-  t.Log("\nDAO Environment Setup complete\n")
-
-  // roles
-  proposer := env.Members[0]
-  assignee := env.Members[1]
-  closer := env.Members[2]
-
-  role1Doc := CreateRole(t, env, proposer, closer, role1)
-
-  t.Run("Test Withdraw Assignment", func(t *testing.T) {
-
-    tests := []struct {
-      name       string
-      roleTitle  string
-      title      string
-      role       docgraph.Document
-      assignment string
-      husd       string
-      hypha      string
-      hvoice     string
-      usd        string
-    }{
-      {
-        name:       "role1 - 100% 100%",
-        roleTitle:  "Underwater Basketweaver",
-        title:      "Underwater Basketweaver - Atlantic",
-        role:       role1Doc,
-        assignment: assignment1,
-        husd:       "0.00 HUSD",
-        hypha:      "759.75 HYPHA",
-        hvoice:     "6078.02 HVOICE",
-        usd:        "3039.01 USD",
-      },
-    }
-
-    for _, test := range tests {
-
-      t.Log("\n\nStarting test: ", test.name)
-
-      _, err := ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, test.role.Hash, env.Periods[0].Hash, test.assignment)
-      assert.NilError(t, err)
-
-      // retrieve the document we just created
-      proposal, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
-      assert.NilError(t, err)
-
-      err = voteToPassTD(t, env, proposal, closer)
-      assert.NilError(t, err)
-
-      assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
-      assert.NilError(t, err)
-
-      var periodDuration float32
-      var firstPeriodStartSecs int64
-      var firstPeriodEndSecs int64
-      //Get starting period to calculate half period duration
-      {
-        periodHash, err := assignment.GetContent("start_period")
-        assert.NilError(t, err)
-        period, err := docgraph.LoadDocument(env.ctx, &env.api, env.DAO, periodHash.String())
-        assert.NilError(t, err)
-        startTime, err := period.GetContent("start_time")
-        assert.NilError(t, err)
-        firstPeriodStartSecs = int64(startTime.Impl.(eos.TimePoint)) / 1000000
-        nextPeriods, err := docgraph.GetEdgesFromDocumentWithEdge(env.ctx, &env.api, env.DAO, period, eos.Name("next"))
-        assert.NilError(t, err)
-        nextPeriod, err := docgraph.LoadDocument(env.ctx, &env.api, env.DAO, nextPeriods[0].ToNode.String())
-        assert.NilError(t, err)
-        startTime, err = nextPeriod.GetContent("start_time")
-        assert.NilError(t, err)
-        firstPeriodEndSecs = int64(startTime.Impl.(eos.TimePoint)) / 1000000
-      }
-
-      //Create Adjustment 0.5 Periods after start period
-      CreateAdjustmentAfter(int64(50), firstPeriodStartSecs,
-                            env.PeriodDuration/2,
-                            &assignment,
-                            &assignee, env, t)
-
-      usdSalaryPerPhase := float32(3039.01)
-
-      //Number of HYPHA tokens received in 1 full period
-      totalHYPHA := float32(759.75)
-
-      //Number of HUSD tokens received in 1 full period
-      totalHUSD := float32(0)
-
-      //Number of HVOICE tokens received in 1 full period
-      totalHVOICE := float32(usdSalaryPerPhase * 2.0)
-
-      //Number of seeds received in 1 full period
-      totalSEEDS := float32(0)
-
-			totalPeriods := 9 //Number of periods for this assignment
-
-			claimedPeriods := 0
-
-      //Claim first period
-      t.Log("Waiting for 2 periods to lapse...")
-      eostest.Pause(env.PeriodPause * 2, "", "Waiting...")
-
-      //This should get half payment since we changed the commitment to half
-      //the start time of the period
-      _, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
-      assert.NilError(t, err)
-
-			claimedPeriods++
-      
-      periodDuration = float32(firstPeriodEndSecs - firstPeriodStartSecs)
-
-      {
-        //Period Duration
-        half := int64(periodDuration) / 2
-        firstHalf := float32(half) / periodDuration
-        secondHalf := (periodDuration - float32(half)) / periodDuration
-        newTotalSEEDS := totalSEEDS*firstHalf + totalSEEDS*float32(0.5)*secondHalf
-        newTotalHYPHA := totalHYPHA*firstHalf + totalHYPHA*float32(0.5)*secondHalf
-        newTotalHVOICE := totalHVOICE*firstHalf + totalHVOICE*float32(0.5)*secondHalf
-        newTotalHUSD := totalHUSD*firstHalf + totalHUSD*float32(0.5)*secondHalf
-        ValidateLastReceipt(int64(newTotalHUSD), int64(newTotalHYPHA), int64(newTotalHVOICE), int64(newTotalSEEDS), env, t)
-      }
-
-      //Withdraw assignment
-			_, err = WithdrawAssignment(env, assignee.Member, assignment.Hash)
-			assert.NilError(t, err)			
-
-			assignment, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
-      assert.NilError(t, err)
-			//Claiming should not work before the end period
-			claimed := true
-
-			for claimed {
-				//Claim next
-				t.Log("Waiting for another period to lapse...")
-				eostest.Pause(env.PeriodPause, "", "Waiting...")
-
-				_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
-
-				if err == nil {
-					claimedPeriods++
-				} else {
-					assert.ErrorContains(t, err, "All available periods for this assignment have been claimed:")
-					claimed = false
-				}
-			}
-			
-      assert.Assert(t, claimedPeriods < totalPeriods, "Claimed periods should be less than original approved periods")
-    }
-  })
-}
-
-func TestSuspendAssignment(t *testing.T) {
-  teardownTestCase := setupTestCase(t)
-  defer teardownTestCase(t)
-
-  env = SetupEnvironment(t)
-  t.Log(env.String())
-  t.Log("\nDAO Environment Setup complete\n")
-
-  // roles
-  proposer := env.Members[0]
-  assignee := env.Members[1]
-  closer := env.Members[2]
-
-  role1Doc := CreateRole(t, env, proposer, closer, role1)
-
-  t.Run("Test Suspend Assignment", func(t *testing.T) {
-
-    tests := []struct {
-      name       string
-      roleTitle  string
-      title      string
-      role       docgraph.Document
-      assignment string
-      husd       string
-      hypha      string
-      hvoice     string
-      usd        string
-    }{
-      {
-        name:       "role1 - 100% 100%",
-        roleTitle:  "Underwater Basketweaver",
-        title:      "Underwater Basketweaver - Atlantic",
-        role:       role1Doc,
-        assignment: assignment1,
-        husd:       "0.00 HUSD",
-        hypha:      "759.75 HYPHA",
-        hvoice:     "6078.02 HVOICE",
-        usd:        "3039.01 USD",
-      },
-    }
-
-    for _, test := range tests {
-
-      t.Log("\n\nStarting test: ", test.name)
-
-      _, err := ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, test.role.Hash, env.Periods[0].Hash, test.assignment)
-      assert.NilError(t, err)
-
-      // retrieve the document we just created
-      proposal, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
-      assert.NilError(t, err)
-
-      err = voteToPassTD(t, env, proposal, closer)
-      assert.NilError(t, err)
-
-      assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
-      assert.NilError(t, err)
-
-      var periodDuration float32
-      var firstPeriodStartSecs int64
-      var firstPeriodEndSecs int64
-      //Get starting period to calculate half period duration
-      {
-        periodHash, err := assignment.GetContent("start_period")
-        assert.NilError(t, err)
-        period, err := docgraph.LoadDocument(env.ctx, &env.api, env.DAO, periodHash.String())
-        assert.NilError(t, err)
-        startTime, err := period.GetContent("start_time")
-        assert.NilError(t, err)
-        firstPeriodStartSecs = int64(startTime.Impl.(eos.TimePoint)) / 1000000
-        nextPeriods, err := docgraph.GetEdgesFromDocumentWithEdge(env.ctx, &env.api, env.DAO, period, eos.Name("next"))
-        assert.NilError(t, err)
-        nextPeriod, err := docgraph.LoadDocument(env.ctx, &env.api, env.DAO, nextPeriods[0].ToNode.String())
-        assert.NilError(t, err)
-        startTime, err = nextPeriod.GetContent("start_time")
-        assert.NilError(t, err)
-        firstPeriodEndSecs = int64(startTime.Impl.(eos.TimePoint)) / 1000000
-      }
-
-      //Create Adjustment 0.5 Periods after start period
-      CreateAdjustmentAfter(int64(50), firstPeriodStartSecs,
-                            env.PeriodDuration/2,
-                            &assignment,
-                            &assignee, env, t)
-
-      usdSalaryPerPhase := float32(3039.01)
-
-      //Number of HYPHA tokens received in 1 full period
-      totalHYPHA := float32(759.75)
-
-      //Number of HUSD tokens received in 1 full period
-      totalHUSD := float32(0)
-
-      //Number of HVOICE tokens received in 1 full period
-      totalHVOICE := float32(usdSalaryPerPhase * 2.0)
-
-      //Number of seeds received in 1 full period
-      totalSEEDS := float32(0)
-
-			totalPeriods := 9 //Number of periods for this assignment
-
-			claimedPeriods := 0
-
-      //Claim first period
-      t.Log("Waiting for 2 periods to lapse...")
-      eostest.Pause(env.PeriodPause * 2, "", "Waiting...")
-
-      //This should get half payment since we changed the commitment to half
-      //the start time of the period
-      _, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
-      assert.NilError(t, err)
-
-			claimedPeriods++
-      
-      periodDuration = float32(firstPeriodEndSecs - firstPeriodStartSecs)
-
-      {
-        //Period Duration
-        half := int64(periodDuration) / 2
-        firstHalf := float32(half) / periodDuration
-        secondHalf := (periodDuration - float32(half)) / periodDuration
-        newTotalSEEDS := totalSEEDS*firstHalf + totalSEEDS*float32(0.5)*secondHalf
-        newTotalHYPHA := totalHYPHA*firstHalf + totalHYPHA*float32(0.5)*secondHalf
-        newTotalHVOICE := totalHVOICE*firstHalf + totalHVOICE*float32(0.5)*secondHalf
-        newTotalHUSD := totalHUSD*firstHalf + totalHUSD*float32(0.5)*secondHalf
-        ValidateLastReceipt(int64(newTotalHUSD), int64(newTotalHYPHA), int64(newTotalHVOICE), int64(newTotalSEEDS), env, t)
-      }
-
-      //Suspend Assignment			
-			_, err = SuspendAssignment(env, proposer.Member, assignment.Hash, "This assignment is no longer needed")
-			assert.NilError(t, err)
-			
-			// retrieve the document we just created
-      proposal, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
-      assert.NilError(t, err)
-
-			err = voteToPassTD(t, env, proposal, closer)
-      assert.NilError(t, err)
-
-			assignment, err = docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("assignment"))
-      assert.NilError(t, err)
-			//Claiming should not work before the original end period
-			claimed := true
-
-			for claimed {
-				//Claim next
-				t.Log("Waiting for another period to lapse...")
-				eostest.Pause(env.PeriodPause, "", "Waiting...")
-
-				_, err = ClaimNextPeriod(t, env, assignee.Member, assignment)
-
-				if err == nil {
-					claimedPeriods++
-				} else {
-					assert.ErrorContains(t, err, "All available periods for this assignment have been claimed:")
-					claimed = false
-				}
-			}
-			
-      assert.Assert(t, claimedPeriods < totalPeriods, "Claimed periods should be less than original approved periods")
     }
   })
 }
@@ -908,62 +586,6 @@ func TestAssignmentProposalDocument(t *testing.T) {
       } else {
         assert.ErrorContains(t, err, "content label not found")
       }
-    }
-  })
-}
-
-func TestAssignmentDefaults(t *testing.T) {
-  teardownTestCase := setupTestCase(t)
-  defer teardownTestCase(t)
-
-  env = SetupEnvironment(t)
-  t.Log(env.String())
-  t.Log("\nDAO Environment Setup complete\n")
-
-  // roles
-  proposer := env.Members[0]
-  assignee := env.Members[1]
-  closer := env.Members[2]
-
-  role1Doc := CreateRole(t, env, proposer, closer, role1)
-
-  t.Run("Test Assignment Document Proposal", func(t *testing.T) {
-
-    tests := []struct {
-      name               string
-      roleTitle          string
-      title              string
-      role               docgraph.Document
-      assignment         string
-      defaultPeriodCount int64
-      hypha              string
-      hvoice             string
-      usd                string
-    }{
-      {
-        name:               "role1 - 100% 100%",
-        roleTitle:          "Underwater Basketweaver",
-        title:              "Underwater Basketweaver - Atlantic",
-        role:               role1Doc,
-        assignment:         assignment8,
-        defaultPeriodCount: 13,
-      },
-    }
-
-    for _, test := range tests {
-
-      t.Log("\n\nStarting test: ", test.name)
-      _, err := ProposeAssignment(env.ctx, &env.api, env.DAO, proposer.Member, assignee.Member, test.role.Hash, env.Periods[0].Hash, test.assignment)
-      assert.NilError(t, err)
-
-      // retrieve the document we just created
-      assignment, err := docgraph.GetLastDocumentOfEdge(env.ctx, &env.api, env.DAO, eos.Name("proposal"))
-      assert.NilError(t, err)
-      assert.Equal(t, assignment.Creator, proposer.Member)
-
-      fv, err := assignment.GetContent("period_count")
-      assert.NilError(t, err)
-      assert.Equal(t, fv.Impl.(int64), test.defaultPeriodCount)
     }
   })
 }

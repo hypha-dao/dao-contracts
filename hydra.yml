@@ -1,0 +1,35 @@
+contracts:
+  dao:
+    abi: build/dao/dao.abi
+    fixturesDir: tests/fixtures/dao
+    name: dao
+    wasm: build/dao/dao.wasm
+  decide:
+    abi: dao-go/artifacts/decide/decide.abi
+    name: decide
+    wasm: dao-go/artifacts/decide/decide.wasm
+  escrow:
+    abi: dao-go/artifacts/escrow/escrow.abi
+    name: escrow
+    wasm: dao-go/artifacts/escrow/escrow.wasm
+  monitor:
+    abi: dao-go/artifacts/monitor/monitor.abi
+    name: monitor
+    wasm: dao-go/artifacts/monitor/monitor.wasm
+  seedsexchg:
+    abi: dao-go/artifacts/seedsexchg/seedsexchg.abi
+    name: seedsexchg
+    wasm: dao-go/artifacts/seedsexchg/seedsexchg.wasm
+  token:
+    abi: dao-go/artifacts/token/token.abi
+    name: token
+    wasm: dao-go/artifacts/token/token.wasm
+  treasury:
+    abi: dao-go/artifacts/treasury/treasury.abi
+    name: treasury
+    wasm: dao-go/artifacts/treasury/treasury.wasm
+  voice:
+    abi: dao-go/artifacts/voice/voice.abi
+    name: voice
+    wasm: dao-go/artifacts/voice/voice.wasm
+options: null

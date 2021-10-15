@@ -1,3 +1,7 @@
+project(dao)
+
+cmake_minimum_required(VERSION 3.16)
+
 include(ExternalProject)
 # if no cdt root is given use default path
 if(EOSIO_CDT_ROOT STREQUAL "" OR NOT EOSIO_CDT_ROOT)

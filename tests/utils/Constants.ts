@@ -1,0 +1,1 @@
+export const PHASE_TO_YEAR_RATIO = 0.02026009582;

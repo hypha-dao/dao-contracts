@@ -9,17 +9,27 @@
 #include <proposals/edit_proposal.hpp>
 #include <assignment.hpp>
 #include <period.hpp>
+#include <logger/logger.hpp>
 
 namespace hypha
 {
 
     void EditProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     { 
-      
+      auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
+
+      if (auto [hasOpenEditProp, proposalHash] = hasOpenProposal(common::SUSPEND, originalDocHash);
+          hasOpenEditProp) {
+        EOS_CHECK(
+          false,
+          to_str("There is an open edit proposal already:", proposalHash)  
+        )
+      }
     }
 
     void EditProposal::postProposeImpl (Document &proposal) 
     {
+        TRACE_FUNCTION()
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
         // original_document is a required hash
@@ -57,7 +67,7 @@ namespace hypha
                                                   .getStartTime()
                                                   .sec_since_epoch();
 
-            eosio::check(
+            EOS_CHECK(
               lastPeriodStartSecs > currentTimeSecs, 
               "There has to be at least 1 remaining period before editing/extending an assignment"
               ", create a new one instead"
@@ -70,12 +80,25 @@ namespace hypha
             original = Document(m_dao.get_self(), originalDocHash);
         }
 
+        ContentWrapper ocw = original.getContentWrapper();
+
+        auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+        EOS_CHECK(
+          state != common::STATE_WITHDRAWED &&
+          state != common::STATE_SUSPENDED &&
+          state != common::STATE_EXPIRED &&
+          state != common::STATE_REJECTED,
+          to_str("Cannot open edit proposals on ", state, " documents")
+        )
+
         // connect the edit proposal to the original
         Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), original.getHash(), common::ORIGINAL);
     }
 
     void EditProposal::passImpl(Document &proposal)
     {
+        TRACE_FUNCTION()
         // merge the original with the edits and save
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
@@ -112,11 +135,10 @@ namespace hypha
         // confirm that the original document exists
         // Use the ORIGINAL edge since the original document could have changed since this was 
         // proposed
-        //Document original (m_dao.get_self(), proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
 
         auto edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::ORIGINAL);
         
-        eosio::check(
+        EOS_CHECK(
           edges.size() == 1, 
           "Missing edge from extension proposal: " + readableHash(proposal.getHash()) + " to original document"
         );
@@ -139,6 +161,7 @@ namespace hypha
 
     std::string EditProposal::getBallotContent (ContentWrapper &contentWrapper)
     {
+        TRACE_FUNCTION()
         return getTitle(contentWrapper);
     }
     

@@ -10,9 +10,9 @@
 #include <common.hpp>
 #include <document_graph/edge.hpp>
 #include <dao.hpp>
-#include <trail.hpp>
 #include <hypha_voice.hpp>
 #include <util.hpp>
+#include <logger/logger.hpp>
 
 using namespace eosio;
 
@@ -23,7 +23,8 @@ namespace hypha
 
     Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups)
     {
-        eosio::check(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
+        TRACE_FUNCTION()
+        EOS_CHECK(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
@@ -34,6 +35,9 @@ namespace hypha
         
         contentGroups.push_back(makeBallotGroup());
         contentGroups.push_back(makeBallotOptionsGroup());
+
+        ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(DETAILS), 
+                                        Content { common::STATE, common::STATE_PROPOSED });
 
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
@@ -60,23 +64,24 @@ namespace hypha
 
     void Proposal::postProposeImpl(Document &proposal) {}
 
-    void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal)
+    void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal, std::optional<std::string> notes)
     {
-        Vote(m_dao, voter, vote, proposal);
+        TRACE_FUNCTION()
+        Vote(m_dao, voter, vote, proposal, notes);
+        
         VoteTally(m_dao, proposal);
     }
 
     void Proposal::close(Document &proposal)
     {
-        auto [ isNew, voteTallyEdge ] = Edge::getIfExists(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
+        TRACE_FUNCTION()
+        auto voteTallyEdge = Edge::get(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
 
-        if (isNew) {
-            auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
-            eosio::check(
-                eosio::time_point_sec(eosio::current_time_point()) > expiration,
-                "Voting is still active for this proposal"
-            );
-        }
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+        EOS_CHECK(
+            eosio::time_point_sec(eosio::current_time_point()) > expiration,
+            "Voting is still active for this proposal"
+        );
 
         eosio::checksum256 root = getRoot(m_dao.get_self());
 
@@ -85,24 +90,26 @@ namespace hypha
 
         bool proposalDidPass;
 
-        if (isNew) {
-            auto ballotHash = voteTallyEdge.getToNode();
-            proposalDidPass = didPass(ballotHash);
-        } else {
-            // Backwards compatiblity to old ballots
-            name ballot_id = proposal.getContentWrapper().getOrFail(SYSTEM, "ballot_id")->getAs<eosio::name>();
-            proposalDidPass = oldDidPass(ballot_id);
-        }
+        auto ballotHash = voteTallyEdge.getToNode();
+        proposalDidPass = didPass(ballotHash);
 
-        
+        auto details = proposal.getContentWrapper().getGroupOrFail(DETAILS);
+
+        ContentWrapper::insertOrReplace(*details, Content{
+          common::STATE,
+          proposalDidPass ? common::STATE_APPROVED : common::STATE_REJECTED
+        });
+
         if (proposalDidPass)
         {
 
             auto system = proposal.getContentWrapper().getGroupOrFail(SYSTEM);
+            
             ContentWrapper::insertOrReplace(*system, Content{
               common::APPROVED_DATE,
               eosio::current_time_point()
             });
+
             // INVOKE child class close logic
             passImpl(proposal);
 
@@ -114,17 +121,13 @@ namespace hypha
         }
         else
         {
+            //TODO: Add failImpl()
+            proposal = m_dao.getGraph().updateDocument(proposal.getCreator(), 
+                                                       proposal.getHash(),
+                                                       std::move(proposal.getContentGroups()));
+
             // create edge for FAILED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::FAILED_PROPS);
-        }
-
-        if (!isNew) {
-            name ballot_id = proposal.getContentWrapper().getOrFail(SYSTEM, "ballot_id")->getAs<eosio::name>();
-            eosio::action(
-            eosio::permission_level{m_dao.get_self(), name("active")},
-            m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT), name("closevoting"),
-            std::make_tuple(ballot_id, true))
-            .send();
         }
     }
 
@@ -144,7 +147,7 @@ namespace hypha
 
     ContentGroup Proposal::makeBallotGroup()
     {
-
+        TRACE_FUNCTION()
         auto expiration = time_point_sec(current_time_point()) + m_dao.getSettingOrFail<int64_t>(VOTING_DURATION_SEC);
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, BALLOT),
@@ -164,10 +167,11 @@ namespace hypha
 
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
+        TRACE_FUNCTION()
         name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
         hypha::voice::stats stats_t(hvoiceContract, common::S_HVOICE.code().raw());
         auto stat_itr = stats_t.find(common::S_HVOICE.code().raw());
-        check(stat_itr != stats_t.end(), "No HVOICE found");
+        EOS_CHECK(stat_itr != stats_t.end(), "No HVOICE found");
 
         asset quorum_threshold = adjustAsset(stat_itr->supply, 0.20000000);
 
@@ -192,46 +196,14 @@ namespace hypha
         }
     }
 
-    // Copy of the old didPass method. Should be removed later and code above cleaned when old ballots 
-    // are no longer supported (because all should finish eventually)
-    bool Proposal::oldDidPass(const eosio::name &ballotId)
-    { 
-        name trailContract = m_dao.getSettingOrFail<eosio::name>(TELOS_DECIDE_CONTRACT);
-        trailservice::trail::ballots_table b_t(trailContract, trailContract.value);
-        auto b_itr = b_t.find(ballotId.value);
-        check(b_itr != b_t.end(), "ballot_id: " + ballotId.to_string() + " not found.");
-
-        trailservice::trail::treasuries_table t_t(trailContract, trailContract.value);
-        auto t_itr = t_t.find(common::S_HVOICE.code().raw());
-        check(t_itr != t_t.end(), "Treasury: " + common::S_HVOICE.code().to_string() + " not found.");
-
-        asset quorum_threshold = adjustAsset(t_itr->supply, 0.20000000);
-        map<name, asset> votes = b_itr->options;
-        asset votes_pass = votes.at(name("pass"));
-        asset votes_fail = votes.at(name("fail"));
-        asset votes_abstain = votes.at(name("abstain"));
-
-        bool passed = false;
-        if (b_itr->total_raw_weight >= quorum_threshold &&      // must meet quorum
-            adjustAsset(votes_pass, 0.2500000000) > votes_fail) // must have 80% of the vote power
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-
-    }
-
     string Proposal::getTitle(ContentWrapper cw) const
     {
-      
+        TRACE_FUNCTION()
         auto [titleIdx, title] = cw.get(DETAILS, TITLE);
 
         auto [ballotTitleIdx, ballotTitle] = cw.get(DETAILS, common::BALLOT_TITLE);
 
-        eosio::check(
+        EOS_CHECK(
           title != nullptr || ballotTitle != nullptr,
           to_str("Proposal [details] group must contain at least one of the following items [", 
                   TITLE, ", ", common::BALLOT_TITLE, "]")
@@ -243,11 +215,13 @@ namespace hypha
 
     string Proposal::getDescription(ContentWrapper cw) const
     {
+        TRACE_FUNCTION()
+        
         auto [descIdx, desc] = cw.get(DETAILS, DESCRIPTION);
 
         auto [ballotDescIdx, ballotDesc] = cw.get(DETAILS, common::BALLOT_DESCRIPTION);
 
-        eosio::check(
+        EOS_CHECK(
           desc != nullptr || ballotDesc != nullptr,
           to_str("Proposal [details] group must contain at least one of the following items [", 
                   DESCRIPTION, ", ", common::BALLOT_DESCRIPTION, "]")
@@ -255,5 +229,22 @@ namespace hypha
 
         return desc != nullptr ? desc->getAs<std::string>() : 
                                  ballotDesc->getAs<std::string>();
+    }
+
+    std::pair<bool, checksum256> Proposal::hasOpenProposal(name proposalType, checksum256 docHash)
+    {
+      auto proposalEdges = m_dao.getGraph().getEdgesTo(docHash, proposalType);
+      
+      //Check if there is another existing suspend proposal open for the given document
+      for (auto& edge : proposalEdges) {
+        Document proposal(m_dao.get_self(), edge.getFromNode());
+
+        auto cw = proposal.getContentWrapper();
+        if (cw.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_PROPOSED) {
+          return { true,  edge.getFromNode() };
+        }
+      }
+
+      return { false, checksum256{} };
     }
 } // namespace hypha

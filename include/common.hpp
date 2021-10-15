@@ -47,12 +47,21 @@ namespace common
     static constexpr name ORIGINAL = name("original");
     static constexpr name EXTENSION = name("extension");
     constexpr        name SUSPEND = name("suspend");
+    constexpr        name SUSPENDED = name("suspended");
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
     constexpr        auto APPROVED_DATE = "original_approved_date";
     constexpr        auto BALLOT_TITLE = "ballot_title";
     constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
+    constexpr        auto STATE = "state";
+    constexpr        auto STATE_PROPOSED = "proposed";
+    constexpr        auto STATE_APPROVED = "approved";
+    constexpr        auto STATE_REJECTED = "rejected";
+    constexpr        auto STATE_SUSPENDED = "suspended";
+    constexpr        auto STATE_EXPIRED = "expired";
+    constexpr        auto STATE_WITHDRAWED = "withdrawed";
+    constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
     static constexpr name PERIOD = name("period");
     static constexpr name START = name ("start");
     static constexpr name NEXT = name ("next");
@@ -75,7 +84,6 @@ namespace common
     static constexpr name DHO = name ("dho");
 
     static constexpr name BALLOT_TYPE_OPTIONS = name("options");
-    static constexpr name BALLOT_TYPE_TELOS_DECIDE = name("telosdecide");
 
     static constexpr name GROUP_TYPE_OPTION = name("option");
 
@@ -86,6 +94,8 @@ namespace common
     constexpr name TIME_SHARE_LABEL = name("timeshare");
     constexpr auto ADJUST_MODIFIER = "modifier";
     constexpr auto MOD_WITHDRAW = "withdraw";
+
+    constexpr auto APPROVED_DEFERRED = "approved_deferred_perc_x100";
 
     static constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
     static constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
@@ -132,7 +142,6 @@ namespace common
 #define BALLOT_TYPE "ballot_type"
 
 // setting document
-#define TELOS_DECIDE_CONTRACT "telos_decide_contract"
 #define SEEDS_TOKEN_CONTRACT "seeds_token_contract"
 #define SEEDS_ESCROW_CONTRACT "seeds_escrow_contract"
 #define HUSD_TOKEN_CONTRACT "husd_token_contract"
