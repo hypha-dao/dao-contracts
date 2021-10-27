@@ -15,7 +15,7 @@ namespace hypha
 
         // Validate the associated quest_start exists
         const eosio::checksum256 questStartHash = contentWrapper.getOrFail(
-            DETAILS, 
+            DETAILS,
             QUEST_START,
             "Associated quest_document not found in the contents"
         )->getAs<eosio::checksum256>();
@@ -24,11 +24,11 @@ namespace hypha
         eosio::check(questStart.getCreator() == proposer, "Quest start proposal not owned by proposer");
 
         const eosio::name documentType = questStart.getContentWrapper().getOrFail(
-            SYSTEM, 
-            TYPE, 
+            SYSTEM,
+            TYPE,
             "No type found on quest start document"
         )->getAs<eosio::name>();
-        eosio::check(documentType == QUEST_START, "Document type is not a quest start");
+        eosio::check(documentType == common::QUEST_START, "Document type is not a quest start");
     }
 
     void QuestCompletionProposal::passImpl(Document &proposal)
@@ -38,7 +38,7 @@ namespace hypha
         pay(proposal, common::QUEST_COMPLETION);
 
         const eosio::checksum256 questStartHash = contentWrapper.getOrFail(
-            DETAILS, 
+            DETAILS,
             QUEST_START
         )->getAs<eosio::checksum256>();
         Edge::write(m_dao.get_self(), m_dao.get_self(), questStartHash, proposal.getHash(), common::COMPLETED_BY)

@@ -48,8 +48,8 @@ namespace common
     static constexpr name EXTENSION = name("extension");
     constexpr        name SUSPEND = name("suspend");
     constexpr        name SUSPENDED = name("suspended");
-    static constexpr name QUEST_START = name("quest.start");
-    static constexpr name QUEST_COMPLETION = name("quest.comple");
+    static constexpr name QUEST_START = name("queststart");
+    static constexpr name QUEST_COMPLETION = name("questcomple");
 
     static constexpr name ASSIGNED = name("assigned");
     static constexpr name ASSIGNEE_NAME = name("assignee");
@@ -70,7 +70,7 @@ namespace common
     static constexpr name PAID = name ("paid");
     static constexpr name CLAIMED = name ("claimed");
 
-    static constexpr name COMPLETED_BY = name("completed.by");
+    static constexpr name COMPLETED_BY = name("completedby");
 
     static constexpr name VOTE = name ("vote");
     static constexpr name VOTE_ON = name ("voteon");

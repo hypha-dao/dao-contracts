@@ -10,6 +10,7 @@
 #include <proposals/suspend_proposal.hpp>
 #include <proposals/ass_extend_proposal.hpp>
 #include <proposals/quest_start_proposal.hpp>
+#include <proposals/quest_completion_proposal.hpp>
 #include <logger/logger.hpp>
 
 #include <common.hpp>
@@ -17,20 +18,20 @@
 namespace hypha
 {
     Proposal* ProposalFactory::Factory(dao& dao, const name &proposal_type)
-    { 
+    {
         TRACE_FUNCTION()
 
         switch (proposal_type.value)
         {
         case common::BADGE_NAME.value:
             return new BadgeProposal(dao);
-        
+
         case common::ASSIGN_BADGE.value:
             return new BadgeAssignmentProposal(dao);
 
         case common::ROLE_NAME.value:
             return new RoleProposal(dao);
-        
+
         case common::ASSIGNMENT.value:
             return new AssignmentProposal(dao);
 
@@ -40,7 +41,7 @@ namespace hypha
         case common::ATTESTATION.value:
             return new AttestationProposal(dao);
 
-        case common::SUSPEND.value: 
+        case common::SUSPEND.value:
             return new SuspendProposal(dao);
 
         case common::EDIT.value:
@@ -48,7 +49,10 @@ namespace hypha
 
         case common::QUEST_START.value:
             return new QuestStartProposal(dao);
-    
+
+        case common::QUEST_COMPLETION.value:
+                return new QuestCompletionProposal(dao);
+
         // TODO: should be expanded to work with Badge Assignments as well
         case common::EXTENSION.value:
             return new AssignmentExtensionProposal(dao);
