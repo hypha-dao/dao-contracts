@@ -152,8 +152,8 @@ namespace hypha
     {
         TRACE_FUNCTION()
         name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
-        float quorumFactor = m_dao.getSettingOrFail<uint64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
-        float alignmentFactor = m_dao.getSettingOrFail<uint64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
+        float quorumFactor = m_dao.getSettingOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
+        float alignmentFactor = m_dao.getSettingOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
 
         hypha::voice::stats stats_t(hvoiceContract, common::S_VOICE.code().raw());
         auto stat_itr = stats_t.find(common::S_VOICE.code().raw());
