@@ -23,6 +23,13 @@ namespace hypha
         Document roleDocument(m_dao.get_self(), assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
         auto role = roleDocument.getContentWrapper();
 
+        auto root = getRoot(m_dao.get_self());
+        
+        EOS_CHECK(
+          !Edge::exists(m_dao.get_self(), root, roleDocument.getHash(), common::SUSPENDED),
+          "Cannot create assignment proposal of suspened role"
+        )
+
         // role in the proposal must be of type: role
         EOS_CHECK(role.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::ROLE_NAME,
                      "role document hash provided in assignment proposal is not of type: role");
@@ -121,36 +128,52 @@ namespace hypha
         TRACE_FUNCTION()
         ContentWrapper contentWrapper = proposal.getContentWrapper();
         eosio::checksum256 assignee = Member::calcHash(contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>());
-        Document role(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
+
+        auto assignmentToRoleEdge = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::ROLE_NAME);
+      
+        EOS_CHECK(
+          !assignmentToRoleEdge.empty(),
+          to_str("Missing 'role' edge from assignment: ", proposal.getHash())
+        )
+
+        Document role(m_dao.get_self(), assignmentToRoleEdge.at(0).getToNode());
 
         // update graph edges:
         //  member          ---- assigned           ---->   role_assignment
         //  role_assignment ---- assignee           ---->   member
-        //  role_assignment ---- role               ---->   role
+        //  role_assignment ---- role               ---->   role                This one already exists since postProposeImpl
         //  role            ---- role_assignment    ---->   role_assignment
         Edge::write(m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGNED);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
         Edge::write(m_dao.get_self(), m_dao.get_self(), role.getHash(), proposal.getHash(), common::ASSIGNMENT);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), role.getHash(), common::ROLE_NAME);
-
+        
         //Start period edge
         // assignment ---- start ----> period
-        eosio::checksum256 startPeriod = contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>();
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), startPeriod, common::START);
+        eosio::checksum256 startPeriodHash = contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>();
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), startPeriodHash, common::START);
+
+        Period startPeriod(&m_dao, startPeriodHash);
 
         //Initial time share for proposal
         int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
         
-        //Set starting date to approval date.
+        //Set starting date to first period start_date
         TimeShare initTimeShareDoc(m_dao.get_self(), 
                                    m_dao.get_self(), 
                                    initTimeShare, 
-                                   contentWrapper.getOrFail(SYSTEM, common::APPROVED_DATE)->getAs<eosio::time_point>(),
+                                   startPeriod.getStartTime(),
                                    proposal.getHash());
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
+
+        auto [detailsIdx, details] = contentWrapper.getGroup(DETAILS);
+
+        contentWrapper.insertOrReplace(*details, Content{
+          common::APPROVED_DEFERRED, 
+          contentWrapper.getOrFail(detailsIdx, DEFERRED).second->getAs<int64_t>()
+        });
     }
 
     std::string AssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)
@@ -188,9 +211,22 @@ namespace hypha
         // calculate HYPHA phase salary amount
         asset deferredTimeShareAdjUsdPerPeriod = adjustAsset(calculateTimeShareUsdPerPeriod(annualUsd, timeShare), (float)(float)deferred / (float)100);
 
-        float hypha_deferral_coeff = (float)m_dao.getSettingOrFail<int64_t>(HYPHA_DEFERRAL_FACTOR) / (float)100;
+        //float hypha_deferral_coeff = (float)m_dao.getSettingOrFail<int64_t>(HYPHA_DEFERRAL_FACTOR) / (float)100;
 
-        return adjustAsset(asset{deferredTimeShareAdjUsdPerPeriod.amount, common::S_REWARD}, hypha_deferral_coeff);
+        auto hyphaUsdVal = m_dao.getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
+
+        //Hypha USD Value precision is fixed to 4 -> 10^4 == 10000
+        EOS_CHECK(
+          hyphaUsdVal.symbol.precision() == 4,
+          util::to_str("Expected HYPHA_USD_VALUE precision to be 4, but got:", hyphaUsdVal.symbol.precision())
+        )
+
+        auto hyphaToUsd = hyphaUsdVal.amount / 10000.0;
+
+        return asset{
+          static_cast<int64_t>(deferredTimeShareAdjUsdPerPeriod.amount / hyphaToUsd), 
+          common::S_REWARD
+        };
     }
 
     asset AssignmentProposal::calculateHvoice(const asset &annualUsd, const int64_t &timeShare)

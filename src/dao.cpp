@@ -26,7 +26,50 @@ namespace hypha
       Edge::getOrNew(get_self(), get_self(), hash, roleToAssignmentEdge.getFromNode(), common::ROLE_NAME);
    }
 
-   void dao::propose(const name &proposer,
+   ACTION dao::clean()
+   {
+     require_auth(get_self());
+
+     document_table docs(get_self(), get_self().value);
+
+     for (auto it = docs.begin(); it != docs.end(); ) {
+       it = docs.erase(it);
+     }
+
+     edge_table edges(get_self(), get_self().value);
+
+     for (auto it = edges.begin(); it != edges.end(); ) {
+       it = edges.erase(it);
+     }
+   }
+
+   ACTION 
+   dao::fixassigns(std::vector<eosio::checksum256>& hashes)
+   {
+     const size_t maxHashesPerAction = 2;
+
+     EOS_CHECK(
+       hashes.size() <= maxHashesPerAction,
+       to_str("Too many hashes: ", hashes.size(), " max: ", maxHashesPerAction)
+     )
+
+     for (size_t i = 0; i < hashes.size(); ++i) {
+       Assignment assign(this, hashes[i]);
+       auto cw = assign.getContentWrapper();
+       if (cw.getOrFail(DETAILS, common::STATE)->getAs<std::string>() == common::STATE_APPROVED && 
+           !cw.exists(DETAILS, common::APPROVED_DEFERRED)) {
+         auto details = cw.getGroupOrFail(DETAILS);
+         ContentWrapper::insertOrReplace(*details, Content{
+           common::APPROVED_DEFERRED,
+           cw.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>()
+         });
+         m_documentGraph.updateDocument(assign.getCreator(), assign.getHash(), cw.getContentGroups());
+       }
+     }
+   }
+
+   void dao::propose(const name& dao_name,
+                     const name &proposer,
                      const name &proposal_type,
                      ContentGroups &content_groups)
    {
@@ -34,7 +77,7 @@ namespace hypha
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, proposal_type));
-      proposal->propose(proposer, content_groups);
+      proposal->propose(dao_name, proposer, content_groups);
    }
 
    void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote, string notes)
@@ -104,12 +147,24 @@ namespace hypha
 
      auto cw = assignment.getContentWrapper();
 
+     auto state = cw.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+     EOS_CHECK(
+       state != common::STATE_WITHDRAWED && 
+       state != common::STATE_SUSPENDED &&
+       state != common::STATE_EXPIRED &&
+       state != common::STATE_REJECTED,
+       to_str("Cannot withdraw ", state, " assignments")
+     )
+
      auto originalPeriods = assignment.getPeriodCount();
 
+     auto startPeriod = assignment.getStartPeriod();
+
      //Calculate the number of periods since start period to the current period
-     auto currentPeriod = Period::current(this);
+     auto currentPeriod = startPeriod.getPeriodUntil(eosio::current_time_point());
     
-     auto periodsToCurrent = assignment.getStartPeriod().getPeriodCountTo(currentPeriod);
+     auto periodsToCurrent = startPeriod.getPeriodCountTo(currentPeriod);
 
      periodsToCurrent = std::max(periodsToCurrent, int64_t(0)) + 1;
 
@@ -118,16 +173,18 @@ namespace hypha
        to_str("Withdrawal of expired assignment: ", hash, " is not allowed")
      );
 
-     if (originalPeriods != periodsToCurrent) {
-
-      auto detailsGroup = cw.getGroupOrFail(DETAILS);
-
-      ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
-
-      hash = m_documentGraph.updateDocument(assignment.getCreator(), 
-                                            hash, 
-                                            cw.getContentGroups()).getHash();
-     } 
+     auto detailsGroup = cw.getGroupOrFail(DETAILS);
+ 
+     ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
+ 
+     ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_WITHDRAWED });
+ 
+     hash = m_documentGraph.updateDocument(assignment.getCreator(), 
+                                           hash, 
+                                           cw.getContentGroups()).getHash();
+ 
+     assignment = Assignment(this, hash);
+     
      //This has to be the last step, since adjustcmtmnt could change the assignment hash
      //to old assignments
      ContentGroups adjust {
@@ -138,7 +195,8 @@ namespace hypha
        }
      };
 
-     adjustcmtmnt(owner, adjust);
+    
+    adjustcmtmnt(owner, adjust);
    }
 
    void dao::suspend(name proposer, eosio::checksum256 hash, string reason)
@@ -149,6 +207,7 @@ namespace hypha
        "Contract is paused for maintenance. Please try again later."
      );
 
+     //TODO-J: Refactor Multi-tenant
      EOS_CHECK(
        Member::isMember(get_self(), proposer), 
        to_str("Only members are allowed to propose suspensions")
@@ -177,46 +236,6 @@ namespace hypha
       );
 
       Assignment assignment(this, assignment_hash);
-
-      /**
-      * Checks if the assignment has the original_approved_date item
-      */
-      if (auto [_, approvedItem] = assignment.getContentWrapper().get(SYSTEM, common::APPROVED_DATE); 
-          approvedItem == nullptr) 
-      {
-        auto approvedDate = assignment.getApprovedTime();
-
-        auto system = assignment.getContentWrapper().getGroupOrFail(SYSTEM);
-
-        ContentWrapper::insertOrReplace(*system, Content{common::APPROVED_DATE, approvedDate});
-        
-        auto newDoc = getGraph().updateDocument(assignment.getCreator(), 
-                                                assignment.getHash(),
-                                                std::move(assignment.getContentGroups()));
-
-        assignment = Assignment(this, newDoc.getHash());
-      }
-
-      /**
-      * Check if required edges & documents exists for this assignment, otherwise (assignments approved prior dynamic commitments)
-      */
-      if (auto [exists, edge] = Edge::getIfExists(get_self(), assignment.getHash(), common::INIT_TIME_SHARE);
-          !exists)
-      {
-         //We have to create an Inital time share document and all the edges pointing towards it
-         auto contentWrapper = assignment.getContentWrapper();
-
-         //Initial time share for proposal
-         int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-
-         //Set starting date to approval date.
-         auto approvedDate = assignment.getApprovedTime();
-         TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate, assignment.getHash());
-
-         Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
-         Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
-         Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
-      }
 
       eosio::name assignee = assignment.getAssignee().getAccount();
 
@@ -389,31 +408,44 @@ namespace hypha
       std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(Member::calcHash(member), common::ASSIGN_BADGE);
       for (Edge e : badge_assignment_edges)
       {
-         Document badgeAssignmentDoc(get_self(), e.getToNode());
-         auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
-         Edge badge_edge = Edge::get(get_self(), badgeAssignmentDoc.getHash(), common::BADGE_NAME);
-         Document badge(get_self(), badge_edge.getToNode());
-         current_badges.push_back(badge);
+        Document badgeAssignmentDoc(get_self(), e.getToNode());
+        Edge badge_edge = Edge::get(get_self(), badgeAssignmentDoc.getHash(), common::BADGE_NAME);
+        
+        //Verify badge still exists
+        EOS_CHECK(
+          Document::exists(get_self(), badge_edge.getToNode()),
+          to_str("Badge document doesn't exits for badge assignment:", 
+                 badgeAssignmentDoc.getHash(),
+                 " badge:", badge_edge.getToNode())
+        )
 
-         // TODO: exclude badges that are no longer active
-         // Period startPeriod(this, badgeAssignment.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
-         // int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
-         // int64_t counter = 0;
-         // std::optional<Period> seeker = std::optional<Period>{startPeriod};
-         // while (seeker.has_value() && counter <= periodCount)
-         // {
-         //    eosio::print (" counter : " + std::to_string(counter) + "\n");
-         //    seeker = seeker.value().next();
-         //    counter++;
-         // }
-         // std::optional<eosio::time_point> periodEndTime = seeker.value().getEndTime();
-         // EOS_CHECK(periodEndTime != std::nullopt, "End of calendar has been reached. Contact administrator to add more time periods.");
-         // int64_t badgeAssignmentExpiration = periodEndTime.value().sec_since_epoch();
-         // if (badgeAssignmentExpiration > eosio::current_time_point().sec_since_epoch())
-         // {
+        auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
+        Document badge(get_self(), badge_edge.getToNode());
+        
+        //Check if badge assignment is old (start_period was stored as an integer)
+        //If the type of start_period is no checksum then let's skip this badge assignment
+        Content* startPeriodContent = badgeAssignment.getOrFail(DETAILS, START_PERIOD);
+        if (!std::holds_alternative<eosio::checksum256>(startPeriodContent->value)) {
+          continue;
+        }
 
-         // }
+        Period startPeriod(this, startPeriodContent->getAs<eosio::checksum256>());
+        int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
+        auto endPeriod = startPeriod.getNthPeriodAfter(periodCount);
+        
+        int64_t badgeAssignmentStart = startPeriod.getStartTime().sec_since_epoch();
+        int64_t badgeAssignmentExpiration = endPeriod.getStartTime().sec_since_epoch();
+
+        auto periodStartSecs = period.getStartTime().sec_since_epoch();
+        //Badge expiration should be compared against the claimed period instead
+        //of the current time, point since it could happen that the assignment is
+        //beign claimed after the badge assignment expired.
+        if (badgeAssignmentStart <= periodStartSecs &&
+            periodStartSecs < badgeAssignmentExpiration) {
+          current_badges.push_back(badge);
+        }
       }
+      
       return current_badges;
    }
 
@@ -474,20 +506,30 @@ namespace hypha
       Edge::write(get_self(), get_self(), Member::calcHash(recipient), paymentReceipt.getHash(), common::PAID);
    }
 
-   void dao::apply(const eosio::name &applicant, const std::string &content)
+   void dao::apply(const eosio::name &applicant, const name& dao_name, const std::string &content)
    {
       TRACE_FUNCTION()
       require_auth(applicant);
       Member member(*this, applicant, applicant);
-      member.apply(getRoot(get_self()), content);
+      member.apply(getDAO(dao_name), content);
    }
 
-   void dao::enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content)
+   void dao::enroll(const eosio::name &enroller, const name& dao_name, const eosio::name &applicant, const std::string &content)
    {
       TRACE_FUNCTION()
+
+      //Verify enroller is valid for the given dao
+      const name onboarderAcc = getSettingOrFail<name>(dao_name, common::ONBOARDER_ACCOUNT);
+
+      EOS_CHECK(
+        enroller == onboarderAcc,
+        util::to_str("Only ", onboarderAcc, " is allowed to enroll users for ", dao_name)
+      )
+
       require_auth(enroller);
+
       Member member = Member::get(*this, applicant);
-      member.enroll(enroller, content);
+      member.enroll(enroller, getDAO(dao_name), content);
    }
 
    bool dao::isPaused() { return false; }
@@ -504,36 +546,36 @@ namespace hypha
    Document dao::getSettingsDocument()
    {
       TRACE_FUNCTION()
-      auto root = getDAO(eosio::name("bm"));
-      // auto root = getRoot(get_self());
+      
+      auto root = getRoot(get_self());
       auto edges = m_documentGraph.getEdgesFromOrFail(root, common::SETTINGS_EDGE);
       EOS_CHECK(edges.size() == 1, "There should only exists only 1 settings edge from root node");
       return Document(get_self(), edges[0].to_node);
    }
 
-   // void dao::setsetting(const string &key, const Content::FlexValue &value)
-   // {
-   //    TRACE_FUNCTION()
-   //    require_auth(get_self());
-   //    setSetting(key, value);
-   // }
+   void dao::setsetting(const string &key, const Content::FlexValue &value)
+   {
+      TRACE_FUNCTION()
+      require_auth(get_self());
+      setSetting(key, value);
+   }
 
-   // void dao::setSetting(const string &key, const Content::FlexValue &value)
-   // {
-   //    TRACE_FUNCTION()
-   //    auto document = getSettingsDocument();
-   //    auto oldHash = document.getHash();
-   //    auto settingContent = Content(key, value);
-   //    auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
+   void dao::setSetting(const string &key, const Content::FlexValue &value)
+   {
+      TRACE_FUNCTION()
+      auto document = getSettingsDocument();
+      auto oldHash = document.getHash();
+      auto settingContent = Content(key, value);
+      auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
-   //    ContentWrapper cw = document.getContentWrapper();
-   //    ContentGroup *settings = cw.getGroupOrFail("settings");
+      ContentWrapper cw = document.getContentWrapper();
+      ContentGroup *settings = cw.getGroupOrFail("settings");
 
-   //    ContentWrapper::insertOrReplace(*settings, settingContent);
-   //    ContentWrapper::insertOrReplace(*settings, updateDateContent);
+      ContentWrapper::insertOrReplace(*settings, settingContent);
+      ContentWrapper::insertOrReplace(*settings, updateDateContent);
 
-   //    m_documentGraph.updateDocument(get_self(), oldHash, document.getContentGroups());
-   // }
+      m_documentGraph.updateDocument(get_self(), oldHash, document.getContentGroups());
+   }
 
    void dao::setsetting(const eosio::name &dao_name, const string &key, const Content::FlexValue &value)
    {
@@ -569,6 +611,7 @@ namespace hypha
    void dao::removeSetting(const string &key)
    {
       TRACE_FUNCTION()
+      
       auto document = getSettingsDocument();
       auto oldHash = document.getHash();
       auto contentGroups = document.getContentGroups();
@@ -591,33 +634,22 @@ namespace hypha
       EOS_CHECK(false, "The specified setting does not exist: " + key);
    }
 
+
+   ACTION dao::genperiods(const name& dao_name, int64_t period_count, int64_t period_duration_sec)
+   {
+      TRACE_FUNCTION()
+
+      require_auth(get_self());
+
+      genPeriods(dao_name, period_count, period_duration_sec);
+   }
+
    void dao::addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label)
    {
       TRACE_FUNCTION()
       require_auth(get_self());
 
-      Period newPeriod(this, start_time, label);
-
-      // check that predecessor exists
-      Document previous(get_self(), predecessor);
-      ContentWrapper contentWrapper = previous.getContentWrapper();
-
-      // if it's a period, make sure the start time comes before
-      auto [idx, predecessorType] = contentWrapper.get(SYSTEM, TYPE);
-      if (predecessorType && predecessorType->getAs<eosio::name>() == common::PERIOD)
-      {
-         EOS_CHECK(contentWrapper.getOrFail(DETAILS, START_TIME)->getAs<eosio::time_point>().sec_since_epoch() <
-                          start_time.sec_since_epoch(),
-                      "start_time of period predecessor must be before the new period's start_time");
-
-         // predecessor is a period, so use "next" edge
-         Edge::write(get_self(), get_self(), predecessor, newPeriod.getHash(), common::NEXT);
-      }
-      else
-      {
-         // predecessor is not a period, so use "start" edge
-         Edge::write(get_self(), get_self(), predecessor, newPeriod.getHash(), common::START);
-      }
+      addPeriod(predecessor, start_time, label);
    }
 
    // void dao::nbadge(const name &owner, const ContentGroups &contentGroups)
@@ -662,24 +694,145 @@ namespace hypha
       m_documentGraph.updateDocument(updater, oldHash, document.getContentGroups());
    }
 
-   void dao::createdao(const eosio::name &dao_name)
+   void dao::createdao(ContentGroups &config)
    {
-      require_auth(get_self());
+      TRACE_FUNCTION()
 
-      Document dao(get_self(), get_self(), getDAOContent(dao_name));
+      //Extract mandatory configurations
+      auto configCW = ContentWrapper(config);
 
+      auto daoName = configCW.getOrFail(DETAILS, DAO_NAME);
+
+      const name dao = daoName->getAs<name>();
+      
+      Document daoDoc(get_self(), get_self(), getDAOContent(daoName->getAs<name>()));
+
+      //Verify Root exists
+      Document root(get_self(), getRoot(get_self()));
+
+      Edge(get_self(), get_self(), root.getHash(), daoDoc.getHash(), common::DAO);
+      
+      // dao_table daos(get_self(), get_self().value);
+
+      // auto bynameIdx = daos.get_index<"byname"_n>();
+
+      // EOS_CHECK(
+      //   bynameIdx.find(dao_name.value) == bynameIdx.end(),
+      //   util::to_str("Dao with name: ", dao_name, " already exists")
+      // )
+
+      // daos.emplace(get_self(), [&](Dao& newDao){ 
+      //   newDao.id = daos.available_primary_key();
+      //   newDao.name = dao_name;
+      //   newDao.hash = dao.getHash();
+      // });
+
+      auto votingDurationSeconds = configCW.getOrFail(DETAILS, VOTING_DURATION_SEC);
+
+      EOS_CHECK(
+        votingDurationSeconds->getAs<int64_t>() > 0,
+        util::to_str(VOTING_DURATION_SEC, " has to be a positive number")
+      )
+
+      auto daoDescription = configCW.getOrFail(DETAILS, common::DAO_DESCRIPTION);
+
+      EOS_CHECK(
+        daoDescription->getAs<std::string>().size() <= 512,
+        "Dao description has be less than 512 characters"  
+      )
+
+      auto daoTitle = configCW.getOrFail(DETAILS, common::DAO_TITLE);
+
+      EOS_CHECK(
+        daoTitle->getAs<std::string>().size() <= 48,
+        "Dao title has be less than 48 characters"  
+      )
+
+      auto pegToken = configCW.getOrFail(DETAILS, common::PEG_TOKEN);
+
+      //Verify tokens' type is valid (asset) 
+
+      pegToken->getAs<asset>();
+
+      auto voiceToken = configCW.getOrFail(DETAILS, common::VOICE_TOKEN);
+
+      voiceToken->getAs<asset>();
+
+      auto rewardToken = configCW.getOrFail(DETAILS, common::REWARD_TOKEN);
+
+      rewardToken->getAs<asset>();
+
+      auto rewardToPegTokenRatio = configCW.getOrFail(DETAILS, common::REWARD_TO_PEG_RATIO);
+
+      rewardToPegTokenRatio->getAs<asset>();
+
+      //Generate periods
+      auto inititialPeriods = configCW.getOrFail(DETAILS, PERIOD_COUNT);
+
+      auto periodDurationSeconds = configCW.getOrFail(DETAILS, common::PERIOD_DURATION);
+
+      EOS_CHECK(
+        periodDurationSeconds->getAs<int64_t>() > 0,
+        util::to_str(common::PERIOD_DURATION, " has to be a positive number")
+      )
+
+      auto onboarderAcc = configCW.getOrFail(DETAILS, common::ONBOARDER_ACCOUNT);
+      
+      const name onboarder = onboarderAcc->getAs<name>();
+
+      require_auth(onboarder);
+      
       // Create the settings document as well and add an edge to it
       ContentGroups settingCgs{
           ContentGroup{
-              Content(CONTENT_GROUP_LABEL, SETTINGS)},
-            //   Content(ROOT_NODE, readableHash(dao.getHash()))},  
+              Content(CONTENT_GROUP_LABEL, SETTINGS),
+              *daoName,
+              *daoTitle,
+              *daoDescription,
+              *pegToken,
+              *voiceToken,
+              *rewardToken,
+              *rewardToPegTokenRatio,
+              *periodDurationSeconds,
+              *votingDurationSeconds,
+              *onboarderAcc
+          },
           ContentGroup{
               Content(CONTENT_GROUP_LABEL, SYSTEM),
               Content(TYPE, common::SETTINGS_EDGE),
-              Content(NODE_LABEL, "Settings")}};
+              Content(NODE_LABEL, "Settings")
+          }
+      };
 
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
-      Edge::write(get_self(), get_self(), dao.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
+      Edge::write(get_self(), get_self(), daoDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
+
+      //Auto enroll
+      apply(onboarder, dao, "DAO Onboarder");
+      enroll(onboarder, dao, onboarder, "DAO Onboarder");
+      
+      //Create start period
+      addperiod(
+        daoDoc.getHash(), 
+        eosio::current_time_point(), 
+        util::to_str(dao, " - start period")
+      );
+
+      auto startEdge = Edge::get(get_self(), daoDoc.getHash(), common::START);
+
+      //Create end period edge
+      Edge(get_self(), get_self(), daoDoc.getHash(), startEdge.getToNode(), common::END);
+
+      EOS_CHECK(
+        inititialPeriods->getAs<int64_t>() - 1 <= 30,
+        util::to_str("The max number of initial periods is 30")
+      )
+
+      genPeriods(
+        dao, 
+        inititialPeriods->getAs<int64_t>() - 1, 
+        periodDurationSeconds->getAs<int64_t>()
+      );
    }
 
    void dao::createroot(const std::string &notes)
@@ -809,6 +962,29 @@ namespace hypha
          auto [idx, startDate] = cw.get(i, TIME_SHARE_START_DATE);
 
          auto fixedStartDate = startDate ? std::optional<time_point>{startDate->getAs<time_point>()} : std::nullopt;
+
+         auto assignmentCW = assignment.getContentWrapper();
+
+         if (modstr.empty()) {
+           
+           auto lastPeriod = assignment.getLastPeriod();
+           auto assignmentExpirationTime = lastPeriod.getEndTime();
+
+           EOS_CHECK(
+             assignmentExpirationTime.sec_since_epoch() > eosio::current_time_point().sec_since_epoch(),
+             to_str("Cannot adjust expired assignment: ", assignment.getHash(), " last period: ", lastPeriod.getHash())
+           )
+
+           auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+           EOS_CHECK(
+             state != common::STATE_WITHDRAWED && 
+             state != common::STATE_SUSPENDED &&
+             state != common::STATE_EXPIRED &&
+             state != common::STATE_REJECTED,
+             to_str("Cannot adjust commitment for ", state, " assignments")
+           )
+         }
         
          modifyCommitment(assignment, 
                           newTimeShare, 
@@ -817,73 +993,114 @@ namespace hypha
       }
    }
 
+  ACTION dao::adjustdeferr(name issuer, checksum256 assignment_hash, int64_t new_deferred_perc_x100)
+  {
+    TRACE_FUNCTION()
+
+    require_auth(issuer);
+
+    Assignment assignment = Assignment(this, assignment_hash);
+
+    EOS_CHECK(
+      assignment.getAssignee().getAccount() == issuer,
+      "Only the owner of the assignment can modify it"
+    );
+
+    auto cw = assignment.getContentWrapper();
+
+    auto [detailsIdx, detailsGroup] = cw.getGroup(DETAILS);
+
+    EOS_CHECK(
+      detailsGroup != nullptr,
+      "Missing details group from assignment"
+    );
+
+    auto approvedDeferredPerc = cw.getOrFail(detailsIdx, common::APPROVED_DEFERRED)
+                                  .second->getAs<int64_t>();
+
+    EOS_CHECK(
+      new_deferred_perc_x100 >= approvedDeferredPerc,
+      to_str("New percentage has to be greater or equal to approved percentage: ", approvedDeferredPerc)
+    )
+
+    const int64_t UPPER_LIMIT = 100;
+
+    EOS_CHECK(
+      approvedDeferredPerc <= new_deferred_perc_x100 && new_deferred_perc_x100 <= UPPER_LIMIT,
+      to_str("New percentage is out of valid range [", 
+             approvedDeferredPerc, " - ", UPPER_LIMIT, "]:", new_deferred_perc_x100)
+    )
+
+    asset usdPerPeriod = cw.getOrFail(detailsIdx, USD_SALARY_PER_PERIOD)
+                           .second->getAs<eosio::asset>();
+
+    int64_t initialTimeshare = assignment.getInitialTimeShare()
+                                         .getContentWrapper()
+                                         .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+
+    auto usdPerPeriodCommitmentAdjusted = adjustAsset(usdPerPeriod, static_cast<float>(initialTimeshare) / 100.f);
+
+    auto deferred = new_deferred_perc_x100 / 100.f;
+          
+    auto husdVal = adjustAsset(usdPerPeriodCommitmentAdjusted, 1.f - deferred);
+    husdVal.symbol = common::S_PEG;
+    
+    cw.insertOrReplace(*detailsGroup, Content{
+      DEFERRED,
+      new_deferred_perc_x100
+    });
+
+    auto hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
+
+    EOS_CHECK(
+      hyphaUsdVal.symbol.precision() == common::S_REWARD.precision(),
+      util::to_str("Expected HYPHA_USD_VALUE precision to be 4, but got:", hyphaUsdVal.symbol.precision())
+    )
+
+    auto hyphaVal = adjustAsset(usdPerPeriodCommitmentAdjusted, deferred);
+
+    hyphaVal.set_amount(hyphaVal.amount / (hyphaUsdVal.amount * 0.0001));
+    hyphaVal.symbol = common::S_REWARD;
+
+    cw.insertOrReplace(*detailsGroup, Content{
+      HYPHA_SALARY_PER_PERIOD, 
+      hyphaVal
+    });
+
+    cw.insertOrReplace(*detailsGroup, Content{
+      HUSD_SALARY_PER_PERIOD,
+      husdVal
+    });
+
+    m_documentGraph.updateDocument(issuer, assignment_hash, cw.getContentGroups());
+  }
+
    void dao::modifyCommitment(Assignment& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
    {
       TRACE_FUNCTION()
-      /**
-      * Checks if the assignment has the original_approved_date item
-      */
-      if (auto [_, approvedItem] = assignment.getContentWrapper().get(SYSTEM, common::APPROVED_DATE); 
-          approvedItem == nullptr) 
-      {
-        auto approvedDate = assignment.getApprovedTime();
-
-        auto system = assignment.getContentWrapper().getGroupOrFail(SYSTEM);
-
-        ContentWrapper::insertOrReplace(*system, Content{common::APPROVED_DATE, approvedDate});
-        
-        auto newDoc = getGraph().updateDocument(assignment.getCreator(), 
-                                                     assignment.getHash(),
-                                                     std::move(assignment.getContentGroups()));
-
-        assignment = Assignment(this, newDoc.getHash());
-      }
-
-      /**
-      * Check if required edges & documents exists for this assignment, otherwise (assignments approved prior dynamic commitments)
-      */
-      if (auto [exists, edge] = Edge::getIfExists(get_self(), assignment.getHash(), common::INIT_TIME_SHARE);
-          !exists)
-      {
-        //We have to create an Inital time share document and all the edges pointing towards it
-        auto contentWrapper = assignment.getContentWrapper();
-
-        //Initial time share for proposal
-        int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-
-        //Set starting date to approval date.
-        auto approvedDate = assignment.getApprovedTime();
-        TimeShare initTimeShareDoc(get_self(), get_self(), initTimeShare, approvedDate, assignment.getHash());
-
-        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
-        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
-        Edge::write(get_self(), get_self(), assignment.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
-      }
-
+      
       ContentWrapper assignmentCW = assignment.getContentWrapper();
 
-      Document roleDocument(get_self(), assignmentCW.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
+      //Should use the role edge instead of the role content item
+      //in case role document is modified (causes it's hash to change)
+      auto assignmentToRoleEdge = m_documentGraph.getEdgesFrom(assignment.getHash(), common::ROLE_NAME);
+      
+      EOS_CHECK(
+        !assignmentToRoleEdge.empty(),
+        to_str("Missing 'role' edge from assignment: ", assignment.getHash())
+      )
+
+      Document roleDocument(get_self(), assignmentToRoleEdge.at(0).getToNode());
       auto role = roleDocument.getContentWrapper();
 
       //Check min_time_share_x100 <= new_time_share_x100 <= time_share_x100
       int64_t originalTimeShare = assignmentCW.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
       int64_t minTimeShare = 0;
-      //role.getOrFail(DETAILS, MIN_TIME_SHARE)->getAs<int64_t>();
               
-      bool checkNewTimeShareMin = true;
-      
-      if (modifier == common::MOD_WITHDRAW) 
-      {
-        //checkNewTimeShareMin = false;
-      }
-      
-      if (checkNewTimeShareMin) 
-      {
-        EOS_CHECK(
-          commitment >= minTimeShare,
-          to_str(NEW_TIME_SHARE, " must be greater than or equal to: ", minTimeShare, " You submitted: ", commitment)
-        );
-      }
+      EOS_CHECK(
+        commitment >= minTimeShare,
+        to_str(NEW_TIME_SHARE, " must be greater than or equal to: ", minTimeShare, " You submitted: ", commitment)
+      );
 
       EOS_CHECK(
         commitment <= originalTimeShare,
@@ -912,10 +1129,14 @@ namespace hypha
                                                .getOrFail(DETAILS, TIME_SHARE)
                                                ->getAs<int64_t>();
 
-      EOS_CHECK(
-        lastTimeSharex100 != commitment,
-        to_str("New commitment: [", commitment, "] must be different than current commitment: [", lastTimeSharex100, "]")
-      );
+      //This allows withdrawing/suspending an assignment which has a current commitment of 0
+      if (modifier != common::MOD_WITHDRAW) 
+      {
+        EOS_CHECK(
+          lastTimeSharex100 != commitment,
+          to_str("New commitment: [", commitment, "] must be different than current commitment: [", lastTimeSharex100, "]")
+        );
+      }
 
       TimeShare newTimeShareDoc(get_self(), 
                                 assignment.getAssignee().getAccount(), 
@@ -929,4 +1150,79 @@ namespace hypha
 
       Edge::write(get_self(), get_self(), assignment.getHash(), newTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
    }
+
+  void dao::addPeriod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label) 
+  {
+    Period newPeriod(this, start_time, label);
+
+      // check that predecessor exists
+      Document previous(get_self(), predecessor);
+      ContentWrapper contentWrapper = previous.getContentWrapper();
+
+      // if it's a period, make sure the start time comes before
+      auto [idx, predecessorType] = contentWrapper.get(SYSTEM, TYPE);
+      if (predecessorType && predecessorType->getAs<eosio::name>() == common::PERIOD)
+      {
+         EOS_CHECK(contentWrapper.getOrFail(DETAILS, START_TIME)->getAs<eosio::time_point>().sec_since_epoch() <
+                          start_time.sec_since_epoch(),
+                      "start_time of period predecessor must be before the new period's start_time");
+
+         // predecessor is a period, so use "next" edge
+         Edge::write(get_self(), get_self(), predecessor, newPeriod.getHash(), common::NEXT);
+      }
+      else
+      {
+         // predecessor is not a period, so use "start" edge
+         Edge::write(get_self(), get_self(), predecessor, newPeriod.getHash(), common::START);
+      }
+  }
+
+  void dao::genPeriods(const name& dao_name, int64_t period_count, int64_t period_duration_sec)
+  {
+    //Max number of periods that should be created in one call
+    const int64_t MAX_PERIODS_PER_CALL = 30;
+
+    //Get last period
+    Document daoDoc(get_self(), Document::hashContents(getDAOContent(dao_name)));
+
+    auto lastEdge = Edge::get(get_self(), daoDoc.getHash(), common::END);
+    lastEdge.erase();
+
+    checksum256 lastPeriodHash = lastEdge.getToNode();
+
+    int64_t lastPeriodStartSecs = Period(this, lastPeriodHash)
+                                    .getStartTime()
+                                    .sec_since_epoch();
+
+    for (int64_t i = 0; i < MAX_PERIODS_PER_CALL; ++i) {
+      time_point nextPeriodStart(eosio::seconds(lastPeriodStartSecs + period_duration_sec));
+
+      Period nextPeriod(
+        this, 
+        nextPeriodStart, 
+        util::to_str(dao_name, ":", nextPeriodStart.time_since_epoch().count())
+      );
+      
+      Edge(get_self(), get_self(), lastPeriodHash, nextPeriod.getHash(), common::NEXT);
+
+      lastPeriodStartSecs = nextPeriodStart.sec_since_epoch();
+      lastPeriodHash = nextPeriod.getHash();
+    }
+
+    Edge(get_self(), get_self(), daoDoc.getHash(), lastPeriodHash, common::END);
+
+    //Check if there are more periods to created
+
+    if (period_count > MAX_PERIODS_PER_CALL) {
+      eosio::action(
+        eosio::permission_level(get_self(), "active"_n),
+        get_self(),
+        "genperiods"_n,
+        std::make_tuple(dao_name, 
+                        period_count - MAX_PERIODS_PER_CALL, 
+                        period_duration_sec)
+      ).send();
+    }
+  }
+
 } // namespace hypha

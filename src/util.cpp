@@ -12,7 +12,7 @@ namespace hypha
 
     eosio::checksum256 getRoot(const eosio::name &contract)
     {
-        ContentGroups cgs = getDAOContent (eosio::name("bm"));
+        ContentGroups cgs = getRootContent (contract);
         return Document::hashContents(cgs);
     }
 
@@ -30,7 +30,7 @@ namespace hypha
                 Content(ROOT_NODE, contract)}, 
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, SYSTEM), 
-                Content(TYPE, common::DHO), 
+                Content(TYPE, common::DHO),
                 Content(NODE_LABEL, "Hypha DHO Root")}});
 
         return std::move(cgs);

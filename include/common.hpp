@@ -12,73 +12,94 @@ using eosio::symbol;
 namespace common
 {
 
-    static constexpr symbol S_REWARD("BM", 2);
-    static constexpr symbol S_VOICE("BMV", 2);
-    static constexpr symbol S_PEG("BUSD", 2);
+    constexpr auto PEG_TOKEN = "peg_token";
+    constexpr auto VOICE_TOKEN = "voice_token";
+    constexpr auto REWARD_TOKEN = "reward_token";
+    constexpr auto REWARD_TO_PEG_RATIO = "reward_to_peg_ratio";
 
-    static constexpr symbol S_SEEDS("SEEDS", 4);
-    static constexpr symbol S_USD("USD", 2);
+    constexpr symbol S_REWARD("BM", 2);
+    constexpr symbol S_VOICE("BMV", 2);
+    constexpr symbol S_PEG("BUSD", 2);
 
-    static const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
+    constexpr symbol S_SEEDS("SEEDS", 4);
+    constexpr symbol S_USD("USD", 2);
+
+    //Dao settings
+    constexpr auto DAO_DESCRIPTION = "dao_description";
+    constexpr auto DAO_TITLE = "dao_title";
+    constexpr auto PERIOD_DURATION = "period_duration_sec";
+    constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
+
+    const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
 
     // 365.25 / 7.4
-    static const float PHASES_PER_YEAR = 49.3581081081;
+    const float PHASES_PER_YEAR = 49.3581081081;
 
     // 49.36 phases per annum, so each phase is 2.026% of the total
-    static const float PHASE_TO_YEAR_RATIO = 0.02026009582;
+    const float PHASE_TO_YEAR_RATIO = 0.02026009582;
 
     // graph edge names
-    static constexpr name ESCROW = name("escrow");
-    static constexpr name SETTINGS_EDGE = name("settings");
-    static constexpr name HOLDS_BADGE = name("holdsbadge");
-    static constexpr name HELD_BY = name("heldby");
-    static constexpr name OWNED_BY = name("ownedby");
-    static constexpr name OWNS = name("owns");
-    static constexpr name MEMBER_OF = name("memberof");
-    static constexpr name APPLICANT = name("applicant");
-    static constexpr name APPLICANT_OF = name("applicantof");
+    constexpr name ESCROW = name("escrow");
+    constexpr name SETTINGS_EDGE = name("settings");
+    constexpr name HOLDS_BADGE = name("holdsbadge");
+    constexpr name HELD_BY = name("heldby");
+    constexpr name OWNED_BY = name("ownedby");
+    constexpr name OWNS = name("owns");
+    constexpr name MEMBER_OF = name("memberof");
+    constexpr name APPLICANT = name("applicant");
+    constexpr name APPLICANT_OF = name("applicantof");
 
-    static constexpr name ASSIGN_BADGE = name("assignbadge");
-    static constexpr name VOTE_TALLY = name("votetally");
-    static constexpr name ASSIGNMENT = name("assignment");
-    static constexpr name ROLE_NAME = name("role");
-    static constexpr name PAYOUT = name("payout");
-    static constexpr name ATTESTATION = name("attestation");
-    static constexpr name EDIT = name("edit");
-    static constexpr name ORIGINAL = name("original");
-    static constexpr name EXTENSION = name("extension");
+    constexpr name ASSIGN_BADGE = name("assignbadge");
+    constexpr name VOTE_TALLY = name("votetally");
+    constexpr name ASSIGNMENT = name("assignment");
+    constexpr name ROLE_NAME = name("role");
+    constexpr name PAYOUT = name("payout");
+    constexpr name ATTESTATION = name("attestation");
+    constexpr name EDIT = name("edit");
+    constexpr name ORIGINAL = name("original");
+    constexpr name EXTENSION = name("extension");
     constexpr        name SUSPEND = name("suspend");
+    constexpr        name SUSPENDED = name("suspended");
 
-    static constexpr name ASSIGNED = name("assigned");
-    static constexpr name ASSIGNEE_NAME = name("assignee");
+    constexpr name ASSIGNED = name("assigned");
+    constexpr name ASSIGNEE_NAME = name("assignee");
     constexpr        auto APPROVED_DATE = "original_approved_date";
     constexpr        auto BALLOT_TITLE = "ballot_title";
     constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
-    static constexpr name PERIOD = name("period");
-    static constexpr name START = name ("start");
-    static constexpr name NEXT = name ("next");
-    static constexpr name PAYMENT = name("payment");
-    static constexpr name PAID = name ("paid");
-    static constexpr name CLAIMED = name ("claimed");
+    constexpr        auto STATE = "state";
+    constexpr        auto STATE_PROPOSED = "proposed";
+    constexpr        auto STATE_APPROVED = "approved";
+    constexpr        auto STATE_REJECTED = "rejected";
+    constexpr        auto STATE_SUSPENDED = "suspended";
+    constexpr        auto STATE_EXPIRED = "expired";
+    constexpr        auto STATE_WITHDRAWED = "withdrawed";
+    constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
+    constexpr name PERIOD = name("period");
+    constexpr name START = name ("start");
+    constexpr name END = name ("end");
+    constexpr name NEXT = name ("next");
+    constexpr name PAYMENT = name("payment");
+    constexpr name PAID = name ("paid");
+    constexpr name CLAIMED = name ("claimed");
 
-    static constexpr name VOTE = name ("vote");
-    static constexpr name VOTE_ON = name ("voteon");
+    constexpr name VOTE = name ("vote");
+    constexpr name VOTE_ON = name ("voteon");
 
     // document types
-    static constexpr name ALERT = name ("alert");
+    constexpr name ALERT = name ("alert");
 
     // graph edges hanging off of primary DHO node
-    static constexpr name BADGE_NAME = name("badge");
-    static constexpr name PROPOSAL = name("proposal");
-    static constexpr name FAILED_PROPS = name("failedprops");
-    static constexpr name PASSED_PROPS = name("passedprops");
-    static constexpr name MEMBER = name("member");
-    static constexpr name DHO = name ("dho");
-    static constexpr name DAO = name ("dao");
+    constexpr name BADGE_NAME = name("badge");
+    constexpr name PROPOSAL = name("proposal");
+    constexpr name FAILED_PROPS = name("failedprops");
+    constexpr name PASSED_PROPS = name("passedprops");
+    constexpr name MEMBER = name("member");
+    constexpr name DHO = name ("dho");
+    constexpr name DAO = name ("dao");
 
-    static constexpr name BALLOT_TYPE_OPTIONS = name("options");
+    constexpr name BALLOT_TYPE_OPTIONS = name("options");
 
-    static constexpr name GROUP_TYPE_OPTION = name("option");
+    constexpr name GROUP_TYPE_OPTION = name("option");
 
     constexpr name LAST_TIME_SHARE = name("lastimeshare");
     constexpr name CURRENT_TIME_SHARE = name("curtimeshare");
@@ -88,9 +109,11 @@ namespace common
     constexpr auto ADJUST_MODIFIER = "modifier";
     constexpr auto MOD_WITHDRAW = "withdraw";
 
-    static constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
-    static constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
-    static constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
+    constexpr auto APPROVED_DEFERRED = "approved_deferred_perc_x100";
+
+    constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
+    constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
+    constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
 
 // content keys
 // keys used with settings

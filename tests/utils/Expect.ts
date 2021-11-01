@@ -1,4 +1,4 @@
-import { DaoBlockchain } from "../DaoBlockchain";
+import { DaoBlockchain } from "../dao/DaoBlockchain";
 import { Document } from "../types/Document";
 import { last } from "./Arrays";
 import { getEdgesByFilter } from "./Dao";

@@ -34,10 +34,11 @@ namespace hypha
         eosio::asset calcLiquidSeedsSalary ();
         eosio::asset calcHusdSalary ();
         eosio::asset calcHyphaSalary ();
+        eosio::asset getHyphaSalary();
 
         dao *m_dao;
 
     private: 
-        eosio::asset getAsset (const symbol* symbol, const std::string &key);
+        eosio::asset getAsset (const eosio::symbol* symbol, const std::string &key);
     };
 } // namespace hypha

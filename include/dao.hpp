@@ -30,6 +30,21 @@ namespace hypha
 
       DECLARE_DOCUMENT_GRAPH(dao)
 
+      //Might use it to optimize dao lookups instead of hashing the cgs
+      // TABLE Dao
+      // {
+      //   uint64_t id;
+      //   name name;
+      //   checksum256 hash;
+
+      //   uint64_t primary_key() const { return id; }
+      //   uint64_t by_name() const { return name.value; }
+      // };
+
+      // typedef multi_index<name("daos"), Dao,
+      //                     eosio::indexed_by<name("byname"), eosio::const_mem_fun<Dao, uint64_t, &Dao::by_name>>>
+      //         dao_table;
+
       struct [[eosio::table, eosio::contract("dao")]] Payment
       {
          uint64_t payment_id;
@@ -77,21 +92,31 @@ namespace hypha
          }
       }
 
-      ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
+      ACTION clean();
+      ACTION fixassigns(std::vector<checksum256>& hashes);
+      ACTION propose(const name& dao_name, const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
       ACTION closedocprop(const checksum256 &proposal_hash);
-      // ACTION setsetting(const string &key, const Content::FlexValue &value);
+      //Sets a dho/contract level setting
+      ACTION setsetting(const string &key, const Content::FlexValue &value);
+
+      //Sets a dao level setting
       ACTION setsetting(const eosio::name &dao_name, const std::string &key, const Content::FlexValue &value);
+
+      //Removes a dao/contract level setting
       ACTION remsetting(const string &key);
+
       ACTION addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
+      ACTION genperiods(const name& dao_name, int64_t period_count, int64_t period_duration_sec);
+      //ACTION genperiodini(const name& dao_name, int64_t period_count, int64_t period_duration_sec);
 
       // ACTION claimpay(const eosio::checksum256 &hash);
       // ACTION claimpayper(const eosio::checksum256 &assignment_hash, const eosio::checksum256 &period_hash);
       ACTION claimnextper(const eosio::checksum256 &assignment_hash);
       ACTION proposeextend (const eosio::checksum256 &assignment_hash, const int64_t additional_periods);
 
-      ACTION apply(const eosio::name &applicant, const std::string &content);
-      ACTION enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content);
+      ACTION apply(const eosio::name &applicant, const name& dao_name, const std::string &content);
+      ACTION enroll(const eosio::name &enroller, const name& dao_name, const eosio::name &applicant, const std::string &content);
 
       // ACTION suspend (const eosio::name &proposer, const eosio::checksum256 &hash);
 
@@ -111,9 +136,30 @@ namespace hypha
       }
 
       template <class T>
+      T getSettingOrFail(const eosio::name &dao_name, const std::string &setting)
+      {
+         auto settings = getSettingsDocument(dao_name);
+         auto content = settings.getContentWrapper().getOrFail(SETTINGS, setting, "setting " + setting + " does not exist");
+         return std::get<T>(content->value);
+      }
+
+      template <class T>
       std::optional<T> getSettingOpt(const string &setting)
       {
          auto settings = getSettingsDocument();
+         auto [idx, content] = settings.getContentWrapper().get(SETTINGS, setting);
+         if (auto p = std::get_if<T>(&content->value))
+         {
+            return *p;
+         }
+
+         return {};
+      }
+
+      template <class T>
+      std::optional<T> getSettingOpt(const eosio::name &dao_name, const string &setting)
+      {
+         auto settings = getSettingsDocument(dao_name);
          auto [idx, content] = settings.getContentWrapper().get(SETTINGS, setting);
          if (auto p = std::get_if<T>(&content->value))
          {
@@ -133,14 +179,26 @@ namespace hypha
 
          return def;
       }
+      
+      template <class T>
+      T getSettingOrDefault(const eosio::name &dao_name, const string &setting, const T &def = T{})
+      {
+         if (auto content = getSettingOpt<T>(dao_name, setting))
+         {
+            return *content;
+         }
+
+         return def;
+      }
 
       ACTION adjustcmtmnt(name issuer, ContentGroups& adjust_info);
+      ACTION adjustdeferr(name issuer, checksum256 assignment_hash, int64_t new_deferred_perc_x100);
 
       ACTION withdraw(name owner, eosio::checksum256 hash);
       ACTION suspend(name proposer, eosio::checksum256 hash, string reason);
 
       ACTION createroot(const std::string &notes);
-      ACTION createdao(const eosio::name &dao_name);
+      ACTION createdao(ContentGroups &config);
 
       ACTION erasedoc(const eosio::checksum256 &hash);
       ACTION killedge(const uint64_t id);
@@ -152,6 +210,8 @@ namespace hypha
       // ACTION nbadprop (const name& owner, const ContentGroups& contentGroups);
 
       void setSetting(const eosio::name &dao_name, const string &key, const Content::FlexValue &value);
+
+      void setSetting(const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,
                            const eosio::time_point &price_time_point,
@@ -170,6 +230,9 @@ namespace hypha
    private:
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
+      void addPeriod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
+      void genPeriods(const name& dao_name, int64_t period_count, int64_t period_duration_sec);
+            
       void removeSetting(const string &key);
 
       asset getProRatedAsset(ContentWrapper * assignment, const symbol &symbol,

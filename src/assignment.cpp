@@ -1,3 +1,7 @@
+#include <assignment.hpp>
+
+#include <math.h>
+
 #include <period.hpp>
 #include <common.hpp>
 #include <util.hpp>
@@ -5,7 +9,6 @@
 #include <document_graph/edge.hpp>
 #include <document_graph/content_wrapper.hpp>
 #include <member.hpp>
-#include <assignment.hpp>
 #include <time_share.hpp>
 #include <document_graph/util.hpp>
 #include <logger/logger.hpp>
@@ -142,15 +145,7 @@ namespace hypha
         {
           return approvedDate->getAs<eosio::time_point>();
         }
-        //For assignemnts approved/claimed post adjust commitment
-        else if (auto [hasTimeShare, edge] = Edge::getIfExists(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
-                 hasTimeShare)
-        {
-          return getInitialTimeShare().
-                 getContentWrapper().
-                 getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<eosio::time_point>();
-        }
-        
+                
         //Fallback for old assignments without time share document
         return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
     }
@@ -169,17 +164,12 @@ namespace hypha
         int64_t periodCount = getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
         int64_t counter = 0;
 
-        auto approvedTime = getApprovedTime().sec_since_epoch();
         auto currentTime = eosio::current_time_point().sec_since_epoch();
 
         while (counter < periodCount)
         {
-
-            auto startTime = period.getStartTime().sec_since_epoch();
             auto endTime = period.getEndTime().sec_since_epoch();
-            if ((startTime >= approvedTime || // if period comes after assignment creation
-                 approvedTime < endTime) &&  //Or if it was approved in the middle of a period
-                 endTime <= currentTime &&   // if period has lapsed
+            if (endTime <= currentTime &&   // if period has lapsed
                 !isClaimed(&period))         // and not yet claimed
             {
                 return std::optional<Period>{period};
@@ -201,6 +191,51 @@ namespace hypha
         return eosio::asset{0, *symbol};
     }
 
+    eosio::asset Assignment::getHyphaSalary() 
+    {
+      auto cw = getContentWrapper();
+
+      asset usdPerPeriod = cw
+                           .getOrFail(DETAILS, USD_SALARY_PER_PERIOD)->getAs<eosio::asset>();
+
+      int64_t initialTimeshare = getInitialTimeShare()
+                                 .getContentWrapper()
+                                 .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+
+      auto usdPerPeriodCommitmentAdjusted = adjustAsset(usdPerPeriod, static_cast<float>(initialTimeshare) / 100.f);
+
+      auto deferred = static_cast<float>(cw.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>()) / 100.f;
+            
+      auto hyphaUsdVal = m_dao->getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
+
+      auto hyphaPerPeriod = adjustAsset(usdPerPeriodCommitmentAdjusted, deferred);
+      
+      {
+        //Hypha USD Value precision is fixed to 4 -> 10^4 == 10000
+        EOS_CHECK(
+          hyphaUsdVal.symbol.precision() == common::S_REWARD.precision(),
+          util::to_str("Expected HYPHA_USD_VALUE precision to be 4, but got:", hyphaUsdVal.symbol.precision())
+        )
+        
+        double hyphaToUsdVal = static_cast<double>(hyphaUsdVal.amount) / 10000.0;
+
+        //Usd period precision is fixed to 2 -> 10^2 == 100
+        EOS_CHECK(
+          hyphaPerPeriod.symbol.precision() == 2,
+          util::to_str("Expected ", USD_SALARY_PER_PERIOD, " precision to be 2, but got:", hyphaPerPeriod.symbol.precision())
+        )
+
+        double hyphaTokenPerPeriod = static_cast<double>(hyphaPerPeriod.amount) / 100.0;
+
+        //Hypha token value precision is fixed to 2 -> 10^2 == 100
+        hyphaPerPeriod.set_amount(static_cast<int64_t>(hyphaTokenPerPeriod / hyphaToUsdVal * 100.0));
+      }
+
+      hyphaPerPeriod.symbol = common::S_REWARD;
+
+      return hyphaPerPeriod;
+    }
+
     eosio::asset Assignment::getSalaryAmount(const eosio::symbol *symbol)
     {
         TRACE_FUNCTION()
@@ -213,7 +248,7 @@ namespace hypha
             return getAsset(symbol, HVOICE_SALARY_PER_PERIOD);
 
         case common::S_REWARD.code().raw():
-            return getAsset(symbol, HYPHA_SALARY_PER_PERIOD);
+            return getHyphaSalary();
         }
 
         return eosio::asset{0, *symbol};
