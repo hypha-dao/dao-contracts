@@ -118,15 +118,26 @@ namespace hypha
       eosio::print("\nproposer is: " + assignee.to_string() + "\n");
       // construct ContentGroups to call propose
       auto contentGroups = ContentGroups{
-          ContentGroup{
+        ContentGroup{
               Content(CONTENT_GROUP_LABEL, DETAILS),
               Content(PERIOD_COUNT, assignment.getPeriodCount() + additional_periods),
               Content(TITLE, std::string("Assignment Extension Proposal")),
-              Content(ORIGINAL_DOCUMENT, assignment.getHash())}};
+              Content(ORIGINAL_DOCUMENT, assignment.getHash())
+        }
+      };
+
+      Document dao = Document(
+        get_self(),
+        Edge::get(get_self(), assignment_hash, common::DAO).getToNode()
+      );
+
+     const name daoName = dao.getContentWrapper()
+                        .getOrFail(DETAILS, DAO_NAME)
+                        ->getAs<name>();
 
       // propose the extension
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, common::EXTENSION));
-      proposal->propose(assignee, contentGroups);
+      proposal->propose(daoName, assignee, contentGroups);
    }
 
    void dao::withdraw(name owner, eosio::checksum256 hash) 
@@ -223,7 +234,17 @@ namespace hypha
        },
      };
 
-     propose(proposer, common::SUSPEND, cgs);
+     //Check which dao this document belongs to
+     Document dao = Document(
+       get_self(),
+       Edge::get(get_self(), hash, common::DAO).getToNode()
+     );
+
+     const name daoName = dao.getContentWrapper()
+                        .getOrFail(DETAILS, DAO_NAME)
+                        ->getAs<name>();
+
+     propose(daoName, proposer, common::SUSPEND, cgs);
    }
 
    void dao::claimnextper(const eosio::checksum256 &assignment_hash)
@@ -812,7 +833,7 @@ namespace hypha
       enroll(onboarder, dao, onboarder, "DAO Onboarder");
       
       //Create start period
-      addperiod(
+      addPeriod(
         daoDoc.getHash(), 
         eosio::current_time_point(), 
         util::to_str(dao, " - start period")

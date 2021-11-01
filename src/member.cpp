@@ -97,7 +97,7 @@ namespace hypha
         auto voiceToken = m_dao.getSettingOrFail<asset>(daoName, common::VOICE_TOKEN);
 
         //Get 1 unit of voice token 
-        const int64_t unit = 1;
+        const int64_t unit = static_cast<int64_t>(::powf(1, voiceToken.symbol.precision()));
 
         eosio::asset genesis_voice{unit, voiceToken.symbol};
         std::string memo{"genesis voice issuance during enrollment"};

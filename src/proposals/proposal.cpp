@@ -43,7 +43,7 @@ namespace hypha
 
         // creates the document, or the graph NODE
         eosio::checksum256 memberHash = Member::calcHash(proposer);
-        eosio::checksum256 root = getRoot(m_dao.get_self());
+        eosio::checksum256 root = getDAO(dao_name);
 
         // the proposer OWNS the proposal; this creates the graph EDGE
         Edge::write(m_dao.get_self(), proposer, memberHash, proposalNode.getHash(), common::OWNS);
@@ -53,6 +53,8 @@ namespace hypha
 
         // the DHO also links to the document as a proposal, another graph EDGE
         Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
+
+        Edge::write(m_dao.get_self(), proposer, proposalNode.getHash(), root, common::DAO);
 
         // Sets an empty tally
         VoteTally(m_dao, proposalNode);
@@ -83,7 +85,9 @@ namespace hypha
             "Voting is still active for this proposal"
         );
 
-        eosio::checksum256 root = getRoot(m_dao.get_self());
+        const auto root = Edge::get(m_dao.get_self(), proposal.getHash(), common::DAO).getToNode();
+
+        //eosio::checksum256 root = getRoot(m_dao.get_self());
 
         Edge edge = Edge::get(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL);
         edge.erase();
