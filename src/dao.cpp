@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <limits>
+#include <cmath>
 
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/util.hpp>
@@ -7,6 +9,7 @@
 #include <payers/payer_factory.hpp>
 #include <payers/payer.hpp>
 #include <logger/logger.hpp>
+#include <memory>
 
 #include <dao.hpp>
 #include <common.hpp>
@@ -777,18 +780,14 @@ namespace hypha
 
       auto voiceToken = configCW.getOrFail(DETAILS, common::VOICE_TOKEN);
 
-      voiceToken->getAs<asset>();
-
       auto rewardToken = configCW.getOrFail(DETAILS, common::REWARD_TOKEN);
-
-      rewardToken->getAs<asset>();
 
       auto rewardToPegTokenRatio = configCW.getOrFail(DETAILS, common::REWARD_TO_PEG_RATIO);
 
       rewardToPegTokenRatio->getAs<asset>();
 
       //Generate periods
-      auto inititialPeriods = configCW.getOrFail(DETAILS, PERIOD_COUNT);
+      //auto inititialPeriods = configCW.getOrFail(DETAILS, PERIOD_COUNT);
 
       auto periodDurationSeconds = configCW.getOrFail(DETAILS, common::PERIOD_DURATION);
 
@@ -828,9 +827,24 @@ namespace hypha
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), daoDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
 
-      //Auto enroll
-      apply(onboarder, dao, "DAO Onboarder");
-      enroll(onboarder, dao, onboarder, "DAO Onboarder");
+      createTokens(voiceToken->getAs<asset>(), rewardToken->getAs<asset>());
+      
+      //Auto enroll      
+      std::unique_ptr<Member> member;
+      
+      const checksum256 memberHash = Member::calcHash(onboarder);
+
+      if (Document::exists(get_self(), memberHash)) {
+        member = std::make_unique<Member>(*this, memberHash);
+      }
+      else {
+        member = std::make_unique<Member>(*this, onboarder, onboarder);
+      }
+
+      member->apply(daoDoc.getHash(), "DAO Onboarder");
+      member->enroll(onboarder, daoDoc.getHash(), "DAO Onboarder");
+      
+      //TODO: Create enroller edge
       
       //Create start period
       addPeriod(
@@ -844,16 +858,16 @@ namespace hypha
       //Create end period edge
       Edge(get_self(), get_self(), daoDoc.getHash(), startEdge.getToNode(), common::END);
 
-      EOS_CHECK(
-        inititialPeriods->getAs<int64_t>() - 1 <= 30,
-        util::to_str("The max number of initial periods is 30")
-      )
+      // EOS_CHECK(
+      //   inititialPeriods->getAs<int64_t>() - 1 <= 30,
+      //   util::to_str("The max number of initial periods is 30")
+      // )
 
-      genPeriods(
-        dao, 
-        inititialPeriods->getAs<int64_t>() - 1, 
-        periodDurationSeconds->getAs<int64_t>()
-      );
+      // genPeriods(
+      //   dao, 
+      //   inititialPeriods->getAs<int64_t>() - 1, 
+      //   periodDurationSeconds->getAs<int64_t>()
+      // );
    }
 
    void dao::createroot(const std::string &notes)
@@ -1244,6 +1258,36 @@ namespace hypha
                         period_duration_sec)
       ).send();
     }
+  }
+
+  void dao::createTokens(const eosio::asset& voiceToken, 
+                        const eosio::asset& rewardToken)
+  {
+    name governanceContract = getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+
+    eosio::action(
+      eosio::permission_level{governanceContract, name("active")},
+      governanceContract, 
+      name("create"),
+      std::make_tuple(
+        get_self(), 
+        asset{-getTokenUnit(voiceToken), voiceToken.symbol}, 
+        uint64_t{0}, 
+        uint64_t{0}
+      )
+    ).send();
+
+    name rewardContract = getSettingOrFail<eosio::name>(REWARD_TOKEN_CONTRACT);
+
+    eosio::action(
+      eosio::permission_level{rewardContract, name("active")},
+      rewardContract,
+      name("create"),
+      std::make_tuple(
+        get_self(),
+        asset{(static_cast<int64_t>(1) << 62) - 1, rewardToken.symbol}
+      )
+    ).send();
   }
 
 } // namespace hypha

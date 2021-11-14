@@ -95,12 +95,9 @@ namespace hypha
         auto daoName = daoCW.getOrFail(DETAILS, DAO_NAME)->getAs<name>();
 
         auto voiceToken = m_dao.getSettingOrFail<asset>(daoName, common::VOICE_TOKEN);
-
-        //Get 1 unit of voice token 
-        const int64_t unit = static_cast<int64_t>(::powf(1, voiceToken.symbol.precision()));
-
-        eosio::asset genesis_voice{unit, voiceToken.symbol};
-        std::string memo{"genesis voice issuance during enrollment"};
+      
+        eosio::asset genesis_voice{getTokenUnit(voiceToken), voiceToken.symbol};
+        std::string memo = util::to_str("genesis voice issuance during enrollment to ", daoName);
 
         name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
@@ -116,11 +113,11 @@ namespace hypha
 
         Edge::write(getContract(), getAccount(), getHash(), paymentReceipt.getHash(), common::PAYMENT);
 
-        eosio::action(
-            eosio::permission_level{getContract(), name("active")},
-            name("eosio"), name("buyram"),
-            std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE))
-            .send();
+        // eosio::action(
+        //     eosio::permission_level{getContract(), name("active")},
+        //     name("eosio"), name("buyram"),
+        //     std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE))
+        //     .send();
     }
 
     eosio::name Member::getAccount()

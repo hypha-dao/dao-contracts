@@ -160,7 +160,7 @@ namespace common
 // setting document
 #define SEEDS_TOKEN_CONTRACT "seeds_token_contract"
 #define SEEDS_ESCROW_CONTRACT "seeds_escrow_contract"
-#define HUSD_TOKEN_CONTRACT "husd_token_contract"
+#define PEG_TOKEN_CONTRACT "peg_token_contract"
 #define TREASURY_CONTRACT "treasury_contract"
 #define REWARD_TOKEN_CONTRACT "reward_token_contract"
 #define GOVERNANCE_TOKEN_CONTRACT "governance_token_contract"

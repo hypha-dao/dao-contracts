@@ -1,5 +1,5 @@
 #include <payers/payer_factory.hpp>
-#include <payers/husd_payer.hpp>
+#include <payers/peg_payer.hpp>
 #include <payers/reward_payer.hpp>
 #include <payers/seeds_payer.hpp>
 #include <payers/voice_payer.hpp>
@@ -23,7 +23,7 @@ namespace hypha
         switch (symbol.code().raw())
         {
         case common::S_PEG.code().raw():
-            return new HusdPayer(dao);
+            return new PegPayer(dao);
 
         case common::S_VOICE.code().raw():
             return new VoicePayer(dao);

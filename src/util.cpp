@@ -119,4 +119,11 @@ namespace hypha
             .send();
     }
 
+    int64_t getTokenUnit(const eosio::asset& token)
+    {
+      auto symb =  token.symbol;
+
+      return static_cast<int64_t>(::powf(10, symb.precision()));;
+    }
+
 } // namespace hypha

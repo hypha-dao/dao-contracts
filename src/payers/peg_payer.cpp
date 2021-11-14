@@ -1,4 +1,4 @@
-#include <payers/husd_payer.hpp>
+#include <payers/peg_payer.hpp>
 
 #include <eosio/name.hpp>
 #include <eosio/asset.hpp>
@@ -11,12 +11,12 @@
 namespace hypha
 {
 
-    Document HusdPayer::payImpl(const eosio::name &recipient,
+    Document PegPayer::payImpl(const eosio::name &recipient,
                                  const eosio::asset &quantity,
                                  const string &memo)
     {
         TRACE_FUNCTION()
-        issueToken(m_dao.getSettingOrFail<eosio::name>(HUSD_TOKEN_CONTRACT),
+        issueToken(m_dao.getSettingOrFail<eosio::name>(PEG_TOKEN_CONTRACT),
                    m_dao.getSettingOrFail<eosio::name>(TREASURY_CONTRACT),
                    recipient,
                    quantity,

@@ -8,6 +8,7 @@
 #include <eosio/crypto.hpp>
 #include <eosio/multi_index.hpp>
 #include <eosio/singleton.hpp>
+#include <eosio/action.hpp>
 
 #include <document_graph/document_graph.hpp>
 #include <document_graph/util.hpp>
@@ -90,6 +91,19 @@ namespace hypha
             out.delay_sec = 1;
             out.send(senderId, get_self());
          }
+      }
+
+      //TODO: REMOVE
+      ACTION deletetok(asset asset, name contract) {
+
+        require_auth(get_self());
+
+        eosio::action(
+          eosio::permission_level{contract, name("active")},
+          contract, 
+          name("del"),
+          std::make_tuple(asset)
+        ).send();
       }
 
       ACTION clean();
@@ -237,6 +251,9 @@ namespace hypha
 
       asset getProRatedAsset(ContentWrapper * assignment, const symbol &symbol,
                              const string &key, const float &proration);
+
+      void createTokens(const eosio::asset& voiceToken, 
+                        const eosio::asset& rewardToken);
 
       struct AssetBatch
       {

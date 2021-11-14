@@ -32,6 +32,11 @@ namespace hypha
                     const eosio::asset &token_amount,
                     const string &memo);
 
+    /**
+     * @brief Returns the representation of 1 unit in the given token
+     */
+    int64_t getTokenUnit(const eosio::asset& token);
+
     // configtable is usued to read the Seeds price
     struct configtable
     {
