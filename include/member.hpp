@@ -17,7 +17,7 @@ namespace hypha
 
         static Member get (dao& dao, const eosio::name &member);
 
-        static const bool isMember(const eosio::name &rootNode, const eosio::name &member);
+        static const bool isMember(const eosio::name& contract, const eosio::checksum256 &dao, const eosio::name &member);
         static Member getOrNew (dao& dao, const eosio::name &creator, const eosio::name &member);
         static const eosio::checksum256 calcHash(const eosio::name &member);
 

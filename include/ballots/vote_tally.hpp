@@ -5,13 +5,16 @@
 
 namespace hypha
 {
+    class Settings;
+
     class VoteTally : public TypedDocument<hypha::document_types::VOTE_TALLY>
     {
     public:
         VoteTally(dao& dao, const eosio::checksum256& hash);
         VoteTally(
             dao& dao,
-            Document& proposal
+            Document& proposal,
+            Settings* daoSettings
         );
 
     protected:

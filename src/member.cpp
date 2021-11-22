@@ -49,11 +49,11 @@ namespace hypha
         return Document::hashContents(cgs);
     }
 
-    const bool Member::isMember(const eosio::name &rootNode, const eosio::name &member)
+    const bool Member::isMember(const eosio::name& contract, const eosio::checksum256 &dao, const eosio::name &member)
     {
         // create hash to represent this member account
         auto memberHash = Member::calcHash(member);
-        return Edge::exists(rootNode, getRoot(rootNode), memberHash, common::MEMBER);
+        return Edge::exists(contract, dao, memberHash, common::MEMBER);
     }
 
     // Member Member::getOrNew(eosio::name contract, const eosio::name &creator, const eosio::name &member)

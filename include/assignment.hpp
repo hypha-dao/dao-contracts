@@ -1,4 +1,7 @@
 #pragma once
+
+#include <string_view>
+
 #include <eosio/name.hpp>
 #include <eosio/crypto.hpp>
 #include <period.hpp>
@@ -9,13 +12,13 @@ namespace hypha
 {
     class dao;
     class TimeShare;
-    
+    class Settings;
+
     class Assignment : public Document
     {
     public:
         Assignment(dao *dao, const eosio::checksum256 &hash);
-        Assignment(dao *dao, ContentWrapper &assignment);
-
+        
         std::optional<Period> getNextClaimablePeriod ();
         bool isClaimed (Period* period);
         Period getStartPeriod();
@@ -25,20 +28,20 @@ namespace hypha
         eosio::time_point getApprovedTime();
         int64_t getPeriodCount();
 
-        eosio::asset getSalaryAmount (const eosio::symbol* symbol);
-
         TimeShare getInitialTimeShare();
         TimeShare getCurrentTimeShare();
         TimeShare getLastTimeShare();
 
-        eosio::asset calcLiquidSeedsSalary ();
-        eosio::asset calcHusdSalary ();
-        eosio::asset calcHyphaSalary ();
-        eosio::asset getHyphaSalary();
+        eosio::asset getRewardSalary();
+        eosio::asset getVoiceSalary();
+        eosio::asset getPegSalary();
 
         dao *m_dao;
 
+        inline eosio::checksum256 getDaoHash() { return m_daoHash; }
     private: 
-        eosio::asset getAsset (const eosio::symbol* symbol, const std::string &key);
+        eosio::checksum256 m_daoHash;
+        Settings* m_daoSettings;
+        eosio::asset getAsset (std::string_view key);
     };
 } // namespace hypha

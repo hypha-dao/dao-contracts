@@ -4,7 +4,7 @@ set(EOSIO_WASM_OLD_BEHAVIOR "Off")
 find_package(eosio.cdt)
 
 # Activate Logging
-# add_compile_definitions(USE_LOGGING)
+add_compile_definitions(USE_LOGGING)
 
 add_contract( dao dao 
                 dao.cpp
@@ -14,6 +14,7 @@ add_contract( dao dao
                 member.cpp
                 assignment.cpp
                 time_share.cpp
+                settings.cpp
                 payers/payer.cpp
                 payers/escrow_payer.cpp
                 payers/peg_payer.cpp

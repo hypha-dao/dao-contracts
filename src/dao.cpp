@@ -18,17 +18,10 @@
 #include <period.hpp>
 #include <assignment.hpp>
 #include <time_share.hpp>
+#include <settings.hpp>
 
 namespace hypha
 {
-   void dao::fix (const checksum256 &hash)
-   {
-      eosio::check(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-      Assignment assignment(this, hash);
-      Edge roleToAssignmentEdge = Edge::getTo(get_self(), hash, common::ASSIGNMENT);
-      Edge::getOrNew(get_self(), get_self(), hash, roleToAssignmentEdge.getFromNode(), common::ROLE_NAME);
-   }
-
    ACTION dao::clean()
    {
      require_auth(get_self());
@@ -46,32 +39,7 @@ namespace hypha
      }
    }
 
-   ACTION 
-   dao::fixassigns(std::vector<eosio::checksum256>& hashes)
-   {
-     const size_t maxHashesPerAction = 2;
-
-     EOS_CHECK(
-       hashes.size() <= maxHashesPerAction,
-       to_str("Too many hashes: ", hashes.size(), " max: ", maxHashesPerAction)
-     )
-
-     for (size_t i = 0; i < hashes.size(); ++i) {
-       Assignment assign(this, hashes[i]);
-       auto cw = assign.getContentWrapper();
-       if (cw.getOrFail(DETAILS, common::STATE)->getAs<std::string>() == common::STATE_APPROVED && 
-           !cw.exists(DETAILS, common::APPROVED_DEFERRED)) {
-         auto details = cw.getGroupOrFail(DETAILS);
-         ContentWrapper::insertOrReplace(*details, Content{
-           common::APPROVED_DEFERRED,
-           cw.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>()
-         });
-         m_documentGraph.updateDocument(assign.getCreator(), assign.getHash(), cw.getContentGroups());
-       }
-     }
-   }
-
-   void dao::propose(const name& dao_name,
+   void dao::propose(const checksum256& dao_hash,
                      const name &proposer,
                      const name &proposal_type,
                      ContentGroups &content_groups)
@@ -79,8 +47,10 @@ namespace hypha
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, proposal_type));
-      proposal->propose(dao_name, proposer, content_groups);
+      //TODO: Change to dao_hash instead of dao_name
+
+      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, dao_hash, proposal_type));
+      proposal->propose(dao_hash, proposer, content_groups);
    }
 
    void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote, string notes)
@@ -90,7 +60,9 @@ namespace hypha
       Document docprop(get_self(), proposal_hash);
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
-      Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
+      auto daoHash = Edge::get(get_self(), proposal_hash, common::DAO).getToNode();
+
+      Proposal *proposal = ProposalFactory::Factory(*this, daoHash, proposal_type);
       proposal->vote(voter, vote, docprop, notes);
    }
 
@@ -98,11 +70,13 @@ namespace hypha
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+      
+      auto daoHash = Edge::get(get_self(), proposal_hash, common::DAO).getToNode();
 
       Document docprop(get_self(), proposal_hash);
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
-      Proposal *proposal = ProposalFactory::Factory(*this, proposal_type);
+      Proposal *proposal = ProposalFactory::Factory(*this, daoHash, proposal_type);
       proposal->close(docprop);
    }
 
@@ -116,7 +90,11 @@ namespace hypha
       // only the assignee can submit an extension proposal
       eosio::name assignee = assignment.getAssignee().getAccount();
       eosio::require_auth(assignee);
-      EOS_CHECK(Member::isMember(get_self(), assignee), "assignee must be a current member to request an extension: " + assignee.to_string());
+      
+      auto daoHash = Edge::get(get_self(), assignment_hash, common::DAO).getToNode();
+
+      //Get the DAO edge from the hash
+      EOS_CHECK(Member::isMember(get_self(), daoHash, assignee), "assignee must be a current member to request an extension: " + assignee.to_string());
 
       eosio::print("\nproposer is: " + assignee.to_string() + "\n");
       // construct ContentGroups to call propose
@@ -129,18 +107,9 @@ namespace hypha
         }
       };
 
-      Document dao = Document(
-        get_self(),
-        Edge::get(get_self(), assignment_hash, common::DAO).getToNode()
-      );
-
-     const name daoName = dao.getContentWrapper()
-                        .getOrFail(DETAILS, DAO_NAME)
-                        ->getAs<name>();
-
       // propose the extension
-      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, common::EXTENSION));
-      proposal->propose(daoName, assignee, contentGroups);
+      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoHash, common::EXTENSION));
+      proposal->propose(daoHash, assignee, contentGroups);
    }
 
    void dao::withdraw(name owner, eosio::checksum256 hash) 
@@ -221,9 +190,11 @@ namespace hypha
        "Contract is paused for maintenance. Please try again later."
      );
 
-     //TODO-J: Refactor Multi-tenant
+     //Get the DAO edge from the hash
+     auto daoHash = Edge::get(get_self(), hash, common::DAO).getToNode();
+
      EOS_CHECK(
-       Member::isMember(get_self(), proposer), 
+       Member::isMember(get_self(), daoHash, proposer), 
        to_str("Only members are allowed to propose suspensions")
      );
 
@@ -238,16 +209,9 @@ namespace hypha
      };
 
      //Check which dao this document belongs to
-     Document dao = Document(
-       get_self(),
-       Edge::get(get_self(), hash, common::DAO).getToNode()
-     );
+     checksum256 dao = Edge::get(get_self(), hash, common::DAO).getToNode();
 
-     const name daoName = dao.getContentWrapper()
-                        .getOrFail(DETAILS, DAO_NAME)
-                        ->getAs<name>();
-
-     propose(daoName, proposer, common::SUSPEND, cgs);
+     propose(dao, proposer, common::SUSPEND, cgs);
    }
 
    void dao::claimnextper(const eosio::checksum256 &assignment_hash)
@@ -264,7 +228,12 @@ namespace hypha
       eosio::name assignee = assignment.getAssignee().getAccount();
 
       // assignee must still be a DHO member
-      EOS_CHECK(Member::isMember(get_self(), assignee), "assignee must be a current member to claim pay: " + assignee.to_string());
+      auto daoHash = Edge::get(get_self(), assignment_hash, common::DAO).getToNode();
+      
+      EOS_CHECK(
+        Member::isMember(get_self(), daoHash, assignee), 
+        "assignee must be a current member to claim pay: " + assignee.to_string()
+      );
 
       std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
       EOS_CHECK(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
@@ -283,10 +252,20 @@ namespace hypha
 
       //EOS_CHECK(first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
 
+      auto daoSettings = getSettingsDocument(daoHash);
+
+      const auto rewardToken = daoSettings->getOrFail<eosio::asset>(common::REWARD_TOKEN);
+      const auto pegToken = daoSettings->getOrFail<eosio::asset>(common::PEG_TOKEN);
+      const auto voiceToken = daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
+
+      const asset pegSalary = assignment.getPegSalary();
+      const asset voiceSalary = assignment.getVoiceSalary();
+      const asset rewardSalary = assignment.getRewardSalary();
+
       asset deferredSeeds;
-      asset husd;
-      asset hvoice;
-      asset hypha;
+      asset peg;
+      asset voice;
+      asset reward;
 
       {
          const int64_t initTimeShare = assignment.getInitialTimeShare()
@@ -357,16 +336,14 @@ namespace hypha
             //  deferredSeeds = (deferredSeeds.is_valid() ? deferredSeeds : eosio::asset{0, common::S_SEEDS}) +
             //  adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc * commitmentMultiplier);
 
-            // These values are calculated when the assignment is proposed, so simply pro-rate them if/as needed
-            // If there is an explicit INSTANT SEEDS amount, support sending it
-            husd = (husd.is_valid() ? husd : eosio::asset{0, common::S_PEG}) +
-                   adjustAsset(assignment.getSalaryAmount(&common::S_PEG), commitmentMultiplier);
+            peg = (peg.is_valid() ? peg : eosio::asset{0, pegToken.symbol}) +
+                   adjustAsset(pegSalary, commitmentMultiplier);
 
-            hvoice = (hvoice.is_valid() ? hvoice : eosio::asset{0, common::S_VOICE}) +
-                     adjustAsset(assignment.getSalaryAmount(&common::S_VOICE), commitmentMultiplier);
+            voice = (voice.is_valid() ? voice : eosio::asset{0, voiceToken.symbol}) +
+                     adjustAsset(voiceSalary, commitmentMultiplier);
 
-            hypha = (hypha.is_valid() ? hypha : eosio::asset{0, common::S_REWARD}) +
-                    adjustAsset(assignment.getSalaryAmount(&common::S_REWARD), commitmentMultiplier);
+            reward = (reward.is_valid() ? reward : eosio::asset{0, rewardToken.symbol}) +
+                    adjustAsset(rewardSalary, commitmentMultiplier);
          }
 
          //If the last used time share is different from current time share
@@ -379,9 +356,9 @@ namespace hypha
       }
 
       // EOS_CHECK(deferredSeeds.is_valid(), "fatal error: SEEDS has to be a valid asset");
-      EOS_CHECK(husd.is_valid(), "fatal error: HUSD has to be a valid asset");
-      EOS_CHECK(hvoice.is_valid(), "fatal error: HVOICE has to be a valid asset");
-      EOS_CHECK(hypha.is_valid(), "fatal error: HYPHA has to be a valid asset");
+      EOS_CHECK(peg.is_valid(), "fatal error: PEG has to be a valid asset");
+      EOS_CHECK(voice.is_valid(), "fatal error: VOICE has to be a valid asset");
+      EOS_CHECK(reward.is_valid(), "fatal error: REWARD has to be a valid asset");
 
       string assignmentNodeLabel = "";
       if (auto [idx, assignmentLabel] = assignment.getContentWrapper().get(SYSTEM, NODE_LABEL); assignmentLabel)
@@ -402,9 +379,9 @@ namespace hypha
       
       // creating a single struct improves performance for table queries here
       AssetBatch ab{};
-      ab.hypha = hypha;
-      ab.voice = hvoice;
-      ab.husd = husd;
+      ab.hypha = reward;
+      ab.voice = voice;
+      ab.husd = peg;
 
       ab = applyBadgeCoefficients(periodToClaim.value(), assignee, ab);
 
@@ -558,23 +535,40 @@ namespace hypha
 
    bool dao::isPaused() { return false; }
 
-   Document dao::getSettingsDocument(const eosio::name &dao_name)
+   Settings* dao::getSettingsDocument(const eosio::name &dao_name)
    {
       TRACE_FUNCTION()
-      auto dao = getDAO(dao_name);
-      auto edges = m_documentGraph.getEdgesFromOrFail(dao, common::SETTINGS_EDGE);
-      EOS_CHECK(edges.size() == 1, "There should only exists only 1 settings edge from a dao node");
-      return Document(get_self(), edges[0].to_node);
+      return getSettingsDocument(getDAO(dao_name));
    }
 
-   Document dao::getSettingsDocument()
+   Settings* dao::getSettingsDocument(const eosio::checksum256& daoHash)
+   {
+     TRACE_FUNCTION();
+
+     //Check if it'S already loaded in cache
+     for (auto& settingsDoc : m_settingsDocs) {
+       if (settingsDoc->getRootHash() == daoHash) {
+         return settingsDoc.get();
+       }
+     }
+
+     //If not then we have to load it
+     auto edges = m_documentGraph.getEdgesFromOrFail(daoHash, common::SETTINGS_EDGE);
+     EOS_CHECK(edges.size() == 1, "There should only exists only 1 settings edge from a dao node");
+    
+     m_settingsDocs.emplace_back(std::make_unique<Settings>(
+       *this,
+       edges[0].to_node,
+       daoHash
+     ));
+
+     return m_settingsDocs.back().get();
+   }
+
+   Settings* dao::getSettingsDocument()
    {
       TRACE_FUNCTION()
-      
-      auto root = getRoot(get_self());
-      auto edges = m_documentGraph.getEdgesFromOrFail(root, common::SETTINGS_EDGE);
-      EOS_CHECK(edges.size() == 1, "There should only exists only 1 settings edge from root node");
-      return Document(get_self(), edges[0].to_node);
+      return getSettingsDocument(getRoot(get_self()));
    }
 
    void dao::setsetting(const string &key, const Content::FlexValue &value)
@@ -587,42 +581,25 @@ namespace hypha
    void dao::setSetting(const string &key, const Content::FlexValue &value)
    {
       TRACE_FUNCTION()
-      auto document = getSettingsDocument();
-      auto oldHash = document.getHash();
-      auto settingContent = Content(key, value);
-      auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
-
-      ContentWrapper cw = document.getContentWrapper();
-      ContentGroup *settings = cw.getGroupOrFail("settings");
-
-      ContentWrapper::insertOrReplace(*settings, settingContent);
-      ContentWrapper::insertOrReplace(*settings, updateDateContent);
-
-      m_documentGraph.updateDocument(get_self(), oldHash, document.getContentGroups());
+      auto settings = getSettingsDocument();
+      settings->setSetting(Content{key, value});
    }
 
-   void dao::setsetting(const eosio::name &dao_name, const string &key, const Content::FlexValue &value)
+   void dao::setdaosetting(const eosio::checksum256& dao_hash, const string &key, const Content::FlexValue &value)
    {
       TRACE_FUNCTION()
-      require_auth(get_self());
-      setSetting(dao_name, key, value);
+      auto settings = getSettingsDocument(dao_hash);
+      auto onboarder = settings->getOrFail<name>(common::ONBOARDER_ACCOUNT);
+      require_auth(onboarder);
+
+      setSetting(dao_hash, key, value);
    }
 
-   void dao::setSetting(const eosio::name &dao_name, const string &key, const Content::FlexValue &value)
+   void dao::setSetting(const eosio::checksum256& dao_hash, const string &key, const Content::FlexValue &value)
    {
       TRACE_FUNCTION()
-      auto document = getSettingsDocument(dao_name);
-      auto oldHash = document.getHash();
-      auto settingContent = Content(key, value);
-      auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
-
-      ContentWrapper cw = document.getContentWrapper();
-      ContentGroup *settings = cw.getGroupOrFail("settings");
-
-      ContentWrapper::insertOrReplace(*settings, settingContent);
-      ContentWrapper::insertOrReplace(*settings, updateDateContent);
-
-      m_documentGraph.updateDocument(get_self(), oldHash, document.getContentGroups());
+      auto settings = getSettingsDocument(dao_hash);
+      settings->setSetting(Content{key, value});
    }
 
    void dao::remsetting(const string &key)
@@ -636,36 +613,22 @@ namespace hypha
    {
       TRACE_FUNCTION()
       
-      auto document = getSettingsDocument();
-      auto oldHash = document.getHash();
-      auto contentGroups = document.getContentGroups();
-      auto &settingsGroup = contentGroups[0];
-
-      auto isKey = [&key](auto &c) {
-         return c.label == key;
-      };
-
-      //First let's check if key exists
-      auto contentItr = std::find_if(settingsGroup.begin(), settingsGroup.end(), isKey);
-      if (contentItr != settingsGroup.end())
-      {
-         settingsGroup.erase(contentItr);
-         auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
-         ContentWrapper::insertOrReplace(settingsGroup, updateDateContent);
-         m_documentGraph.updateDocument(get_self(), oldHash, std::move(contentGroups));
-      }
-      //Should we assert if setting doesn't exits ?
-      EOS_CHECK(false, "The specified setting does not exist: " + key);
+      auto settings = getSettingsDocument();
+      settings->remSetting(key);
    }
 
 
-   ACTION dao::genperiods(const name& dao_name, int64_t period_count, int64_t period_duration_sec)
+   ACTION dao::genperiods(const eosio::checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/)
    {
       TRACE_FUNCTION()
 
-      require_auth(get_self());
+      auto settings = getSettingsDocument(dao_hash);
 
-      genPeriods(dao_name, period_count, period_duration_sec);
+      auto onboarder = settings->getOrFail<eosio::name>(common::ONBOARDER_ACCOUNT);
+
+      require_auth(onboarder);
+
+      genPeriods(dao_hash, period_count);
    }
 
    void dao::addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label)
@@ -676,48 +639,6 @@ namespace hypha
       addPeriod(predecessor, start_time, label);
    }
 
-   // void dao::nbadge(const name &owner, const ContentGroups &contentGroups)
-   // {
-   //    eosio::require_auth(get_self());
-
-   //    Migration migration(this);
-   //    migration.createBadge(owner, contentGroups);
-   // }
-
-   // void dao::nbadass(const name &owner, const ContentGroups &contentGroups)
-   // {
-   //    eosio::require_auth(get_self());
-
-   //    Migration migration(this);
-   //    migration.createBadgeAssignment(owner, contentGroups);
-   // }
-
-   // void dao::nbadprop(const name &owner, const ContentGroups &contentGroups)
-   // {
-   //    eosio::require_auth(get_self());
-
-   //    Migration migration(this);
-   //    migration.createBadgeAssignmentProposal(owner, contentGroups);
-   // }
-
-   void dao::updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value)
-   {
-      TRACE_FUNCTION()
-      eosio::require_auth(get_self());
-
-      Document document(get_self(), hash);
-      auto oldHash = document.getHash();
-
-      // the ContentWrapper is used to access the document's data
-      ContentWrapper cw = document.getContentWrapper();
-
-      // update the indicated group to the new value
-      auto [idx, contentGroup] = cw.getGroupOrCreate(group);
-      auto content = Content(key, value);
-      ContentWrapper::insertOrReplace(*contentGroup, content);
-      m_documentGraph.updateDocument(updater, oldHash, document.getContentGroups());
-   }
-
    void dao::createdao(ContentGroups &config)
    {
       TRACE_FUNCTION()
@@ -725,7 +646,14 @@ namespace hypha
       //Extract mandatory configurations
       auto configCW = ContentWrapper(config);
 
-      auto daoName = configCW.getOrFail(DETAILS, DAO_NAME);
+      auto [detailsIdx, _] = configCW.getGroup(DETAILS);
+
+      EOS_CHECK(
+        detailsIdx != -1,
+        to_str("Missing Details Group")
+      )
+
+      auto daoName = configCW.getOrFail(detailsIdx, DAO_NAME).second;
 
       const name dao = daoName->getAs<name>();
       
@@ -751,54 +679,58 @@ namespace hypha
       //   newDao.hash = dao.getHash();
       // });
 
-      auto votingDurationSeconds = configCW.getOrFail(DETAILS, VOTING_DURATION_SEC);
+      auto votingDurationSeconds = configCW.getOrFail(detailsIdx, VOTING_DURATION_SEC).second;
 
       EOS_CHECK(
         votingDurationSeconds->getAs<int64_t>() > 0,
         util::to_str(VOTING_DURATION_SEC, " has to be a positive number")
       )
 
-      auto daoDescription = configCW.getOrFail(DETAILS, common::DAO_DESCRIPTION);
+      auto daoDescription = configCW.getOrFail(detailsIdx, common::DAO_DESCRIPTION).second;
 
       EOS_CHECK(
         daoDescription->getAs<std::string>().size() <= 512,
         "Dao description has be less than 512 characters"  
       )
 
-      auto daoTitle = configCW.getOrFail(DETAILS, common::DAO_TITLE);
+      auto daoTitle = configCW.getOrFail(detailsIdx, common::DAO_TITLE).second;
 
       EOS_CHECK(
         daoTitle->getAs<std::string>().size() <= 48,
         "Dao title has be less than 48 characters"  
       )
 
-      auto pegToken = configCW.getOrFail(DETAILS, common::PEG_TOKEN);
+      auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
 
-      //Verify tokens' type is valid (asset) 
+      auto voiceToken = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN).second;
 
-      pegToken->getAs<asset>();
+      auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
 
-      auto voiceToken = configCW.getOrFail(DETAILS, common::VOICE_TOKEN);
-
-      auto rewardToken = configCW.getOrFail(DETAILS, common::REWARD_TOKEN);
-
-      auto rewardToPegTokenRatio = configCW.getOrFail(DETAILS, common::REWARD_TO_PEG_RATIO);
+      auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
 
       rewardToPegTokenRatio->getAs<asset>();
 
       //Generate periods
-      //auto inititialPeriods = configCW.getOrFail(DETAILS, PERIOD_COUNT);
+      //auto inititialPeriods = configCW.getOrFail(detailsIdx, PERIOD_COUNT);
 
-      auto periodDurationSeconds = configCW.getOrFail(DETAILS, common::PERIOD_DURATION);
+      auto periodDurationSeconds = configCW.getOrFail(detailsIdx, common::PERIOD_DURATION).second;
 
       EOS_CHECK(
         periodDurationSeconds->getAs<int64_t>() > 0,
         util::to_str(common::PERIOD_DURATION, " has to be a positive number")
       )
 
-      auto onboarderAcc = configCW.getOrFail(DETAILS, common::ONBOARDER_ACCOUNT);
+      auto onboarderAcc = configCW.getOrFail(detailsIdx, common::ONBOARDER_ACCOUNT).second;
       
       const name onboarder = onboarderAcc->getAs<name>();
+
+      auto votingQuorum = configCW.getOrFail(detailsIdx, VOTING_QUORUM_FACTOR_X100).second;
+
+      votingQuorum->getAs<int64_t>();
+
+      auto votingAllignment = configCW.getOrFail(detailsIdx, VOTING_ALIGNMENT_FACTOR_X100).second;
+
+      votingAllignment->getAs<int64_t>();
 
       require_auth(onboarder);
       
@@ -815,7 +747,9 @@ namespace hypha
               *rewardToPegTokenRatio,
               *periodDurationSeconds,
               *votingDurationSeconds,
-              *onboarderAcc
+              *onboarderAcc,
+              *votingQuorum,
+              *votingAllignment 
           },
           ContentGroup{
               Content(CONTENT_GROUP_LABEL, SYSTEM),
@@ -827,7 +761,7 @@ namespace hypha
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), daoDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
 
-      createTokens(voiceToken->getAs<asset>(), rewardToken->getAs<asset>());
+      createTokens(voiceToken->getAs<asset>(), rewardToken->getAs<asset>(), pegToken->getAs<asset>());
       
       //Auto enroll      
       std::unique_ptr<Member> member;
@@ -889,31 +823,6 @@ namespace hypha
 
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), rootDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
-   }
-
-   void dao::erasedoc(const checksum256 &hash)
-   {
-      TRACE_FUNCTION()
-      require_auth(get_self());
-
-      DocumentGraph dg(get_self());
-      dg.eraseDocument(hash);
-   }
-
-   void dao::newedge(name &creator, const checksum256 &from_node, const checksum256 &to_node, const name &edge_name)
-   {
-      TRACE_FUNCTION()
-      require_auth(get_self());
-      Edge edge(get_self(), creator, from_node, to_node, edge_name);
-   }
-
-   void dao::killedge(const uint64_t id)
-   {
-      TRACE_FUNCTION()
-      require_auth(get_self());
-      Edge::edge_table e_t(get_self(), get_self().value);
-      auto itr = e_t.find(id);
-      e_t.erase(itr);
    }
 
    void dao::setalert(const eosio::name &level, const std::string &content)
@@ -1073,38 +982,36 @@ namespace hypha
                                          .getContentWrapper()
                                          .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
 
-    auto usdPerPeriodCommitmentAdjusted = adjustAsset(usdPerPeriod, static_cast<float>(initialTimeshare) / 100.f);
+    auto daoSettings = getSettingsDocument(assignment.getDaoHash());
 
-    auto deferred = new_deferred_perc_x100 / 100.f;
+    auto usdPerPeriodCommitmentAdjusted = normalizeToken(usdPerPeriod) * (initialTimeshare / 100.0);
+
+    auto deferred = new_deferred_perc_x100 / 100.0;
           
-    auto husdVal = adjustAsset(usdPerPeriodCommitmentAdjusted, 1.f - deferred);
-    husdVal.symbol = common::S_PEG;
+    auto pegVal = usdPerPeriodCommitmentAdjusted * (1.0 - deferred);
+    //husdVal.symbol = common::S_PEG;
     
     cw.insertOrReplace(*detailsGroup, Content{
       DEFERRED,
       new_deferred_perc_x100
     });
 
-    auto hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
+    auto rewardToPegVal = normalizeToken(daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO));
 
-    EOS_CHECK(
-      hyphaUsdVal.symbol.precision() == common::S_REWARD.precision(),
-      util::to_str("Expected HYPHA_USD_VALUE precision to be 4, but got:", hyphaUsdVal.symbol.precision())
-    )
+    auto rewardToken = daoSettings->getOrFail<eosio::asset>(common::REWARD_TOKEN);
 
-    auto hyphaVal = adjustAsset(usdPerPeriodCommitmentAdjusted, deferred);
+    auto pegToken = daoSettings->getOrFail<eosio::asset>(common::PEG_TOKEN);
 
-    hyphaVal.set_amount(hyphaVal.amount / (hyphaUsdVal.amount * 0.0001));
-    hyphaVal.symbol = common::S_REWARD;
+    auto rewardVal = usdPerPeriodCommitmentAdjusted * deferred / rewardToPegVal;
 
-    cw.insertOrReplace(*detailsGroup, Content{
-      HYPHA_SALARY_PER_PERIOD, 
-      hyphaVal
+      cw.insertOrReplace(*detailsGroup, Content{
+      common::REWARD_SALARY_PER_PERIOD, 
+      denormalizeToken(rewardVal, rewardToken)
     });
 
     cw.insertOrReplace(*detailsGroup, Content{
-      HUSD_SALARY_PER_PERIOD,
-      husdVal
+      common::PEG_SALARY_PER_PERIOD,
+      denormalizeToken(pegVal, pegToken)
     });
 
     m_documentGraph.updateDocument(issuer, assignment_hash, cw.getContentGroups());
@@ -1212,13 +1119,19 @@ namespace hypha
       }
   }
 
-  void dao::genPeriods(const name& dao_name, int64_t period_count, int64_t period_duration_sec)
+  void dao::genPeriods(const checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/)
   {
     //Max number of periods that should be created in one call
     const int64_t MAX_PERIODS_PER_CALL = 30;
 
     //Get last period
-    Document daoDoc(get_self(), Document::hashContents(getDAOContent(dao_name)));
+    Document daoDoc(get_self(), dao_hash);
+
+    auto settings = getSettingsDocument(dao_hash);
+
+    int64_t periodDurationSecs = settings->getOrFail<int64_t>(common::PERIOD_DURATION);
+
+    name daoName = settings->getOrFail<eosio::name>(DAO_NAME);
 
     auto lastEdge = Edge::get(get_self(), daoDoc.getHash(), common::END);
     lastEdge.erase();
@@ -1229,13 +1142,13 @@ namespace hypha
                                     .getStartTime()
                                     .sec_since_epoch();
 
-    for (int64_t i = 0; i < MAX_PERIODS_PER_CALL; ++i) {
-      time_point nextPeriodStart(eosio::seconds(lastPeriodStartSecs + period_duration_sec));
+    for (int64_t i = 0; i < period_count; ++i) {
+      time_point nextPeriodStart(eosio::seconds(lastPeriodStartSecs + periodDurationSecs));
 
       Period nextPeriod(
         this, 
         nextPeriodStart, 
-        util::to_str(dao_name, ":", nextPeriodStart.time_since_epoch().count())
+        util::to_str(daoName, ":", nextPeriodStart.time_since_epoch().count())
       );
       
       Edge(get_self(), get_self(), lastPeriodHash, nextPeriod.getHash(), common::NEXT);
@@ -1253,17 +1166,20 @@ namespace hypha
         eosio::permission_level(get_self(), "active"_n),
         get_self(),
         "genperiods"_n,
-        std::make_tuple(dao_name, 
-                        period_count - MAX_PERIODS_PER_CALL, 
-                        period_duration_sec)
+        std::make_tuple(dao_hash, 
+                        period_count - MAX_PERIODS_PER_CALL)
       ).send();
     }
   }
 
   void dao::createTokens(const eosio::asset& voiceToken, 
-                        const eosio::asset& rewardToken)
+                        const eosio::asset& rewardToken,
+                        const eosio::asset& pegToken)
   {
-    name governanceContract = getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+    
+    auto dhoSettings = getSettingsDocument();
+
+    name governanceContract = dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
     eosio::action(
       eosio::permission_level{governanceContract, name("active")},
@@ -1277,15 +1193,31 @@ namespace hypha
       )
     ).send();
 
-    name rewardContract = getSettingOrFail<eosio::name>(REWARD_TOKEN_CONTRACT);
+    name rewardContract = dhoSettings->getOrFail<eosio::name>(REWARD_TOKEN_CONTRACT);
 
     eosio::action(
       eosio::permission_level{rewardContract, name("active")},
       rewardContract,
       name("create"),
       std::make_tuple(
-        get_self(),
-        asset{(static_cast<int64_t>(1) << 62) - 1, rewardToken.symbol}
+        get_self(), 
+        asset{-getTokenUnit(rewardToken), rewardToken.symbol}, 
+        uint64_t{0}, 
+        uint64_t{0}
+      )
+    ).send();
+
+    name pegContract = dhoSettings->getOrFail<eosio::name>(PEG_TOKEN_CONTRACT);
+
+    eosio::action(
+      eosio::permission_level{pegContract, name("active")},
+      pegContract,
+      name("create"),
+      std::make_tuple(
+        get_self(), 
+        asset{-getTokenUnit(pegToken), pegToken.symbol}, 
+        uint64_t{0}, 
+        uint64_t{0}
       )
     ).send();
   }

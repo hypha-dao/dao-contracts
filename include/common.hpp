@@ -30,13 +30,16 @@ namespace common
     constexpr auto PERIOD_DURATION = "period_duration_sec";
     constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
 
-    const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
+    //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
 
     // 365.25 / 7.4
-    const float PHASES_PER_YEAR = 49.3581081081;
+    //const float PHASES_PER_YEAR = 49.3581081081;
+    
+    //365.25*24*60*60
+    constexpr int64_t YEAR_DURATION_SEC = 31557600;
 
     // 49.36 phases per annum, so each phase is 2.026% of the total
-    const float PHASE_TO_YEAR_RATIO = 0.02026009582;
+    //const float PHASE_TO_YEAR_RATIO = 0.02026009582;
 
     // graph edge names
     constexpr name ESCROW = name("escrow");
@@ -76,6 +79,7 @@ namespace common
     constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
     constexpr name PERIOD = name("period");
     constexpr name START = name ("start");
+    constexpr name CURRENT = name ("current");
     constexpr name END = name ("end");
     constexpr name NEXT = name ("next");
     constexpr name PAYMENT = name("payment");
@@ -114,6 +118,10 @@ namespace common
     constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
     constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
     constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
+
+    constexpr auto PEG_SALARY_PER_PERIOD = "peg_salary_per_period";
+    constexpr auto VOICE_SALARY_PER_PERIOD = "voice_salary_per_period";
+    constexpr auto REWARD_SALARY_PER_PERIOD = "reward_salary_per_period";
 
 // content keys
 // keys used with settings
@@ -203,9 +211,9 @@ namespace common
 
 #define USD_AMOUNT "usd_amount"
 #define USD_SALARY_PER_PERIOD "usd_salary_value_per_phase"
-#define HYPHA_SALARY_PER_PERIOD "hypha_salary_per_phase"
-#define HUSD_SALARY_PER_PERIOD "husd_salary_per_phase"
-#define HVOICE_SALARY_PER_PERIOD "hvoice_salary_per_phase"
+// #define HYPHA_SALARY_PER_PERIOD "hypha_salary_per_phase"
+// #define HUSD_SALARY_PER_PERIOD "husd_salary_per_phase"
+// #define HVOICE_SALARY_PER_PERIOD "hvoice_salary_per_phase"
 #define SETTINGS "settings"
 
 #define VOTE_POWER "vote_power"

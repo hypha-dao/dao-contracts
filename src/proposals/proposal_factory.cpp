@@ -15,39 +15,39 @@
 
 namespace hypha
 {
-    Proposal* ProposalFactory::Factory(dao& dao, const name &proposal_type)
+    Proposal* ProposalFactory::Factory(dao& dao, const checksum256& daoHash, const name &proposal_type)
     { 
         TRACE_FUNCTION()
 
         switch (proposal_type.value)
         {
         case common::BADGE_NAME.value:
-            return new BadgeProposal(dao);
+            return new BadgeProposal(dao, daoHash);
         
         case common::ASSIGN_BADGE.value:
-            return new BadgeAssignmentProposal(dao);
+            return new BadgeAssignmentProposal(dao, daoHash);
 
         case common::ROLE_NAME.value:
-            return new RoleProposal(dao);
+            return new RoleProposal(dao, daoHash);
         
         case common::ASSIGNMENT.value:
-            return new AssignmentProposal(dao);
+            return new AssignmentProposal(dao, daoHash);
 
         case common::PAYOUT.value:
-            return new PayoutProposal(dao);
+            return new PayoutProposal(dao, daoHash);
 
         case common::ATTESTATION.value:
-            return new AttestationProposal(dao);
+            return new AttestationProposal(dao, daoHash);
 
         case common::SUSPEND.value: 
-            return new SuspendProposal(dao);
+            return new SuspendProposal(dao, daoHash);
 
         case common::EDIT.value:
-            return new EditProposal(dao);
+            return new EditProposal(dao, daoHash);
     
         // TODO: should be expanded to work with Badge Assignments as well
         case common::EXTENSION.value:
-            return new AssignmentExtensionProposal(dao);
+            return new AssignmentExtensionProposal(dao, daoHash);
         }
 
         EOS_CHECK(false, "Unknown proposal_type: " + proposal_type.to_string());

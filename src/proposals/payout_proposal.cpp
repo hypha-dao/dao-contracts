@@ -87,7 +87,8 @@ namespace hypha
 
         // recipient must exist and be a DHO member
         name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
-        EOS_CHECK(Member::isMember(m_dao.get_self(), recipient), "only members are eligible for payouts: " + recipient.to_string());
+        //TODO: Check to which dao this proposal belongs to
+        //EOS_CHECK(Member::isMember(m_dao.get_self(), recipient), "only members are eligible for payouts: " + recipient.to_string());
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), Member::calcHash(recipient), proposal.getHash(), common::PAYOUT);
 

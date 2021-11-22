@@ -22,6 +22,18 @@ namespace hypha
         return Document::hashContents(cgs);
     }
 
+    float getPhaseToYearRatio(Settings* daoSettings)
+    {
+        int64_t periodDurationSec = daoSettings->getOrFail<int64_t>(common::PERIOD_DURATION);
+
+        return getPhaseToYearRatio(daoSettings, periodDurationSec);       
+    }
+
+    float getPhaseToYearRatio(Settings* daoSettings, int64_t periodDuration)
+    {
+        return static_cast<float>(periodDuration) / common::YEAR_DURATION_SEC;
+    }
+
     ContentGroups getRootContent(const eosio::name &contract)
     {
         ContentGroups cgs ({
@@ -117,6 +129,18 @@ namespace hypha
             token_contract, eosio::name("transfer"),
             std::make_tuple(issuer, to, token_amount, memo))
             .send();
+    }
+
+    double normalizeToken(const eosio::asset& token) 
+    {
+      auto power = ::pow(10, token.symbol.precision());
+      return static_cast<double>(token.amount) / power;
+    }
+
+    eosio::asset denormalizeToken(double amountNormalized, const eosio::asset& token)
+    {
+      auto power = ::pow(10, token.symbol.precision());
+      return eosio::asset{static_cast<int64_t>(amountNormalized * power), token.symbol};
     }
 
     int64_t getTokenUnit(const eosio::asset& token)

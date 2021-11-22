@@ -18,13 +18,18 @@ using namespace eosio;
 
 namespace hypha
 {
-    Proposal::Proposal(dao &contract) : m_dao{contract} {}
+    Proposal::Proposal(dao &contract, const checksum256& daoHash) 
+    : m_dao{contract},
+      m_daoSettings(contract.getSettingsDocument(daoHash)),
+      m_dhoSettings(contract.getSettingsDocument()),
+      m_daoHash(daoHash) {}
+
     Proposal::~Proposal() {}
 
-    Document Proposal::propose(const name& dao_name, const eosio::name &proposer, ContentGroups &contentGroups)
+    Document Proposal::propose(const checksum256& dao_hash, const eosio::name &proposer, ContentGroups &contentGroups)
     {
         TRACE_FUNCTION()
-        EOS_CHECK(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
+        EOS_CHECK(Member::isMember(m_dao.get_self(), dao_hash, proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
@@ -43,7 +48,7 @@ namespace hypha
 
         // creates the document, or the graph NODE
         eosio::checksum256 memberHash = Member::calcHash(proposer);
-        eosio::checksum256 root = getDAO(dao_name);
+        eosio::checksum256 root = dao_hash;
 
         // the proposer OWNS the proposal; this creates the graph EDGE
         Edge::write(m_dao.get_self(), proposer, memberHash, proposalNode.getHash(), common::OWNS);
@@ -57,7 +62,7 @@ namespace hypha
         Edge::write(m_dao.get_self(), proposer, proposalNode.getHash(), root, common::DAO);
 
         // Sets an empty tally
-        VoteTally(m_dao, proposalNode);
+        VoteTally(m_dao, proposalNode, m_daoSettings);
 
         postProposeImpl(proposalNode);
 
@@ -71,7 +76,7 @@ namespace hypha
         TRACE_FUNCTION()
         Vote(m_dao, voter, vote, proposal, notes);
         
-        VoteTally(m_dao, proposal);
+        VoteTally(m_dao, proposal, m_daoSettings);
     }
 
     void Proposal::close(Document &proposal)
@@ -142,8 +147,8 @@ namespace hypha
     {
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, SYSTEM),
-            Content(CLIENT_VERSION, m_dao.getSettingOrDefault<std::string>(CLIENT_VERSION, DEFAULT_VERSION)),
-            Content(CONTRACT_VERSION, m_dao.getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)),
+            Content(CLIENT_VERSION, m_dhoSettings->getSettingOrDefault<std::string>(CLIENT_VERSION, DEFAULT_VERSION)),
+            Content(CONTRACT_VERSION, m_dhoSettings->getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)),
             Content(NODE_LABEL, proposal_title),
             Content(DESCRIPTION, proposal_description),
             Content(TYPE, proposal_type)};
@@ -152,7 +157,7 @@ namespace hypha
     ContentGroup Proposal::makeBallotGroup()
     {
         TRACE_FUNCTION()
-        auto expiration = time_point_sec(current_time_point()) + m_dao.getSettingOrFail<int64_t>(VOTING_DURATION_SEC);
+        auto expiration = time_point_sec(current_time_point()) + m_daoSettings->getOrFail<int64_t>(VOTING_DURATION_SEC);
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, BALLOT),
             Content(EXPIRATION_LABEL, expiration)
@@ -172,13 +177,15 @@ namespace hypha
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
         TRACE_FUNCTION()
-        name hvoiceContract = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
-        float quorumFactor = m_dao.getSettingOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
-        float alignmentFactor = m_dao.getSettingOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
+        
+        name voiceContract = m_dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+        asset voiceToken = m_daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
+        float quorumFactor = m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
+        float alignmentFactor = m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
 
-        hypha::voice::stats stats_t(hvoiceContract, common::S_VOICE.code().raw());
-        auto stat_itr = stats_t.find(common::S_VOICE.code().raw());
-        EOS_CHECK(stat_itr != stats_t.end(), "No HVOICE found");
+        hypha::voice::stats stats_t(voiceContract, voiceToken.symbol.code().raw());
+        auto stat_itr = stats_t.find(voiceToken.symbol.code().raw());
+        EOS_CHECK(stat_itr != stats_t.end(), "No VOICE found");
 
         asset quorum_threshold = adjustAsset(stat_itr->supply, quorumFactor);
 

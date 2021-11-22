@@ -3,6 +3,7 @@
 #include <eosio/name.hpp>
 #include <eosio/asset.hpp>
 #include <document_graph/content_wrapper.hpp>
+#include <util.hpp>
 
 #include "proposal.hpp"
 
@@ -25,9 +26,9 @@ namespace hypha {
         
     private: 
 
-        asset calculateTimeShareUsdPerPeriod(const asset &annualUsd, const int64_t &timeShare);
-        asset calculateHusd(const asset &annualUsd, const int64_t &timeShare, const int64_t &deferred);
-        asset calculateHypha(const asset &annualUsd, const int64_t &timeShare, const int64_t &deferred);
-        asset calculateHvoice(const asset &annualUsd, const int64_t &timeShare);
+        asset calculateTimeShareUsdPerPeriod(const SalaryConfig& salaryConf);
+        asset calculatePeg(const SalaryConfig& salaryConf);
+        asset calculateReward(const SalaryConfig& salaryConf);
+        asset calculateVoice(const SalaryConfig& salaryConf);
     };
 }

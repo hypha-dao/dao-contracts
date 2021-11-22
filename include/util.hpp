@@ -1,6 +1,8 @@
 #pragma once
+
 #include <type_traits>
 #include <utility>
+#include <cmath>
 #include <string>
 #include <eosio/crypto.hpp>
 #include <eosio/name.hpp>
@@ -10,11 +12,21 @@
 
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/util.hpp>
+#include <settings.hpp>
 
 namespace hypha
 {
     eosio::checksum256 getRoot(const eosio::name &contract);
     eosio::checksum256 getDAO(const eosio::name &dao_name);
+    
+    /**
+     * @brief Gets the phase to year ratio using the dao setting variable for the period duration
+     * 
+     * @param daoSettings 
+     * @return Phase to year ratio 
+     */
+    float getPhaseToYearRatio(Settings* daoSettings);
+    float getPhaseToYearRatio(Settings* daoSettings, int64_t periodDuration);
 
     ContentGroups getRootContent(const eosio::name &contract);
     ContentGroups getDAOContent(const eosio::name &dao_name);
@@ -32,6 +44,10 @@ namespace hypha
                     const eosio::asset &token_amount,
                     const string &memo);
 
+    double normalizeToken(const eosio::asset& token);
+
+    eosio::asset denormalizeToken(double amountNormalized, const eosio::asset& token);
+
     /**
      * @brief Returns the representation of 1 unit in the given token
      */
@@ -47,6 +63,16 @@ namespace hypha
         eosio::asset visitor_limit;
         uint64_t timestamp;
     };
+
+    struct SalaryConfig
+    {
+      // double annualSalary;
+      double periodSalary;
+      double rewardToPegRatio;
+      double commitmentPerc;
+      double deferredPerc;
+    };
+
     typedef eosio::singleton<eosio::name("config"), configtable> configtables;
     typedef eosio::multi_index<eosio::name("config"), configtable> dump_for_config;
 

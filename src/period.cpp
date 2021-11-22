@@ -96,11 +96,21 @@ namespace hypha
         return false;
     }
 
-    Period Period::asOf(dao *dao, eosio::time_point moment)
+    Period Period::asOf(dao *dao, const eosio::checksum256& daoHash, eosio::time_point moment)
     {
         TRACE_FUNCTION()
-        auto [exists, startEdge] = Edge::getIfExists(dao->get_self(), getRoot(dao->get_self()), common::START);
-        EOS_CHECK(exists, "Root node does not have a 'start' edge.");
+
+        auto [exists, startEdge] = Edge::getIfExists(dao->get_self(), daoHash, common::CURRENT);
+
+        //Delete the edge so we can update it to the new current period
+        if (exists) {
+            startEdge.erase();
+        }
+        else {
+            std::tie(exists, startEdge) = Edge::getIfExists(dao->get_self(), daoHash, common::START);
+            EOS_CHECK(exists, "DAO Root node does not have a 'start' edge.");
+        }
+        
         Period period(dao, startEdge.getToNode());
 
         EOS_CHECK(period.getStartTime() <= moment,
@@ -112,12 +122,15 @@ namespace hypha
         {
             period = period.next();
         }
+
+        Edge::write(dao->get_self(), dao->get_self(), daoHash, period.getHash(), common::CURRENT);
+
         return period;
     }
 
-    Period Period::current(dao *dao)
+    Period Period::current(dao *dao, const eosio::checksum256& daoHash)
     {
-        return asOf(dao, eosio::current_time_point());
+        return asOf(dao, daoHash, eosio::current_time_point());
     }
 
     Period Period::next()
