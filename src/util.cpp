@@ -34,6 +34,25 @@ namespace hypha
         return static_cast<float>(periodDuration) / common::YEAR_DURATION_SEC;
     }
 
+    AssetBatch calculateSalaries(const SalaryConfig& salaryConf, const AssetBatch& tokens)
+    {
+        AssetBatch salaries;
+
+        double pegSalaryPerPeriod = salaryConf.periodSalary * (1.0 - salaryConf.deferredPerc);
+        
+        salaries.peg = denormalizeToken(pegSalaryPerPeriod, tokens.peg);
+
+        double rewardSalaryPerPeriod = (salaryConf.periodSalary * salaryConf.deferredPerc) / salaryConf.rewardToPegRatio;
+
+        salaries.reward = denormalizeToken(rewardSalaryPerPeriod, tokens.reward);
+
+        double voiceSalaryPerPeriod = salaryConf.periodSalary * salaryConf.voiceMultipler;
+        //TODO: Make the multipler configurable
+        salaries.voice = denormalizeToken(voiceSalaryPerPeriod, tokens.voice);
+
+        return salaries;
+    }
+
     ContentGroups getRootContent(const eosio::name &contract)
     {
         ContentGroups cgs ({
@@ -94,20 +113,6 @@ namespace hypha
 
         float seeds_price_usd = (float)1 / ((float)config_t.seeds_per_usd.amount / (float)10000);
         return (float)1 / ((float)config_t.seeds_per_usd.amount / (float)config_t.seeds_per_usd.symbol.precision());
-    }
-
-    eosio::asset getSeedsAmount(int64_t deferralFactor,
-                                const eosio::asset &usd_amount,
-                                const eosio::time_point &price_time_point,
-                                const float &time_share,
-                                const float &deferred_perc)
-    {
-        asset adjusted_usd_amount = adjustAsset(adjustAsset(usd_amount, deferred_perc), time_share);
-        float seeds_deferral_coeff = (float) deferralFactor / (float)100;
-        float seeds_price = getSeedsPriceUsd(price_time_point);
-        return adjustAsset(asset{static_cast<int64_t>(adjusted_usd_amount.amount * (float)100 * (float)seeds_deferral_coeff),
-                                 common::S_SEEDS},
-                           (float)1 / (float)seeds_price);
     }
 
     void issueToken(const eosio::name &token_contract,

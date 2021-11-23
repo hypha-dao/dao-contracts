@@ -12,7 +12,7 @@ namespace hypha {
     class PayerFactory
     {
     public:
-        static Payer* Factory(dao &dao, const eosio::symbol &symbol, const eosio::name &paymentType);
+        static Payer* Factory(dao &dao, const eosio::symbol &symbol, const eosio::name &paymentType, const AssetBatch& daoTokens);
     };
 }
 

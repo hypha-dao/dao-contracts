@@ -16,7 +16,6 @@ add_contract( dao dao
                 time_share.cpp
                 settings.cpp
                 payers/payer.cpp
-                payers/escrow_payer.cpp
                 payers/peg_payer.cpp
                 payers/voice_payer.cpp
                 payers/reward_payer.cpp

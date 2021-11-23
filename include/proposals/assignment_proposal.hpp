@@ -27,8 +27,5 @@ namespace hypha {
     private: 
 
         asset calculateTimeShareUsdPerPeriod(const SalaryConfig& salaryConf);
-        asset calculatePeg(const SalaryConfig& salaryConf);
-        asset calculateReward(const SalaryConfig& salaryConf);
-        asset calculateVoice(const SalaryConfig& salaryConf);
     };
 }

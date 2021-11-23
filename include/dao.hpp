@@ -190,7 +190,8 @@ namespace hypha
 
       void makePayment(const eosio::checksum256 &fromNode, const eosio::name &recipient,
                        const eosio::asset &quantity, const string &memo,
-                       const eosio::name &paymentType);
+                       const eosio::name &paymentType,
+                       const AssetBatch& daoTokens);
 
       void modifyCommitment(Assignment& assignment, 
                             int64_t commitment,
@@ -211,13 +212,6 @@ namespace hypha
       void createTokens(const eosio::asset& voiceToken, 
                         const eosio::asset& rewardToken,
                         const eosio::asset& pegToken);
-
-      struct AssetBatch
-      {
-         eosio::asset hypha = eosio::asset{0, common::S_REWARD};
-         eosio::asset voice = eosio::asset{0, common::S_VOICE};
-         eosio::asset husd = eosio::asset{0, common::S_PEG};
-      };
 
       eosio::asset applyCoefficient(ContentWrapper & badge, const eosio::asset &base, const std::string &key);
       AssetBatch applyBadgeCoefficients(Period & period, const eosio::name &member, AssetBatch &ab);

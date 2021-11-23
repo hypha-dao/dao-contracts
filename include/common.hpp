@@ -10,8 +10,7 @@ using eosio::symbol;
 
 //TODO: Refacto into a Lazy load system to avoid allocating many std::strings that are not actually used
 namespace common
-{
-
+{    
     constexpr auto PEG_TOKEN = "peg_token";
     constexpr auto VOICE_TOKEN = "voice_token";
     constexpr auto REWARD_TOKEN = "reward_token";
@@ -86,6 +85,10 @@ namespace common
     constexpr name PAID = name ("paid");
     constexpr name CLAIMED = name ("claimed");
 
+    constexpr auto PEG_AMOUNT = "peg_amount";
+    constexpr auto VOICE_AMOUNT = "voice_amount";
+    constexpr auto REWARD_AMOUNT = "reward_amount";
+
     constexpr name VOTE = name ("vote");
     constexpr name VOTE_ON = name ("voteon");
 
@@ -123,6 +126,10 @@ namespace common
     constexpr auto VOICE_SALARY_PER_PERIOD = "voice_salary_per_period";
     constexpr auto REWARD_SALARY_PER_PERIOD = "reward_salary_per_period";
 
+    const auto REWARD_COEFFICIENT = "reward_coefficient_x10000";
+    const auto VOICE_COEFFICIENT = "voice_coefficient_x10000";
+    const auto PEG_COEFFICIENT = "peg_coefficient_x10000";
+
 // content keys
 // keys used with settings
 #define ROOT_NODE "root_node"
@@ -149,10 +156,6 @@ namespace common
 #define READABLE_START_DATE "readable_start_date"
 
 #define ORIGINAL_DOCUMENT "original_document"
-#define HYPHA_COEFFICIENT "hypha_coefficient_x10000"
-#define HVOICE_COEFFICIENT "hvoice_coefficient_x10000"
-#define SEEDS_COEFFICIENT "seeds_coefficient_x10000"
-#define HUSD_COEFFICIENT "husd_coefficient_x10000"
 
 #define BADGE_STRING "badge"
 #define DETAILS "details"
@@ -188,10 +191,6 @@ namespace common
 #define PAYMENT_PERIOD "payment_period"
 #define PERIOD_COUNT "period_count"
 #define ASSETS_PAID "assets_paid"
-#define HYPHA_AMOUNT "hypha_amount"
-#define ESCROW_SEEDS_AMOUNT "escrow_seeds_amount"
-#define HVOICE_AMOUNT "hvoice_amount"
-#define HUSD_AMOUNT "husd_amount"
 #define AMOUNT "amount"
 #define REFERENCE "reference"
 #define RECIPIENT "recipient"

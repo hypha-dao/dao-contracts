@@ -16,6 +16,22 @@
 
 namespace hypha
 {
+    struct AssetBatch
+    {
+      eosio::asset reward;
+      eosio::asset peg;
+      eosio::asset voice;
+    };
+
+    struct SalaryConfig
+    {
+      // double annualSalary;
+      double periodSalary;
+      double rewardToPegRatio;
+      double deferredPerc;
+      double voiceMultipler = 2.0;
+    };
+
     eosio::checksum256 getRoot(const eosio::name &contract);
     eosio::checksum256 getDAO(const eosio::name &dao_name);
     
@@ -28,16 +44,14 @@ namespace hypha
     float getPhaseToYearRatio(Settings* daoSettings);
     float getPhaseToYearRatio(Settings* daoSettings, int64_t periodDuration);
 
+    AssetBatch calculateSalaries(const SalaryConfig& salaryConf, const AssetBatch& tokens);
+
     ContentGroups getRootContent(const eosio::name &contract);
     ContentGroups getDAOContent(const eosio::name &dao_name);
     eosio::asset adjustAsset(const eosio::asset &originalAsset, const float &adjustment);
     float getSeedsPriceUsd(const eosio::time_point &price_time_point);
     float getSeedsPriceUsd();
-    eosio::asset getSeedsAmount(int64_t deferralFactor,
-                                const eosio::asset &usd_amount,
-                                const eosio::time_point &price_time_point,
-                                const float &time_share,
-                                const float &deferred_perc);
+
     void issueToken(const eosio::name &token_contract,
                     const eosio::name &issuer,
                     const eosio::name &to,
@@ -62,15 +76,6 @@ namespace hypha
         eosio::asset resident_limit;
         eosio::asset visitor_limit;
         uint64_t timestamp;
-    };
-
-    struct SalaryConfig
-    {
-      // double annualSalary;
-      double periodSalary;
-      double rewardToPegRatio;
-      double commitmentPerc;
-      double deferredPerc;
     };
 
     typedef eosio::singleton<eosio::name("config"), configtable> configtables;

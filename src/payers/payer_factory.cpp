@@ -3,39 +3,30 @@
 #include <payers/reward_payer.hpp>
 #include <payers/seeds_payer.hpp>
 #include <payers/voice_payer.hpp>
-#include <payers/escrow_payer.hpp>
 #include <logger/logger.hpp>
+#include <map>
 
 #include <common.hpp>
 
 namespace hypha
 {
 
-    Payer *PayerFactory::Factory(dao &dao, const eosio::symbol &symbol, const eosio::name &paymentType)
+    Payer *PayerFactory::Factory(dao &dao, const eosio::symbol &symbol, const eosio::name &paymentType, const AssetBatch& daoTokens)
     {
         TRACE_FUNCTION()
 
-        if (paymentType == common::ESCROW)
-        {
-            return new EscrowPayer(dao);
-        }
-
-        switch (symbol.code().raw())
-        {
-        case common::S_PEG.code().raw():
+        if (symbol.raw() == daoTokens.peg.symbol.raw()) {
             return new PegPayer(dao);
-
-        case common::S_VOICE.code().raw():
-            return new VoicePayer(dao);
-
-        case common::S_REWARD.code().raw():
+        }
+        else if (symbol.raw() == daoTokens.reward.symbol.raw()) {
             return new RewardPayer(dao);
-
-        case common::S_SEEDS.code().raw():
-            return new SeedsPayer(dao);
+        }
+        else if (symbol.raw() == daoTokens.voice.symbol.raw()) {
+            return new VoicePayer(dao);
         }
 
         EOS_CHECK(false, "Unknown - symbol: " + symbol.code().to_string() + " payment type: " + paymentType.to_string());
+
         return nullptr;
     }
 } // namespace hypha

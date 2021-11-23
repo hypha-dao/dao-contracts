@@ -108,29 +108,32 @@ namespace hypha
         auto rewardPegVal = m_daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO);
 
         SalaryConfig salaryConf {
-            normalizeToken(usdSalaryPerPeriod.getAs<asset>()) * (timeShare / 100.0),
-            normalizeToken(rewardPegVal),
-            timeShare / 100.0,
-            deferred / 100.0,
+            .periodSalary = normalizeToken(usdSalaryPerPeriod.getAs<asset>()) * (timeShare / 100.0),
+            .rewardToPegRatio = normalizeToken(rewardPegVal),
+            .deferredPerc = deferred / 100.0,
+            .voiceMultipler = 2.0
         };
 
-        // add remaining derived per period salary amounts to this document
-        auto peg = calculatePeg(salaryConf);
-        if (peg.amount > 0) {
-            Content pegSalaryPerPeriod(common::PEG_SALARY_PER_PERIOD, peg);
+        AssetBatch salaries = calculateSalaries(salaryConf, AssetBatch{
+            .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+            .peg = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+            .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+        });
+
+        // add remaining derived per period salary amounts to this document        
+        if (salaries.peg.amount > 0) {
+            Content pegSalaryPerPeriod(common::PEG_SALARY_PER_PERIOD, salaries.peg);
             ContentWrapper::insertOrReplace(*detailsGroup, pegSalaryPerPeriod);
         }
 
-        auto reward = calculateReward(salaryConf);
-        if (reward.amount > 0) {
-            Content hyphaSalaryPerPeriod(common::REWARD_SALARY_PER_PERIOD, reward);
-            ContentWrapper::insertOrReplace(*detailsGroup, hyphaSalaryPerPeriod);
+        if (salaries.reward.amount > 0) {
+            Content rewardSalaryPerPeriod(common::REWARD_SALARY_PER_PERIOD, salaries.reward);
+            ContentWrapper::insertOrReplace(*detailsGroup, rewardSalaryPerPeriod);
         }
 
-        auto hvoice = calculateVoice(salaryConf);
-        if (hvoice.amount > 0) {
-            Content hvoiceSalaryPerPeriod(common::VOICE_SALARY_PER_PERIOD, hvoice);
-            ContentWrapper::insertOrReplace(*detailsGroup, hvoiceSalaryPerPeriod);
+        if (salaries.voice.amount > 0) {
+            Content voiceSalaryPerPeriod(common::VOICE_SALARY_PER_PERIOD, salaries.voice);
+            ContentWrapper::insertOrReplace(*detailsGroup, voiceSalaryPerPeriod);
         }
     }
 
@@ -204,37 +207,5 @@ namespace hypha
     name AssignmentProposal::getProposalType()
     {
         return common::ASSIGNMENT;
-    }
-
-    asset AssignmentProposal::calculatePeg(const SalaryConfig& salaryConf)
-    {
-        TRACE_FUNCTION()
-
-        double pegSalaryPerPeriod = salaryConf.periodSalary * (1.0 - salaryConf.deferredPerc);
-
-        auto pegToken = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN);
-        
-        return denormalizeToken(pegSalaryPerPeriod, pegToken);
-    }
-
-    asset AssignmentProposal::calculateReward(const SalaryConfig& salaryConf)
-    {
-        TRACE_FUNCTION()
-
-        double rewardSalaryPerPeriod = (salaryConf.periodSalary * salaryConf.deferredPerc) / salaryConf.rewardToPegRatio;
-
-        auto rewardToken = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN);
-
-        return denormalizeToken(rewardSalaryPerPeriod, rewardToken);
-    }
-
-    asset AssignmentProposal::calculateVoice(const SalaryConfig& salaryConf)
-    {
-        TRACE_FUNCTION()
-
-        auto voiceToken = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN);
-
-        //TODO: Make the multipler configurable
-        return denormalizeToken(salaryConf.periodSalary * 2.0, voiceToken);
     }
 } // namespace hypha

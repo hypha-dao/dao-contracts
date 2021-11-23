@@ -254,10 +254,12 @@ namespace hypha
 
       auto daoSettings = getSettingsDocument(daoHash);
 
-      const auto rewardToken = daoSettings->getOrFail<eosio::asset>(common::REWARD_TOKEN);
-      const auto pegToken = daoSettings->getOrFail<eosio::asset>(common::PEG_TOKEN);
-      const auto voiceToken = daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
-
+      auto daoTokens = AssetBatch{
+        .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+        .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+        .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+      };
+      
       const asset pegSalary = assignment.getPegSalary();
       const asset voiceSalary = assignment.getVoiceSalary();
       const asset rewardSalary = assignment.getRewardSalary();
@@ -336,13 +338,13 @@ namespace hypha
             //  deferredSeeds = (deferredSeeds.is_valid() ? deferredSeeds : eosio::asset{0, common::S_SEEDS}) +
             //  adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc * commitmentMultiplier);
 
-            peg = (peg.is_valid() ? peg : eosio::asset{0, pegToken.symbol}) +
+            peg = (peg.is_valid() ? peg : eosio::asset{0, daoTokens.peg.symbol}) +
                    adjustAsset(pegSalary, commitmentMultiplier);
 
-            voice = (voice.is_valid() ? voice : eosio::asset{0, voiceToken.symbol}) +
+            voice = (voice.is_valid() ? voice : eosio::asset{0, daoTokens.voice.symbol}) +
                      adjustAsset(voiceSalary, commitmentMultiplier);
 
-            reward = (reward.is_valid() ? reward : eosio::asset{0, rewardToken.symbol}) +
+            reward = (reward.is_valid() ? reward : eosio::asset{0, daoTokens.reward.symbol}) +
                     adjustAsset(rewardSalary, commitmentMultiplier);
          }
 
@@ -379,15 +381,15 @@ namespace hypha
       
       // creating a single struct improves performance for table queries here
       AssetBatch ab{};
-      ab.hypha = reward;
+      ab.reward = reward;
       ab.voice = voice;
-      ab.husd = peg;
+      ab.peg = peg;
 
       ab = applyBadgeCoefficients(periodToClaim.value(), assignee, ab);
 
-      makePayment(periodToClaim.value().getHash(), assignee, ab.hypha, memo, eosio::name{0});
-      makePayment(periodToClaim.value().getHash(), assignee, ab.voice, memo, eosio::name{0});
-      makePayment(periodToClaim.value().getHash(), assignee, ab.husd, memo, eosio::name{0});
+      makePayment(periodToClaim.value().getHash(), assignee, ab.reward, memo, eosio::name{0}, daoTokens);
+      makePayment(periodToClaim.value().getHash(), assignee, ab.voice, memo, eosio::name{0}, daoTokens);
+      makePayment(periodToClaim.value().getHash(), assignee, ab.peg, memo, eosio::name{0}, daoTokens);
    }
 
    asset dao::getProRatedAsset(ContentWrapper *assignment, const symbol &symbol, const string &key, const float &proration)
@@ -469,7 +471,7 @@ namespace hypha
       return asset{0, base.symbol};
    }
 
-   dao::AssetBatch dao::applyBadgeCoefficients(Period &period, const eosio::name &member, dao::AssetBatch &ab)
+   AssetBatch dao::applyBadgeCoefficients(Period &period, const eosio::name &member, AssetBatch &ab)
    {
       TRACE_FUNCTION()
       // get list of badges
@@ -480,9 +482,9 @@ namespace hypha
       for (auto &badge : badges)
       {
          ContentWrapper badgeCW = badge.getContentWrapper();
-         applied_assets.hypha = applied_assets.hypha + applyCoefficient(badgeCW, ab.hypha, HYPHA_COEFFICIENT);
-         applied_assets.husd = applied_assets.husd + applyCoefficient(badgeCW, ab.husd, HUSD_COEFFICIENT);
-         applied_assets.voice = applied_assets.voice + applyCoefficient(badgeCW, ab.voice, HVOICE_COEFFICIENT);
+         applied_assets.reward = applied_assets.reward + applyCoefficient(badgeCW, ab.reward, common::REWARD_COEFFICIENT);
+         applied_assets.peg = applied_assets.peg + applyCoefficient(badgeCW, ab.peg, common::PEG_COEFFICIENT);
+         applied_assets.voice = applied_assets.voice + applyCoefficient(badgeCW, ab.voice, common::VOICE_COEFFICIENT);
       }
 
       return applied_assets;
@@ -492,7 +494,8 @@ namespace hypha
                          const eosio::name &recipient,
                          const eosio::asset &quantity,
                          const string &memo,
-                         const eosio::name &paymentType)
+                         const eosio::name &paymentType,
+                         const AssetBatch& daoTokens)
    {
       TRACE_FUNCTION()
       // nothing to do if quantity is zero of symbol is USD, a known placeholder
@@ -501,7 +504,7 @@ namespace hypha
          return;
       }
 
-      std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, quantity.symbol, paymentType));
+      std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, quantity.symbol, paymentType, daoTokens));
       Document paymentReceipt = payer->pay(recipient, quantity, memo);
       Edge::write(get_self(), get_self(), fromNode, paymentReceipt.getHash(), common::PAYMENT);
       Edge::write(get_self(), get_self(), Member::calcHash(recipient), paymentReceipt.getHash(), common::PAID);
