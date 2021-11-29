@@ -1212,14 +1212,16 @@ namespace hypha
 
     name pegContract = dhoSettings->getOrFail<eosio::name>(PEG_TOKEN_CONTRACT);
 
+    name treasuryContract = dhoSettings->getOrFail<eosio::name>(TREASURY_CONTRACT);
+
     eosio::action(
       eosio::permission_level{pegContract, name("active")},
       pegContract,
       name("create"),
       std::make_tuple(
-        get_self(), 
-        asset{-getTokenUnit(pegToken), pegToken.symbol}, 
-        uint64_t{0}, 
+        treasuryContract,
+        asset{-getTokenUnit(pegToken), pegToken.symbol},
+        uint64_t{0},
         uint64_t{0}
       )
     ).send();
