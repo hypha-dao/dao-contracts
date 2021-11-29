@@ -17,7 +17,7 @@ namespace hypha
         const eosio::checksum256 questStartHash = contentWrapper.getOrFail(
             DETAILS,
             QUEST_START,
-            "Associated quest_document not found in the contents"
+            "Associated quest_start document not found in the contents"
         )->getAs<eosio::checksum256>();
 
         Document questStart(this->m_dao.get_self(), questStartHash);
@@ -31,17 +31,37 @@ namespace hypha
         eosio::check(documentType == common::QUEST_START, "Document type is not a quest start");
     }
 
+    void QuestCompletionProposal::postProposeImpl(Document &proposal)
+    {
+        TRACE_FUNCTION()
+        const eosio::checksum256 questStartHash = contentWrapper.getOrFail(
+            DETAILS,
+            QUEST_START,
+            "Associated quest_start document not found in the contents"
+        )->getAs<eosio::checksum256>();
+
+        Edge::write(
+            m_dao.get_self(),
+            m_dao.get_self(),
+            proposal.getHash(),
+            questStartHash,
+            common::QUEST_START
+        );
+    }
+
     void QuestCompletionProposal::passImpl(Document &proposal)
     {
         TRACE_FUNCTION()
         Edge::write(m_dao.get_self(), m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::QUEST_COMPLETION);
         pay(proposal, common::QUEST_COMPLETION);
 
-        const eosio::checksum256 questStartHash = contentWrapper.getOrFail(
-            DETAILS,
-            QUEST_START
-        )->getAs<eosio::checksum256>();
-        Edge::write(m_dao.get_self(), m_dao.get_self(), questStartHash, proposal.getHash(), common::COMPLETED_BY)
+        auto questStart = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::QUEST_START);
+        EOS_CHECK(
+          !questStart.empty(),
+          to_str("Missing 'quest_start' edge from quest_completion: ", proposal.getHash())
+        )
+
+        Edge::write(m_dao.get_self(), m_dao.get_self(), questStart.at(0).getToNode(), proposal.getHash(), common::COMPLETED_BY)
     }
 
     name QuestCompletionProposal::getProposalType()
