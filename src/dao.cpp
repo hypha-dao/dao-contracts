@@ -260,7 +260,7 @@ namespace hypha
         .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
       };
       
-      const asset pegSalary = assignment.getPegSalary();
+      const asset pegSalary = assignment.getPegSalary();dao
       const asset voiceSalary = assignment.getVoiceSalary();
       const asset rewardSalary = assignment.getRewardSalary();
 
@@ -385,7 +385,7 @@ namespace hypha
       ab.voice = voice;
       ab.peg = peg;
 
-      ab = applyBadgeCoefficients(periodToClaim.value(), assignee, ab);
+      ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoHash, ab);
 
       makePayment(periodToClaim.value().getHash(), assignee, ab.reward, memo, eosio::name{0}, daoTokens);
       makePayment(periodToClaim.value().getHash(), assignee, ab.voice, memo, eosio::name{0}, daoTokens);
@@ -404,7 +404,7 @@ namespace hypha
       return adjustAsset(assetToPay, proration);
    }
 
-   std::vector<Document> dao::getCurrentBadges(Period &period, const name &member)
+   std::vector<Document> dao::getCurrentBadges(Period &period, const name &member, const checksum256& dao)
    {
       TRACE_FUNCTION()
       std::vector<Document> current_badges;
@@ -421,6 +421,11 @@ namespace hypha
                  badgeAssignmentDoc.getHash(),
                  " badge:", badge_edge.getToNode())
         )
+
+        //Verify the badge is actually from the requested DAO
+        if (Edge::get(get_self(), badge_edge.getToNode(), common::DAO).getToNode() != dao) {
+          continue;
+        }
 
         auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
         Document badge(get_self(), badge_edge.getToNode());
@@ -471,11 +476,11 @@ namespace hypha
       return asset{0, base.symbol};
    }
 
-   AssetBatch dao::applyBadgeCoefficients(Period &period, const eosio::name &member, AssetBatch &ab)
+   AssetBatch dao::applyBadgeCoefficients(Period &period, const eosio::name &member, const checksum256& dao, AssetBatch &ab)
    {
       TRACE_FUNCTION()
       // get list of badges
-      auto badges = getCurrentBadges(period, member);
+      auto badges = getCurrentBadges(period, member, dao);
       AssetBatch applied_assets = ab;
 
       // for each badge, apply appropriate coefficients

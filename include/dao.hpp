@@ -214,8 +214,8 @@ namespace hypha
                         const eosio::asset& pegToken);
 
       eosio::asset applyCoefficient(ContentWrapper & badge, const eosio::asset &base, const std::string &key);
-      AssetBatch applyBadgeCoefficients(Period & period, const eosio::name &member, AssetBatch &ab);
-      std::vector<Document> getCurrentBadges(Period & period, const eosio::name &member);
+      AssetBatch applyBadgeCoefficients(Period & period, const eosio::name &member, const checksum256& dao, AssetBatch &ab);
+      std::vector<Document> getCurrentBadges(Period & period, const eosio::name &member, const checksum256& dao);
 
       bool isPaused();
 

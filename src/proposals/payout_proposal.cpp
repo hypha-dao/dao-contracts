@@ -63,20 +63,30 @@ namespace hypha
             ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::VOICE_AMOUNT, salaries.voice });
             ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::REWARD_AMOUNT, salaries.reward });
         }
-        // else
-        // {
-        //     // if we wanted to verify the assets provided on a payout proposal,
-        //     // we would do that here. But for now, we will just allow them to flow through as provided.
 
-        //     // iterate through the details group looking for assets
-        //     for (Content &content : *detailsGroup)
-        //     {
-        //         if (std::holds_alternative<eosio::asset>(content.value))
-        //         {
-        //             // do some checking on the asset provided
-        //         }
-        //     }
-        // }
+        //Verify there is only 1 item of each token type
+        bool hasPeg = false;
+        bool hasVoice = false;
+        bool hasReward = false;
+
+        for (const auto& item : *detailsGroup) {
+
+            bool isPeg = item.label == common::PEG_AMOUNT;
+
+            EOS_CHECK(!isPeg || !hasPeg, util::to_str("Multiple peg_amount items are not allowed"))
+
+            bool isVoice = item.label == common::VOICE_AMOUNT;
+
+            EOS_CHECK(!isVoice || !hasVoice, util::to_str("Multiple voice_amount items are not allowed"))
+
+            bool isReward = item.label == common::REWARD_AMOUNT;
+            
+            EOS_CHECK(!isReward || !hasReward, util::to_str("Multiple reward_amount items are not allowed"))
+
+            hasPeg = hasPeg || isPeg;
+            hasVoice = hasVoice || isVoice;
+            hasReward = hasReward || isReward;
+        }
     }
 
     void PayoutProposal::passImpl(Document &proposal)
@@ -106,6 +116,7 @@ namespace hypha
         };
 
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
+
         for (Content &content : *detailsGroup)
         {
             if (std::holds_alternative<eosio::asset>(content.value))
