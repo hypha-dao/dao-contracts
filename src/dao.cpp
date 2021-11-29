@@ -260,7 +260,7 @@ namespace hypha
         .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
       };
       
-      const asset pegSalary = assignment.getPegSalary();dao
+      const asset pegSalary = assignment.getPegSalary();
       const asset voiceSalary = assignment.getVoiceSalary();
       const asset rewardSalary = assignment.getRewardSalary();
 
