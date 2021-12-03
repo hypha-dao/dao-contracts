@@ -65,8 +65,8 @@ namespace hypha
 
    void dao::propose(const name &proposer,
                      const name &proposal_type,
-                     bool publish,
-                     ContentGroups &content_groups)
+                     ContentGroups &content_groups,
+                     bool publish)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -254,7 +254,7 @@ namespace hypha
        },
      };
 
-     propose(proposer, common::SUSPEND, true, cgs);
+     propose(proposer, common::SUSPEND, cgs, true);
    }
 
    void dao::claimnextper(const eosio::checksum256 &assignment_hash)

@@ -77,7 +77,7 @@ namespace hypha
          }
       }
 
-      ACTION propose(const name &proposer, const name &proposal_type, bool publish, ContentGroups &content_groups);
+      ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups, bool publish);
       ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, const std::optional<string> &notes);
       ACTION closedocprop(const checksum256 &proposal_hash);
       ACTION proposepub(const name &proposer, const checksum256 &proposal_hash);
