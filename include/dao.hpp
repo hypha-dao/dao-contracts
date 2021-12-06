@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string_view>
+#include <memory>
 
 #include <eosio/eosio.hpp>
 #include <eosio/name.hpp>
@@ -8,12 +9,15 @@
 #include <eosio/crypto.hpp>
 #include <eosio/multi_index.hpp>
 #include <eosio/singleton.hpp>
+#include <eosio/action.hpp>
 
 #include <document_graph/document_graph.hpp>
 #include <document_graph/util.hpp>
 
 #include <common.hpp>
+#include <util.hpp>
 #include <period.hpp>
+#include <settings.hpp>
 
 using eosio::checksum256;
 using eosio::multi_index;
@@ -29,6 +33,21 @@ namespace hypha
       using eosio::contract::contract;
 
       DECLARE_DOCUMENT_GRAPH(dao)
+
+      //Might use it to optimize dao lookups instead of hashing the cgs
+      // TABLE Dao
+      // {
+      //   uint64_t id;
+      //   name name;
+      //   checksum256 hash;
+
+      //   uint64_t primary_key() const { return id; }
+      //   uint64_t by_name() const { return name.value; }
+      // };
+
+      // typedef multi_index<name("daos"), Dao,
+      //                     eosio::indexed_by<name("byname"), eosio::const_mem_fun<Dao, uint64_t, &Dao::by_name>>>
+      //         dao_table;
 
       struct [[eosio::table, eosio::contract("dao")]] Payment
       {
@@ -51,47 +70,43 @@ namespace hypha
                           eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
           payment_table;
 
-      ACTION erasepymts(const eosio::name &scope, const uint64_t &starting_id, const uint64_t &batch_size, int senderId)
-      {
-         require_auth(get_self());
-         int counter = 0;
+      //TODO: REMOVE
+      ACTION deletetok(asset asset, name contract) {
 
-         payment_table o_t(get_self(), scope.value);
-         auto o_itr = o_t.find(starting_id);
-         while (o_itr != o_t.end() && counter < batch_size)
-         {
-            o_itr = o_t.erase(o_itr);
-            counter++;
-         }
+        require_auth(get_self());
 
-         if (o_itr != o_t.end())
-         {
-            eosio::transaction out{};
-            out.actions.emplace_back(
-                eosio::permission_level{get_self(), name("active")},
-                get_self(), name("erasepymts"),
-                std::make_tuple(scope, starting_id + batch_size, batch_size, ++senderId));
-
-            out.delay_sec = 1;
-            out.send(senderId, get_self());
-         }
+        eosio::action(
+          eosio::permission_level{contract, name("active")},
+          contract, 
+          name("del"),
+          std::make_tuple(asset)
+        ).send();
       }
 
-      ACTION fixassigns(std::vector<checksum256>& hashes);
-      ACTION propose(const name &proposer, const name &proposal_type, ContentGroups &content_groups);
+      ACTION clean();
+      ACTION propose(const checksum256& dao_hash, const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
       ACTION closedocprop(const checksum256 &proposal_hash);
+      //Sets a dho/contract level setting
       ACTION setsetting(const string &key, const Content::FlexValue &value);
+
+      //Sets a dao level setting
+      ACTION setdaosetting(const eosio::checksum256& dao_hash, const std::string &key, const Content::FlexValue &value);
+
+      //Removes a dao/contract level setting
       ACTION remsetting(const string &key);
+
       ACTION addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
+      ACTION genperiods(const eosio::checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/);
+      //ACTION genperiodini(const name& dao_name, int64_t period_count, int64_t period_duration_sec);
 
       // ACTION claimpay(const eosio::checksum256 &hash);
       // ACTION claimpayper(const eosio::checksum256 &assignment_hash, const eosio::checksum256 &period_hash);
       ACTION claimnextper(const eosio::checksum256 &assignment_hash);
       ACTION proposeextend (const eosio::checksum256 &assignment_hash, const int64_t additional_periods);
 
-      ACTION apply(const eosio::name &applicant, const std::string &content);
-      ACTION enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content);
+      ACTION apply(const eosio::name &applicant, const name& dao_name, const std::string &content);
+      ACTION enroll(const eosio::name &enroller, const name& dao_name, const eosio::name &applicant, const std::string &content);
 
       // ACTION suspend (const eosio::name &proposer, const eosio::checksum256 &hash);
 
@@ -99,33 +114,55 @@ namespace hypha
       ACTION remalert(const std::string &notes);
 
       DocumentGraph &getGraph();
-      Document getSettingsDocument();
+      Settings* getSettingsDocument();
+      //TODO: Refactor to receive the dao_hash instead of the dao_name
+      Settings* getSettingsDocument(const eosio::name &dao_name);
+
+      Settings* getSettingsDocument(const eosio::checksum256& daoHash);
 
       template <class T>
-      T getSettingOrFail(const std::string &setting)
+      const T& getSettingOrFail(const std::string &setting)
       {
          auto settings = getSettingsDocument();
-         auto content = settings.getContentWrapper().getOrFail(SETTINGS, setting, "setting " + setting + " does not exist");
-         return std::get<T>(content->value);
+         return settings->getOrFail<T>(setting);
+      }
+
+      template <class T>
+      const T& getSettingOrFail(const eosio::name &dao_name, const std::string &setting)
+      {
+         auto settings = getSettingsDocument(dao_name);
+         return settings->getOrFail<T>(setting);
       }
 
       template <class T>
       std::optional<T> getSettingOpt(const string &setting)
       {
          auto settings = getSettingsDocument();
-         auto [idx, content] = settings.getContentWrapper().get(SETTINGS, setting);
-         if (auto p = std::get_if<T>(&content->value))
-         {
-            return *p;
-         }
+         return settings->getSettingOpt<T>(setting);
+      }
 
-         return {};
+      template <class T>
+      std::optional<T> getSettingOpt(const eosio::name &dao_name, const string &setting)
+      {
+         auto settings = getSettingsDocument(dao_name);
+         return settings->getSettingOpt<T>(setting);
       }
 
       template <class T>
       T getSettingOrDefault(const string &setting, const T &def = T{})
       {
          if (auto content = getSettingOpt<T>(setting))
+         {
+            return *content;
+         }
+
+         return def;
+      }
+      
+      template <class T>
+      T getSettingOrDefault(const eosio::name &dao_name, const string &setting, const T &def = T{})
+      {
+         if (auto content = getSettingOpt<T>(dao_name, setting))
          {
             return *content;
          }
@@ -140,14 +177,9 @@ namespace hypha
       ACTION suspend(name proposer, eosio::checksum256 hash, string reason);
 
       ACTION createroot(const std::string &notes);
-      ACTION erasedoc(const eosio::checksum256 &hash);
-      ACTION killedge(const uint64_t id);
-      ACTION newedge(eosio::name & creator, const checksum256 &from_node, const checksum256 &to_node, const name &edge_name);
-      ACTION updatedoc(const eosio::checksum256 hash, const name &updater, const string &group, const string &key, const Content::FlexValue &value);
-      ACTION fix (const eosio::checksum256 &hash);
-      // ACTION nbadge (const name& owner, const ContentGroups& contentGroups);
-      // ACTION nbadass(const name& owner, const ContentGroups& contentGroups);
-      // ACTION nbadprop (const name& owner, const ContentGroups& contentGroups);
+      ACTION createdao(ContentGroups &config);
+      
+      void setSetting(const eosio::checksum256& dao_hash, const string &key, const Content::FlexValue &value);
 
       void setSetting(const string &key, const Content::FlexValue &value);
 
@@ -158,7 +190,8 @@ namespace hypha
 
       void makePayment(const eosio::checksum256 &fromNode, const eosio::name &recipient,
                        const eosio::asset &quantity, const string &memo,
-                       const eosio::name &paymentType);
+                       const eosio::name &paymentType,
+                       const AssetBatch& daoTokens);
 
       void modifyCommitment(Assignment& assignment, 
                             int64_t commitment,
@@ -168,22 +201,24 @@ namespace hypha
    private:
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
+      void addPeriod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
+      void genPeriods(const eosio::checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/);
+            
       void removeSetting(const string &key);
 
       asset getProRatedAsset(ContentWrapper * assignment, const symbol &symbol,
                              const string &key, const float &proration);
 
-      struct AssetBatch
-      {
-         eosio::asset hypha = eosio::asset{0, common::S_HYPHA};
-         eosio::asset voice = eosio::asset{0, common::S_HVOICE};
-         eosio::asset husd = eosio::asset{0, common::S_HUSD};
-      };
+      void createTokens(const eosio::asset& voiceToken, 
+                        const eosio::asset& rewardToken,
+                        const eosio::asset& pegToken);
 
       eosio::asset applyCoefficient(ContentWrapper & badge, const eosio::asset &base, const std::string &key);
-      AssetBatch applyBadgeCoefficients(Period & period, const eosio::name &member, AssetBatch &ab);
-      std::vector<Document> getCurrentBadges(Period & period, const eosio::name &member);
+      AssetBatch applyBadgeCoefficients(Period & period, const eosio::name &member, const checksum256& dao, AssetBatch &ab);
+      std::vector<Document> getCurrentBadges(Period & period, const eosio::name &member, const checksum256& dao);
 
       bool isPaused();
+
+      std::vector<std::unique_ptr<Settings>> m_settingsDocs;
    };
 } // namespace hypha

@@ -1,6 +1,8 @@
 #pragma once
+
 #include <type_traits>
 #include <utility>
+#include <cmath>
 #include <string>
 #include <eosio/crypto.hpp>
 #include <eosio/name.hpp>
@@ -10,24 +12,60 @@
 
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/util.hpp>
+#include <settings.hpp>
 
 namespace hypha
 {
+    struct AssetBatch
+    {
+      eosio::asset reward;
+      eosio::asset peg;
+      eosio::asset voice;
+    };
+
+    struct SalaryConfig
+    {
+      // double annualSalary;
+      double periodSalary;
+      double rewardToPegRatio;
+      double deferredPerc;
+      double voiceMultipler = 2.0;
+    };
+
     eosio::checksum256 getRoot(const eosio::name &contract);
+    eosio::checksum256 getDAO(const eosio::name &dao_name);
+    
+    /**
+     * @brief Gets the phase to year ratio using the dao setting variable for the period duration
+     * 
+     * @param daoSettings 
+     * @return Phase to year ratio 
+     */
+    float getPhaseToYearRatio(Settings* daoSettings);
+    float getPhaseToYearRatio(Settings* daoSettings, int64_t periodDuration);
+
+    AssetBatch calculateSalaries(const SalaryConfig& salaryConf, const AssetBatch& tokens);
+
     ContentGroups getRootContent(const eosio::name &contract);
+    ContentGroups getDAOContent(const eosio::name &dao_name);
     eosio::asset adjustAsset(const eosio::asset &originalAsset, const float &adjustment);
     float getSeedsPriceUsd(const eosio::time_point &price_time_point);
     float getSeedsPriceUsd();
-    eosio::asset getSeedsAmount(int64_t deferralFactor,
-                                const eosio::asset &usd_amount,
-                                const eosio::time_point &price_time_point,
-                                const float &time_share,
-                                const float &deferred_perc);
+
     void issueToken(const eosio::name &token_contract,
                     const eosio::name &issuer,
                     const eosio::name &to,
                     const eosio::asset &token_amount,
                     const string &memo);
+
+    double normalizeToken(const eosio::asset& token);
+
+    eosio::asset denormalizeToken(double amountNormalized, const eosio::asset& token);
+
+    /**
+     * @brief Returns the representation of 1 unit in the given token
+     */
+    int64_t getTokenUnit(const eosio::asset& token);
 
     // configtable is usued to read the Seeds price
     struct configtable
@@ -39,6 +77,7 @@ namespace hypha
         eosio::asset visitor_limit;
         uint64_t timestamp;
     };
+
     typedef eosio::singleton<eosio::name("config"), configtable> configtables;
     typedef eosio::multi_index<eosio::name("config"), configtable> dump_for_config;
 

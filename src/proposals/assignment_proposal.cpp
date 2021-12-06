@@ -2,6 +2,8 @@
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/document.hpp>
 
+#include <cmath>
+
 #include <proposals/assignment_proposal.hpp>
 #include <member.hpp>
 #include <common.hpp>
@@ -18,7 +20,11 @@ namespace hypha
         TRACE_FUNCTION()
         // assignee must exist and be a DHO member
         name assignee = assignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
-        EOS_CHECK(Member::isMember(m_dao.get_self(), assignee), "only members can be assigned to assignments " + assignee.to_string());
+        
+        EOS_CHECK(
+            Member::isMember(m_dao.get_self(), m_daoHash, assignee), 
+            "only members can be assigned to assignments " + assignee.to_string()
+        );
 
         Document roleDocument(m_dao.get_self(), assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
         auto role = roleDocument.getContentWrapper();
@@ -68,11 +74,12 @@ namespace hypha
             EOS_CHECK(std::holds_alternative<eosio::checksum256>(startPeriod->value),
                          "fatal error: expected to be a checksum256 type: " + startPeriod->label);
 
+            //TODO: Store the dao in the period document and validate it 
             // verifies the period as valid
             Period period(&m_dao, std::get<eosio::checksum256>(startPeriod->value));
         } else {
             // default START_PERIOD to next period
-            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao).next().getHash()});
+            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoHash).next().getHash()});
         }
 
         // PERIOD_COUNT - number of periods the assignment is valid for
@@ -92,26 +99,41 @@ namespace hypha
         asset annual_usd_salary = role.getOrFail(DETAILS, ANNUAL_USD_SALARY)->getAs<eosio::asset>();
 
         // add the USD period pay amount (this is used to calculate SEEDS at time of salary claim)
-        Content usdSalaryPerPeriod(USD_SALARY_PER_PERIOD, adjustAsset(annual_usd_salary, common::PHASE_TO_YEAR_RATIO));
+        Content usdSalaryPerPeriod(USD_SALARY_PER_PERIOD, adjustAsset(annual_usd_salary, getPhaseToYearRatio(m_daoSettings)));
         ContentWrapper::insertOrReplace(*detailsGroup, usdSalaryPerPeriod);
 
-        // add remaining derived per period salary amounts to this document
-        auto husd = calculateHusd(annual_usd_salary, timeShare, deferred);
-        if (husd.amount > 0) {
-            Content husdSalaryPerPeriod(HUSD_SALARY_PER_PERIOD, husd);
-            ContentWrapper::insertOrReplace(*detailsGroup, husdSalaryPerPeriod);
+        //TODO: Normalize all the tokens to allow different precisions on each token
+        //currently they all must be the same or the will not work correctly
+
+        auto rewardPegVal = m_daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO);
+
+        SalaryConfig salaryConf {
+            .periodSalary = normalizeToken(usdSalaryPerPeriod.getAs<asset>()) * (timeShare / 100.0),
+            .rewardToPegRatio = normalizeToken(rewardPegVal),
+            .deferredPerc = deferred / 100.0,
+            .voiceMultipler = 2.0
+        };
+
+        AssetBatch salaries = calculateSalaries(salaryConf, AssetBatch{
+            .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+            .peg = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+            .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+        });
+
+        // add remaining derived per period salary amounts to this document        
+        if (salaries.peg.amount > 0) {
+            Content pegSalaryPerPeriod(common::PEG_SALARY_PER_PERIOD, salaries.peg);
+            ContentWrapper::insertOrReplace(*detailsGroup, pegSalaryPerPeriod);
         }
 
-        auto hypha = calculateHypha(annual_usd_salary, timeShare, deferred);
-        if (hypha.amount > 0) {
-            Content hyphaSalaryPerPeriod(HYPHA_SALARY_PER_PERIOD, hypha);
-            ContentWrapper::insertOrReplace(*detailsGroup, hyphaSalaryPerPeriod);
+        if (salaries.reward.amount > 0) {
+            Content rewardSalaryPerPeriod(common::REWARD_SALARY_PER_PERIOD, salaries.reward);
+            ContentWrapper::insertOrReplace(*detailsGroup, rewardSalaryPerPeriod);
         }
 
-        auto hvoice = calculateHvoice(annual_usd_salary, timeShare);
-        if (hvoice.amount > 0) {
-            Content hvoiceSalaryPerPeriod(HVOICE_SALARY_PER_PERIOD, hvoice);
-            ContentWrapper::insertOrReplace(*detailsGroup, hvoiceSalaryPerPeriod);
+        if (salaries.voice.amount > 0) {
+            Content voiceSalaryPerPeriod(common::VOICE_SALARY_PER_PERIOD, salaries.voice);
+            ContentWrapper::insertOrReplace(*detailsGroup, voiceSalaryPerPeriod);
         }
     }
 
@@ -185,52 +207,5 @@ namespace hypha
     name AssignmentProposal::getProposalType()
     {
         return common::ASSIGNMENT;
-    }
-
-    asset AssignmentProposal::calculateTimeShareUsdPerPeriod(const asset &annualUsd, const int64_t &timeShare)
-    {
-        asset commitment_adjusted_usd_annual = adjustAsset(annualUsd, (float)(float)timeShare / (float)100);
-        return adjustAsset(commitment_adjusted_usd_annual, common::PHASE_TO_YEAR_RATIO);
-    }
-
-    asset AssignmentProposal::calculateHusd(const asset &annualUsd, const int64_t &timeShare, const int64_t &deferred)
-    {
-        // calculate HUSD salary amount
-        // 1. normalize annual salary to the time commitment of this proposal
-        // 2. multiply (1) by 0.02026 to calculate a single moon phase; avg. phase is 7.4 days, 49.36 phases per year
-        // 3. multiply (2) by 1 - deferral perc
-        asset nonDeferredTimeShareAdjUsdPerPeriod = adjustAsset(calculateTimeShareUsdPerPeriod(annualUsd, timeShare), (float)1 - ((float)deferred / (float)100));
-
-        // convert symbol from USD to HUSD
-        return asset{nonDeferredTimeShareAdjUsdPerPeriod.amount, common::S_HUSD};
-    }
-
-    asset AssignmentProposal::calculateHypha(const asset &annualUsd, const int64_t &timeShare, const int64_t &deferred)
-    {
-        TRACE_FUNCTION()
-        // calculate HYPHA phase salary amount
-        asset deferredTimeShareAdjUsdPerPeriod = adjustAsset(calculateTimeShareUsdPerPeriod(annualUsd, timeShare), (float)(float)deferred / (float)100);
-
-        //float hypha_deferral_coeff = (float)m_dao.getSettingOrFail<int64_t>(HYPHA_DEFERRAL_FACTOR) / (float)100;
-
-        auto hyphaUsdVal = m_dao.getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
-
-        //Hypha USD Value precision is fixed to 4 -> 10^4 == 10000
-        EOS_CHECK(
-          hyphaUsdVal.symbol.precision() == 4,
-          util::to_str("Expected HYPHA_USD_VALUE precision to be 4, but got:", hyphaUsdVal.symbol.precision())
-        )
-
-        auto hyphaToUsd = hyphaUsdVal.amount / 10000.0;
-
-        return asset{
-          static_cast<int64_t>(deferredTimeShareAdjUsdPerPeriod.amount / hyphaToUsd), 
-          common::S_HYPHA
-        };
-    }
-
-    asset AssignmentProposal::calculateHvoice(const asset &annualUsd, const int64_t &timeShare)
-    {
-        return asset{calculateTimeShareUsdPerPeriod(annualUsd, timeShare).amount * 2, common::S_HVOICE};
     }
 } // namespace hypha

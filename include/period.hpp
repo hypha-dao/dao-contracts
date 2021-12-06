@@ -40,9 +40,9 @@ namespace hypha
         int64_t getPeriodCountTo(Period& other);
         Period getPeriodUntil(eosio::time_point moment);
 
-        static Period asOf(dao *dao, eosio::time_point moment);
+        static Period asOf(dao *dao, const eosio::checksum256& daoHash, eosio::time_point moment);
         
-        static Period current(dao *dao);
+        static Period current(dao *dao, const eosio::checksum256& daoHash);
         bool isEnd();
 
         dao *m_dao;

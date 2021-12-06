@@ -33,8 +33,10 @@ namespace hypha
         // the goal is to have an easier API
         proposal.getContentWrapper().getOrFail(BALLOT_OPTIONS, vote, "Invalid vote");
         
+        auto daoHash = Edge::get(dao.get_self(), proposal.getHash(), common::DAO).getToNode();
+
         EOS_CHECK(
-            Edge::exists(dao.get_self(), getRoot(dao.get_self()), proposal.getHash(), common::PROPOSAL),
+            Edge::exists(dao.get_self(), daoHash, proposal.getHash(), common::PROPOSAL),
             "Only allowed to vote active proposals"
         );
 
@@ -65,12 +67,18 @@ namespace hypha
             }
         }
 
+        Settings* daoSettings = dao.getSettingsDocument(daoHash);
+
         // Fetch vote power
         // Todo: Need to ensure that the balance does not need a decay.
-        name hvoiceContract = dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
+        name hvoiceContract = dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
         hypha::voice::accounts v_t(hvoiceContract, voter.value);
-        auto v_itr = v_t.find(common::S_HVOICE.code().raw());
-        EOS_CHECK(v_itr != v_t.end(), "No HVOICE found");
+
+        asset voiceToken = daoSettings->getOrFail<asset>(common::VOICE_TOKEN);
+
+        auto v_itr = v_t.find(voiceToken.symbol.code().raw());
+        eosio::check(v_itr != v_t.end(), "No VOICE found");
+
         asset votePower = v_itr->balance;
 
         ContentGroups contentGroups{

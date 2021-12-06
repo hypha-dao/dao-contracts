@@ -1,4 +1,7 @@
 #include <member.hpp>
+
+#include <cmath>
+
 #include <common.hpp>
 #include <document_graph/document_graph.hpp>
 #include <document_graph/document.hpp>
@@ -46,11 +49,11 @@ namespace hypha
         return Document::hashContents(cgs);
     }
 
-    const bool Member::isMember(const eosio::name &rootNode, const eosio::name &member)
+    const bool Member::isMember(const eosio::name& contract, const eosio::checksum256 &dao, const eosio::name &member)
     {
         // create hash to represent this member account
         auto memberHash = Member::calcHash(member);
-        return Edge::exists(rootNode, getRoot(rootNode), memberHash, common::MEMBER);
+        return Edge::exists(contract, dao, memberHash, common::MEMBER);
     }
 
     // Member Member::getOrNew(eosio::name contract, const eosio::name &creator, const eosio::name &member)
@@ -65,11 +68,11 @@ namespace hypha
         Edge::write(getContract(), getAccount(), getHash(), applyTo, common::APPLICANT_OF);
     }
 
-    void Member::enroll(const eosio::name &enroller, const std::string &content)
+    void Member::enroll(const eosio::name &enroller, const eosio::checksum256& appliedTo, const std::string &content)
     {
         TRACE_FUNCTION()
-        // TODO: make this multi-member, it may not be "root"
-        eosio::checksum256 root = getRoot(getContract());
+        
+        eosio::checksum256 root = appliedTo;
 
         // create the new member edges
         Edge::write(getContract(), enroller, root, getHash(), common::MEMBER);
@@ -86,10 +89,17 @@ namespace hypha
         // TODO: connect the payment receipt to the period also
         // TODO: change Payer.hpp to NOT require m_dao so this payment can be made using payer factory
 
-        eosio::asset genesis_voice{100, common::S_HVOICE};
-        std::string memo{"genesis voice issuance during enrollment"};
+        Document daoDoc(getContract(), appliedTo);
+        auto daoCW = daoDoc.getContentWrapper();
 
-        name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(HVOICE_TOKEN_CONTRACT);
+        auto daoName = daoCW.getOrFail(DETAILS, DAO_NAME)->getAs<name>();
+
+        auto voiceToken = m_dao.getSettingOrFail<asset>(daoName, common::VOICE_TOKEN);
+      
+        eosio::asset genesis_voice{getTokenUnit(voiceToken), voiceToken.symbol};
+        std::string memo = util::to_str("genesis voice issuance during enrollment to ", daoName);
+
+        name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
         hypha::issueToken(
             hyphaHvoice,
@@ -103,11 +113,11 @@ namespace hypha
 
         Edge::write(getContract(), getAccount(), getHash(), paymentReceipt.getHash(), common::PAYMENT);
 
-        eosio::action(
-            eosio::permission_level{getContract(), name("active")},
-            name("eosio"), name("buyram"),
-            std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE))
-            .send();
+        // eosio::action(
+        //     eosio::permission_level{getContract(), name("active")},
+        //     name("eosio"), name("buyram"),
+        //     std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE))
+        //     .send();
     }
 
     eosio::name Member::getAccount()

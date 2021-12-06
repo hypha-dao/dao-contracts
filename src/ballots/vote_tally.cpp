@@ -4,6 +4,7 @@
 #include <document_graph/edge.hpp>
 #include <ballots/vote.hpp>
 #include <logger/logger.hpp>
+#include <settings.hpp>
 
 namespace hypha
 {
@@ -16,7 +17,8 @@ namespace hypha
 
     VoteTally::VoteTally(
         dao& dao,
-        Document& proposal
+        Document& proposal, 
+        Settings* daoSettings
     )
     : TypedDocument(dao)
     {
@@ -34,12 +36,14 @@ namespace hypha
 
         ContentGroup* contentOptions = proposal.getContentWrapper().getGroupOrFail(BALLOT_OPTIONS);
 
+        auto voiceToken = daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
+
         std::map<std::string, eosio::asset> optionsTally;
         std::vector<std::string> optionsTallyOrdered;
         for (auto option : *contentOptions) 
         {
             if (option.label != CONTENT_GROUP_LABEL) {
-                optionsTally[option.label] = asset(0, common::S_HVOICE);
+                optionsTally[option.label] = asset(0, voiceToken.symbol);
                 optionsTallyOrdered.push_back(option.label);
             }
         }

@@ -10,10 +10,9 @@ namespace hypha
         TRACE_FUNCTION()
         // check coefficients
         // TODO: move coeffecient thresholds to be configuration values
-        checkCoefficient(badge, HUSD_COEFFICIENT);
-        checkCoefficient(badge, HYPHA_COEFFICIENT);
-        checkCoefficient(badge, HVOICE_COEFFICIENT);
-        checkCoefficient(badge, SEEDS_COEFFICIENT);
+        checkCoefficient(badge, common::PEG_COEFFICIENT);
+        checkCoefficient(badge, common::REWARD_COEFFICIENT);
+        checkCoefficient(badge, common::VOICE_COEFFICIENT);
     }
 
     void BadgeProposal::passImpl(Document &proposal)

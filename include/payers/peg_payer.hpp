@@ -10,7 +10,7 @@
 namespace hypha
 {
 
-    class HyphaPayer : public Payer
+    class PegPayer : public Payer
     {
     public:
         using Payer::Payer;

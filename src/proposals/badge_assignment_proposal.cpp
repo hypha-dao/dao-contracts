@@ -14,8 +14,9 @@ namespace hypha
     {
         TRACE_FUNCTION()
         // assignee must exist and be a DHO member
+        //TODO: Check to which dao this proposal belongs to
         name assignee = badgeAssignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
-        EOS_CHECK(Member::isMember(m_dao.get_self(), assignee), "only members can be earn badges " + assignee.to_string());
+        //EOS_CHECK(Member::isMember(m_dao.get_self(), assignee), "only members can be earn badges " + assignee.to_string());
 
          // badge assignment proposal must link to a valid badge
         Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
@@ -34,7 +35,7 @@ namespace hypha
             Period period(&m_dao, std::get<eosio::checksum256>(startPeriod->value));
         } else {
             // default START_PERIOD to next period
-            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao).next().getHash()});
+            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoHash).next().getHash()});
         }
 
         // PERIOD_COUNT - number of periods the assignment is valid for

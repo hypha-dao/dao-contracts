@@ -11,7 +11,7 @@ namespace hypha {
     class ProposalFactory
     {
     public:
-        static Proposal* Factory(dao &dao, const eosio::name &proposal_type);
+        static Proposal* Factory(dao &dao, const checksum256& daoHash, const eosio::name &proposal_type);
     };
 }
 

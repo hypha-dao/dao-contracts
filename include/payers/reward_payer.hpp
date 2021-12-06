@@ -10,7 +10,7 @@
 namespace hypha
 {
 
-    class EscrowPayer : public Payer
+    class RewardPayer : public Payer
     {
     public:
         using Payer::Payer;

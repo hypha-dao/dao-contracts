@@ -14,11 +14,11 @@ add_contract( dao dao
                 member.cpp
                 assignment.cpp
                 time_share.cpp
+                settings.cpp
                 payers/payer.cpp
-                payers/escrow_payer.cpp
-                payers/husd_payer.cpp
-                payers/hvoice_payer.cpp
-                payers/hypha_payer.cpp
+                payers/peg_payer.cpp
+                payers/voice_payer.cpp
+                payers/reward_payer.cpp
                 payers/seeds_payer.cpp 
                 payers/payer_factory.cpp
                 proposals/proposal.cpp

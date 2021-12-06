@@ -16,6 +16,43 @@ namespace hypha
         return Document::hashContents(cgs);
     }
 
+    eosio::checksum256 getDAO(const eosio::name &dao_name)
+    {
+        ContentGroups cgs = getDAOContent (dao_name);
+        return Document::hashContents(cgs);
+    }
+
+    float getPhaseToYearRatio(Settings* daoSettings)
+    {
+        int64_t periodDurationSec = daoSettings->getOrFail<int64_t>(common::PERIOD_DURATION);
+
+        return getPhaseToYearRatio(daoSettings, periodDurationSec);       
+    }
+
+    float getPhaseToYearRatio(Settings* daoSettings, int64_t periodDuration)
+    {
+        return static_cast<float>(periodDuration) / common::YEAR_DURATION_SEC;
+    }
+
+    AssetBatch calculateSalaries(const SalaryConfig& salaryConf, const AssetBatch& tokens)
+    {
+        AssetBatch salaries;
+
+        double pegSalaryPerPeriod = salaryConf.periodSalary * (1.0 - salaryConf.deferredPerc);
+        
+        salaries.peg = denormalizeToken(pegSalaryPerPeriod, tokens.peg);
+
+        double rewardSalaryPerPeriod = (salaryConf.periodSalary * salaryConf.deferredPerc) / salaryConf.rewardToPegRatio;
+
+        salaries.reward = denormalizeToken(rewardSalaryPerPeriod, tokens.reward);
+
+        double voiceSalaryPerPeriod = salaryConf.periodSalary * salaryConf.voiceMultipler;
+        //TODO: Make the multipler configurable
+        salaries.voice = denormalizeToken(voiceSalaryPerPeriod, tokens.voice);
+
+        return salaries;
+    }
+
     ContentGroups getRootContent(const eosio::name &contract)
     {
         ContentGroups cgs ({
@@ -24,8 +61,22 @@ namespace hypha
                 Content(ROOT_NODE, contract)}, 
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, SYSTEM), 
-                Content(TYPE, common::DHO), 
+                Content(TYPE, common::DHO),
                 Content(NODE_LABEL, "Hypha DHO Root")}});
+
+        return std::move(cgs);
+    }
+
+    ContentGroups getDAOContent(const eosio::name &dao_name)
+    {
+        ContentGroups cgs ({
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, DETAILS), 
+                Content(DAO_NAME, dao_name)}, 
+            ContentGroup{
+                Content(CONTENT_GROUP_LABEL, SYSTEM), 
+                Content(TYPE, common::DAO), 
+                Content(NODE_LABEL, dao_name)}});
 
         return std::move(cgs);
     }
@@ -64,20 +115,6 @@ namespace hypha
         return (float)1 / ((float)config_t.seeds_per_usd.amount / (float)config_t.seeds_per_usd.symbol.precision());
     }
 
-    eosio::asset getSeedsAmount(int64_t deferralFactor,
-                                const eosio::asset &usd_amount,
-                                const eosio::time_point &price_time_point,
-                                const float &time_share,
-                                const float &deferred_perc)
-    {
-        asset adjusted_usd_amount = adjustAsset(adjustAsset(usd_amount, deferred_perc), time_share);
-        float seeds_deferral_coeff = (float) deferralFactor / (float)100;
-        float seeds_price = getSeedsPriceUsd(price_time_point);
-        return adjustAsset(asset{static_cast<int64_t>(adjusted_usd_amount.amount * (float)100 * (float)seeds_deferral_coeff),
-                                 common::S_SEEDS},
-                           (float)1 / (float)seeds_price);
-    }
-
     void issueToken(const eosio::name &token_contract,
                     const eosio::name &issuer,
                     const eosio::name &to,
@@ -97,6 +134,25 @@ namespace hypha
             token_contract, eosio::name("transfer"),
             std::make_tuple(issuer, to, token_amount, memo))
             .send();
+    }
+
+    double normalizeToken(const eosio::asset& token) 
+    {
+      auto power = ::pow(10, token.symbol.precision());
+      return static_cast<double>(token.amount) / power;
+    }
+
+    eosio::asset denormalizeToken(double amountNormalized, const eosio::asset& token)
+    {
+      auto power = ::pow(10, token.symbol.precision());
+      return eosio::asset{static_cast<int64_t>(amountNormalized * power), token.symbol};
+    }
+
+    int64_t getTokenUnit(const eosio::asset& token)
+    {
+      auto symb =  token.symbol;
+
+      return static_cast<int64_t>(::powf(10, symb.precision()));;
     }
 
 } // namespace hypha

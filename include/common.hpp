@@ -10,47 +10,61 @@ using eosio::symbol;
 
 //TODO: Refacto into a Lazy load system to avoid allocating many std::strings that are not actually used
 namespace common
-{
+{    
+    constexpr auto PEG_TOKEN = "peg_token";
+    constexpr auto VOICE_TOKEN = "voice_token";
+    constexpr auto REWARD_TOKEN = "reward_token";
+    constexpr auto REWARD_TO_PEG_RATIO = "reward_to_peg_ratio";
 
-    static constexpr symbol S_HYPHA("HYPHA", 2);
-    static constexpr symbol S_HVOICE("HVOICE", 2);
-    static constexpr symbol S_SEEDS("SEEDS", 4);
-    static constexpr symbol S_HUSD("HUSD", 2);
-    static constexpr symbol S_USD("USD", 2);
+    constexpr symbol S_REWARD("BM", 2);
+    constexpr symbol S_VOICE("BMV", 2);
+    constexpr symbol S_PEG("BUSD", 2);
 
-    static const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
+    constexpr symbol S_SEEDS("SEEDS", 4);
+    constexpr symbol S_USD("USD", 2);
+
+    //Dao settings
+    constexpr auto DAO_DESCRIPTION = "dao_description";
+    constexpr auto DAO_TITLE = "dao_title";
+    constexpr auto PERIOD_DURATION = "period_duration_sec";
+    constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
+
+    //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
 
     // 365.25 / 7.4
-    static const float PHASES_PER_YEAR = 49.3581081081;
+    //const float PHASES_PER_YEAR = 49.3581081081;
+    
+    //365.25*24*60*60
+    constexpr int64_t YEAR_DURATION_SEC = 31557600;
 
     // 49.36 phases per annum, so each phase is 2.026% of the total
-    static const float PHASE_TO_YEAR_RATIO = 0.02026009582;
+    //const float PHASE_TO_YEAR_RATIO = 0.02026009582;
 
     // graph edge names
-    static constexpr name ESCROW = name("escrow");
-    static constexpr name SETTINGS_EDGE = name("settings");
-    static constexpr name HOLDS_BADGE = name("holdsbadge");
-    static constexpr name HELD_BY = name("heldby");
-    static constexpr name OWNED_BY = name("ownedby");
-    static constexpr name OWNS = name("owns");
-    static constexpr name MEMBER_OF = name("memberof");
-    static constexpr name APPLICANT = name("applicant");
-    static constexpr name APPLICANT_OF = name("applicantof");
+    constexpr name ESCROW = name("escrow");
+    constexpr name SETTINGS_EDGE = name("settings");
+    constexpr name HOLDS_BADGE = name("holdsbadge");
+    constexpr name HELD_BY = name("heldby");
+    constexpr name OWNED_BY = name("ownedby");
+    constexpr name OWNS = name("owns");
+    constexpr name MEMBER_OF = name("memberof");
+    constexpr name APPLICANT = name("applicant");
+    constexpr name APPLICANT_OF = name("applicantof");
 
-    static constexpr name ASSIGN_BADGE = name("assignbadge");
-    static constexpr name VOTE_TALLY = name("votetally");
-    static constexpr name ASSIGNMENT = name("assignment");
-    static constexpr name ROLE_NAME = name("role");
-    static constexpr name PAYOUT = name("payout");
-    static constexpr name ATTESTATION = name("attestation");
-    static constexpr name EDIT = name("edit");
-    static constexpr name ORIGINAL = name("original");
-    static constexpr name EXTENSION = name("extension");
+    constexpr name ASSIGN_BADGE = name("assignbadge");
+    constexpr name VOTE_TALLY = name("votetally");
+    constexpr name ASSIGNMENT = name("assignment");
+    constexpr name ROLE_NAME = name("role");
+    constexpr name PAYOUT = name("payout");
+    constexpr name ATTESTATION = name("attestation");
+    constexpr name EDIT = name("edit");
+    constexpr name ORIGINAL = name("original");
+    constexpr name EXTENSION = name("extension");
     constexpr        name SUSPEND = name("suspend");
     constexpr        name SUSPENDED = name("suspended");
 
-    static constexpr name ASSIGNED = name("assigned");
-    static constexpr name ASSIGNEE_NAME = name("assignee");
+    constexpr name ASSIGNED = name("assigned");
+    constexpr name ASSIGNEE_NAME = name("assignee");
     constexpr        auto APPROVED_DATE = "original_approved_date";
     constexpr        auto BALLOT_TITLE = "ballot_title";
     constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
@@ -62,30 +76,37 @@ namespace common
     constexpr        auto STATE_EXPIRED = "expired";
     constexpr        auto STATE_WITHDRAWED = "withdrawed";
     constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
-    static constexpr name PERIOD = name("period");
-    static constexpr name START = name ("start");
-    static constexpr name NEXT = name ("next");
-    static constexpr name PAYMENT = name("payment");
-    static constexpr name PAID = name ("paid");
-    static constexpr name CLAIMED = name ("claimed");
+    constexpr name PERIOD = name("period");
+    constexpr name START = name ("start");
+    constexpr name CURRENT = name ("current");
+    constexpr name END = name ("end");
+    constexpr name NEXT = name ("next");
+    constexpr name PAYMENT = name("payment");
+    constexpr name PAID = name ("paid");
+    constexpr name CLAIMED = name ("claimed");
 
-    static constexpr name VOTE = name ("vote");
-    static constexpr name VOTE_ON = name ("voteon");
+    constexpr auto PEG_AMOUNT = "peg_amount";
+    constexpr auto VOICE_AMOUNT = "voice_amount";
+    constexpr auto REWARD_AMOUNT = "reward_amount";
+
+    constexpr name VOTE = name ("vote");
+    constexpr name VOTE_ON = name ("voteon");
 
     // document types
-    static constexpr name ALERT = name ("alert");
+    constexpr name ALERT = name ("alert");
 
     // graph edges hanging off of primary DHO node
-    static constexpr name BADGE_NAME = name("badge");
-    static constexpr name PROPOSAL = name("proposal");
-    static constexpr name FAILED_PROPS = name("failedprops");
-    static constexpr name PASSED_PROPS = name("passedprops");
-    static constexpr name MEMBER = name("member");
-    static constexpr name DHO = name ("dho");
+    constexpr name BADGE_NAME = name("badge");
+    constexpr name PROPOSAL = name("proposal");
+    constexpr name FAILED_PROPS = name("failedprops");
+    constexpr name PASSED_PROPS = name("passedprops");
+    constexpr name MEMBER = name("member");
+    constexpr name DHO = name ("dho");
+    constexpr name DAO = name ("dao");
 
-    static constexpr name BALLOT_TYPE_OPTIONS = name("options");
+    constexpr name BALLOT_TYPE_OPTIONS = name("options");
 
-    static constexpr name GROUP_TYPE_OPTION = name("option");
+    constexpr name GROUP_TYPE_OPTION = name("option");
 
     constexpr name LAST_TIME_SHARE = name("lastimeshare");
     constexpr name CURRENT_TIME_SHARE = name("curtimeshare");
@@ -97,13 +118,23 @@ namespace common
 
     constexpr auto APPROVED_DEFERRED = "approved_deferred_perc_x100";
 
-    static constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
-    static constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
-    static constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
+    constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
+    constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
+    constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
+
+    constexpr auto PEG_SALARY_PER_PERIOD = "peg_salary_per_period";
+    constexpr auto VOICE_SALARY_PER_PERIOD = "voice_salary_per_period";
+    constexpr auto REWARD_SALARY_PER_PERIOD = "reward_salary_per_period";
+
+    const auto REWARD_COEFFICIENT = "reward_coefficient_x10000";
+    const auto VOICE_COEFFICIENT = "voice_coefficient_x10000";
+    const auto PEG_COEFFICIENT = "peg_coefficient_x10000";
 
 // content keys
 // keys used with settings
 #define ROOT_NODE "root_node"
+#define DAO_NAME "dao_name"
+
 #define HYPHA_DEFERRAL_FACTOR "hypha_deferral_factor_x100"
 #define CLIENT_VERSION "client_version"
 #define CONTRACT_VERSION "contract_version"
@@ -125,10 +156,6 @@ namespace common
 #define READABLE_START_DATE "readable_start_date"
 
 #define ORIGINAL_DOCUMENT "original_document"
-#define HYPHA_COEFFICIENT "hypha_coefficient_x10000"
-#define HVOICE_COEFFICIENT "hvoice_coefficient_x10000"
-#define SEEDS_COEFFICIENT "seeds_coefficient_x10000"
-#define HUSD_COEFFICIENT "husd_coefficient_x10000"
 
 #define BADGE_STRING "badge"
 #define DETAILS "details"
@@ -144,16 +171,18 @@ namespace common
 // setting document
 #define SEEDS_TOKEN_CONTRACT "seeds_token_contract"
 #define SEEDS_ESCROW_CONTRACT "seeds_escrow_contract"
-#define HUSD_TOKEN_CONTRACT "husd_token_contract"
+#define PEG_TOKEN_CONTRACT "peg_token_contract"
 #define TREASURY_CONTRACT "treasury_contract"
-#define HYPHA_TOKEN_CONTRACT "hypha_token_contract"
-#define HVOICE_TOKEN_CONTRACT "hvoice_token_contract"
+#define REWARD_TOKEN_CONTRACT "reward_token_contract"
+#define GOVERNANCE_TOKEN_CONTRACT "governance_token_contract"
 
 #define UPDATED_DATE "updated_date"
 #define SEEDS_DEFERRAL_FACTOR_X100 "seeds_deferral_factor_x100"
 #define HYPHA_DEFERRAL_FACTOR_X100 "hypha_deferral_factor_x100"
 #define LAST_SENDER_ID "last_sender_id"
 #define VOTING_DURATION_SEC "voting_duration_sec"
+#define VOTING_QUORUM_FACTOR_X100 "voting_quorum_x100"
+#define VOTING_ALIGNMENT_FACTOR_X100 "voting_alignment_x100"
 #define PUBLISHER_CONTRACT "publisher_contract"
 #define PAUSED "paused"
 #define ROLE_STRING "role"
@@ -162,10 +191,6 @@ namespace common
 #define PAYMENT_PERIOD "payment_period"
 #define PERIOD_COUNT "period_count"
 #define ASSETS_PAID "assets_paid"
-#define HYPHA_AMOUNT "hypha_amount"
-#define ESCROW_SEEDS_AMOUNT "escrow_seeds_amount"
-#define HVOICE_AMOUNT "hvoice_amount"
-#define HUSD_AMOUNT "husd_amount"
 #define AMOUNT "amount"
 #define REFERENCE "reference"
 #define RECIPIENT "recipient"
@@ -185,9 +210,9 @@ namespace common
 
 #define USD_AMOUNT "usd_amount"
 #define USD_SALARY_PER_PERIOD "usd_salary_value_per_phase"
-#define HYPHA_SALARY_PER_PERIOD "hypha_salary_per_phase"
-#define HUSD_SALARY_PER_PERIOD "husd_salary_per_phase"
-#define HVOICE_SALARY_PER_PERIOD "hvoice_salary_per_phase"
+// #define HYPHA_SALARY_PER_PERIOD "hypha_salary_per_phase"
+// #define HUSD_SALARY_PER_PERIOD "husd_salary_per_phase"
+// #define HVOICE_SALARY_PER_PERIOD "hvoice_salary_per_phase"
 #define SETTINGS "settings"
 
 #define VOTE_POWER "vote_power"
