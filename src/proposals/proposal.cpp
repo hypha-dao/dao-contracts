@@ -10,7 +10,7 @@
 #include <common.hpp>
 #include <document_graph/edge.hpp>
 #include <dao.hpp>
-#include <hypha_voice.hpp>
+#include <voice/currency_stats.hpp>
 #include <util.hpp>
 #include <logger/logger.hpp>
 
@@ -183,8 +183,15 @@ namespace hypha
         float quorumFactor = m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
         float alignmentFactor = m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
 
-        hypha::voice::stats stats_t(voiceContract, voiceToken.symbol.code().raw());
-        auto stat_itr = stats_t.find(voiceToken.symbol.code().raw());
+        hypha::stats statstable(voiceContract, voiceToken.symbol.code().raw());
+        auto stats_index = statstable.get_index<name("bykey")>();
+
+        auto stat_itr = stats_index.find(
+            currency_stats::build_key(
+                name(""), // use tenant here (as a name)
+                voiceToken.symbol.code().raw()
+            )
+        );
         EOS_CHECK(stat_itr != stats_t.end(), "No VOICE found");
 
         asset quorum_threshold = adjustAsset(stat_itr->supply, quorumFactor);

@@ -1189,6 +1189,7 @@ namespace hypha
 
     name governanceContract = dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
+    // Todo: Add reference to dao nam
     eosio::action(
       eosio::permission_level{governanceContract, name("active")},
       governanceContract, 

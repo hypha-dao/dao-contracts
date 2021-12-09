@@ -16,6 +16,7 @@ namespace hypha
                                   const string &memo)
     {
         TRACE_FUNCTION()
+        // Todo: add reference to dao name
         issueToken(m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT),
                    m_dao.get_self(),
                    recipient,
