@@ -101,9 +101,9 @@ namespace hypha
 
         name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
-        // Todo: Add reference to dao name
-        hypha::issueToken(
+        hypha::issueTenantToken(
             hyphaHvoice,
+            daoName,
             getContract(),
             getAccount(),
             genesis_voice,

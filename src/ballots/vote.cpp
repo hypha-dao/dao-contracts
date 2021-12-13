@@ -72,18 +72,18 @@ namespace hypha
         // Fetch vote power
         // Todo: Need to ensure that the balance does not need a decay.
         name hvoiceContract = dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
-        hypha::accounts acnts(hvoiceContract, voter.value);
+        hypha::voice::accounts acnts(hvoiceContract, voter.value);
         auto account_index = acnts.get_index<name("bykey")>();
 
         asset voiceToken = daoSettings->getOrFail<asset>(common::VOICE_TOKEN);
 
         auto v_itr = account_index.find(
-            account::build_key(
-                name(""), // TODO: use dao name
-                voiceToken.symbol.code().raw()
+            voice::account::build_key(
+                daoSettings->getOrFail<name>(DAO_NAME),
+                voiceToken.symbol.code()
             )
         );
-        eosio::check(v_itr != v_t.end(), "No VOICE found");
+        eosio::check(v_itr != account_index.end(), "No VOICE found");
 
         asset votePower = v_itr->balance;
 

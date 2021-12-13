@@ -387,9 +387,9 @@ namespace hypha
 
       ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoHash, ab);
 
-      makePayment(periodToClaim.value().getHash(), assignee, ab.reward, memo, eosio::name{0}, daoTokens);
-      makePayment(periodToClaim.value().getHash(), assignee, ab.voice, memo, eosio::name{0}, daoTokens);
-      makePayment(periodToClaim.value().getHash(), assignee, ab.peg, memo, eosio::name{0}, daoTokens);
+      makePayment(daoSettings, periodToClaim.value().getHash(), assignee, ab.reward, memo, eosio::name{0}, daoTokens);
+      makePayment(daoSettings, periodToClaim.value().getHash(), assignee, ab.voice, memo, eosio::name{0}, daoTokens);
+      makePayment(daoSettings, periodToClaim.value().getHash(), assignee, ab.peg, memo, eosio::name{0}, daoTokens);
    }
 
    asset dao::getProRatedAsset(ContentWrapper *assignment, const symbol &symbol, const string &key, const float &proration)
@@ -495,7 +495,8 @@ namespace hypha
       return applied_assets;
    }
 
-   void dao::makePayment(const eosio::checksum256 &fromNode,
+   void dao::makePayment(Settings* daoSettings,
+                         const eosio::checksum256 &fromNode,
                          const eosio::name &recipient,
                          const eosio::asset &quantity,
                          const string &memo,
@@ -509,7 +510,7 @@ namespace hypha
          return;
       }
 
-      std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, quantity.symbol, paymentType, daoTokens));
+      std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, daoSettings, quantity.symbol, paymentType, daoTokens));
       Document paymentReceipt = payer->pay(recipient, quantity, memo);
       Edge::write(get_self(), get_self(), fromNode, paymentReceipt.getHash(), common::PAYMENT);
       Edge::write(get_self(), get_self(), Member::calcHash(recipient), paymentReceipt.getHash(), common::PAID);
@@ -1195,9 +1196,10 @@ namespace hypha
       governanceContract, 
       name("create"),
       std::make_tuple(
-        get_self(), 
-        asset{-getTokenUnit(voiceToken), voiceToken.symbol}, 
-        uint64_t{0}, 
+        name(""), // We need the dao hash to get it's settings (and its name)
+        get_self(),
+        asset{-getTokenUnit(voiceToken), voiceToken.symbol},
+        uint64_t{0},
         uint64_t{0}
       )
     ).send();

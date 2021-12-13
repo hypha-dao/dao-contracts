@@ -58,6 +58,13 @@ namespace hypha
                     const eosio::asset &token_amount,
                     const string &memo);
 
+    void issueTenantToken(const eosio::name &token_contract,
+                          const eosio::name &tenant,
+                          const eosio::name &issuer,
+                          const eosio::name &to,
+                          const eosio::asset &token_amount,
+                          const string &memo);
+
     double normalizeToken(const eosio::asset& token);
 
     eosio::asset denormalizeToken(double amountNormalized, const eosio::asset& token);

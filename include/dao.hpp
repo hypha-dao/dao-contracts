@@ -188,7 +188,7 @@ namespace hypha
                            const float &time_share,
                            const float &deferred_perc);
 
-      void makePayment(const eosio::checksum256 &fromNode, const eosio::name &recipient,
+      void makePayment(Settings* daoSettings, const eosio::checksum256 &fromNode, const eosio::name &recipient,
                        const eosio::asset &quantity, const string &memo,
                        const eosio::name &paymentType,
                        const AssetBatch& daoTokens);

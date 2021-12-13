@@ -177,22 +177,22 @@ namespace hypha
     bool Proposal::didPass(const eosio::checksum256 &tallyHash)
     {
         TRACE_FUNCTION()
-        
+
         name voiceContract = m_dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
         asset voiceToken = m_daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
         float quorumFactor = m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
         float alignmentFactor = m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
 
-        hypha::stats statstable(voiceContract, voiceToken.symbol.code().raw());
+        hypha::voice::stats statstable(voiceContract, voiceToken.symbol.code().raw());
         auto stats_index = statstable.get_index<name("bykey")>();
 
         auto stat_itr = stats_index.find(
-            currency_stats::build_key(
-                name(""), // use tenant here (as a name)
-                voiceToken.symbol.code().raw()
+            voice::currency_stats::build_key(
+                m_daoSettings->getOrFail<name>(DAO_NAME),
+                voiceToken.symbol.code()
             )
         );
-        EOS_CHECK(stat_itr != stats_t.end(), "No VOICE found");
+        EOS_CHECK(stat_itr != stats_index.end(), "No VOICE found");
 
         asset quorum_threshold = adjustAsset(stat_itr->supply, quorumFactor);
 
