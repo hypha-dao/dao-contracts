@@ -4,7 +4,7 @@
 #include <document_graph/edge.hpp>
 #include <member.hpp>
 #include <util.hpp>
-#include <voice/accounts.hpp>
+#include <voice/account.hpp>
 #include <logger/logger.hpp>
 
 #define CONTENT_GROUP_LABEL_VOTE "vote"

@@ -770,9 +770,9 @@ namespace hypha
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), daoDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
 
-      createTokens(voiceToken->getAs<asset>(), rewardToken->getAs<asset>(), pegToken->getAs<asset>());
-      
-      //Auto enroll      
+      createTokens(dao, voiceToken->getAs<asset>(), rewardToken->getAs<asset>(), pegToken->getAs<asset>());
+
+      //Auto enroll
       std::unique_ptr<Member> member;
       
       const checksum256 memberHash = Member::calcHash(onboarder);
@@ -1181,22 +1181,22 @@ namespace hypha
     }
   }
 
-  void dao::createTokens(const eosio::asset& voiceToken, 
-                        const eosio::asset& rewardToken,
-                        const eosio::asset& pegToken)
+  void dao::createTokens(const eosio::name& daoName,
+                         const eosio::asset& voiceToken,
+                         const eosio::asset& rewardToken,
+                         const eosio::asset& pegToken)
   {
     
     auto dhoSettings = getSettingsDocument();
 
     name governanceContract = dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
-    // Todo: Add reference to dao nam
     eosio::action(
       eosio::permission_level{governanceContract, name("active")},
       governanceContract, 
       name("create"),
       std::make_tuple(
-        name(""), // We need the dao hash to get it's settings (and its name)
+        daoName,
         get_self(),
         asset{-getTokenUnit(voiceToken), voiceToken.symbol},
         uint64_t{0},
@@ -1211,9 +1211,10 @@ namespace hypha
       rewardContract,
       name("create"),
       std::make_tuple(
-        get_self(), 
-        asset{-getTokenUnit(rewardToken), rewardToken.symbol}, 
-        uint64_t{0}, 
+        daoName,
+        get_self(),
+        asset{-getTokenUnit(rewardToken), rewardToken.symbol},
+        uint64_t{0},
         uint64_t{0}
       )
     ).send();
@@ -1227,6 +1228,7 @@ namespace hypha
       pegContract,
       name("create"),
       std::make_tuple(
+        daoName,
         treasuryContract,
         asset{-getTokenUnit(pegToken), pegToken.symbol},
         uint64_t{0},

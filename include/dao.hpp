@@ -203,13 +203,14 @@ namespace hypha
 
       void addPeriod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
       void genPeriods(const eosio::checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/);
-            
+
       void removeSetting(const string &key);
 
       asset getProRatedAsset(ContentWrapper * assignment, const symbol &symbol,
                              const string &key, const float &proration);
 
-      void createTokens(const eosio::asset& voiceToken, 
+      void createTokens(const eosio::name& daoName,
+                        const eosio::asset& voiceToken,
                         const eosio::asset& rewardToken,
                         const eosio::asset& pegToken);
 
