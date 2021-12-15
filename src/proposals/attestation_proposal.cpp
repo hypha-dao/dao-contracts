@@ -16,7 +16,7 @@ namespace hypha
     void AttestationProposal::passImpl(Document &proposal)
     {
         TRACE_FUNCTION()
-        Edge::write (m_dao.get_self(), m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::ATTESTATION);
+        Edge::write (m_dao.get_self(), m_dao.get_self(), m_daoHash, proposal.getHash(), common::ATTESTATION);
     }
 
     std::string AttestationProposal::getBallotContent (ContentWrapper &contentWrapper)

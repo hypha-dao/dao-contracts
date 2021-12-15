@@ -16,6 +16,11 @@ namespace hypha
 
     void EditProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     { 
+      EOS_CHECK(
+        Member::isMember(m_dao.get_self(), m_daoHash, proposer),
+        util::to_str("Only members of: ", m_daoHash, " can edit this proposal")
+      )
+
       auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
 
       if (auto [hasOpenEditProp, proposalHash] = hasOpenProposal(common::SUSPEND, originalDocHash);

@@ -93,10 +93,10 @@ namespace hypha
     {
         TRACE_FUNCTION()
         // Graph updates:
-        //  dho     ---- payout ---->   payout
+        //  dao     ---- payout ---->   payout
         //  member  ---- payout ---->   payout
         //  makePayment also creates edges from payout and the member to the individual payments
-        Edge::write(m_dao.get_self(), m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::PAYOUT);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoHash, proposal.getHash(), common::PAYOUT);
 
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 

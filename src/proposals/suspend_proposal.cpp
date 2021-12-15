@@ -20,14 +20,17 @@ namespace hypha
     { 
       TRACE_FUNCTION()
 
+      EOS_CHECK(
+        Member::isMember(m_dao.get_self(), m_daoHash, proposer),
+        util::to_str("Only members of: ", m_daoHash, " can suspend this proposal")
+      )
+
       // original_document is a required hash
       auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
 
-      auto root = getRoot(m_dao.get_self());
-
       //Verify if this is a passed proposal
       EOS_CHECK(
-        Edge::exists(m_dao.get_self(), root, originalDocHash, common::PASSED_PROPS),
+        Edge::exists(m_dao.get_self(), m_daoHash, originalDocHash, common::PASSED_PROPS),
         "Only passed proposals can be suspended"
       )
       
@@ -82,7 +85,7 @@ namespace hypha
         EOS_CHECK(
           false,
           to_str("Unexpected document type for suspension: ",
-                 type, ". Valid types [", common::ASSIGNMENT ,"]")
+                 type, ". Valid types [", common::ASSIGNMENT, ", ", common::ROLE_NAME ,"]")
         );
         break;
       }
@@ -112,8 +115,6 @@ namespace hypha
         edges.size() == 1, 
         "Missing edge from suspension proposal: " + readableHash(proposal.getHash()) + " to document"
       );
-
-      auto root = getRoot(m_dao.get_self());
 
       Document originalDoc(m_dao.get_self(), edges[0].getToNode());
 
@@ -175,8 +176,8 @@ namespace hypha
       } break;
       }
 
-      //root --> suspended --> proposal
-      Edge(m_dao.get_self(), m_dao.get_self(), root, originalDoc.getHash(), common::SUSPENDED);
+      //dao --> suspended --> proposal
+      Edge(m_dao.get_self(), m_dao.get_self(), m_daoHash, originalDoc.getHash(), common::SUSPENDED);
     }
 
     std::string SuspendProposal::getBallotContent (ContentWrapper &contentWrapper)

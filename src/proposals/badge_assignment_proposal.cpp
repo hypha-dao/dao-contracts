@@ -14,15 +14,30 @@ namespace hypha
     {
         TRACE_FUNCTION()
         // assignee must exist and be a DHO member
-        //TODO: Check to which dao this proposal belongs to
         name assignee = badgeAssignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
-        //EOS_CHECK(Member::isMember(m_dao.get_self(), assignee), "only members can be earn badges " + assignee.to_string());
+
+        EOS_CHECK(
+            Member::isMember(m_dao.get_self(), m_daoHash, assignee), 
+            "only members can be assigned to badges " + assignee.to_string()
+        );
 
          // badge assignment proposal must link to a valid badge
         Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
+        
         auto badge = badgeDocument.getContentWrapper();
+        
         EOS_CHECK(badge.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::BADGE_NAME,
                      "badge document hash provided in assignment proposal is not of type badge");
+
+        EOS_CHECK(
+            m_daoHash == Edge::get(m_dao.get_self(), badgeDocument.getHash(), common::DAO).getToNode(),
+            util::to_str("Badge must belong to: ", m_daoHash)
+        )
+
+        EOS_CHECK(
+          !Edge::exists(m_dao.get_self(), m_daoHash, badgeDocument.getHash(), common::SUSPENDED),
+          "Cannot create badge assignment proposal of suspened badge"
+        )
 
         // START_PERIOD - number of periods the assignment is valid for
         auto detailsGroup = badgeAssignment.getGroupOrFail(DETAILS);

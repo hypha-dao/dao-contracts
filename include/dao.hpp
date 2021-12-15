@@ -83,6 +83,10 @@ namespace hypha
         ).send();
       }
 
+      ACTION fixrole(const checksum256& role);
+
+      ACTION autoenroll(const checksum256& dao_hash, const name& enroller, const name& member);
+
       ACTION clean();
       ACTION propose(const checksum256& dao_hash, const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
@@ -105,8 +109,8 @@ namespace hypha
       ACTION claimnextper(const eosio::checksum256 &assignment_hash);
       ACTION proposeextend (const eosio::checksum256 &assignment_hash, const int64_t additional_periods);
 
-      ACTION apply(const eosio::name &applicant, const name& dao_name, const std::string &content);
-      ACTION enroll(const eosio::name &enroller, const name& dao_name, const eosio::name &applicant, const std::string &content);
+      ACTION apply(const eosio::name &applicant, const checksum256& dao_hash, const std::string &content);
+      ACTION enroll(const eosio::name &enroller, const checksum256& dao_hash, const eosio::name &applicant, const std::string &content);
 
       // ACTION suspend (const eosio::name &proposer, const eosio::checksum256 &hash);
 

@@ -39,6 +39,40 @@ namespace hypha
      }
    }
 
+   ACTION 
+   dao::fixrole(const checksum256& role)
+   {
+     require_auth(get_self());
+     auto root = getRoot(get_self());
+
+     if (Edge::exists(get_self(), root, role, common::ROLE_NAME)) {
+       Edge::get(get_self(), root, role, common::ROLE_NAME).erase();
+       auto daoHash = Edge::get(get_self(), role, common::DAO).getToNode();
+       Edge(get_self(), get_self(), daoHash, role, common::ROLE_NAME);
+     }
+   }
+
+   ACTION
+   dao::autoenroll(const checksum256& dao_hash, const name& enroller, const name& member)
+   {
+     require_auth(get_self());
+
+     //Auto enroll      
+     std::unique_ptr<Member> mem;
+     
+     const checksum256 memberHash = Member::calcHash(member);
+ 
+     if (Document::exists(get_self(), memberHash)) {
+       mem = std::make_unique<Member>(*this, memberHash);
+     }
+     else {
+       mem = std::make_unique<Member>(*this, member, member);
+     }
+
+     mem->apply(dao_hash, "Auto enrolled member");
+     mem->enroll(enroller, dao_hash, "Auto enrolled member");
+   }
+
    void dao::propose(const checksum256& dao_hash,
                      const name &proposer,
                      const name &proposal_type,
@@ -515,30 +549,32 @@ namespace hypha
       Edge::write(get_self(), get_self(), Member::calcHash(recipient), paymentReceipt.getHash(), common::PAID);
    }
 
-   void dao::apply(const eosio::name &applicant, const name& dao_name, const std::string &content)
+   void dao::apply(const eosio::name &applicant, const checksum256& dao_hash, const std::string &content)
    {
       TRACE_FUNCTION()
       require_auth(applicant);
       Member member(*this, applicant, applicant);
-      member.apply(getDAO(dao_name), content);
+      member.apply(dao_hash, content);
    }
 
-   void dao::enroll(const eosio::name &enroller, const name& dao_name, const eosio::name &applicant, const std::string &content)
+   void dao::enroll(const eosio::name &enroller, const checksum256& dao_hash, const eosio::name &applicant, const std::string &content)
    {
       TRACE_FUNCTION()
 
       //Verify enroller is valid for the given dao
-      const name onboarderAcc = getSettingOrFail<name>(dao_name, common::ONBOARDER_ACCOUNT);
+      auto daoSettings = getSettingsDocument(dao_hash);
+
+      const name onboarderAcc = daoSettings->getOrFail<eosio::name>(common::ONBOARDER_ACCOUNT);
 
       EOS_CHECK(
         enroller == onboarderAcc,
-        util::to_str("Only ", onboarderAcc, " is allowed to enroll users for ", dao_name)
+        util::to_str("Only ", onboarderAcc, " is allowed to enroll users for dao: ", dao_hash)
       )
 
       require_auth(enroller);
 
       Member member = Member::get(*this, applicant);
-      member.enroll(enroller, getDAO(dao_name), content);
+      member.enroll(enroller, dao_hash, content);
    }
 
    bool dao::isPaused() { return false; }

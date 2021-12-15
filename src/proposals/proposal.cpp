@@ -90,11 +90,7 @@ namespace hypha
             "Voting is still active for this proposal"
         );
 
-        const auto root = Edge::get(m_dao.get_self(), proposal.getHash(), common::DAO).getToNode();
-
-        //eosio::checksum256 root = getRoot(m_dao.get_self());
-
-        Edge edge = Edge::get(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL);
+        Edge edge = Edge::get(m_dao.get_self(), m_daoHash, proposal.getHash(), common::PROPOSAL);
         edge.erase();
 
         bool proposalDidPass;
@@ -126,7 +122,7 @@ namespace hypha
                                                        proposal.getHash(),
                                                        std::move(proposal.getContentGroups()));
             // if proposal passes, create an edge for PASSED_PROPS
-            Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::PASSED_PROPS);
+            Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoHash, proposal.getHash(), common::PASSED_PROPS);
         }
         else
         {
@@ -136,7 +132,7 @@ namespace hypha
                                                        std::move(proposal.getContentGroups()));
 
             // create edge for FAILED_PROPS
-            Edge::write(m_dao.get_self(), m_dao.get_self(), root, proposal.getHash(), common::FAILED_PROPS);
+            Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoHash, proposal.getHash(), common::FAILED_PROPS);
         }
     }
 

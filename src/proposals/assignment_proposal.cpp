@@ -27,12 +27,16 @@ namespace hypha
         );
 
         Document roleDocument(m_dao.get_self(), assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
-        auto role = roleDocument.getContentWrapper();
 
-        auto root = getRoot(m_dao.get_self());
+        EOS_CHECK(
+            m_daoHash == Edge::get(m_dao.get_self(), roleDocument.getHash(), common::DAO).getToNode(),
+            util::to_str("Role must belong to: ", m_daoHash)
+        )
+
+        auto role = roleDocument.getContentWrapper();
         
         EOS_CHECK(
-          !Edge::exists(m_dao.get_self(), root, roleDocument.getHash(), common::SUSPENDED),
+          !Edge::exists(m_dao.get_self(), m_daoHash, roleDocument.getHash(), common::SUSPENDED),
           "Cannot create assignment proposal of suspened role"
         )
 
