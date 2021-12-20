@@ -28,21 +28,21 @@ namespace hypha
 
         Document roleDocument(m_dao.get_self(), assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
 
+        auto role = roleDocument.getContentWrapper();
+
+        // role in the proposal must be of type: role
+        EOS_CHECK(role.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::ROLE_NAME,
+                  "role document hash provided in assignment proposal is not of type: role");
+
         EOS_CHECK(
             m_daoHash == Edge::get(m_dao.get_self(), roleDocument.getHash(), common::DAO).getToNode(),
             util::to_str("Role must belong to: ", m_daoHash)
         )
 
-        auto role = roleDocument.getContentWrapper();
-        
         EOS_CHECK(
-          !Edge::exists(m_dao.get_self(), m_daoHash, roleDocument.getHash(), common::SUSPENDED),
-          "Cannot create assignment proposal of suspened role"
+            role.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_APPROVED,
+            util::to_str("Role must be approved before applying to it.")
         )
-
-        // role in the proposal must be of type: role
-        EOS_CHECK(role.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::ROLE_NAME,
-                     "role document hash provided in assignment proposal is not of type: role");
 
         // time_share_x100 is required and must be greater than zero and less than 100%
         int64_t timeShare = assignment.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();

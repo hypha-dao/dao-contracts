@@ -25,7 +25,7 @@ namespace hypha
         Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
         
         auto badge = badgeDocument.getContentWrapper();
-        
+
         EOS_CHECK(badge.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::BADGE_NAME,
                      "badge document hash provided in assignment proposal is not of type badge");
 
@@ -35,8 +35,8 @@ namespace hypha
         )
 
         EOS_CHECK(
-          !Edge::exists(m_dao.get_self(), m_daoHash, badgeDocument.getHash(), common::SUSPENDED),
-          "Cannot create badge assignment proposal of suspened badge"
+            badge.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_APPROVED,
+            util::to_str("Badge must be approved before applying to it.")
         )
 
         // START_PERIOD - number of periods the assignment is valid for

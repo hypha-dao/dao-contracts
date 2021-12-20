@@ -22,6 +22,12 @@ namespace hypha
         // default the timepoint to now
         eosio::time_point seedsPriceTimePoint = eosio::current_block_time();
 
+        auto tokens = AssetBatch {
+            .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+            .peg = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+            .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+        };
+
         if (auto [idx, endPeriod] = contentWrapper.get(DETAILS, END_PERIOD); endPeriod)
         {
             EOS_CHECK(std::holds_alternative<eosio::checksum256>(endPeriod->value),
@@ -30,12 +36,6 @@ namespace hypha
             Period period(&m_dao, std::get<eosio::checksum256>(endPeriod->value));
             seedsPriceTimePoint = period.getEndTime();
         }
-
-        auto tokens = AssetBatch {
-            .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-            .peg = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
-            .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
-        };
 
         // if usd_amount is provided in the DETAILS section, convert that to token components
         //  (deferred_perc_x100 will be required)
@@ -73,15 +73,55 @@ namespace hypha
 
             bool isPeg = item.label == common::PEG_AMOUNT;
 
-            EOS_CHECK(!isPeg || !hasPeg, util::to_str("Multiple peg_amount items are not allowed"))
+            if (isPeg) {
+                
+                EOS_CHECK(
+                    !hasPeg, 
+                    util::to_str("Multiple peg_amount items are not allowed")
+                )
 
+                EOS_CHECK(
+                    item.getAs<asset>().symbol == tokens.peg.symbol,
+                    util::to_str(common::PEG_AMOUNT, 
+                                 " unexpected token symbol. Expected: ",
+                                 tokens.peg)
+                )
+            }
+            
             bool isVoice = item.label == common::VOICE_AMOUNT;
 
-            EOS_CHECK(!isVoice || !hasVoice, util::to_str("Multiple voice_amount items are not allowed"))
+            if (isVoice) {
+                
+                EOS_CHECK(
+                    !hasVoice, 
+                    util::to_str("Multiple voice_amount items are not allowed")
+                )
+
+                EOS_CHECK(
+                    item.getAs<asset>().symbol == tokens.voice.symbol,
+                    util::to_str(common::VOICE_AMOUNT, 
+                                 " unexpected token symbol. Expected: ",
+                                 tokens.voice)
+                )
+            }
 
             bool isReward = item.label == common::REWARD_AMOUNT;
+
+            if (isReward) {
+                
+                EOS_CHECK(
+                    !hasReward, 
+                    util::to_str("Multiple reward_amount items are not allowed")
+                )
+
+                EOS_CHECK(
+                    item.getAs<asset>().symbol == tokens.reward.symbol,
+                    util::to_str(common::REWARD_AMOUNT, 
+                                 " unexpected token symbol. Expected: ",
+                                 tokens.reward)
+                )
+            }
             
-            EOS_CHECK(!isReward || !hasReward, util::to_str("Multiple reward_amount items are not allowed"))
 
             hasPeg = hasPeg || isPeg;
             hasVoice = hasVoice || isVoice;

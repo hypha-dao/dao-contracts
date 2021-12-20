@@ -26,11 +26,11 @@ namespace hypha
    {
      require_auth(get_self());
 
-     document_table docs(get_self(), get_self().value);
+    //  document_table docs(get_self(), get_self().value);
 
-     for (auto it = docs.begin(); it != docs.end(); ) {
-       it = docs.erase(it);
-     }
+    //  for (auto it = docs.begin(); it != docs.end(); ) {
+    //    it = docs.erase(it);
+    //  }
 
      edge_table edges(get_self(), get_self().value);
 
@@ -167,6 +167,7 @@ namespace hypha
      auto state = cw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
      EOS_CHECK(
+       state != common::STATE_PROPOSED &&
        state != common::STATE_WITHDRAWED && 
        state != common::STATE_SUSPENDED &&
        state != common::STATE_EXPIRED &&
@@ -966,6 +967,7 @@ namespace hypha
            auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
            EOS_CHECK(
+             state != common::STATE_PROPOSED &&
              state != common::STATE_WITHDRAWED && 
              state != common::STATE_SUSPENDED &&
              state != common::STATE_EXPIRED &&

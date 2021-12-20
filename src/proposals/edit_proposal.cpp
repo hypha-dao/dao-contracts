@@ -90,6 +90,7 @@ namespace hypha
         auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
         EOS_CHECK(
+          state != common::STATE_PROPOSED &&
           state != common::STATE_WITHDRAWED &&
           state != common::STATE_SUSPENDED &&
           state != common::STATE_EXPIRED &&
