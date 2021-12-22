@@ -13,8 +13,14 @@
 
 namespace hypha 
 {
-    Vote::Vote(hypha::dao& dao, const eosio::checksum256& hash)
-    : TypedDocument(dao, hash)
+    // Vote::Vote(hypha::dao& dao, const eosio::checksum256& hash)
+    // : TypedDocument(dao, hash)
+    // {
+    //     TRACE_FUNCTION()
+    // }
+
+    Vote::Vote(hypha::dao& dao, uint64_t id)
+    : TypedDocument(dao, id)
     {
         TRACE_FUNCTION()
     }
@@ -33,10 +39,10 @@ namespace hypha
         // the goal is to have an easier API
         proposal.getContentWrapper().getOrFail(BALLOT_OPTIONS, vote, "Invalid vote");
         
-        auto daoHash = Edge::get(dao.get_self(), proposal.getHash(), common::DAO).getToNode();
+        auto daoHash = Edge::get(dao.get_self(), proposal.getID(), common::DAO).getToNode();
 
         EOS_CHECK(
-            Edge::exists(dao.get_self(), daoHash, proposal.getHash(), common::PROPOSAL),
+            Edge::exists(dao.get_self(), daoHash, proposal.getID(), common::PROPOSAL),
             "Only allowed to vote active proposals"
         );
 
@@ -47,20 +53,22 @@ namespace hypha
             "Voting has expired for this proposal"
         );
 
-        std::vector<Edge> votes = dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
+        Document voterDoc(dao.get_self(), Member::calcHash(voter));
+
+        std::vector<Edge> votes = dao.getGraph().getEdgesFrom(proposal.getID(), common::VOTE);
         for (auto vote : votes) {
             if (vote.getCreator() == voter) {
-                eosio::checksum256 voterHash = Member::calcHash(voter);
+                
                 Document voteDocument(dao.get_self(), vote.getToNode());
 
                 // Already voted, erase edges and allow to vote again.
-                Edge::get(dao.get_self(), voterHash, voteDocument.getHash(), common::VOTE).erase();
-                Edge::get(dao.get_self(), proposal.getHash(), voteDocument.getHash(), common::VOTE).erase();
-                Edge::get(dao.get_self(), voteDocument.getHash(), voterHash, common::OWNED_BY).erase();
-                Edge::get(dao.get_self(), voteDocument.getHash(), proposal.getHash(), common::VOTE_ON).erase();
+                Edge::get(dao.get_self(), voterDoc.getID(), voteDocument.getID(), common::VOTE).erase();
+                Edge::get(dao.get_self(), proposal.getID(), voteDocument.getID(), common::VOTE).erase();
+                Edge::get(dao.get_self(), voteDocument.getID(), voterDoc.getID(), common::OWNED_BY).erase();
+                Edge::get(dao.get_self(), voteDocument.getID(), proposal.getID(), common::VOTE_ON).erase();
 
-                if (!dao.getGraph().hasEdges(voteDocument.getHash())) {
-                    dao.getGraph().eraseDocument(voteDocument.getHash(), false);
+                if (!dao.getGraph().hasEdges(voteDocument.getID())) {
+                    dao.getGraph().eraseDocument(voteDocument.getID(), false);
                 }
 
                 break;
@@ -92,22 +100,22 @@ namespace hypha
             }
         };
 
-        eosio::checksum256 voterHash = Member::calcHash(voter);
+        //eosio::checksum256 voterHash = Member::calcHash(voter);
         initializeDocument(dao, contentGroups, false);
 
         // an edge from the member to the vote named vote
         // Note: This edge could already exist, as voteDocument is likely to be re-used.
-        Edge::getOrNew(dao.get_self(), voter, voterHash, getDocument().getHash(), common::VOTE);
+        Edge::getOrNew(dao.get_self(), voter, voterDoc.getID(), getDocument().getID(), common::VOTE);
 
         // an edge from the proposal to the vote named vote
-        Edge::write(dao.get_self(), voter, proposal.getHash(), getDocument().getHash(), common::VOTE);
+        Edge::write(dao.get_self(), voter, proposal.getID(), getDocument().getID(), common::VOTE);
 
         // an edge from the vote to the member named ownedby
         // Note: This edge could already exist, as voteDocument is likely to be re-used.
-        Edge::getOrNew(dao.get_self(), voter, getDocument().getHash(), voterHash, common::OWNED_BY);
+        Edge::getOrNew(dao.get_self(), voter, getDocument().getID(), voterDoc.getID(), common::OWNED_BY);
 
         // an edge from the vote to the proposal named voteon
-        Edge::write(dao.get_self(), voter, getDocument().getHash(), proposal.getHash(), common::VOTE_ON);
+        Edge::write(dao.get_self(), voter, getDocument().getID(), proposal.getID(), common::VOTE_ON);
     }
 
     const std::string& Vote::getVote()

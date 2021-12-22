@@ -5,17 +5,17 @@
 namespace hypha {
 
 Settings::Settings(dao& dao, 
-                          const checksum256& hash, 
-                          const checksum256& rootHash)
-  : Document(dao.get_self(), hash),
+                   uint64_t id, 
+                   uint64_t rootID)
+  : Document(dao.get_self(), id),
     m_dao(&dao),
-    m_rootHash(rootHash)
+    m_rootID(rootID)
     //m_dirty(false)
   {}
 
   void Settings::setSetting(const Content& setting)
   {
-    auto oldHash = getHash();
+    auto oldID = getID();
     auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
     ContentWrapper cw = getContentWrapper();
@@ -26,7 +26,7 @@ Settings::Settings(dao& dao,
 
     static_cast<Document&>(*this) = m_dao->getGraph()
                                          .updateDocument(m_dao->get_self(), 
-                                                         oldHash, 
+                                                         oldID, 
                                                          getContentGroups());
 
     //m_dirty = true;
@@ -34,7 +34,7 @@ Settings::Settings(dao& dao,
 
   void Settings::remSetting(const string& key)
   {
-    auto oldHash = getHash();
+    auto oldID = getID();
     auto& contentGroups = getContentGroups();
     auto& settingsGroup = contentGroups[SETTINGS_IDX];
 
@@ -51,7 +51,7 @@ Settings::Settings(dao& dao,
         ContentWrapper::insertOrReplace(settingsGroup, updateDateContent);
         static_cast<Document&>(*this) = m_dao->getGraph()
                                              .updateDocument(m_dao->get_self(), 
-                                                             oldHash, 
+                                                             oldID, 
                                                              std::move(contentGroups));
     }
     //Should we assert if setting doesn't exits ?

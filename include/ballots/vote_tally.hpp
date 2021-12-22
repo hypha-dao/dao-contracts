@@ -10,7 +10,7 @@ namespace hypha
     class VoteTally : public TypedDocument<hypha::document_types::VOTE_TALLY>
     {
     public:
-        VoteTally(dao& dao, const eosio::checksum256& hash);
+        VoteTally(dao& dao, uint64_t id);
         VoteTally(
             dao& dao,
             Document& proposal,

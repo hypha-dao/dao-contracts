@@ -38,9 +38,11 @@ namespace hypha
 
         dao *m_dao;
 
-        inline eosio::checksum256 getDaoHash() { return m_daoHash; }
+        //inline eosio::checksum256 getDaoHash() { return m_daoHash; }
+        inline uint64_t getDaoID() { return m_daoID; }
     private: 
-        eosio::checksum256 m_daoHash;
+        //eosio::checksum256 m_daoHash;
+        uint64_t m_daoID;
         Settings* m_daoSettings;
         eosio::asset getAsset (std::string_view key);
     };

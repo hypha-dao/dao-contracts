@@ -18,8 +18,8 @@ namespace hypha
     Assignment::Assignment(dao *dao, const eosio::checksum256 &hash) 
     : Document(dao->get_self(), hash),
       m_dao{dao},
-      m_daoHash{Edge::get(dao->get_self(), hash, common::DAO).getToNode()},
-      m_daoSettings{dao->getSettingsDocument(m_daoHash)}
+      m_daoID{Edge::get(dao->get_self(), getID(), common::DAO).getToNode()},
+      m_daoSettings{dao->getSettingsDocument(m_daoID)}
     {
         TRACE_FUNCTION()
         auto [idx, docType] = getContentWrapper().get(SYSTEM, TYPE);
@@ -45,7 +45,7 @@ namespace hypha
     Member Assignment::getAssignee()
     { 
         TRACE_FUNCTION()
-        return Member(*m_dao, Edge::get(m_dao->get_self(), getHash(), common::ASSIGNEE_NAME).getToNode());
+        return Member(*m_dao, Edge::get(m_dao->get_self(), primary_key(), common::ASSIGNEE_NAME).getToNode());
     }
 
     int64_t Assignment::getPeriodCount() 
@@ -77,13 +77,13 @@ namespace hypha
         }
                 
         //Fallback for old assignments without time share document
-        return Edge::get(m_dao->get_self(), getAssignee().getHash(), common::ASSIGNED).getCreated();
+        return Edge::get(m_dao->get_self(), getAssignee().getID(), common::ASSIGNED).getCreated();
     }
 
     bool Assignment::isClaimed(Period *period)
     {
         TRACE_FUNCTION()
-        return Edge::exists(m_dao->get_self(), getHash(), period->getHash(), common::CLAIMED);
+        return Edge::exists(m_dao->get_self(), getID(), period->getID(), common::CLAIMED);
     }
 
     std::optional<Period> Assignment::getNextClaimablePeriod()
@@ -161,20 +161,20 @@ namespace hypha
 
     TimeShare Assignment::getInitialTimeShare() 
     {
-      Edge initialEdge = Edge::get(m_dao->get_self(), getHash(), common::INIT_TIME_SHARE);
+      Edge initialEdge = Edge::get(m_dao->get_self(), getID(), common::INIT_TIME_SHARE);
       return TimeShare(m_dao->get_self(), initialEdge.getToNode());
     }
     
     TimeShare Assignment::getCurrentTimeShare() 
     {
-      Edge currentEdge = Edge::get(m_dao->get_self(), getHash(), common::CURRENT_TIME_SHARE);
+      Edge currentEdge = Edge::get(m_dao->get_self(), getID(), common::CURRENT_TIME_SHARE);
 
       return TimeShare(m_dao->get_self(), currentEdge.getToNode());
     }
     
     TimeShare Assignment::getLastTimeShare() 
     {
-      Edge lastEdge = Edge::get(m_dao->get_self(), getHash(), common::LAST_TIME_SHARE);
+      Edge lastEdge = Edge::get(m_dao->get_self(), getID(), common::LAST_TIME_SHARE);
 
       return TimeShare(m_dao->get_self(), lastEdge.getToNode());
     }

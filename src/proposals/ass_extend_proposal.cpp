@@ -41,7 +41,7 @@ namespace hypha
 
         //TODO: This edge has to cleaned up when proposal fails
         // connect the edit proposal to the original
-        Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), original.getHash(), common::ORIGINAL);
+        Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.primary_key(), original.primary_key(), common::ORIGINAL);
         eosio::print("writing edge from proposal to original. proposal: " + readableHash(proposal.getHash()) + "\n");
         eosio::print("original: " + readableHash(original.getHash()) + "\n");
 
@@ -89,7 +89,7 @@ namespace hypha
         // Use the ORIGINAL edge since the original document could have changed since this was 
         // proposed
         //Document original (m_dao.get_self(), proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
-        auto edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::ORIGINAL);
+        auto edges = m_dao.getGraph().getEdgesFrom(proposal.getID(), common::ORIGINAL);
         
         EOS_CHECK(
           edges.size() == 1, 
@@ -103,10 +103,10 @@ namespace hypha
         merged.emplace ();
 
         // replace the original node with the new one in the edges table
-        m_dao.getGraph().replaceNode(original.getHash(), merged.getHash());
+        m_dao.getGraph().replaceNode(original.primary_key(), merged.primary_key());
 
         // erase the original document
-        m_dao.getGraph().eraseDocument(original.getHash(), true);
+        m_dao.getGraph().eraseDocument(original.primary_key(), true);
 
         //Restore groups
         proposalContent.getContentGroups() = std::move(originalContents);

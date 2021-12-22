@@ -13,6 +13,14 @@ namespace hypha
     }
 
     template<typename std::string& T>
+    TypedDocument<T>::TypedDocument(dao& dao, uint64_t id)
+    : m_dao(dao), document(Document(dao.get_self(), id))
+    {
+        TRACE_FUNCTION()
+        validate();
+    }
+
+    template<typename std::string& T>
     TypedDocument<T>::TypedDocument(dao& dao)
     : m_dao(dao)
     {

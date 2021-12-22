@@ -46,8 +46,14 @@ namespace hypha
     {
     }
 
-    Period::Period(dao *dao, const eosio::checksum256 &hash) : Document(dao->get_self(), hash), m_dao{dao}
+    Period::Period(dao *dao, const eosio::checksum256 &hash) 
+      : Document(dao->get_self(), hash), m_dao{dao}
     {
+    }
+
+    Period::Period(dao *dao, uint64_t id)
+      : Document(dao->get_self(), id), m_dao{dao}
+    {        
     }
 
     eosio::time_point Period::getStartTime()
@@ -84,30 +90,30 @@ namespace hypha
                               const std::string &label)
     {
         Period nextPeriod(m_dao, nextPeriodStart, label);
-        Edge::write(m_dao->get_self(), m_dao->get_self(), getHash(), nextPeriod.getHash(), common::NEXT);
+        Edge::write(m_dao->get_self(), m_dao->get_self(), getID(), nextPeriod.getID(), common::NEXT);
         return nextPeriod;
     }
 
     bool Period::isEnd()
     {
-        auto [exists, period] = Edge::getIfExists(m_dao->get_self(), getHash(), common::NEXT);
+        auto [exists, period] = Edge::getIfExists(m_dao->get_self(), getID(), common::NEXT);
         if (exists)
             return true;
         return false;
     }
 
-    Period Period::asOf(dao *dao, const eosio::checksum256& daoHash, eosio::time_point moment)
+    Period Period::asOf(dao *dao, uint64_t daoID, eosio::time_point moment)
     {
         TRACE_FUNCTION()
 
-        auto [exists, startEdge] = Edge::getIfExists(dao->get_self(), daoHash, common::CURRENT);
+        auto [exists, startEdge] = Edge::getIfExists(dao->get_self(), daoID, common::CURRENT);
 
         //Delete the edge so we can update it to the new current period
         if (exists) {
             startEdge.erase();
         }
         else {
-            std::tie(exists, startEdge) = Edge::getIfExists(dao->get_self(), daoHash, common::START);
+            std::tie(exists, startEdge) = Edge::getIfExists(dao->get_self(), daoID, common::START);
             EOS_CHECK(exists, "DAO Root node does not have a 'start' edge.");
         }
         
@@ -123,20 +129,20 @@ namespace hypha
             period = period.next();
         }
 
-        Edge::write(dao->get_self(), dao->get_self(), daoHash, period.getHash(), common::CURRENT);
+        Edge::write(dao->get_self(), dao->get_self(), daoID, period.getID (), common::CURRENT);
 
         return period;
     }
 
-    Period Period::current(dao *dao, const eosio::checksum256& daoHash)
+    Period Period::current(dao *dao, uint64_t daoID)
     {
-        return asOf(dao, daoHash, eosio::current_time_point());
+        return asOf(dao, daoID, eosio::current_time_point());
     }
 
     Period Period::next()
     {
         TRACE_FUNCTION()
-        auto [exists, period] = Edge::getIfExists(m_dao->get_self(), getHash(), common::NEXT);
+        auto [exists, period] = Edge::getIfExists(m_dao->get_self(), getID (), common::NEXT);
         EOS_CHECK(exists, "End of calendar has been reached. Contact administrator to add more time periods.");
         return Period(m_dao, period.getToNode());
     }
@@ -153,7 +159,7 @@ namespace hypha
 
         while (count-- > 0)
         {
-            if (auto [hasNext, edge] = Edge::getIfExists(m_dao->get_self(), next.getHash(), common::NEXT);
+            if (auto [hasNext, edge] = Edge::getIfExists(m_dao->get_self(), next.getID (), common::NEXT);
                 hasNext) 
             {
                 next = Period(m_dao, edge.getToNode());
@@ -180,7 +186,7 @@ namespace hypha
 
       int64_t count = 0;
 
-      while (startPeriod.getHash() != endPeriod.getHash()) {
+      while (startPeriod.getID () != endPeriod.getID ()) {
         ++count;
         startPeriod = startPeriod.next();
       }
@@ -201,11 +207,11 @@ namespace hypha
       EOS_CHECK(
         moment >= next.getStartTime(),
         to_str("Moment must happen after period start date, [moment secs]:", 
-                moment.sec_since_epoch(), " [period]:", getHash())
+                moment.sec_since_epoch(), " [period]:", getID ())
       );
 
       while (moment > next.getEndTime()) {
-        auto [hasNext, edge] = Edge::getIfExists(m_dao->get_self(), next.getHash(), common::NEXT);
+        auto [hasNext, edge] = Edge::getIfExists(m_dao->get_self(), next.getID (), common::NEXT);
 
         EOS_CHECK(hasNext, "End of calendar has been reached. Contact administrator to add more time periods.");
 

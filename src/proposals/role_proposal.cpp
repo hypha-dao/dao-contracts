@@ -25,7 +25,7 @@ namespace hypha
     void RoleProposal::passImpl(Document &proposal)
     {
         TRACE_FUNCTION()
-        Edge::write (m_dao.get_self(), m_dao.get_self(), m_daoHash, proposal.getHash(), common::ROLE_NAME);
+        Edge::write (m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID(), common::ROLE_NAME);
     }
 
     std::string RoleProposal::getBallotContent (ContentWrapper &contentWrapper)

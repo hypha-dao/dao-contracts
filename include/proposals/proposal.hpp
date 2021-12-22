@@ -15,10 +15,10 @@ namespace hypha
     {
 
     public:
-        Proposal(dao &contract, const checksum256& daoHash);
+        Proposal(dao &contract, uint64_t daoID);
         virtual ~Proposal();
 
-        Document propose(const checksum256& dao_hash, const eosio::name &proposer, ContentGroups &contentGroups);
+        Document propose(const eosio::name &proposer, ContentGroups &contentGroups);
 
         void vote(const eosio::name &voter, const std::string vote, Document& proposal, std::optional<std::string> notes);
         void close(Document &proposal);
@@ -45,17 +45,17 @@ namespace hypha
         ContentGroup makeBallotGroup();
         ContentGroup makeBallotOptionsGroup();
 
-        bool didPass(const eosio::checksum256 &tallyHash);
+        bool didPass(uint64_t tallyHash);
 
         string getTitle(ContentWrapper cw) const;
         string getDescription(ContentWrapper cw) const;
 
-        std::pair<bool, checksum256> hasOpenProposal(name proposalType, checksum256 docHash);
+        std::pair<bool, uint64_t> hasOpenProposal(name proposalType, uint64_t docID);
     private:
         bool oldDidPass(const eosio::name &ballotId);
     protected:
         Settings* m_daoSettings;
         Settings* m_dhoSettings;
-        checksum256 m_daoHash;
+        uint64_t m_daoID;
     };
 } // namespace hypha

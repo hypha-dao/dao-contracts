@@ -26,6 +26,11 @@ namespace hypha
     {
     }
 
+    Member::Member(dao& dao, uint64_t docID)
+        : Document(dao.get_self(), docID), m_dao(dao)
+    {
+    }
+
     Member Member::get(dao& dao, const eosio::name &member)
     {
         return Member(dao, Member::calcHash(member));
@@ -49,11 +54,14 @@ namespace hypha
         return Document::hashContents(cgs);
     }
 
-    const bool Member::isMember(const eosio::name& contract, const eosio::checksum256 &dao, const eosio::name &member)
+    const bool Member::isMember(const eosio::name& contract, uint64_t daoID, const eosio::name &member)
     {
         // create hash to represent this member account
         auto memberHash = Member::calcHash(member);
-        return Edge::exists(contract, dao, memberHash, common::MEMBER);
+        
+        Document memDoc(contract, memberHash);
+
+        return Edge::exists(contract, daoID, memDoc.primary_key(), common::MEMBER);
     }
 
     // Member Member::getOrNew(eosio::name contract, const eosio::name &creator, const eosio::name &member)
@@ -61,28 +69,28 @@ namespace hypha
     //     return (Member) Document::getOrNew(contract, creator, Document::rollup(Content(MEMBER_STRING, member)));
     // }
 
-    void Member::apply(const eosio::checksum256 &applyTo, const std::string content)
+    void Member::apply(uint64_t applyTo, const std::string content)
     {
         TRACE_FUNCTION()
-        Edge::write(getContract(), getAccount(), applyTo, getHash(), common::APPLICANT);
-        Edge::write(getContract(), getAccount(), getHash(), applyTo, common::APPLICANT_OF);
+        Edge::write(getContract(), getAccount(), applyTo, primary_key(), common::APPLICANT);
+        Edge::write(getContract(), getAccount(), primary_key(), applyTo, common::APPLICANT_OF);
     }
 
-    void Member::enroll(const eosio::name &enroller, const eosio::checksum256& appliedTo, const std::string &content)
+    void Member::enroll(const eosio::name &enroller, uint64_t appliedTo, const std::string &content)
     {
         TRACE_FUNCTION()
         
-        eosio::checksum256 root = appliedTo;
+        uint64_t rootID = appliedTo;
 
         // create the new member edges
-        Edge::write(getContract(), enroller, root, getHash(), common::MEMBER);
-        Edge::write(getContract(), enroller, getHash(), root, common::MEMBER_OF);
+        Edge::write(getContract(), enroller, rootID, primary_key(), common::MEMBER);
+        Edge::write(getContract(), enroller, primary_key(), rootID, common::MEMBER_OF);
 
         // remove the old applicant edges
-        Edge rootApplicantEdge = Edge::get(getContract(), root, getHash(), common::APPLICANT);
+        Edge rootApplicantEdge = Edge::get(getContract(), rootID, primary_key(), common::APPLICANT);
         rootApplicantEdge.erase();
 
-        Edge applicantRootEdge = Edge::get(getContract(), getHash(), root, common::APPLICANT_OF);
+        Edge applicantRootEdge = Edge::get(getContract(), primary_key(), rootID, common::APPLICANT_OF);
         applicantRootEdge.erase();
 
         // TODO: add as configuration setting for genesis amount
@@ -111,7 +119,7 @@ namespace hypha
 
         Document paymentReceipt(getContract(), getContract(), Payer::defaultReceipt(getAccount(), genesis_voice, memo));
 
-        Edge::write(getContract(), getAccount(), getHash(), paymentReceipt.getHash(), common::PAYMENT);
+        Edge::write(getContract(), getAccount(), primary_key(), paymentReceipt.primary_key(), common::PAYMENT);
 
         // eosio::action(
         //     eosio::permission_level{getContract(), name("active")},

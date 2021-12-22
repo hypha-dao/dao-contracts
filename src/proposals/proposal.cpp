@@ -18,18 +18,18 @@ using namespace eosio;
 
 namespace hypha
 {
-    Proposal::Proposal(dao &contract, const checksum256& daoHash) 
+    Proposal::Proposal(dao &contract, uint64_t daoID) 
     : m_dao{contract},
-      m_daoSettings(contract.getSettingsDocument(daoHash)),
+      m_daoSettings(contract.getSettingsDocument(daoID)),
       m_dhoSettings(contract.getSettingsDocument()),
-      m_daoHash(daoHash) {}
+      m_daoID(daoID) {}
 
     Proposal::~Proposal() {}
 
-    Document Proposal::propose(const checksum256& dao_hash, const eosio::name &proposer, ContentGroups &contentGroups)
+    Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups)
     {
         TRACE_FUNCTION()
-        EOS_CHECK(Member::isMember(m_dao.get_self(), dao_hash, proposer), "only members can make proposals: " + proposer.to_string());
+        EOS_CHECK(Member::isMember(m_dao.get_self(), m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
@@ -48,18 +48,21 @@ namespace hypha
 
         // creates the document, or the graph NODE
         eosio::checksum256 memberHash = Member::calcHash(proposer);
-        eosio::checksum256 root = dao_hash;
+
+        Document memberDoc(m_dao.get_self(), memberHash);
+
+        uint64_t root = m_daoID;
 
         // the proposer OWNS the proposal; this creates the graph EDGE
-        Edge::write(m_dao.get_self(), proposer, memberHash, proposalNode.getHash(), common::OWNS);
+        Edge::write(m_dao.get_self(), proposer, memberDoc.getID(), proposalNode.getID (), common::OWNS);
 
         // the proposal was PROPOSED_BY proposer; this creates the graph EDGE
-        Edge::write(m_dao.get_self(), proposer, proposalNode.getHash(), memberHash, common::OWNED_BY);
+        Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), memberDoc.getID(), common::OWNED_BY);
 
         // the DHO also links to the document as a proposal, another graph EDGE
-        Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
+        Edge::write(m_dao.get_self(), proposer, root, proposalNode.getID (), common::PROPOSAL);
 
-        Edge::write(m_dao.get_self(), proposer, proposalNode.getHash(), root, common::DAO);
+        Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), root, common::DAO);
 
         // Sets an empty tally
         VoteTally(m_dao, proposalNode, m_daoSettings);
@@ -82,7 +85,7 @@ namespace hypha
     void Proposal::close(Document &proposal)
     {
         TRACE_FUNCTION()
-        auto voteTallyEdge = Edge::get(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
+        auto voteTallyEdge = Edge::get(m_dao.get_self(), proposal.getID (), common::VOTE_TALLY);
 
         auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
         EOS_CHECK(
@@ -90,13 +93,13 @@ namespace hypha
             "Voting is still active for this proposal"
         );
 
-        Edge edge = Edge::get(m_dao.get_self(), m_daoHash, proposal.getHash(), common::PROPOSAL);
+        Edge edge = Edge::get(m_dao.get_self(), m_daoID, proposal.getID (), common::PROPOSAL);
         edge.erase();
 
         bool proposalDidPass;
 
-        auto ballotHash = voteTallyEdge.getToNode();
-        proposalDidPass = didPass(ballotHash);
+        auto ballotID = voteTallyEdge.getToNode();
+        proposalDidPass = didPass(ballotID);
 
         auto details = proposal.getContentWrapper().getGroupOrFail(DETAILS);
 
@@ -119,20 +122,20 @@ namespace hypha
             passImpl(proposal);
 
             proposal = m_dao.getGraph().updateDocument(proposal.getCreator(), 
-                                                       proposal.getHash(),
+                                                       proposal.getID (),
                                                        std::move(proposal.getContentGroups()));
             // if proposal passes, create an edge for PASSED_PROPS
-            Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoHash, proposal.getHash(), common::PASSED_PROPS);
+            Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID (), common::PASSED_PROPS);
         }
         else
         {
             //TODO: Add failImpl()
             proposal = m_dao.getGraph().updateDocument(proposal.getCreator(), 
-                                                       proposal.getHash(),
+                                                       proposal.getID (),
                                                        std::move(proposal.getContentGroups()));
 
             // create edge for FAILED_PROPS
-            Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoHash, proposal.getHash(), common::FAILED_PROPS);
+            Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID (), common::FAILED_PROPS);
         }
     }
 
@@ -170,7 +173,7 @@ namespace hypha
         };
     }
 
-    bool Proposal::didPass(const eosio::checksum256 &tallyHash)
+    bool Proposal::didPass(uint64_t tallyID)
     {
         TRACE_FUNCTION()
         
@@ -185,7 +188,7 @@ namespace hypha
 
         asset quorum_threshold = adjustAsset(stat_itr->supply, quorumFactor);
 
-        VoteTally tally(m_dao, tallyHash);
+        VoteTally tally(m_dao, tallyID);
 
         // Currently get pass/fail
         // Todo: Abstract this part into VoteTally class
@@ -241,9 +244,9 @@ namespace hypha
                                  ballotDesc->getAs<std::string>();
     }
 
-    std::pair<bool, checksum256> Proposal::hasOpenProposal(name proposalType, checksum256 docHash)
+    std::pair<bool, uint64_t> Proposal::hasOpenProposal(name proposalType, uint64_t docID)
     {
-      auto proposalEdges = m_dao.getGraph().getEdgesTo(docHash, proposalType);
+      auto proposalEdges = m_dao.getGraph().getEdgesTo(docID, proposalType);
       
       //Check if there is another existing suspend proposal open for the given document
       for (auto& edge : proposalEdges) {
@@ -255,6 +258,6 @@ namespace hypha
         }
       }
 
-      return { false, checksum256{} };
+      return { false, uint64_t{} };
     }
 } // namespace hypha

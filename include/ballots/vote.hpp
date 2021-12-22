@@ -10,7 +10,7 @@ namespace hypha
     class Vote : public TypedDocument<hypha::document_types::VOTE> 
     {
     public:
-        Vote(dao& dao, const eosio::checksum256& hash);
+        Vote(dao& dao, uint64_t id);
         Vote(
             dao& dao, 
             const eosio::name voter,

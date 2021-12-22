@@ -136,7 +136,7 @@ namespace hypha
         //  dao     ---- payout ---->   payout
         //  member  ---- payout ---->   payout
         //  makePayment also creates edges from payout and the member to the individual payments
-        Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoHash, proposal.getHash(), common::PAYOUT);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID(), common::PAYOUT);
 
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
@@ -145,7 +145,9 @@ namespace hypha
         //TODO: Check to which dao this proposal belongs to
         //EOS_CHECK(Member::isMember(m_dao.get_self(), recipient), "only members are eligible for payouts: " + recipient.to_string());
 
-        Edge::write(m_dao.get_self(), m_dao.get_self(), Member::calcHash(recipient), proposal.getHash(), common::PAYOUT);
+        Document recipientDoc(m_dao.get_self(), Member::calcHash(recipient));
+
+        Edge::write(m_dao.get_self(), m_dao.get_self(), recipientDoc.getID(), proposal.getID(), common::PAYOUT);
 
         std::string memo{"one-time payment on proposal: " + readableHash(proposal.getHash())};
 
@@ -161,7 +163,7 @@ namespace hypha
         {
             if (std::holds_alternative<eosio::asset>(content.value))
             {
-                m_dao.makePayment(proposal.getHash(), recipient, std::get<eosio::asset>(content.value), memo, eosio::name{0}, tokens);
+                m_dao.makePayment(proposal.getID(), recipient, std::get<eosio::asset>(content.value), memo, eosio::name{0}, tokens);
             }
         }
     }

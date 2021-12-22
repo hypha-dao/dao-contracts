@@ -20,17 +20,17 @@ public:
   /**
   * Inserts a new TimeShare in the Document Graph
   */
-  TimeShare(name contract, name creator, int64_t timeShare, time_point startDate, checksum256 assignment);
+  TimeShare(name contract, name creator, int64_t timeShare, time_point startDate, uint64_t assignment);
 
   /**
   * Loads a TimeShare with the given hash
   */ 
-  TimeShare(name contract, checksum256 hash);
+  TimeShare(name contract, uint64_t hash);
 
   std::optional<TimeShare> getNext(name contract);
 private:
 
-  ContentGroups constructContentGroups(int64_t timeShare, time_point startDate, checksum256 assignment);
+  ContentGroups constructContentGroups(int64_t timeShare, time_point startDate, uint64_t assignment);
 };
 
 }

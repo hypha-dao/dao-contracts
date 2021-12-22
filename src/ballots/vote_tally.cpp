@@ -9,8 +9,8 @@
 namespace hypha
 {
 
-    VoteTally::VoteTally(dao& dao, const eosio::checksum256& hash)
-    : TypedDocument(dao, hash)
+    VoteTally::VoteTally(dao& dao, uint64_t id)
+    : TypedDocument(dao, id)
     {
       TRACE_FUNCTION()
     }
@@ -23,7 +23,7 @@ namespace hypha
     : TypedDocument(dao)
     {
         TRACE_FUNCTION()
-        auto [exists, oldTally] = Edge::getIfExists(dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
+        auto [exists, oldTally] = Edge::getIfExists(dao.get_self(), proposal.getID(), common::VOTE_TALLY);
         if (exists) {
             auto oldTallyNode = oldTally.to_node;
             oldTally.erase();
@@ -48,10 +48,10 @@ namespace hypha
             }
         }
 
-        std::vector<Edge> edges = dao.getGraph().getEdgesFrom(proposal.getHash(), common::VOTE);
+        std::vector<Edge> edges = dao.getGraph().getEdgesFrom(proposal.getID(), common::VOTE);
         for (auto edge : edges) {
-            eosio::checksum256 voteHash = edge.getToNode();
-            Vote voteDocument(dao, voteHash);
+            uint64_t voteID = edge.getToNode();
+            Vote voteDocument(dao, voteID);
 
             optionsTally[voteDocument.getVote()] += voteDocument.getPower();
         }
@@ -67,7 +67,7 @@ namespace hypha
 
         initializeDocument(dao, tallyContentGroups, false);
 
-        Edge::write(dao.get_self(), dao.get_self(), proposal.getHash(), getDocument().getHash(), common::VOTE_TALLY);
+        Edge::write(dao.get_self(), dao.get_self(), proposal.getID(), getDocument().getID(), common::VOTE_TALLY);
     }
 
     const std::string VoteTally::buildNodeLabel(ContentGroups &content)

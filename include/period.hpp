@@ -23,6 +23,8 @@ namespace hypha
 
         Period(dao *dao, const eosio::checksum256 &hash);
 
+        Period(dao *dao, uint64_t id);
+
         eosio::time_point getStartTime();
         eosio::time_point getEndTime();
         std::string getLabel();
@@ -40,9 +42,9 @@ namespace hypha
         int64_t getPeriodCountTo(Period& other);
         Period getPeriodUntil(eosio::time_point moment);
 
-        static Period asOf(dao *dao, const eosio::checksum256& daoHash, eosio::time_point moment);
+        static Period asOf(dao *dao, uint64_t daoID, eosio::time_point moment);
         
-        static Period current(dao *dao, const eosio::checksum256& daoHash);
+        static Period current(dao *dao, uint64_t daoID);
         bool isEnd();
 
         dao *m_dao;
