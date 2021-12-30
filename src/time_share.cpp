@@ -11,8 +11,8 @@ TimeShare::TimeShare(name contract, name creator, int64_t timeShare, time_point 
   
 }
 
-TimeShare::TimeShare(name contract, uint64_t hash)
-: Document(contract, hash)
+TimeShare::TimeShare(name contract, uint64_t id)
+: Document(contract, id)
 {
   
 }

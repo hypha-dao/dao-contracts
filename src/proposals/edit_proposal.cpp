@@ -101,7 +101,7 @@ namespace hypha
         )
 
         // connect the edit proposal to the original
-        Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.primary_key(), original.primary_key(), common::ORIGINAL);
+        Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getID(), original.getID(), common::ORIGINAL);
     }
 
     void EditProposal::passImpl(Document &proposal)
@@ -158,10 +158,10 @@ namespace hypha
         merged.emplace ();
 
         // replace the original node with the new one in the edges table
-        m_dao.getGraph().replaceNode(original.primary_key(), merged.primary_key());
+        m_dao.getGraph().replaceNode(original.getID(), merged.getID());
 
         // erase the original document
-        m_dao.getGraph().eraseDocument(original.primary_key(), true);
+        m_dao.getGraph().eraseDocument(original.getID(), true);
 
         //Restore groups
         proposalContent.getContentGroups() = std::move(originalContents);

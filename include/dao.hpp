@@ -70,22 +70,6 @@ namespace hypha
                           eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
           payment_table;
 
-      //TODO: REMOVE
-      ACTION deletetok(asset asset, name contract) {
-
-        require_auth(get_self());
-
-        eosio::action(
-          eosio::permission_level{contract, name("active")},
-          contract, 
-          name("del"),
-          std::make_tuple(asset)
-        ).send();
-      }
-
-      ACTION autoenroll(const checksum256& dao_hash, const name& enroller, const name& member);
-      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
-
       ACTION clean();
       ACTION propose(const checksum256& dao_hash, const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
@@ -111,11 +95,26 @@ namespace hypha
       ACTION setalert(const eosio::name &level, const std::string &content);
       ACTION remalert(const std::string &notes);
 
+      /**Testenv only
       ACTION addedge(const checksum256& from, const checksum256& to, const name& edge_name);
+      ACTION autoenroll(const checksum256& dao_hash, const name& enroller, const name& member);
+      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
+      ACTION deletetok(asset asset, name contract) {
 
+        require_auth(get_self());
+
+        eosio::action(
+          eosio::permission_level{contract, name("active")},
+          contract, 
+          name("del"),
+          std::make_tuple(asset)
+        ).send();
+      }
+      */
+     
       DocumentGraph &getGraph();
       Settings* getSettingsDocument();
-      //TODO: Refactor to receive the dao_hash instead of the dao_name
+      
       Settings* getSettingsDocument(const eosio::name &dao_name);
 
       Settings* getSettingsDocument(uint64_t daoID);

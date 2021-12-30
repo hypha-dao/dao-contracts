@@ -13,12 +13,6 @@
 
 namespace hypha 
 {
-    // Vote::Vote(hypha::dao& dao, const eosio::checksum256& hash)
-    // : TypedDocument(dao, hash)
-    // {
-    //     TRACE_FUNCTION()
-    // }
-
     Vote::Vote(hypha::dao& dao, uint64_t id)
     : TypedDocument(dao, id)
     {
@@ -100,7 +94,6 @@ namespace hypha
             }
         };
 
-        //eosio::checksum256 voterHash = Member::calcHash(voter);
         initializeDocument(dao, contentGroups, false);
 
         // an edge from the member to the vote named vote

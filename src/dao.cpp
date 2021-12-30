@@ -39,19 +39,7 @@ namespace hypha
      }
    }
 
-  //  ACTION dao::recreate(uint64_t docID)
-  //  {
-  //    require_auth(get_self());
-
-  //    Document doc(get_self(), docID);
-
-  //    m_documentGraph.eraseDocument(docID, false);
-
-  //    Document newDoc(get_self(), get_self(), doc.getContentGroups());
-
-  //    m_documentGraph.replaceNode(docID, newDoc.getID());
-  //  }
-
+   /**Testenv only 
    ACTION
    dao::autoenroll(const checksum256& dao_hash, const name& enroller, const name& member)
    {
@@ -87,6 +75,17 @@ namespace hypha
 
      doc.update(get_self(), std::move(cw.getContentGroups()));
    }
+
+   ACTION dao::addedge(const checksum256& from, const checksum256& to, const name& edge_name)
+   {
+     require_auth(get_self());
+
+     Document fromDoc(get_self(), from);
+     Document toDoc(get_self(), to);
+
+     Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
+   }
+   */
 
    void dao::propose(const checksum256& dao_hash,
                      const name &proposer,
@@ -611,16 +610,6 @@ namespace hypha
 
       Member member = Member::get(*this, applicant);
       member.enroll(enroller, daoDoc.getID(), content);
-   }
-
-   ACTION dao::addedge(const checksum256& from, const checksum256& to, const name& edge_name)
-   {
-     require_auth(get_self());
-
-     Document fromDoc(get_self(), from);
-     Document toDoc(get_self(), to);
-
-     Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
    }
 
    bool dao::isPaused() { return false; }

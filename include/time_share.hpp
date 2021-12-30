@@ -23,9 +23,9 @@ public:
   TimeShare(name contract, name creator, int64_t timeShare, time_point startDate, uint64_t assignment);
 
   /**
-  * Loads a TimeShare with the given hash
+  * Loads a TimeShare with the given id
   */ 
-  TimeShare(name contract, uint64_t hash);
+  TimeShare(name contract, uint64_t id);
 
   std::optional<TimeShare> getNext(name contract);
 private:

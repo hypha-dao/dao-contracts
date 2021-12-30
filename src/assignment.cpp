@@ -30,22 +30,10 @@ namespace hypha
                          "; actual: " + docType->getAs<eosio::name>().to_string());
     }
 
-    // ContentGroups Assignment::defaultContent (const eosio::name &member)
-    // {
-    //     return ContentGroups{
-    //         ContentGroup{
-    //             Content(CONTENT_GROUP_LABEL, DETAILS),
-    //             Content(MEMBER_STRING, member)},
-    //         ContentGroup{
-    //             Content(CONTENT_GROUP_LABEL, SYSTEM),
-    //             Content(TYPE, common::MEMBER),
-    //             Content(NODE_LABEL, member.to_string())}};
-    // }
-
     Member Assignment::getAssignee()
     { 
         TRACE_FUNCTION()
-        return Member(*m_dao, Edge::get(m_dao->get_self(), primary_key(), common::ASSIGNEE_NAME).getToNode());
+        return Member(*m_dao, Edge::get(m_dao->get_self(), getID(), common::ASSIGNEE_NAME).getToNode());
     }
 
     int64_t Assignment::getPeriodCount() 
