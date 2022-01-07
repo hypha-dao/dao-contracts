@@ -136,7 +136,29 @@ namespace hypha
             .send();
     }
 
-    double normalizeToken(const eosio::asset& token) 
+    void issueTenantToken(const eosio::name &token_contract,
+                          const eosio::name &tenant,
+                          const eosio::name &issuer,
+                          const eosio::name &to,
+                          const eosio::asset &token_amount,
+                          const string &memo)
+    {
+        TRACE_FUNCTION()
+
+        eosio::action(
+            eosio::permission_level{issuer, eosio::name("active")},
+            token_contract, eosio::name("issue"),
+            std::make_tuple(tenant, issuer, token_amount, memo))
+            .send();
+
+        eosio::action(
+            eosio::permission_level{issuer, eosio::name("active")},
+            token_contract, eosio::name("transfer"),
+            std::make_tuple(tenant, issuer, to, token_amount, memo))
+            .send();
+    }
+
+    double normalizeToken(const eosio::asset& token)
     {
       auto power = ::pow(10, token.symbol.precision());
       return static_cast<double>(token.amount) / power;

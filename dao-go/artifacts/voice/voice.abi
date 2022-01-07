@@ -8,6 +8,14 @@
             "base": "",
             "fields": [
                 {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "tenant",
+                    "type": "name"
+                },
+                {
                     "name": "balance",
                     "type": "asset"
                 },
@@ -22,6 +30,10 @@
             "base": "",
             "fields": [
                 {
+                    "name": "tenant",
+                    "type": "name"
+                },
+                {
                     "name": "owner",
                     "type": "name"
                 },
@@ -35,6 +47,10 @@
             "name": "create",
             "base": "",
             "fields": [
+                {
+                    "name": "tenant",
+                    "type": "name"
+                },
                 {
                     "name": "issuer",
                     "type": "name"
@@ -57,6 +73,14 @@
             "name": "currency_stats",
             "base": "",
             "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "tenant",
+                    "type": "name"
+                },
                 {
                     "name": "supply",
                     "type": "asset"
@@ -84,6 +108,10 @@
             "base": "",
             "fields": [
                 {
+                    "name": "tenant",
+                    "type": "name"
+                },
+                {
                     "name": "owner",
                     "type": "name"
                 },
@@ -98,6 +126,10 @@
             "base": "",
             "fields": [
                 {
+                    "name": "tenant",
+                    "type": "name"
+                },
+                {
                     "name": "symbol",
                     "type": "asset"
                 }
@@ -107,6 +139,10 @@
             "name": "issue",
             "base": "",
             "fields": [
+                {
+                    "name": "tenant",
+                    "type": "name"
+                },
                 {
                     "name": "to",
                     "type": "name"
@@ -122,23 +158,13 @@
             ]
         },
         {
-            "name": "migrate",
-            "base": "",
-            "fields": [
-                {
-                    "name": "daoContract",
-                    "type": "name"
-                },
-                {
-                    "name": "trailContract",
-                    "type": "name"
-                }
-            ]
-        },
-        {
             "name": "open",
             "base": "",
             "fields": [
+                {
+                    "name": "tenant",
+                    "type": "name"
+                },
                 {
                     "name": "owner",
                     "type": "name"
@@ -157,6 +183,10 @@
             "name": "transfer",
             "base": "",
             "fields": [
+                {
+                    "name": "tenant",
+                    "type": "name"
+                },
                 {
                     "name": "from",
                     "type": "name"
@@ -200,11 +230,6 @@
         {
             "name": "issue",
             "type": "issue",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "migrate",
-            "type": "migrate",
             "ricardian_contract": ""
         },
         {

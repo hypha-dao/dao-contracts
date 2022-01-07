@@ -10,7 +10,7 @@
 #include <common.hpp>
 #include <document_graph/edge.hpp>
 #include <dao.hpp>
-#include <hypha_voice.hpp>
+#include <voice/currency_stats.hpp>
 #include <util.hpp>
 #include <logger/logger.hpp>
 
@@ -176,15 +176,22 @@ namespace hypha
     bool Proposal::didPass(uint64_t tallyID)
     {
         TRACE_FUNCTION()
-        
+
         name voiceContract = m_dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
         asset voiceToken = m_daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
         float quorumFactor = m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
         float alignmentFactor = m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
 
-        hypha::voice::stats stats_t(voiceContract, voiceToken.symbol.code().raw());
-        auto stat_itr = stats_t.find(voiceToken.symbol.code().raw());
-        EOS_CHECK(stat_itr != stats_t.end(), "No VOICE found");
+        hypha::voice::stats statstable(voiceContract, voiceToken.symbol.code().raw());
+        auto stats_index = statstable.get_index<name("bykey")>();
+
+        auto stat_itr = stats_index.find(
+            voice::currency_stats::build_key(
+                m_daoSettings->getOrFail<name>(DAO_NAME),
+                voiceToken.symbol.code()
+            )
+        );
+        EOS_CHECK(stat_itr != stats_index.end(), "No VOICE found");
 
         asset quorum_threshold = adjustAsset(stat_itr->supply, quorumFactor);
 

@@ -13,7 +13,7 @@ namespace hypha
     {
 
     public:
-        Payer(dao &dao);
+        Payer(dao &dao, Settings* daoSettings);
         virtual ~Payer();
 
         Document pay(const eosio::name &recipient,
@@ -36,6 +36,7 @@ namespace hypha
                         const string &memo);
 
         dao &m_dao;
+        Settings* m_daoSettings;
 
     private:
     };
