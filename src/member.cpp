@@ -103,14 +103,15 @@ namespace hypha
         auto daoName = daoCW.getOrFail(DETAILS, DAO_NAME)->getAs<name>();
 
         auto voiceToken = m_dao.getSettingOrFail<asset>(daoName, common::VOICE_TOKEN);
-      
+
         eosio::asset genesis_voice{getTokenUnit(voiceToken), voiceToken.symbol};
         std::string memo = util::to_str("genesis voice issuance during enrollment to ", daoName);
 
         name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
-        hypha::issueToken(
+        hypha::issueTenantToken(
             hyphaHvoice,
+            daoName,
             getContract(),
             getAccount(),
             genesis_voice,

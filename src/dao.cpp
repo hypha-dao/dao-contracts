@@ -449,9 +449,9 @@ namespace hypha
 
       ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoDoc.getID(), ab);
 
-      makePayment(periodToClaim.value().getID(), assignee, ab.reward, memo, eosio::name{0}, daoTokens);
-      makePayment(periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{0}, daoTokens);
-      makePayment(periodToClaim.value().getID(), assignee, ab.peg, memo, eosio::name{0}, daoTokens);
+      makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.reward, memo, eosio::name{0}, daoTokens);
+      makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{0}, daoTokens);
+      makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.peg, memo, eosio::name{0}, daoTokens);
    }
 
    asset dao::getProRatedAsset(ContentWrapper *assignment, const symbol &symbol, const string &key, const float &proration)
@@ -560,7 +560,8 @@ namespace hypha
       return applied_assets;
    }
 
-   void dao::makePayment(uint64_t fromNode,
+   void dao::makePayment(Settings* daoSettings,
+                         uint64_t fromNode,
                          const eosio::name &recipient,
                          const eosio::asset &quantity,
                          const string &memo,
@@ -574,7 +575,7 @@ namespace hypha
          return;
       }
 
-      std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, quantity.symbol, paymentType, daoTokens));
+      std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, daoSettings, quantity.symbol, paymentType, daoTokens));
       Document paymentReceipt = payer->pay(recipient, quantity, memo);
       Document recipientDoc(get_self(), Member::calcHash(recipient));
       Edge::write(get_self(), get_self(), fromNode, paymentReceipt.getID(), common::PAYMENT);
@@ -847,9 +848,9 @@ namespace hypha
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), daoDoc.getID(), settingsDoc.getID(), common::SETTINGS_EDGE);
 
-      createTokens(voiceToken->getAs<asset>(), rewardToken->getAs<asset>(), pegToken->getAs<asset>());
-      
-      //Auto enroll      
+      createTokens(dao, voiceToken->getAs<asset>(), rewardToken->getAs<asset>(), pegToken->getAs<asset>());
+
+      //Auto enroll
       std::unique_ptr<Member> member;
       
       const checksum256 memberHash = Member::calcHash(onboarder);
@@ -1265,9 +1266,10 @@ namespace hypha
     }
   }
 
-  void dao::createTokens(const eosio::asset& voiceToken, 
-                        const eosio::asset& rewardToken,
-                        const eosio::asset& pegToken)
+  void dao::createTokens(const eosio::name& daoName,
+                         const eosio::asset& voiceToken,
+                         const eosio::asset& rewardToken,
+                         const eosio::asset& pegToken)
   {
     
     auto dhoSettings = getSettingsDocument();
@@ -1279,9 +1281,10 @@ namespace hypha
       governanceContract, 
       name("create"),
       std::make_tuple(
-        get_self(), 
-        asset{-getTokenUnit(voiceToken), voiceToken.symbol}, 
-        uint64_t{0}, 
+        daoName,
+        get_self(),
+        asset{-getTokenUnit(voiceToken), voiceToken.symbol},
+        uint64_t{0},
         uint64_t{0}
       )
     ).send();
@@ -1293,9 +1296,10 @@ namespace hypha
       rewardContract,
       name("create"),
       std::make_tuple(
-        get_self(), 
-        asset{-getTokenUnit(rewardToken), rewardToken.symbol}, 
-        uint64_t{0}, 
+        daoName,
+        get_self(),
+        asset{-getTokenUnit(rewardToken), rewardToken.symbol},
+        uint64_t{0},
         uint64_t{0}
       )
     ).send();
@@ -1309,6 +1313,7 @@ namespace hypha
       pegContract,
       name("create"),
       std::make_tuple(
+        daoName,
         treasuryContract,
         asset{-getTokenUnit(pegToken), pegToken.symbol},
         uint64_t{0},

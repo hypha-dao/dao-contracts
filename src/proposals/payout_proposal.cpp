@@ -163,7 +163,7 @@ namespace hypha
         {
             if (std::holds_alternative<eosio::asset>(content.value))
             {
-                m_dao.makePayment(proposal.getID(), recipient, std::get<eosio::asset>(content.value), memo, eosio::name{0}, tokens);
+                m_dao.makePayment(m_daoSettings, proposal.getID(), recipient, std::get<eosio::asset>(content.value), memo, eosio::name{0}, tokens);
             }
         }
     }
