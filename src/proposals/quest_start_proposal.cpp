@@ -1,6 +1,7 @@
 #include <proposals/quest_start_proposal.hpp>
 #include <common.hpp>
 #include <util.hpp>
+#include <member.hpp>
 
 namespace hypha
 {
