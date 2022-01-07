@@ -9,6 +9,7 @@ namespace hypha
         TRACE_FUNCTION()
         Edge::write(m_dao.get_self(), m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::QUEST_START);
         
+        ContentWrapper contentWrapper = proposal.getContentWrapper();
         eosio::checksum256 assignee = Member::calcHash(contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>());
         
         Edge::write(m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGNED);
