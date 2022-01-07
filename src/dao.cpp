@@ -39,19 +39,7 @@ namespace hypha
      }
    }
 
-   ACTION 
-   dao::fixrole(const checksum256& role)
-   {
-     require_auth(get_self());
-     auto root = getRoot(get_self());
-
-     if (Edge::exists(get_self(), root, role, common::ROLE_NAME)) {
-       Edge::get(get_self(), root, role, common::ROLE_NAME).erase();
-       auto daoHash = Edge::get(get_self(), role, common::DAO).getToNode();
-       Edge(get_self(), get_self(), daoHash, role, common::ROLE_NAME);
-     }
-   }
-
+   /**Testenv only 
    ACTION
    dao::autoenroll(const checksum256& dao_hash, const name& enroller, const name& member)
    {
@@ -69,9 +57,35 @@ namespace hypha
        mem = std::make_unique<Member>(*this, member, member);
      }
 
-     mem->apply(dao_hash, "Auto enrolled member");
-     mem->enroll(enroller, dao_hash, "Auto enrolled member");
+     Document daoDoc(get_self(), dao_hash);
+
+     mem->apply(daoDoc.getID(), "Auto enrolled member");
+     mem->enroll(enroller, daoDoc.getID(), "Auto enrolled member");
    }
+
+   ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
+   {
+     require_auth(get_self());
+
+     Document doc(get_self(), doc_id);
+
+     auto cw = doc.getContentWrapper();
+
+     cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
+
+     doc.update(get_self(), std::move(cw.getContentGroups()));
+   }
+
+   ACTION dao::addedge(const checksum256& from, const checksum256& to, const name& edge_name)
+   {
+     require_auth(get_self());
+
+     Document fromDoc(get_self(), from);
+     Document toDoc(get_self(), to);
+
+     Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
+   }
+   */
 
    void dao::propose(const checksum256& dao_hash,
                      const name &proposer,
@@ -82,9 +96,10 @@ namespace hypha
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       //TODO: Change to dao_hash instead of dao_name
+      Document daoDoc(get_self(), dao_hash);
 
-      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, dao_hash, proposal_type));
-      proposal->propose(dao_hash, proposer, content_groups);
+      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type));
+      proposal->propose(proposer, content_groups);
    }
 
    void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote, string notes)
@@ -94,9 +109,11 @@ namespace hypha
       Document docprop(get_self(), proposal_hash);
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
-      auto daoHash = Edge::get(get_self(), proposal_hash, common::DAO).getToNode();
+      auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
 
-      Proposal *proposal = ProposalFactory::Factory(*this, daoHash, proposal_type);
+      auto daoDoc = Document(get_self(), daoID);
+
+      Proposal *proposal = ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type);
       proposal->vote(voter, vote, docprop, notes);
    }
 
@@ -105,12 +122,15 @@ namespace hypha
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
       
-      auto daoHash = Edge::get(get_self(), proposal_hash, common::DAO).getToNode();
-
       Document docprop(get_self(), proposal_hash);
+
+      auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
+
+      auto daoDoc = Document(get_self(), daoID);
+
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
-      Proposal *proposal = ProposalFactory::Factory(*this, daoHash, proposal_type);
+      Proposal *proposal = ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type);
       proposal->close(docprop);
    }
 
@@ -125,10 +145,12 @@ namespace hypha
       eosio::name assignee = assignment.getAssignee().getAccount();
       eosio::require_auth(assignee);
       
-      auto daoHash = Edge::get(get_self(), assignment_hash, common::DAO).getToNode();
+      auto daoHash = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
 
       //Get the DAO edge from the hash
-      EOS_CHECK(Member::isMember(get_self(), daoHash, assignee), "assignee must be a current member to request an extension: " + assignee.to_string());
+      EOS_CHECK(
+        Member::isMember(get_self(), daoHash, assignee), 
+        "assignee must be a current member to request an extension: " + assignee.to_string());
 
       eosio::print("\nproposer is: " + assignee.to_string() + "\n");
       // construct ContentGroups to call propose
@@ -141,9 +163,11 @@ namespace hypha
         }
       };
 
+      Document daoDoc(get_self(), daoHash);
+
       // propose the extension
-      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoHash, common::EXTENSION));
-      proposal->propose(daoHash, assignee, contentGroups);
+      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoDoc.getID(), common::EXTENSION));
+      proposal->propose(assignee, contentGroups);
    }
 
    void dao::withdraw(name owner, eosio::checksum256 hash) 
@@ -167,6 +191,7 @@ namespace hypha
      auto state = cw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
      EOS_CHECK(
+       state != common::STATE_PROPOSED &&
        state != common::STATE_WITHDRAWED && 
        state != common::STATE_SUSPENDED &&
        state != common::STATE_EXPIRED &&
@@ -197,7 +222,7 @@ namespace hypha
      ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_WITHDRAWED });
  
      hash = m_documentGraph.updateDocument(assignment.getCreator(), 
-                                           hash, 
+                                           assignment.getID(), 
                                            cw.getContentGroups()).getHash();
  
      assignment = Assignment(this, hash);
@@ -224,11 +249,13 @@ namespace hypha
        "Contract is paused for maintenance. Please try again later."
      );
 
+     Document doc(get_self(), hash);
+
      //Get the DAO edge from the hash
-     auto daoHash = Edge::get(get_self(), hash, common::DAO).getToNode();
+     auto daoID = Edge::get(get_self(), doc.getID(), common::DAO).getToNode();
 
      EOS_CHECK(
-       Member::isMember(get_self(), daoHash, proposer), 
+       Member::isMember(get_self(), daoID, proposer), 
        to_str("Only members are allowed to propose suspensions")
      );
 
@@ -242,10 +269,9 @@ namespace hypha
        },
      };
 
-     //Check which dao this document belongs to
-     checksum256 dao = Edge::get(get_self(), hash, common::DAO).getToNode();
+     Document daoDoc(get_self(), daoID);
 
-     propose(dao, proposer, common::SUSPEND, cgs);
+     propose(daoDoc.getHash(), proposer, common::SUSPEND, cgs);
    }
 
    void dao::claimnextper(const eosio::checksum256 &assignment_hash)
@@ -262,10 +288,12 @@ namespace hypha
       eosio::name assignee = assignment.getAssignee().getAccount();
 
       // assignee must still be a DHO member
-      auto daoHash = Edge::get(get_self(), assignment_hash, common::DAO).getToNode();
+      auto daoID = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
+
+      Document daoDoc(get_self(), daoID);
       
       EOS_CHECK(
-        Member::isMember(get_self(), daoHash, assignee), 
+        Member::isMember(get_self(), daoID, assignee), 
         "assignee must be a current member to claim pay: " + assignee.to_string()
       );
 
@@ -277,7 +305,7 @@ namespace hypha
 
       // Valid claim identified - start process
       // process this claim
-      Edge::write(get_self(), get_self(), assignment.getHash(), periodToClaim.value().getHash(), common::CLAIMED);
+      Edge::write(get_self(), get_self(), assignment.getID(), periodToClaim.value().getID(), common::CLAIMED);
       int64_t periodStartSec = periodToClaim.value().getStartTime().sec_since_epoch();
       int64_t periodEndSec = periodToClaim.value().getEndTime().sec_since_epoch();
 
@@ -286,7 +314,7 @@ namespace hypha
 
       //EOS_CHECK(first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
 
-      auto daoSettings = getSettingsDocument(daoHash);
+      auto daoSettings = getSettingsDocument(daoID);
 
       auto daoTokens = AssetBatch{
         .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
@@ -386,8 +414,8 @@ namespace hypha
          //let's update the edge
          if (lastUsedTimeShare->getHash() != current.getHash())
          {
-            Edge::get(get_self(), assignment.getHash(), common::CURRENT_TIME_SHARE).erase();
-            Edge::write(get_self(), get_self(), assignment.getHash(), lastUsedTimeShare->getHash(), common::CURRENT_TIME_SHARE);
+            Edge::get(get_self(), assignment.getID(), common::CURRENT_TIME_SHARE).erase();
+            Edge::write(get_self(), get_self(), assignment.getID(), lastUsedTimeShare->getID(), common::CURRENT_TIME_SHARE);
          }
       }
 
@@ -419,11 +447,11 @@ namespace hypha
       ab.voice = voice;
       ab.peg = peg;
 
-      ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoHash, ab);
+      ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoDoc.getID(), ab);
 
-      makePayment(periodToClaim.value().getHash(), assignee, ab.reward, memo, eosio::name{0}, daoTokens);
-      makePayment(periodToClaim.value().getHash(), assignee, ab.voice, memo, eosio::name{0}, daoTokens);
-      makePayment(periodToClaim.value().getHash(), assignee, ab.peg, memo, eosio::name{0}, daoTokens);
+      makePayment(periodToClaim.value().getID(), assignee, ab.reward, memo, eosio::name{0}, daoTokens);
+      makePayment(periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{0}, daoTokens);
+      makePayment(periodToClaim.value().getID(), assignee, ab.peg, memo, eosio::name{0}, daoTokens);
    }
 
    asset dao::getProRatedAsset(ContentWrapper *assignment, const symbol &symbol, const string &key, const float &proration)
@@ -438,20 +466,23 @@ namespace hypha
       return adjustAsset(assetToPay, proration);
    }
 
-   std::vector<Document> dao::getCurrentBadges(Period &period, const name &member, const checksum256& dao)
+   std::vector<Document> dao::getCurrentBadges(Period &period, const name &member, uint64_t dao)
    {
       TRACE_FUNCTION()
       std::vector<Document> current_badges;
-      std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(Member::calcHash(member), common::ASSIGN_BADGE);
+
+      Member memDoc(*this, Member::calcHash(member));
+
+      std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(memDoc.getID(), common::ASSIGN_BADGE);
       for (Edge e : badge_assignment_edges)
       {
         Document badgeAssignmentDoc(get_self(), e.getToNode());
-        Edge badge_edge = Edge::get(get_self(), badgeAssignmentDoc.getHash(), common::BADGE_NAME);
+        Edge badge_edge = Edge::get(get_self(), badgeAssignmentDoc.getID(), common::BADGE_NAME);
         
         //Verify badge still exists
         EOS_CHECK(
           Document::exists(get_self(), badge_edge.getToNode()),
-          to_str("Badge document doesn't exits for badge assignment:", 
+          util::to_str("Badge document doesn't exits for badge assignment:", 
                  badgeAssignmentDoc.getHash(),
                  " badge:", badge_edge.getToNode())
         )
@@ -510,7 +541,7 @@ namespace hypha
       return asset{0, base.symbol};
    }
 
-   AssetBatch dao::applyBadgeCoefficients(Period &period, const eosio::name &member, const checksum256& dao, AssetBatch &ab)
+   AssetBatch dao::applyBadgeCoefficients(Period &period, const eosio::name &member, uint64_t dao, AssetBatch &ab)
    {
       TRACE_FUNCTION()
       // get list of badges
@@ -529,7 +560,7 @@ namespace hypha
       return applied_assets;
    }
 
-   void dao::makePayment(const eosio::checksum256 &fromNode,
+   void dao::makePayment(uint64_t fromNode,
                          const eosio::name &recipient,
                          const eosio::asset &quantity,
                          const string &memo,
@@ -545,16 +576,18 @@ namespace hypha
 
       std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, quantity.symbol, paymentType, daoTokens));
       Document paymentReceipt = payer->pay(recipient, quantity, memo);
-      Edge::write(get_self(), get_self(), fromNode, paymentReceipt.getHash(), common::PAYMENT);
-      Edge::write(get_self(), get_self(), Member::calcHash(recipient), paymentReceipt.getHash(), common::PAID);
+      Document recipientDoc(get_self(), Member::calcHash(recipient));
+      Edge::write(get_self(), get_self(), fromNode, paymentReceipt.getID(), common::PAYMENT);
+      Edge::write(get_self(), get_self(), recipientDoc.getID(), paymentReceipt.getID(), common::PAID);
    }
 
    void dao::apply(const eosio::name &applicant, const checksum256& dao_hash, const std::string &content)
    {
       TRACE_FUNCTION()
       require_auth(applicant);
+      Document daoDoc(get_self(), dao_hash);
       Member member(*this, applicant, applicant);
-      member.apply(dao_hash, content);
+      member.apply(daoDoc.getID(), content);
    }
 
    void dao::enroll(const eosio::name &enroller, const checksum256& dao_hash, const eosio::name &applicant, const std::string &content)
@@ -573,8 +606,10 @@ namespace hypha
 
       require_auth(enroller);
 
+      Document daoDoc(get_self(), dao_hash);
+
       Member member = Member::get(*this, applicant);
-      member.enroll(enroller, dao_hash, content);
+      member.enroll(enroller, daoDoc.getID(), content);
    }
 
    bool dao::isPaused() { return false; }
@@ -585,25 +620,32 @@ namespace hypha
       return getSettingsDocument(getDAO(dao_name));
    }
 
-   Settings* dao::getSettingsDocument(const eosio::checksum256& daoHash)
+   Settings* dao::getSettingsDocument(const checksum256& daoHash)
+   {
+     TRACE_FUNCTION()
+     Document daoDoc(get_self(), daoHash);
+     return getSettingsDocument(daoDoc.getID());
+   }
+
+   Settings* dao::getSettingsDocument(uint64_t daoID)
    {
      TRACE_FUNCTION();
 
      //Check if it'S already loaded in cache
      for (auto& settingsDoc : m_settingsDocs) {
-       if (settingsDoc->getRootHash() == daoHash) {
+       if (settingsDoc->getRootID() == daoID) {
          return settingsDoc.get();
        }
      }
 
      //If not then we have to load it
-     auto edges = m_documentGraph.getEdgesFromOrFail(daoHash, common::SETTINGS_EDGE);
+     auto edges = m_documentGraph.getEdgesFromOrFail(daoID, common::SETTINGS_EDGE);
      EOS_CHECK(edges.size() == 1, "There should only exists only 1 settings edge from a dao node");
     
      m_settingsDocs.emplace_back(std::make_unique<Settings>(
        *this,
        edges[0].to_node,
-       daoHash
+       daoID
      ));
 
      return m_settingsDocs.back().get();
@@ -706,7 +748,7 @@ namespace hypha
       //Verify Root exists
       Document root(get_self(), getRoot(get_self()));
 
-      Edge(get_self(), get_self(), root.getHash(), daoDoc.getHash(), common::DAO);
+      Edge(get_self(), get_self(), root.getID(), daoDoc.getID(), common::DAO);
       
       // dao_table daos(get_self(), get_self().value);
 
@@ -803,7 +845,7 @@ namespace hypha
       };
 
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
-      Edge::write(get_self(), get_self(), daoDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
+      Edge::write(get_self(), get_self(), daoDoc.getID(), settingsDoc.getID(), common::SETTINGS_EDGE);
 
       createTokens(voiceToken->getAs<asset>(), rewardToken->getAs<asset>(), pegToken->getAs<asset>());
       
@@ -819,8 +861,8 @@ namespace hypha
         member = std::make_unique<Member>(*this, onboarder, onboarder);
       }
 
-      member->apply(daoDoc.getHash(), "DAO Onboarder");
-      member->enroll(onboarder, daoDoc.getHash(), "DAO Onboarder");
+      member->apply(daoDoc.getID(), "DAO Onboarder");
+      member->enroll(onboarder, daoDoc.getID(), "DAO Onboarder");
       
       //TODO: Create enroller edge
       
@@ -831,10 +873,10 @@ namespace hypha
         util::to_str(dao, " - start period")
       );
 
-      auto startEdge = Edge::get(get_self(), daoDoc.getHash(), common::START);
+      auto startEdge = Edge::get(get_self(), daoDoc.getID(), common::START);
 
       //Create end period edge
-      Edge(get_self(), get_self(), daoDoc.getHash(), startEdge.getToNode(), common::END);
+      Edge(get_self(), get_self(), daoDoc.getID(), startEdge.getToNode(), common::END);
 
       // EOS_CHECK(
       //   inititialPeriods->getAs<int64_t>() - 1 <= 30,
@@ -866,13 +908,16 @@ namespace hypha
               Content(NODE_LABEL, "Settings")}};
 
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
-      Edge::write(get_self(), get_self(), rootDoc.getHash(), settingsDoc.getHash(), common::SETTINGS_EDGE);
+      Edge::write(get_self(), get_self(), rootDoc.getID(), settingsDoc.getID(), common::SETTINGS_EDGE);
    }
 
    void dao::setalert(const eosio::name &level, const std::string &content)
    {
       TRACE_FUNCTION()
-      auto [exists, edge] = Edge::getIfExists(get_self(), getRoot(get_self()), common::ALERT);
+
+      Document rootDoc(get_self(), getRoot(get_self()));
+
+      auto [exists, edge] = Edge::getIfExists(get_self(), rootDoc.getID(), common::ALERT);
       if (exists)
       {
          remalert("removing alert to replace with new alert");
@@ -889,15 +934,18 @@ namespace hypha
                              Content(TYPE, common::ALERT),
                              Content(NODE_LABEL, "Alert : " + level.to_string())}});
 
-      Edge::write(get_self(), get_self(), getRoot(get_self()), alert.getHash(), common::ALERT);
+      Edge::write(get_self(), get_self(), rootDoc.getID(), alert.getID(), common::ALERT);
    }
 
    void dao::remalert(const string &notes)
    {
       TRACE_FUNCTION()
-      Edge alertEdge = Edge::get(get_self(), getRoot(get_self()), common::ALERT);
+
+      Document rootDoc(get_self(), getRoot(get_self()));
+
+      Edge alertEdge = Edge::get(get_self(), rootDoc.getID(), common::ALERT);
       Document alert(get_self(), alertEdge.getToNode());
-      getGraph().eraseDocument(alert.getHash());
+      getGraph().eraseDocument(alert.getID());
    }
 
    DocumentGraph &dao::getGraph()
@@ -966,6 +1014,7 @@ namespace hypha
            auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
            EOS_CHECK(
+             state != common::STATE_PROPOSED &&
              state != common::STATE_WITHDRAWED && 
              state != common::STATE_SUSPENDED &&
              state != common::STATE_EXPIRED &&
@@ -1026,7 +1075,7 @@ namespace hypha
                                          .getContentWrapper()
                                          .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
 
-    auto daoSettings = getSettingsDocument(assignment.getDaoHash());
+    auto daoSettings = getSettingsDocument(assignment.getDaoID());
 
     auto usdPerPeriodCommitmentAdjusted = normalizeToken(usdPerPeriod) * (initialTimeshare / 100.0);
 
@@ -1058,7 +1107,7 @@ namespace hypha
       denormalizeToken(pegVal, pegToken)
     });
 
-    m_documentGraph.updateDocument(issuer, assignment_hash, cw.getContentGroups());
+    m_documentGraph.updateDocument(issuer, assignment.getID(), cw.getContentGroups());
   }
 
    void dao::modifyCommitment(Assignment& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
@@ -1069,7 +1118,7 @@ namespace hypha
 
       //Should use the role edge instead of the role content item
       //in case role document is modified (causes it's hash to change)
-      auto assignmentToRoleEdge = m_documentGraph.getEdgesFrom(assignment.getHash(), common::ROLE_NAME);
+      auto assignmentToRoleEdge = m_documentGraph.getEdgesFrom(assignment.getID(), common::ROLE_NAME);
       
       EOS_CHECK(
         !assignmentToRoleEdge.empty(),
@@ -1094,7 +1143,7 @@ namespace hypha
       );
 
       //Update lasttimeshare
-      Edge lastTimeShareEdge = Edge::get(get_self(), assignment.getHash(), common::LAST_TIME_SHARE);
+      Edge lastTimeShareEdge = Edge::get(get_self(), assignment.getID(), common::LAST_TIME_SHARE);
 
       time_point startDate = eosio::current_time_point();
 
@@ -1128,13 +1177,13 @@ namespace hypha
                                 assignment.getAssignee().getAccount(), 
                                 commitment, 
                                 startDate, 
-                                assignment.getHash());
+                                assignment.getID());
 
-      Edge::write(get_self(), get_self(), lastTimeShareEdge.getToNode(), newTimeShareDoc.getHash(), common::NEXT_TIME_SHARE);
+      Edge::write(get_self(), get_self(), lastTimeShareEdge.getToNode(), newTimeShareDoc.getID(), common::NEXT_TIME_SHARE);
 
       lastTimeShareEdge.erase();
 
-      Edge::write(get_self(), get_self(), assignment.getHash(), newTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
+      Edge::write(get_self(), get_self(), assignment.getID(), newTimeShareDoc.getID(), common::LAST_TIME_SHARE);
    }
 
   void dao::addPeriod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label) 
@@ -1154,12 +1203,12 @@ namespace hypha
                       "start_time of period predecessor must be before the new period's start_time");
 
          // predecessor is a period, so use "next" edge
-         Edge::write(get_self(), get_self(), predecessor, newPeriod.getHash(), common::NEXT);
+         Edge::write(get_self(), get_self(), previous.getID(), newPeriod.getID(), common::NEXT);
       }
       else
       {
          // predecessor is not a period, so use "start" edge
-         Edge::write(get_self(), get_self(), predecessor, newPeriod.getHash(), common::START);
+         Edge::write(get_self(), get_self(), previous.getID(), newPeriod.getID(), common::START);
       }
   }
 
@@ -1177,12 +1226,12 @@ namespace hypha
 
     name daoName = settings->getOrFail<eosio::name>(DAO_NAME);
 
-    auto lastEdge = Edge::get(get_self(), daoDoc.getHash(), common::END);
+    auto lastEdge = Edge::get(get_self(), daoDoc.getID(), common::END);
     lastEdge.erase();
 
-    checksum256 lastPeriodHash = lastEdge.getToNode();
+    uint64_t lastPeriodID = lastEdge.getToNode();
 
-    int64_t lastPeriodStartSecs = Period(this, lastPeriodHash)
+    int64_t lastPeriodStartSecs = Period(this, lastPeriodID)
                                     .getStartTime()
                                     .sec_since_epoch();
 
@@ -1195,13 +1244,13 @@ namespace hypha
         util::to_str(daoName, ":", nextPeriodStart.time_since_epoch().count())
       );
       
-      Edge(get_self(), get_self(), lastPeriodHash, nextPeriod.getHash(), common::NEXT);
+      Edge(get_self(), get_self(), lastPeriodID, nextPeriod.getID(), common::NEXT);
 
       lastPeriodStartSecs = nextPeriodStart.sec_since_epoch();
-      lastPeriodHash = nextPeriod.getHash();
+      lastPeriodID = nextPeriod.getID();
     }
 
-    Edge(get_self(), get_self(), daoDoc.getHash(), lastPeriodHash, common::END);
+    Edge(get_self(), get_self(), daoDoc.getID(), lastPeriodID, common::END);
 
     //Check if there are more periods to created
 

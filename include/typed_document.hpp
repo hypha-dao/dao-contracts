@@ -10,6 +10,7 @@ namespace hypha
     {
         public:
             TypedDocument(dao& dao, const eosio::checksum256& hash);
+            TypedDocument(dao& dao, uint64_t id);
             const std::string& getNodeLabel();
             Document& getDocument();
 

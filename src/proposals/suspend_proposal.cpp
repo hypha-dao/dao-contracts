@@ -21,26 +21,26 @@ namespace hypha
       TRACE_FUNCTION()
 
       EOS_CHECK(
-        Member::isMember(m_dao.get_self(), m_daoHash, proposer),
-        util::to_str("Only members of: ", m_daoHash, " can suspend this proposal")
+        Member::isMember(m_dao.get_self(), m_daoID , proposer),
+        util::to_str("Only members of: ", m_daoID , " can suspend this proposal")
       )
 
       // original_document is a required hash
       auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
 
+      Document originalDoc(m_dao.get_self(), originalDocHash);
+
       //Verify if this is a passed proposal
       EOS_CHECK(
-        Edge::exists(m_dao.get_self(), m_daoHash, originalDocHash, common::PASSED_PROPS),
+        Edge::exists(m_dao.get_self(), m_daoID , originalDoc.getID(), common::PASSED_PROPS),
         "Only passed proposals can be suspended"
       )
       
-      Document originalDoc(m_dao.get_self(), originalDocHash);
-
-      if (auto [hasOpenSuspendProp, proposalHash] = hasOpenProposal(common::SUSPEND, originalDocHash);
+      if (auto [hasOpenSuspendProp, proposalID] = hasOpenProposal(common::SUSPEND, originalDoc.getID());
           hasOpenSuspendProp) {
         EOS_CHECK(
           false,
-          to_str("There is an open suspension proposal already:", proposalHash)  
+          to_str("There is an open suspension proposal already:", proposalID)  
         )
       }
 
@@ -52,6 +52,7 @@ namespace hypha
       auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
       EOS_CHECK(
+        state != common::STATE_PROPOSED &&
         state != common::STATE_WITHDRAWED && 
         state != common::STATE_SUSPENDED &&
         state != common::STATE_EXPIRED &&
@@ -103,13 +104,15 @@ namespace hypha
                                      .getOrFail(DETAILS, ORIGINAL_DOCUMENT)
                                      ->getAs<eosio::checksum256>();
 
-      Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), originalDocHash, common::SUSPEND);
+      Document originalDoc(m_dao.get_self(), originalDocHash);
+
+      Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getID(), originalDoc.getID(), common::SUSPEND);
     }
 
     void SuspendProposal::passImpl(Document &proposal)
     {
       TRACE_FUNCTION()
-      auto edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::SUSPEND);
+      auto edges = m_dao.getGraph().getEdgesFrom(proposal.getID(), common::SUSPEND);
 
       EOS_CHECK(
         edges.size() == 1, 
@@ -125,7 +128,7 @@ namespace hypha
       ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_SUSPENDED });
 
       originalDoc = m_dao.getGraph().updateDocument(originalDoc.getCreator(), 
-                                                    originalDoc.getHash(), 
+                                                    originalDoc.getID(), 
                                                     ocw.getContentGroups());
 
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
@@ -156,7 +159,7 @@ namespace hypha
           ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
 
           originalDoc = m_dao.getGraph().updateDocument(assignment.getCreator(), 
-                                                         assignment.getHash(), 
+                                                         assignment.getID(), 
                                                          cw.getContentGroups());
 
           assignment = Assignment(&m_dao, originalDoc.getHash());
@@ -177,7 +180,7 @@ namespace hypha
       }
 
       //dao --> suspended --> proposal
-      Edge(m_dao.get_self(), m_dao.get_self(), m_daoHash, originalDoc.getHash(), common::SUSPENDED);
+      Edge(m_dao.get_self(), m_dao.get_self(), m_daoID , originalDoc.getID(), common::SUSPENDED);
     }
 
     std::string SuspendProposal::getBallotContent (ContentWrapper &contentWrapper)

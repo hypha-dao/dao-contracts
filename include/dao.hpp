@@ -70,23 +70,6 @@ namespace hypha
                           eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
           payment_table;
 
-      //TODO: REMOVE
-      ACTION deletetok(asset asset, name contract) {
-
-        require_auth(get_self());
-
-        eosio::action(
-          eosio::permission_level{contract, name("active")},
-          contract, 
-          name("del"),
-          std::make_tuple(asset)
-        ).send();
-      }
-
-      ACTION fixrole(const checksum256& role);
-
-      ACTION autoenroll(const checksum256& dao_hash, const name& enroller, const name& member);
-
       ACTION clean();
       ACTION propose(const checksum256& dao_hash, const name &proposer, const name &proposal_type, ContentGroups &content_groups);
       ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
@@ -102,27 +85,41 @@ namespace hypha
 
       ACTION addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
       ACTION genperiods(const eosio::checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/);
-      //ACTION genperiodini(const name& dao_name, int64_t period_count, int64_t period_duration_sec);
-
-      // ACTION claimpay(const eosio::checksum256 &hash);
-      // ACTION claimpayper(const eosio::checksum256 &assignment_hash, const eosio::checksum256 &period_hash);
+      
       ACTION claimnextper(const eosio::checksum256 &assignment_hash);
       ACTION proposeextend (const eosio::checksum256 &assignment_hash, const int64_t additional_periods);
 
       ACTION apply(const eosio::name &applicant, const checksum256& dao_hash, const std::string &content);
       ACTION enroll(const eosio::name &enroller, const checksum256& dao_hash, const eosio::name &applicant, const std::string &content);
 
-      // ACTION suspend (const eosio::name &proposer, const eosio::checksum256 &hash);
-
       ACTION setalert(const eosio::name &level, const std::string &content);
       ACTION remalert(const std::string &notes);
 
+      /**Testenv only
+      ACTION addedge(const checksum256& from, const checksum256& to, const name& edge_name);
+      ACTION autoenroll(const checksum256& dao_hash, const name& enroller, const name& member);
+      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
+      ACTION deletetok(asset asset, name contract) {
+
+        require_auth(get_self());
+
+        eosio::action(
+          eosio::permission_level{contract, name("active")},
+          contract, 
+          name("del"),
+          std::make_tuple(asset)
+        ).send();
+      }
+      */
+     
       DocumentGraph &getGraph();
       Settings* getSettingsDocument();
-      //TODO: Refactor to receive the dao_hash instead of the dao_name
+      
       Settings* getSettingsDocument(const eosio::name &dao_name);
 
-      Settings* getSettingsDocument(const eosio::checksum256& daoHash);
+      Settings* getSettingsDocument(uint64_t daoID);
+
+      Settings* getSettingsDocument(const checksum256& daoHash);
 
       template <class T>
       const T& getSettingOrFail(const std::string &setting)
@@ -192,7 +189,7 @@ namespace hypha
                            const float &time_share,
                            const float &deferred_perc);
 
-      void makePayment(const eosio::checksum256 &fromNode, const eosio::name &recipient,
+      void makePayment(uint64_t fromNode, const eosio::name &recipient,
                        const eosio::asset &quantity, const string &memo,
                        const eosio::name &paymentType,
                        const AssetBatch& daoTokens);
@@ -218,8 +215,8 @@ namespace hypha
                         const eosio::asset& pegToken);
 
       eosio::asset applyCoefficient(ContentWrapper & badge, const eosio::asset &base, const std::string &key);
-      AssetBatch applyBadgeCoefficients(Period & period, const eosio::name &member, const checksum256& dao, AssetBatch &ab);
-      std::vector<Document> getCurrentBadges(Period & period, const eosio::name &member, const checksum256& dao);
+      AssetBatch applyBadgeCoefficients(Period & period, const eosio::name &member, uint64_t dao, AssetBatch &ab);
+      std::vector<Document> getCurrentBadges(Period & period, const eosio::name &member, uint64_t dao);
 
       bool isPaused();
 

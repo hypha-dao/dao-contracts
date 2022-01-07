@@ -15,7 +15,7 @@
 
 namespace hypha
 {
-    Proposal* ProposalFactory::Factory(dao& dao, const checksum256& daoHash, const name &proposal_type)
+    Proposal* ProposalFactory::Factory(dao& dao, uint64_t daoHash, const name &proposal_type)
     { 
         TRACE_FUNCTION()
 

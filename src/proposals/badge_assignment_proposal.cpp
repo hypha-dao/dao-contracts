@@ -17,7 +17,7 @@ namespace hypha
         name assignee = badgeAssignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
 
         EOS_CHECK(
-            Member::isMember(m_dao.get_self(), m_daoHash, assignee), 
+            Member::isMember(m_dao.get_self(), m_daoID, assignee), 
             "only members can be assigned to badges " + assignee.to_string()
         );
 
@@ -25,18 +25,18 @@ namespace hypha
         Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
         
         auto badge = badgeDocument.getContentWrapper();
-        
+
         EOS_CHECK(badge.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::BADGE_NAME,
                      "badge document hash provided in assignment proposal is not of type badge");
 
         EOS_CHECK(
-            m_daoHash == Edge::get(m_dao.get_self(), badgeDocument.getHash(), common::DAO).getToNode(),
-            util::to_str("Badge must belong to: ", m_daoHash)
+            m_daoID == Edge::get(m_dao.get_self(), badgeDocument.getID (), common::DAO).getToNode(),
+            util::to_str("Badge must belong to: ", m_daoID)
         )
 
         EOS_CHECK(
-          !Edge::exists(m_dao.get_self(), m_daoHash, badgeDocument.getHash(), common::SUSPENDED),
-          "Cannot create badge assignment proposal of suspened badge"
+            badge.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_APPROVED,
+            util::to_str("Badge must be approved before applying to it.")
         )
 
         // START_PERIOD - number of periods the assignment is valid for
@@ -50,7 +50,7 @@ namespace hypha
             Period period(&m_dao, std::get<eosio::checksum256>(startPeriod->value));
         } else {
             // default START_PERIOD to next period
-            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoHash).next().getHash()});
+            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoID).next().getID ()});
         }
 
         // PERIOD_COUNT - number of periods the assignment is valid for
@@ -74,6 +74,7 @@ namespace hypha
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
         eosio::checksum256 assignee = Member::calcHash((contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>()));
+        Document assigneeDoc(m_dao.get_self(), assignee);
         Document badge(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
 
         // update graph edges:
@@ -86,14 +87,15 @@ namespace hypha
 
         // the assignee now HOLDS this badge, non-strict in case the member already has the badge
         //We use getOrNew since the user could have held this badge already
-        Edge::getOrNew(m_dao.get_self(), m_dao.get_self(), assignee, badge.getHash(), common::HOLDS_BADGE);
-        Edge::getOrNew(m_dao.get_self(), m_dao.get_self(), badge.getHash(), assignee, common::HELD_BY);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGN_BADGE);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getHash(), proposal.getHash(), common::ASSIGNMENT);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), badge.getHash(), common::BADGE_NAME);
+        Edge::getOrNew(m_dao.get_self(), m_dao.get_self(), assigneeDoc.getID(), badge.getID (), common::HOLDS_BADGE);
+        Edge::getOrNew(m_dao.get_self(), m_dao.get_self(), badge.getID (), assigneeDoc.getID(), common::HELD_BY);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), assigneeDoc.getID(), proposal.getID (), common::ASSIGN_BADGE);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getID (), proposal.getID (), common::ASSIGNMENT);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), badge.getID (), common::BADGE_NAME);
 
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(),
-                    contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>(), common::START);
+        Document startPer(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), startPer.getID(), common::START);
     }
 
     std::string BadgeAssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)

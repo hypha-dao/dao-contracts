@@ -5,21 +5,21 @@
 
 namespace hypha {
 
-TimeShare::TimeShare(name contract, name creator, int64_t timeShare, time_point startDate, checksum256 assignment) 
+TimeShare::TimeShare(name contract, name creator, int64_t timeShare, time_point startDate, uint64_t assignment) 
 : Document(contract, creator, constructContentGroups(timeShare, startDate, assignment))
 {
   
 }
 
-TimeShare::TimeShare(name contract, eosio::checksum256 hash)
-: Document(contract, hash)
+TimeShare::TimeShare(name contract, uint64_t id)
+: Document(contract, id)
 {
   
 }
 
 std::optional<TimeShare> TimeShare::getNext(name contract)
 {
-  if (auto [exists, edge] = Edge::getIfExists(contract, getHash(), common::NEXT_TIME_SHARE);
+  if (auto [exists, edge] = Edge::getIfExists(contract, getID(), common::NEXT_TIME_SHARE);
       exists) {
     return TimeShare(contract, edge.getToNode());
   }
@@ -27,7 +27,7 @@ std::optional<TimeShare> TimeShare::getNext(name contract)
   return std::nullopt;
 }
 
-ContentGroups TimeShare::constructContentGroups(int64_t timeShare, time_point startDate, checksum256 assignment) 
+ContentGroups TimeShare::constructContentGroups(int64_t timeShare, time_point startDate, uint64_t assignment) 
 {
   return {
     ContentGroup {

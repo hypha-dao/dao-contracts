@@ -18,14 +18,15 @@ class Settings : public Document
 {
 public:
     Settings(dao& dao, 
-            const checksum256& hash, 
-            const checksum256& rootHash);
+            uint64_t id, 
+            uint64_t rootID);
     void setSetting(const Content& setting);
     void remSetting(const string& key);
     //const Content* getSetting(const string& key);
-    inline const checksum256& getRootHash() 
+
+    inline uint64_t getRootID() 
     {
-    return m_rootHash;
+        return m_rootID;
     }
 
     template<class T>
@@ -65,6 +66,7 @@ public:
 private:
     //bool m_dirty;
     checksum256 m_rootHash;
+    uint64_t m_rootID;
     dao* m_dao;
 };
 

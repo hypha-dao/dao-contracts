@@ -22,27 +22,27 @@ namespace hypha
         name assignee = assignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
         
         EOS_CHECK(
-            Member::isMember(m_dao.get_self(), m_daoHash, assignee), 
+            Member::isMember(m_dao.get_self(), m_daoID, assignee), 
             "only members can be assigned to assignments " + assignee.to_string()
         );
 
         Document roleDocument(m_dao.get_self(), assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
 
-        EOS_CHECK(
-            m_daoHash == Edge::get(m_dao.get_self(), roleDocument.getHash(), common::DAO).getToNode(),
-            util::to_str("Role must belong to: ", m_daoHash)
-        )
-
         auto role = roleDocument.getContentWrapper();
-        
-        EOS_CHECK(
-          !Edge::exists(m_dao.get_self(), m_daoHash, roleDocument.getHash(), common::SUSPENDED),
-          "Cannot create assignment proposal of suspened role"
-        )
 
         // role in the proposal must be of type: role
         EOS_CHECK(role.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::ROLE_NAME,
-                     "role document hash provided in assignment proposal is not of type: role");
+                  "role document hash provided in assignment proposal is not of type: role");
+
+        EOS_CHECK(
+            m_daoID == Edge::get(m_dao.get_self(), roleDocument.getID(), common::DAO).getToNode(),
+            util::to_str("Role must belong to: ", m_daoID)
+        )
+
+        EOS_CHECK(
+            role.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_APPROVED,
+            util::to_str("Role must be approved before applying to it.")
+        )
 
         // time_share_x100 is required and must be greater than zero and less than 100%
         int64_t timeShare = assignment.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
@@ -83,7 +83,7 @@ namespace hypha
             Period period(&m_dao, std::get<eosio::checksum256>(startPeriod->value));
         } else {
             // default START_PERIOD to next period
-            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoHash).next().getHash()});
+            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoID).next().getID ()});
         }
 
         // PERIOD_COUNT - number of periods the assignment is valid for
@@ -144,9 +144,14 @@ namespace hypha
     void AssignmentProposal::postProposeImpl(Document &proposal)
     {
         TRACE_FUNCTION()
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(),
-                    proposal.getContentWrapper().getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>(),
-                    common::ROLE_NAME);
+
+        Document roleDoc(
+            m_dao.get_self(),
+            proposal.getContentWrapper()
+                    .getOrFail(DETAILS, ROLE_STRING)
+                    ->getAs<eosio::checksum256>());
+
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), roleDoc.getID(), common::ROLE_NAME);
     }
 
     void AssignmentProposal::passImpl(Document &proposal)
@@ -154,12 +159,13 @@ namespace hypha
         TRACE_FUNCTION()
         ContentWrapper contentWrapper = proposal.getContentWrapper();
         eosio::checksum256 assignee = Member::calcHash(contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>());
+        Document assigneeDoc(m_dao.get_self(), assignee);
 
-        auto assignmentToRoleEdge = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::ROLE_NAME);
+        auto assignmentToRoleEdge = m_dao.getGraph().getEdgesFrom(proposal.getID (), common::ROLE_NAME);
       
         EOS_CHECK(
           !assignmentToRoleEdge.empty(),
-          to_str("Missing 'role' edge from assignment: ", proposal.getHash())
+          to_str("Missing 'role' edge from assignment: ", proposal.getID ())
         )
 
         Document role(m_dao.get_self(), assignmentToRoleEdge.at(0).getToNode());
@@ -169,14 +175,15 @@ namespace hypha
         //  role_assignment ---- assignee           ---->   member
         //  role_assignment ---- role               ---->   role                This one already exists since postProposeImpl
         //  role            ---- role_assignment    ---->   role_assignment
-        Edge::write(m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGNED);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), assignee, common::ASSIGNEE_NAME);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), role.getHash(), proposal.getHash(), common::ASSIGNMENT);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), assigneeDoc.getID(), proposal.getID (), common::ASSIGNED);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), assigneeDoc.getID(), common::ASSIGNEE_NAME);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), role.getID (), proposal.getID (), common::ASSIGNMENT);
         
         //Start period edge
         // assignment ---- start ----> period
         eosio::checksum256 startPeriodHash = contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>();
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), startPeriodHash, common::START);
+        Document startPerDoc(m_dao.get_self(), startPeriodHash);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), startPerDoc.getID(), common::START);
 
         Period startPeriod(&m_dao, startPeriodHash);
 
@@ -188,11 +195,11 @@ namespace hypha
                                    m_dao.get_self(), 
                                    initTimeShare, 
                                    startPeriod.getStartTime(),
-                                   proposal.getHash());
+                                   proposal.getID ());
 
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::INIT_TIME_SHARE);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::CURRENT_TIME_SHARE);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), initTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), initTimeShareDoc.getID (), common::INIT_TIME_SHARE);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), initTimeShareDoc.getID (), common::CURRENT_TIME_SHARE);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), initTimeShareDoc.getID (), common::LAST_TIME_SHARE);
 
         auto [detailsIdx, details] = contentWrapper.getGroup(DETAILS);
 

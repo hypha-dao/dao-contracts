@@ -17,13 +17,15 @@ namespace hypha
     void EditProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     { 
       EOS_CHECK(
-        Member::isMember(m_dao.get_self(), m_daoHash, proposer),
-        util::to_str("Only members of: ", m_daoHash, " can edit this proposal")
+        Member::isMember(m_dao.get_self(), m_daoID, proposer),
+        util::to_str("Only members of: ", m_daoID, " can edit this proposal")
       )
 
       auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
 
-      if (auto [hasOpenEditProp, proposalHash] = hasOpenProposal(common::SUSPEND, originalDocHash);
+      Document originalDoc(m_dao.get_self(), originalDocHash);
+
+      if (auto [hasOpenEditProp, proposalHash] = hasOpenProposal(common::SUSPEND, originalDoc.getID());
           hasOpenEditProp) {
         EOS_CHECK(
           false,
@@ -40,9 +42,9 @@ namespace hypha
         // original_document is a required hash
         auto originalDocHash = proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
 
-        Document original;
+        Document original(m_dao.get_self(), originalDocHash);
 
-        if (auto edges = m_dao.getGraph().getEdgesTo(originalDocHash, common::ASSIGNMENT);
+        if (auto edges = m_dao.getGraph().getEdgesTo(original.getID(), common::ASSIGNMENT);
             !edges.empty()) 
         {
             // the original document must be an assignment
@@ -90,6 +92,7 @@ namespace hypha
         auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
         EOS_CHECK(
+          state != common::STATE_PROPOSED &&
           state != common::STATE_WITHDRAWED &&
           state != common::STATE_SUSPENDED &&
           state != common::STATE_EXPIRED &&
@@ -98,7 +101,7 @@ namespace hypha
         )
 
         // connect the edit proposal to the original
-        Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getHash(), original.getHash(), common::ORIGINAL);
+        Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getID(), original.getID(), common::ORIGINAL);
     }
 
     void EditProposal::passImpl(Document &proposal)
@@ -141,7 +144,7 @@ namespace hypha
         // Use the ORIGINAL edge since the original document could have changed since this was 
         // proposed
 
-        auto edges = m_dao.getGraph().getEdgesFrom(proposal.getHash(), common::ORIGINAL);
+        auto edges = m_dao.getGraph().getEdgesFrom(proposal.getID(), common::ORIGINAL);
         
         EOS_CHECK(
           edges.size() == 1, 
@@ -155,10 +158,10 @@ namespace hypha
         merged.emplace ();
 
         // replace the original node with the new one in the edges table
-        m_dao.getGraph().replaceNode(original.getHash(), merged.getHash());
+        m_dao.getGraph().replaceNode(original.getID(), merged.getID());
 
         // erase the original document
-        m_dao.getGraph().eraseDocument(original.getHash(), true);
+        m_dao.getGraph().eraseDocument(original.getID(), true);
 
         //Restore groups
         proposalContent.getContentGroups() = std::move(originalContents);
