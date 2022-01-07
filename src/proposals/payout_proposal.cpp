@@ -82,31 +82,7 @@ namespace hypha
         //  member  ---- payout ---->   payout
         //  makePayment also creates edges from payout and the member to the individual payments
         Edge::write(m_dao.get_self(), m_dao.get_self(), getRoot(m_dao.get_self()), proposal.getHash(), common::PAYOUT);
-
-        ContentWrapper contentWrapper = proposal.getContentWrapper();
-
-        // recipient must exist and be a DHO member
-        name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
-        EOS_CHECK(Member::isMember(m_dao.get_self(), recipient), "only members are eligible for payouts: " + recipient.to_string());
-
-        Edge::write(m_dao.get_self(), m_dao.get_self(), Member::calcHash(recipient), proposal.getHash(), common::PAYOUT);
-
-        std::string memo{"one-time payment on proposal: " + readableHash(proposal.getHash())};
-        auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
-        for (Content &content : *detailsGroup)
-        {
-            if (std::holds_alternative<eosio::asset>(content.value))
-            {
-                if (content.label == ESCROW_SEEDS_AMOUNT)
-                {
-                    m_dao.makePayment(proposal.getHash(), recipient, std::get<eosio::asset>(content.value), memo, common::ESCROW);
-                }
-                else
-                {
-                    m_dao.makePayment(proposal.getHash(), recipient, std::get<eosio::asset>(content.value), memo, eosio::name{0});
-                }
-            }
-        }
+        pay(proposal, common::PAYOUT);
     }
 
     std::string PayoutProposal::getBallotContent(ContentWrapper &contentWrapper)
@@ -134,4 +110,34 @@ namespace hypha
         asset deferredUsd = adjustAsset(usd, (float)(float)deferred / (float)100);
         return adjustAsset(asset{deferredUsd.amount, common::S_HYPHA}, hypha_deferral_coeff);
     }
+
+    void PayoutProposal::pay(Document &proposal, eosio::name edgeName)
+    {
+        TRACE_FUNCTION();
+        ContentWrapper contentWrapper = proposal.getContentWrapper();
+
+        // recipient must exist and be a DHO member
+        name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
+        EOS_CHECK(Member::isMember(m_dao.get_self(), recipient), "only members are eligible for payouts: " + recipient.to_string());
+
+        Edge::write(m_dao.get_self(), m_dao.get_self(), Member::calcHash(recipient), proposal.getHash(), edgeName);
+
+        std::string memo{"one-time payment on proposal: " + readableHash(proposal.getHash())};
+        auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
+        for (Content &content : *detailsGroup)
+        {
+            if (std::holds_alternative<eosio::asset>(content.value))
+            {
+                if (content.label == ESCROW_SEEDS_AMOUNT)
+                {
+                    m_dao.makePayment(proposal.getHash(), recipient, std::get<eosio::asset>(content.value), memo, common::ESCROW);
+                }
+                else
+                {
+                    m_dao.makePayment(proposal.getHash(), recipient, std::get<eosio::asset>(content.value), memo, eosio::name{0});
+                }
+            }
+        }
+    }
+
 } // namespace hypha
