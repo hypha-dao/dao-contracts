@@ -1,0 +1,15 @@
+{
+  "name": "Nodeos",
+  "version": "1.0.0",
+  "description": "local testnet",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "eosjs": "^22.1.0",
+    "node-fetch": "2.5.0"
+  }
+}
