@@ -77,6 +77,12 @@ namespace hypha
     void PayoutProposal::passImpl(Document &proposal)
     {
         TRACE_FUNCTION()
+
+        EOS_CHECK(
+            false, 
+            "Payouts are paused."
+        );
+                
         // Graph updates:
         //  dho     ---- payout ---->   payout
         //  member  ---- payout ---->   payout
