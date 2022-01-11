@@ -12,8 +12,8 @@ import { assetToNumber, fixDecimals, getAssetContent } from './utils/Parsers';
 describe('Badges', () => {
 
     const getAssignmentProp = (role: Document, accountName: string, title?: string) => {
-      return getAssignmentProposal({ 
-        role: role.hash, 
+      return getAssignmentProposal({
+        role: role.hash,
         assignee: accountName,
         deferred_perc: 50,
         time_share: 100,
@@ -22,23 +22,28 @@ describe('Badges', () => {
       });
     }
 
-    it('Create badge & badge assignment', async () => {            
+    it('Create badge & badge assignment', async () => {
 
         let badge: Document;
-      
+
         //Set voting duration to 5 minutes
-        const environment = await setupEnvironment({votingDurationSeconds: 5 * 60});
+        const environment = await setupEnvironment({
+            test: {
+                votingDurationSeconds: 5 * 60
+            }
+        });
+        const dao = environment.getDao('test');
 
-        const hyphaUSDValue = parseFloat(fixDecimals(environment.settings.hyphaUSDValue, 4));
+        const hyphaUSDValue = parseFloat(fixDecimals(dao.settings.tokens.reward.toPegRatio.toFloat(), 4));
 
-        let currentPeriod = environment.periods[0];
+        let currentPeriod = dao.periods[0];
 
         environment.setCurrentTime(currentPeriod.startTime);
 
         let badgeProp = getBadgeProposal();
-        
-        badge = await proposeAndPass(badgeProp, 'badge', environment);
-        
+
+        badge = await proposeAndPass(dao, badgeProp, 'badge', environment);
+
         let badgeDetails = getContentGroupByLabel(badge, 'details');
 
         let husdMultiplier = parseInt(getContent(badgeDetails, 'husd_coefficient_x10000')?.value[1] as string);
@@ -72,13 +77,13 @@ describe('Badges', () => {
           .toBe('badge')
         }
 
-        const assignee = environment.members[0];
+        const assignee = dao.members[0];
 
-        let badgeAssignProp = getBadgeAssignmentProposal({ badge: badge.hash, 
-                                                           assignee: assignee.account.accountName, 
+        let badgeAssignProp = getBadgeAssignmentProposal({ badge: badge.hash,
+                                                           assignee: assignee.account.accountName,
                                                            period_count: 2 });
 
-        let badgeAssignment = await proposeAndPass(badgeAssignProp, 'assignbadge', environment);
+        let badgeAssignment = await proposeAndPass(dao, badgeAssignProp, 'assignbadge', environment);
 
         let badgeAssignStartPeriod: Document;
         let badgeAssingPeriodCount: number;
@@ -120,7 +125,7 @@ describe('Badges', () => {
           .toBe('assignbadge')
         }
 
-        let role = await proposeAndPass(UnderwaterBasketweaver, 'role', environment);
+        let role = await proposeAndPass(dao, UnderwaterBasketweaver, 'role', environment);
 
         let periodUSD = parseFloat(
           getContent(
@@ -128,10 +133,10 @@ describe('Badges', () => {
             'annual_usd_salary'
           ).value[1] as string
         );
-        
+
         const assignProposal = getAssignmentProp(role, assignee.account.accountName);
 
-        let assignment = await proposeAndPass(assignProposal, 'assignment', environment);
+        let assignment = await proposeAndPass(dao, assignProposal, 'assignment', environment);
 
         let assignmentPeriodCount = parseInt(
           getContent(
@@ -146,12 +151,12 @@ describe('Badges', () => {
         //were voted & passed under the same period
         expect(badgeAssignStartPeriod.hash).toBe(assignmentStartPeriod.hash);
 
-        //TODO: Update so it doens't relies on the assingment salary amount, since it could change due 
+        //TODO: Update so it doens't relies on the assingment salary amount, since it could change due
         //global settings configuration
         {
           //let edges = environment.getDaoEdges();
-                    
-          //Assignment and badge start at the second period, so let's skip the 
+
+          //Assignment and badge start at the second period, so let's skip the
           //next 4 periods after that (6th period)
 
           const assignmentDetails = getContentGroupByLabel(assignment, 'details');
@@ -164,7 +169,7 @@ describe('Badges', () => {
 
           const hypha = (usdSalary - husd) / hyphaUSDValue;
 
-          currentPeriod = environment.periods[5];
+          currentPeriod = dao.periods[5];
 
           environment.setCurrentTime(currentPeriod.startTime);
 
@@ -172,7 +177,7 @@ describe('Badges', () => {
 
             //Get payment documents (last 3)
             let docs = environment.getDaoDocuments();
-            
+
             let payments: any = getDocumentsByType(docs, 'payment').slice(-3);
 
             payments = payments.map(
@@ -187,7 +192,7 @@ describe('Badges', () => {
             let hyphaPayment, hvoicePayment, husdPayment;
 
             [hyphaPayment, hvoicePayment, husdPayment] = payments;
-            
+
             expect(parseFloat(hyphaPayment)).toBeCloseTo(hypha, 1);
             expect(parseFloat(hvoicePayment)).toBeCloseTo(hvoice, 1);
             expect(parseFloat(husdPayment)).toBeCloseTo(husd, 1);
@@ -195,15 +200,16 @@ describe('Badges', () => {
 
           //
           for (let i = 0; i < badgeAssingPeriodCount; ++i) {
-            
-            await environment.dao.contract.claimnextper({
-              assignment_hash: assignment.hash
+
+            await environment.daoContract.contract.claimnextper({
+                dao_hash: dao.getHash(),
+                assignment_hash: assignment.hash
             });
-            
-            checkPayments({ 
-              hypha: hypha * hyphaMultiplier, 
-              husd: husd * husdMultiplier, 
-              hvoice: hvoice * hvoiceMultiplier 
+
+            checkPayments({
+              hypha: hypha * hyphaMultiplier,
+              husd: husd * husdMultiplier,
+              hvoice: hvoice * hvoiceMultiplier
             });
           }
 
@@ -211,8 +217,9 @@ describe('Badges', () => {
           //greater than the assignment period count
           for (let i = 0; i < Math.min(1, assignmentPeriodCount - badgeAssingPeriodCount); ++i) {
 
-            await environment.dao.contract.claimnextper({
-              assignment_hash: assignment.hash
+            await environment.daoContract.contract.claimnextper({
+                dao_hash: dao.getHash(),
+                assignment_hash: assignment.hash
             });
 
             checkPayments({ hypha, husd, hvoice });
