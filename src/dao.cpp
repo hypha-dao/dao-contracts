@@ -587,8 +587,20 @@ namespace hypha
       TRACE_FUNCTION()
       require_auth(applicant);
       Document daoDoc(get_self(), dao_hash);
-      Member member(*this, applicant, applicant);
-      member.apply(daoDoc.getID(), content);
+
+      //Auto enroll
+      std::unique_ptr<Member> member;
+      
+      const checksum256 memberHash = Member::calcHash(applicant);
+
+      if (Document::exists(get_self(), memberHash)) {
+        member = std::make_unique<Member>(*this, memberHash);
+      }
+      else {
+        member = std::make_unique<Member>(*this, applicant, applicant);
+      }
+
+      member->apply(daoDoc.getID(), content);
    }
 
    void dao::enroll(const eosio::name &enroller, const checksum256& dao_hash, const eosio::name &applicant, const std::string &content)
