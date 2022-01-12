@@ -219,11 +219,6 @@ namespace hypha
         "Contract is paused for maintenance. Please try again later."
       );
 
-      EOS_CHECK(
-        false, 
-        "Payouts are paused."
-      );
-
       Assignment assignment(this, assignment_hash);
 
       eosio::name assignee = assignment.getAssignee().getAccount();
