@@ -9,7 +9,7 @@
 #include <common.hpp>
 
 // 3 year expiry
-#define EXPIRY_MILLISECONDS eosio::microseconds(3 * 365 * 24 * 60 * 60 * 1000)
+#define EXPIRY_MICROSECONDS eosio::microseconds(3 * 365 * 24 * 60 * 60 * 1000000)
 namespace hypha
 {
 
@@ -31,7 +31,7 @@ namespace hypha
                             recipient,
                             quantity,
                             memo,
-                            eosio::time_point(eosio::current_time_point().time_since_epoch() + EXPIRY_MILLISECONDS)))
+                            eosio::time_point(eosio::current_time_point().time_since_epoch() + EXPIRY_MICROSECONDS)))
             .send();
 
         return Document(m_dao.get_self(),
