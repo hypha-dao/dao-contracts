@@ -304,6 +304,15 @@ export class DaoBlockchain extends Blockchain {
                         maximum_supply: '1000000000.00 HYPHA'
                     }
                 ),
+                // Initialize cosale
+                this.buildAction(
+                    this.peerContracts.hyphacosale,
+                    'addtoken',
+                    {
+                        contract: this.peerContracts.hypha.accountName,
+                        token: '2,HYPHA'
+                    }
+                ),
                 // Create root
                 this.buildAction(this.dao, 'createroot', { notes: 'notes' }),
                 // Settings
