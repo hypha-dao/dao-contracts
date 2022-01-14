@@ -13,10 +13,13 @@ export const fromUTC = (date: Date) => {
 }
 
 export const toISOString = (date: Date) => {
-    // The testing framework always rounds the  millis and doesn't have the Z
+    // The testing framework always rounds on the last quarter of a second and doesn't have the Z
     // 22:47:12.867Z becomes 22:47:13
     const copy = new Date(date);
-    copy.setSeconds(Math.round(parseFloat(`${copy.getSeconds()}.${copy.getMilliseconds()}`)));
+    if (copy.getMilliseconds() >= 750) {
+        copy.setSeconds(copy.getSeconds() + 1);
+    }
+
     copy.setMilliseconds(0);
     return copy.toISOString().split('.')[0] + '.000';
 };
