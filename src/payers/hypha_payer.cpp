@@ -9,7 +9,7 @@
 #include <common.hpp>
 
 // 3 year expiry
-#define EXPIRY_MICROSECONDS eosio::microseconds(3 * 365 * 24 * 60 * 60 * 1000000)
+#define EXPIRY_MICROSECONDS eosio::days(3 * 365)
 namespace hypha
 {
 
