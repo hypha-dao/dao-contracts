@@ -34,6 +34,7 @@ export interface DaoPeerContracts {
     voice: Account;
     bank: Account;
     hypha: Account;
+    hyphacosale: Account;
     husd: Account;
 }
 
@@ -63,6 +64,7 @@ export class DaoBlockchain extends Blockchain {
             voice: this.createContract('hvoice.hypha', 'voice'),
             bank:  this.createContract('bank.hypha', 'treasury'),
             hypha: this.createContract('token.hypha', 'token'),
+            hyphacosale: this.createContract('costak.hypha', 'cosale'),
             husd: this.createContract('husd.hypha', 'token')
         };
         this.members = [];
@@ -302,6 +304,15 @@ export class DaoBlockchain extends Blockchain {
                         maximum_supply: '1000000000.00 HYPHA'
                     }
                 ),
+                // Initialize cosale
+                this.buildAction(
+                    this.peerContracts.hyphacosale,
+                    'addtoken',
+                    {
+                        contract: this.peerContracts.hypha.accountName,
+                        token: '2,HYPHA'
+                    }
+                ),
                 // Create root
                 this.buildAction(this.dao, 'createroot', { notes: 'notes' }),
                 // Settings
@@ -316,6 +327,10 @@ export class DaoBlockchain extends Blockchain {
                 this.buildAction(this.dao, 'setsetting', {
                     key: 'hypha_token_contract',
                     value: [ 'name', this.peerContracts.hypha.accountName ]
+                }),
+                this.buildAction(this.dao, 'setsetting', {
+                    key: 'hypha_cosale_contract',
+                    value: [ 'name', this.peerContracts.hyphacosale.accountName ]
                 }),
                 this.buildAction(this.dao, 'setsetting', {
                     key: 'husd_token_contract',

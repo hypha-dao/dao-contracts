@@ -147,6 +147,7 @@ namespace common
 #define HUSD_TOKEN_CONTRACT "husd_token_contract"
 #define TREASURY_CONTRACT "treasury_contract"
 #define HYPHA_TOKEN_CONTRACT "hypha_token_contract"
+#define HYPHA_COSALE_CONTRACT "hypha_cosale_contract"
 #define HVOICE_TOKEN_CONTRACT "hvoice_token_contract"
 
 #define UPDATED_DATE "updated_date"

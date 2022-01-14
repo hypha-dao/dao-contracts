@@ -32,4 +32,8 @@ contracts:
     abi: dao-go/artifacts/voice/voice.abi
     name: voice
     wasm: dao-go/artifacts/voice/voice.wasm
+  cosale:
+    abi: dao-go/artifacts/vesting/vesting.abi
+    name: cosale
+    wasm: dao-go/artifacts/vesting/vesting.wasm
 options: null
