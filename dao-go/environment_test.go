@@ -41,6 +41,7 @@ type Environment struct {
 	Bank          eos.AccountName
 	SeedsEscrow   eos.AccountName
 	SeedsExchange eos.AccountName
+	Comments      eos.AccountName
 	Events        eos.AccountName
 	TelosDecide   eos.AccountName
 	Alice         Member
@@ -135,6 +136,7 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	escrowPrefix := artifactsHome + "/escrow/escrow."
 	voicePrefix := artifactsHome + "/voice/voice."
 	exchangePrefix := artifactsHome + "/seedsexchg/seedsexchg."
+	commentsPrefix := artifactsHome + "/comments/comments."
 
 	var env Environment
 
@@ -197,14 +199,31 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	assert.NilError(t, err)
 
 	_, env.HusdToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "husd.hypha")
+	assert.NilError(t, err)
+
 	_, env.HvoiceToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "hvoice.hypha")
+	assert.NilError(t, err)
+
 	_, env.HyphaToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "token.hypha")
+	assert.NilError(t, err)
+
 	_, env.Events, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "publsh.hypha")
+	assert.NilError(t, err)
+
 	_, env.SeedsToken, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "token.seeds")
+	assert.NilError(t, err)
+
 	_, env.SeedsEscrow, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "escrow.seeds")
+	assert.NilError(t, err)
+
 	_, env.SeedsExchange, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "tlosto.seeds")
+	assert.NilError(t, err)
+
+	_, env.Comments, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "comments")
+	assert.NilError(t, err)
 
 	_, env.TelosDecide, _ = eostest.CreateAccountWithRandomKey(env.ctx, &env.api, "trailservice")
+	assert.NilError(t, err)
 
 	t.Log("Deploying DAO contract to 		: ", env.DAO)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.DAO, daoPrefix+"wasm", daoPrefix+"abi")
@@ -226,6 +245,10 @@ func SetupEnvironmentWithFlags(t *testing.T, addFakePeriods, addFakeMembers bool
 	_, err = eostest.SetContract(env.ctx, &env.api, env.SeedsExchange, exchangePrefix+"wasm", exchangePrefix+"abi")
 	assert.NilError(t, err)
 	loadSeedsTablesFromProd(t, &env, "https://api.telos.kitchen")
+
+	t.Log("Deploying comments contract to		   : ", env.Comments)
+	_, err = eostest.SetContract(env.ctx, &env.api, env.Comments, commentsPrefix+"wasm", commentsPrefix+"abi")
+	assert.NilError(t, err)
 
 	t.Log("Deploying Events contract to 		: ", env.Events)
 	_, err = eostest.SetContract(env.ctx, &env.api, env.Events, monitorPrefix+"wasm", monitorPrefix+"abi")

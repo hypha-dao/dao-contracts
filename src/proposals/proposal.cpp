@@ -18,20 +18,30 @@ using namespace eosio;
 
 namespace hypha
 {
+
+    constexpr char COMMENT_NAME[] = "comment-name";
+    constexpr char NEXT_COMMENT_SECTION[] = "next-comment-section";
+    constexpr name COMMENTS_CONTRACT("comments");
+
+    constexpr name STAGING_PROPOSAL = name("stagingprop");
+
     Proposal::Proposal(dao &contract) : m_dao{contract} {}
     Proposal::~Proposal() {}
 
-    Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups)
+    Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish)
     {
         TRACE_FUNCTION()
         EOS_CHECK(Member::isMember(m_dao.get_self(), proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
+        const name commentSection = this->_newCommentSection();
+
         contentGroups.push_back(makeSystemGroup(proposer,
                                                 getProposalType(),
                                                 getTitle(proposalContent),
-                                                getDescription(proposalContent)));
+                                                getDescription(proposalContent), 
+                                                commentSection));
         
         contentGroups.push_back(makeBallotGroup());
         contentGroups.push_back(makeBallotOptionsGroup());
@@ -51,13 +61,21 @@ namespace hypha
         // the proposal was PROPOSED_BY proposer; this creates the graph EDGE
         Edge::write(m_dao.get_self(), proposer, proposalNode.getHash(), memberHash, common::OWNED_BY);
 
-        // the DHO also links to the document as a proposal, another graph EDGE
-        Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), common::PROPOSAL);
+        eosio::action(
+            eosio::permission_level{this->m_dao.get_self(), name("active")},
+            COMMENTS_CONTRACT, name("addsection"),
+            std::make_tuple(
+                this->m_dao.get_self(), // scope. todo: use tenant here
+                commentSection, // section
+                proposer// author
+            )
+        ).send();
 
-        // Sets an empty tally
-        VoteTally(m_dao, proposalNode);
-
-        postProposeImpl(proposalNode);
+        if (publish) {
+            _publish(proposer, proposalNode, root);
+        } else {
+            Edge::write(m_dao.get_self(), proposer, root, proposalNode.getHash(), STAGING_PROPOSAL);
+        }
 
         return proposalNode;
     }
@@ -67,6 +85,9 @@ namespace hypha
     void Proposal::vote(const eosio::name &voter, const std::string vote, Document& proposal, std::optional<std::string> notes)
     {
         TRACE_FUNCTION()
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+        EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL), "Only published proposals can be voted");
+
         Vote(m_dao, voter, vote, proposal, notes);
         
         VoteTally(m_dao, proposal);
@@ -75,6 +96,9 @@ namespace hypha
     void Proposal::close(Document &proposal)
     {
         TRACE_FUNCTION()
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+        EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL), "Only published proposals can be closed");
+
         auto voteTallyEdge = Edge::get(m_dao.get_self(), proposal.getHash(), common::VOTE_TALLY);
 
         auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
@@ -82,8 +106,6 @@ namespace hypha
             eosio::time_point_sec(eosio::current_time_point()) > expiration,
             "Voting is still active for this proposal"
         );
-
-        eosio::checksum256 root = getRoot(m_dao.get_self());
 
         Edge edge = Edge::get(m_dao.get_self(), root, proposal.getHash(), common::PROPOSAL);
         edge.erase();
@@ -131,10 +153,57 @@ namespace hypha
         }
     }
 
+    void Proposal::publish(const eosio::name &proposer, Document &proposal)
+    {
+        TRACE_FUNCTION()
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+        eosio::checksum256 memberHash = Member::calcHash(proposer);
+
+        EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL), "Only proposes in staging can be published");
+        EOS_CHECK(Edge::exists(m_dao.get_self(), memberHash, proposal.getHash(), common::OWNS), "Only the proposer can publish the proposal");
+        Edge::get(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL).erase();
+        _publish(proposer, proposal, root);
+    }
+
+    void Proposal::remove(const eosio::name &proposer, Document &proposal)
+    {
+        TRACE_FUNCTION()
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+        eosio::checksum256 memberHash = Member::calcHash(proposer);
+
+        EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL), "Only proposes in staging can be removed");
+        EOS_CHECK(Edge::exists(m_dao.get_self(), memberHash, proposal.getHash(), common::OWNS), "Only the proposer can remove the proposal");
+
+        m_dao.getGraph().eraseDocument(proposal.getHash(), true);
+
+        eosio::action(
+            eosio::permission_level{this->m_dao.get_self(), name("active")},
+            COMMENTS_CONTRACT, name("delsection"),
+            std::make_tuple(
+                this->m_dao.get_self(), // scope. todo: use tenant here
+                proposal.getContentWrapper().getOrFail(SYSTEM, COMMENT_NAME, "Proposal has no comment section")->getAs<eosio::name>() // section
+            )
+        ).send();
+    }
+
+    void Proposal::update(const eosio::name &proposer, Document &proposal, ContentGroups &contentGroups)
+    {
+        TRACE_FUNCTION()
+        eosio::checksum256 root = getRoot(m_dao.get_self());
+        eosio::checksum256 memberHash = Member::calcHash(proposer);
+
+        EOS_CHECK(Edge::exists(m_dao.get_self(), root, proposal.getHash(), STAGING_PROPOSAL), "Only proposes in staging can be updated");
+        EOS_CHECK(Edge::exists(m_dao.get_self(), memberHash, proposal.getHash(), common::OWNS), "Only the proposer can update the proposal");
+
+        m_dao.getGraph().eraseDocument(proposal.getHash(), true);
+        this->propose(proposer, contentGroups, false);
+    }
+
     ContentGroup Proposal::makeSystemGroup(const name &proposer,
                                            const name &proposal_type,
                                            const string &proposal_title,
-                                           const string &proposal_description)
+                                           const string &proposal_description,
+                                           const name &comment_name)
     {
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, SYSTEM),
@@ -142,7 +211,8 @@ namespace hypha
             Content(CONTRACT_VERSION, m_dao.getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)),
             Content(NODE_LABEL, proposal_title),
             Content(DESCRIPTION, proposal_description),
-            Content(TYPE, proposal_type)};
+            Content(TYPE, proposal_type),
+            Content(COMMENT_NAME, comment_name)};
     }
 
     ContentGroup Proposal::makeBallotGroup()
@@ -233,6 +303,7 @@ namespace hypha
 
     std::pair<bool, checksum256> Proposal::hasOpenProposal(name proposalType, checksum256 docHash)
     {
+      TRACE_FUNCTION()
       auto proposalEdges = m_dao.getGraph().getEdgesTo(docHash, proposalType);
       
       //Check if there is another existing suspend proposal open for the given document
@@ -247,4 +318,23 @@ namespace hypha
 
       return { false, checksum256{} };
     }
+
+    void Proposal::_publish(const eosio::name &proposer, Document &proposal, eosio::checksum256 root)
+    {
+        TRACE_FUNCTION()
+        // the DHO also links to the document as a proposal, another graph EDGE
+        Edge::write(m_dao.get_self(), proposer, root, proposal.getHash(), common::PROPOSAL);
+
+        // Sets an empty tally
+        VoteTally(m_dao, proposal);
+
+        postProposeImpl(proposal);
+    }
+
+    name Proposal::_newCommentSection() {
+        name next = name(this->m_dao.getSettingOpt<name>(NEXT_COMMENT_SECTION).value_or(name()).value + 1);
+        this->m_dao.setSetting(NEXT_COMMENT_SECTION, next);
+        return next;
+    }
+
 } // namespace hypha

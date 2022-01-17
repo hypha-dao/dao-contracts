@@ -34,6 +34,7 @@ type Vote struct {
 type Proposal struct {
 	Proposer      eos.AccountName         `json:"proposer"`
 	ProposalType  eos.Name                `json:"proposal_type"`
+	Publish       bool					  `json:"publish"`
 	ContentGroups []docgraph.ContentGroup `json:"content_groups"`
 }
 
@@ -96,6 +97,7 @@ func ProposePayout(ctx context.Context, api *eos.API,
 	return Propose(ctx, api, contract, proposer, Proposal{
 		Proposer:      proposer,
 		ProposalType:  eos.Name("payout"),
+		Publish:       true,
 		ContentGroups: payoutDoc.ContentGroups,
 	})
 }
@@ -154,6 +156,7 @@ func ProposePayoutWithPeriod(ctx context.Context, api *eos.API,
 	return Propose(ctx, api, contract, proposer, Proposal{
 		Proposer:      proposer,
 		ProposalType:  eos.Name("payout"),
+		Publish:       true,
 		ContentGroups: payoutDoc.ContentGroups,
 	})
 }
@@ -181,6 +184,7 @@ func ProposeEdit(ctx context.Context, api *eos.API,
 	return Propose(ctx, api, contract, proposer, Proposal{
 		Proposer:      proposer,
 		ProposalType:  eos.Name("edit"),
+		Publish:       true,
 		ContentGroups: editDoc.ContentGroups,
 	})
 }
@@ -198,6 +202,7 @@ func ProposeRole(ctx context.Context, api *eos.API,
 	return Propose(ctx, api, contract, proposer, Proposal{
 		Proposer:      proposer,
 		ProposalType:  eos.Name("role"),
+		Publish:       true,
 		ContentGroups: roleDoc.ContentGroups,
 	})
 }
@@ -246,6 +251,7 @@ func ProposeAssignment(ctx context.Context, api *eos.API,
 	return Propose(ctx, api, contract, proposer, Proposal{
 		Proposer:      proposer,
 		ProposalType:  eos.Name("assignment"),
+		Publish:       true,
 		ContentGroups: assignmentDoc.ContentGroups,
 	})
 }
@@ -344,6 +350,7 @@ func ProposeBadgeAssignment(ctx context.Context, api *eos.API,
 		ActionData: eos.NewActionData(Proposal{
 			Proposer:      proposer,
 			ProposalType:  eos.Name("assignbadge"),
+			Publish:       true,
 			ContentGroups: badgeAssignmentDoc.ContentGroups,
 		})}}
 
