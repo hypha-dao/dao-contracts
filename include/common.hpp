@@ -62,6 +62,8 @@ namespace common
     constexpr name EXTENSION = name("extension");
     constexpr        name SUSPEND = name("suspend");
     constexpr        name SUSPENDED = name("suspended");
+    static constexpr name QUEST_START = name("queststart");
+    static constexpr name QUEST_COMPLETION = name("questcomple");
 
     constexpr name ASSIGNED = name("assigned");
     constexpr name ASSIGNEE_NAME = name("assignee");
@@ -84,6 +86,8 @@ namespace common
     constexpr name PAYMENT = name("payment");
     constexpr name PAID = name ("paid");
     constexpr name CLAIMED = name ("claimed");
+
+    static constexpr name COMPLETED_BY = name("completedby");
 
     constexpr auto PEG_AMOUNT = "peg_amount";
     constexpr auto VOICE_AMOUNT = "voice_amount";
