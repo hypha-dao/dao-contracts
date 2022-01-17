@@ -90,6 +90,7 @@ describe('Voting', () => {
         await environment.dao.contract.propose({
             proposer: environment.members[0].account.accountName,
             proposal_type: 'role',
+            publish: true,
             ...getSampleRole()
         });
         
@@ -105,6 +106,7 @@ describe('Voting', () => {
         await environment.dao.contract.propose({
             proposer: environment.members[0].account.accountName,
             proposal_type: 'role',
+            publish: true,
             ...getSampleRole('foobar')
         });
         
