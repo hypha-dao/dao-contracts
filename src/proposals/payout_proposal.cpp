@@ -138,6 +138,13 @@ namespace hypha
         //  makePayment also creates edges from payout and the member to the individual payments
         Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID(), common::PAYOUT);
 
+        pay(proposal, common::PAYOUT);
+    }
+
+    void PayoutProposal::pay(Document &proposal, eosio::name edgeName)
+    {
+        TRACE_FUNCTION()
+
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
         // recipient must exist and be a DHO member
