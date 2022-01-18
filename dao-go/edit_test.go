@@ -52,6 +52,7 @@ func TestEditProposal(t *testing.T) {
 			_, err = Propose(env.ctx, &env.api, env.DAO, proposer.Member, Proposal{
 				Proposer:      proposer.Member,
 				ProposalType:  eos.Name("attestation"),
+				Publish:       true,
 				ContentGroups: originalDoc.ContentGroups,
 			})
 			assert.NilError(t, err)

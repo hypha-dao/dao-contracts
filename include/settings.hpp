@@ -47,7 +47,19 @@ public:
     {
         TRACE_FUNCTION()
         auto [_, content] = getContentWrapper().getOrFail(SETTINGS_IDX, key, "setting " + key + " does not exist");
-        return std::get<T>(content->value);
+
+        if (auto p = std::get_if<T>(&content->value)) {
+            return *p;
+        }
+        else {
+            EOS_CHECK(
+                false, 
+                util::to_str("Setting value is not of expected type: ", key)
+            )
+            
+            //Just to suprim warnings but it will never get called
+            return std::get<T>(content->value);
+        }
     }
 
     template <class T>

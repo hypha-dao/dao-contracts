@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <eosio/eosio.hpp>
+#include <eosio/binary_extension.hpp>
 #include <eosio/name.hpp>
 #include <eosio/contract.hpp>
 #include <eosio/crypto.hpp>
@@ -70,10 +71,15 @@ namespace hypha
                           eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
           payment_table;
 
-      ACTION clean();
+
+      //TODO: Remove eosio::binary_extension<int64_t> and replace to bool (it was needed on testnet)
       ACTION propose(const checksum256& dao_hash, const name &proposer, const name &proposal_type, ContentGroups &content_groups);
-      ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
+      ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, const std::optional<string> & notes);
       ACTION closedocprop(const checksum256 &proposal_hash);
+
+      ACTION proposepub(const name &proposer, const checksum256 &proposal_hash);
+      ACTION proposerem(const name &proposer, const checksum256 &proposal_hash);
+      ACTION proposeupd(const name &proposer, const checksum256 &proposal_hash, ContentGroups &content_groups);
       //Sets a dho/contract level setting
       ACTION setsetting(const string &key, const Content::FlexValue &value);
 
@@ -96,8 +102,9 @@ namespace hypha
       ACTION remalert(const std::string &notes);
 
       /**Testenv only
-      ACTION addedge(const checksum256& from, const checksum256& to, const name& edge_name);
       ACTION autoenroll(const checksum256& dao_hash, const name& enroller, const name& member);
+      ACTION clean();
+      ACTION addedge(const checksum256& from, const checksum256& to, const name& edge_name);
       ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
       ACTION deletetok(asset asset, name contract) {
 

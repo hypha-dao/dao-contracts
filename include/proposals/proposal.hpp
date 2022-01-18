@@ -18,10 +18,13 @@ namespace hypha
         Proposal(dao &contract, uint64_t daoID);
         virtual ~Proposal();
 
-        Document propose(const eosio::name &proposer, ContentGroups &contentGroups);
+        Document propose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish);
 
         void vote(const eosio::name &voter, const std::string vote, Document& proposal, std::optional<std::string> notes);
         void close(Document &proposal);
+        void publish(const eosio::name &proposer, Document &proposal);
+        void remove(const eosio::name &proposer, Document &proposal);
+        void update(const eosio::name &proposer, Document &proposal, ContentGroups &contentGroups);
 
         dao &m_dao;
 
@@ -40,7 +43,8 @@ namespace hypha
         ContentGroup makeSystemGroup(const name &proposer,
                                        const name &proposal_type,
                                        const string &proposal_title,
-                                       const string &proposal_description);
+                                       const string &proposal_description,
+                                       const name &comment_section);
 
         ContentGroup makeBallotGroup();
         ContentGroup makeBallotOptionsGroup();
@@ -57,5 +61,9 @@ namespace hypha
         Settings* m_daoSettings;
         Settings* m_dhoSettings;
         uint64_t m_daoID;
+
+        void _publish(const eosio::name &proposer, Document &proposal, uint64_t rootID);
+        name _newCommentSection();
+
     };
 } // namespace hypha

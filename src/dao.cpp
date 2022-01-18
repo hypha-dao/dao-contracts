@@ -22,6 +22,8 @@
 
 namespace hypha
 {
+   /**Testenv only 
+   
    ACTION dao::clean()
    {
      require_auth(get_self());
@@ -38,8 +40,7 @@ namespace hypha
        it = edges.erase(it);
      }
    }
-
-   /**Testenv only 
+   
    ACTION
    dao::autoenroll(const checksum256& dao_hash, const name& enroller, const name& member)
    {
@@ -95,14 +96,14 @@ namespace hypha
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      //TODO: Change to dao_hash instead of dao_name
+      //TODO: Change to dao_id instead of dao_hash
       Document daoDoc(get_self(), dao_hash);
 
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type));
-      proposal->propose(proposer, content_groups);
+      proposal->propose(proposer, content_groups, true);
    }
 
-   void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote, string notes)
+   void dao::vote(const name& voter, const checksum256 &proposal_hash, string &vote, const std::optional<string> &notes)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -111,9 +112,7 @@ namespace hypha
 
       auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
 
-      auto daoDoc = Document(get_self(), daoID);
-
-      Proposal *proposal = ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type);
+      Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
       proposal->vote(voter, vote, docprop, notes);
    }
 
@@ -126,12 +125,52 @@ namespace hypha
 
       auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
 
-      auto daoDoc = Document(get_self(), daoID);
-
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
-      Proposal *proposal = ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type);
+      Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
       proposal->close(docprop);
+   }
+
+   void dao::proposepub(const name &proposer, const checksum256 &proposal_hash)
+   {
+      TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+      Document docprop(get_self(), proposal_hash);
+      name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
+
+      auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
+
+      Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+      proposal->publish(proposer, docprop);
+   }
+
+   void dao::proposerem(const name &proposer, const checksum256 &proposal_hash)
+   {
+      TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+      Document docprop(get_self(), proposal_hash);
+      name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
+      
+      auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
+
+      Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+      proposal->remove(proposer, docprop);
+   }
+
+   void dao::proposeupd(const name &proposer, const checksum256 &proposal_hash, ContentGroups &content_groups) 
+   {
+      TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+      Document docprop(get_self(), proposal_hash);
+      name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
+
+      auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
+
+      Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+      proposal->update(proposer, docprop, content_groups);
    }
 
    void dao::proposeextend(const checksum256 &assignment_hash, const int64_t additional_periods)
@@ -145,11 +184,11 @@ namespace hypha
       eosio::name assignee = assignment.getAssignee().getAccount();
       eosio::require_auth(assignee);
       
-      auto daoHash = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
+      auto daoID = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
 
       //Get the DAO edge from the hash
       EOS_CHECK(
-        Member::isMember(get_self(), daoHash, assignee), 
+        Member::isMember(get_self(), daoID, assignee), 
         "assignee must be a current member to request an extension: " + assignee.to_string());
 
       eosio::print("\nproposer is: " + assignee.to_string() + "\n");
@@ -163,11 +202,9 @@ namespace hypha
         }
       };
 
-      Document daoDoc(get_self(), daoHash);
-
       // propose the extension
-      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoDoc.getID(), common::EXTENSION));
-      proposal->propose(assignee, contentGroups);
+      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoID, common::EXTENSION));
+      proposal->propose(assignee, contentGroups, false);
    }
 
    void dao::withdraw(name owner, eosio::checksum256 hash) 
@@ -289,8 +326,6 @@ namespace hypha
 
       // assignee must still be a DHO member
       auto daoID = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
-
-      Document daoDoc(get_self(), daoID);
       
       EOS_CHECK(
         Member::isMember(get_self(), daoID, assignee), 
@@ -447,7 +482,7 @@ namespace hypha
       ab.voice = voice;
       ab.peg = peg;
 
-      ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoDoc.getID(), ab);
+      ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoID, ab);
 
       makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.reward, memo, eosio::name{0}, daoTokens);
       makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{0}, daoTokens);
