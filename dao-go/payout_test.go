@@ -298,6 +298,7 @@ func TestCustomPayout(t *testing.T) {
 			trxID, err := Propose(env.ctx, &env.api, env.DAO, proposer.Member, Proposal{
 				Proposer:      proposer.Member,
 				ProposalType:  eos.Name("payout"),
+				Publish:       true,
 				ContentGroups: payoutDoc.ContentGroups,
 			})
 			assert.NilError(t, err)
@@ -405,6 +406,7 @@ func TestUnknownAssetPayout(t *testing.T) {
 			trxID, err := Propose(env.ctx, &env.api, env.DAO, proposer.Member, Proposal{
 				Proposer:      proposer.Member,
 				ProposalType:  eos.Name("payout"),
+				Publish:       true,
 				ContentGroups: payoutDoc.ContentGroups,
 			})
 			assert.NilError(t, err)

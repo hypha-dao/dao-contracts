@@ -27,6 +27,7 @@ export const toISOString = (date: Date) => {
 export const nextDay = (environment: DaoBlockchain, date: Date, offsetMinutes: number = 10) => {
   // Sets the time to the end of proposal
   const tomorrow = new Date();
+  tomorrow.setMilliseconds(0);
   tomorrow.setDate(date.getDate() + 1);
   tomorrow.setMinutes(tomorrow.getMinutes() + offsetMinutes);
   environment.setCurrentTime(tomorrow);
@@ -35,7 +36,8 @@ export const nextDay = (environment: DaoBlockchain, date: Date, offsetMinutes: n
 
 export const setDate = (environment: DaoBlockchain, date: Date, offsetMinutes: number = 10) => {
   const next = new Date(date);
-  //next.setMinutes(next.getMinutes() + offsetMinutes);
+  next.setMilliseconds(0);
+  next.setMinutes(next.getMinutes() + offsetMinutes);
   environment.setCurrentTime(next);
   environment.currentDate = next;
   return next;
