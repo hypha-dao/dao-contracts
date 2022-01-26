@@ -1,6 +1,10 @@
 #include <settings.hpp>
+
+#include <algorithm>
+
 #include <dao.hpp>
 #include <common.hpp>
+#include <logger/logger.hpp>
 
 namespace hypha {
 
@@ -13,49 +17,128 @@ Settings::Settings(dao& dao,
     //m_dirty(false)
   {}
 
-  void Settings::setSetting(const Content& setting)
+  void Settings::setSetting(const std::string& group, const Content& setting)
   {
+    TRACE_FUNCTION()
     auto oldID = getID();
     auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
     ContentWrapper cw = getContentWrapper();
-    ContentGroup *settings = cw.getGroupOrFail("settings");
+
+    ContentGroup* settings = cw.getGroup(group).second;
+
+    //Check if the group exits, otherwise create it
+    if (settings == nullptr) {
+      auto& cg = getContentGroups();
+      cg.push_back({Content { CONTENT_GROUP_LABEL, group }});
+      settings = &cg.back();
+    }
 
     ContentWrapper::insertOrReplace(*settings, setting);
-    ContentWrapper::insertOrReplace(*settings, updateDateContent);
+    ContentWrapper::insertOrReplace(
+      group != SETTINGS ? *cw.getGroupOrFail(SETTINGS) : *settings, 
+      updateDateContent
+    );
 
     static_cast<Document&>(*this) = m_dao->getGraph()
                                          .updateDocument(m_dao->get_self(), 
                                                          oldID, 
                                                          getContentGroups());
-
-    //m_dirty = true;
   }
 
-  void Settings::remSetting(const string& key)
+  void Settings::setSetting(const Content& setting)
   {
+    setSetting(SETTINGS, setting);
+  }
+
+  void Settings::addSetting(const std::string& group, const Content& setting)
+  {
+    TRACE_FUNCTION()
     auto oldID = getID();
-    auto& contentGroups = getContentGroups();
-    auto& settingsGroup = contentGroups[SETTINGS_IDX];
+    auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
-    auto isKey = [&key](auto &c) {
-        return c.label == key;
-    };
+    ContentWrapper cw = getContentWrapper();
+    ContentGroup* settings = cw.getGroup(group).second;
 
-    //First let's check if key exists
-    auto contentItr = std::find_if(settingsGroup.begin(), settingsGroup.end(), isKey);
-    if (contentItr != settingsGroup.end())
-    {
-        settingsGroup.erase(contentItr);
-        auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
-        ContentWrapper::insertOrReplace(settingsGroup, updateDateContent);
-        static_cast<Document&>(*this) = m_dao->getGraph()
-                                             .updateDocument(m_dao->get_self(), 
-                                                             oldID, 
-                                                             std::move(contentGroups));
+    //Check if the group exits, otherwise create it
+    if (settings == nullptr) {
+      auto& cg = getContentGroups();
+      cg.push_back({Content { CONTENT_GROUP_LABEL, group }});
+      settings = &cg.back();
     }
-    //Should we assert if setting doesn't exits ?
-    EOS_CHECK(false, "The specified setting does not exist: " + key);
+
+    ContentWrapper::insertOrReplace(
+      group != SETTINGS ? *cw.getGroupOrFail(SETTINGS) : *settings, 
+      updateDateContent
+    );
+    settings->push_back(setting);
+
+    static_cast<Document&>(*this) = m_dao->getGraph()
+                                         .updateDocument(m_dao->get_self(), 
+                                                         oldID, 
+                                                         getContentGroups());
+  }
+    
+  void Settings::remSetting(const std::string& group, const std::string& key)
+  {
+    TRACE_FUNCTION()
+    
+    auto oldID = getID();
+    
+    auto cw = getContentWrapper();
+
+    auto [groupIdx, contentGroup] = cw.getGroup(group);
+    
+    cw.removeContent(groupIdx, key);
+
+    auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
+
+    ContentWrapper::insertOrReplace(
+      group != SETTINGS ? *cw.getGroupOrFail(SETTINGS) : *contentGroup, 
+      updateDateContent
+    );
+
+    static_cast<Document&>(*this) = m_dao->getGraph()
+                                         .updateDocument(m_dao->get_self(), 
+                                                         oldID, 
+                                                         getContentGroups());
+  }
+
+  void Settings::remSetting(const std::string& key)
+  {
+    remSetting(SETTINGS, key);
+  }
+
+  void Settings::remKVSetting(const std::string& group, const Content& setting)
+  {
+    TRACE_FUNCTION()
+
+    auto oldID = getID();
+
+    auto cw = getContentWrapper();
+
+    auto [groupIdx, contentGroup] = cw.getGroup(group);
+
+    auto itemIt = std::find(contentGroup->begin(), contentGroup->end(), setting);
+
+    EOS_CHECK(
+      itemIt != contentGroup->end(),
+      util::to_str("Couldn't find setting: ", setting, " in group: ", group)
+    );
+
+    contentGroup->erase(itemIt);
+
+    auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
+
+    ContentWrapper::insertOrReplace(
+      group != SETTINGS ? *cw.getGroupOrFail(SETTINGS) : *contentGroup, 
+      updateDateContent
+    );
+
+    static_cast<Document&>(*this) = m_dao->getGraph()
+                                         .updateDocument(m_dao->get_self(), 
+                                                         oldID, 
+                                                         getContentGroups());
   }
 
   }

@@ -74,6 +74,7 @@ namespace hypha
             eosio::permission_level{m_dao.get_self(), name("active")},
             commentsContract, name("addsection"),
             std::make_tuple(
+                m_dao.get_self(),
                 m_daoSettings->getOrFail<name>(DAO_NAME), // scope. todo: use tenant here
                 commentSection, // section
                 proposer// author
@@ -216,6 +217,7 @@ namespace hypha
             eosio::permission_level{this->m_dao.get_self(), name("active")},
             commentsContract, name("delsection"),
             std::make_tuple(
+                m_dao.get_self(),
                 m_daoSettings->getOrFail<name>(DAO_NAME),
                 proposal.getContentWrapper().getOrFail(SYSTEM, COMMENT_NAME, "Proposal has no comment section")->getAs<eosio::name>() // section
             )
@@ -393,7 +395,7 @@ namespace hypha
 
     name Proposal::_newCommentSection() {
         name next = name(m_daoSettings->getSettingOrDefault<name>(NEXT_COMMENT_SECTION, name()).value + 1);
-        m_daoSettings->setSetting(Content{ NEXT_COMMENT_SECTION, name() });
+        m_daoSettings->setSetting(Content{ NEXT_COMMENT_SECTION, next });
         return next;
     }
 

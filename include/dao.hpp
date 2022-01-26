@@ -81,12 +81,16 @@ namespace hypha
       ACTION proposerem(const name &proposer, const checksum256 &proposal_hash);
       ACTION proposeupd(const name &proposer, const checksum256 &proposal_hash, ContentGroups &content_groups);
       //Sets a dho/contract level setting
-      ACTION setsetting(const string &key, const Content::FlexValue &value);
-
+      ACTION setsetting(const string &key, const Content::FlexValue &value, eosio::binary_extension<std::string> group);
+      
       //Sets a dao level setting
-      ACTION setdaosetting(const eosio::checksum256& dao_hash, const std::string &key, const Content::FlexValue &value);
+      ACTION setdaosetting(const eosio::checksum256& dao_hash, const std::string &key, const Content::FlexValue &value, eosio::binary_extension<std::string> group);
+      ACTION adddaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
 
-      //Removes a dao/contract level setting
+      ACTION remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group);
+      ACTION remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
+      
+      //Removes a dho/contract level setting
       ACTION remsetting(const string &key);
 
       ACTION addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
@@ -118,6 +122,21 @@ namespace hypha
         ).send();
       }
       */
+     ACTION fixdao(uint64_t daoId) 
+     {
+        require_auth(get_self());
+
+        auto settings = getSettingsDocument(daoId);
+        
+        if (auto creator = settings->getSettingOpt<eosio::name>(common::ONBOARDER_ACCOUNT)) {
+           settings->remSetting(common::ONBOARDER_ACCOUNT);
+           settings->setSetting(ONBOARDERS, Content{ "account", creator.value() });
+           settings->setSetting(ADMINS, Content{ "account", creator.value() });
+        }
+        else {
+           EOS_CHECK(false, "Dao already fixed")
+        }
+     }
      
       DocumentGraph &getGraph();
       Settings* getSettingsDocument();
@@ -187,8 +206,6 @@ namespace hypha
       ACTION createroot(const std::string &notes);
       ACTION createdao(ContentGroups &config);
       
-      void setSetting(const eosio::checksum256& dao_hash, const string &key, const Content::FlexValue &value);
-
       void setSetting(const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,
@@ -207,6 +224,11 @@ namespace hypha
                             std::string_view modifier);
 
    private:
+
+      void checkAdminstAuth(Settings* daoSettings);
+
+      void checkEnrollerAuth(const name& account, Settings* daoSettings);
+
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
       void addPeriod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
