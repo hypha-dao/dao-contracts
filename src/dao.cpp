@@ -309,7 +309,7 @@ namespace hypha
 
      Document daoDoc(get_self(), daoID);
 
-     propose(daoDoc.getHash(), proposer, common::SUSPEND, cgs);
+     propose(daoDoc.getHash(), proposer, common::SUSPEND, cgs, true);
    }
 
    void dao::claimnextper(const eosio::checksum256 &assignment_hash)
