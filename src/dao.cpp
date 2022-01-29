@@ -28,13 +28,13 @@ namespace hypha
    {
      require_auth(get_self());
 
-     document_table docs(get_self(), get_self().value);
+     Document::document_table docs(get_self(), get_self().value);
 
      for (auto it = docs.begin(); it != docs.end(); ) {
        it = docs.erase(it);
      }
 
-     edge_table edges(get_self(), get_self().value);
+     Edge::edge_table edges(get_self(), get_self().value);
 
      for (auto it = edges.begin(); it != edges.end(); ) {
        it = edges.erase(it);

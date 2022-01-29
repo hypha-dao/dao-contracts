@@ -34,7 +34,7 @@ ContentGroups TimeShare::constructContentGroups(int64_t timeShare, time_point st
       Content(CONTENT_GROUP_LABEL, DETAILS),
       Content(TIME_SHARE, timeShare),
       Content(TIME_SHARE_START_DATE, startDate),
-      Content(ASSIGNMENT_STRING, assignment)
+      Content(ASSIGNMENT_STRING, static_cast<int64_t>(assignment))
     },
     ContentGroup {
       Content(CONTENT_GROUP_LABEL, SYSTEM),
