@@ -43,6 +43,7 @@ describe('Roles', () => {
         await environment.dao.contract.propose({
             proposer: environment.members[0].account.accountName,
             proposal_type: 'role',
+            publish: true,
             ...testRole
         });
         
@@ -73,6 +74,7 @@ describe('Roles', () => {
         await environment.dao.contract.propose({
             proposer: environment.members[0].account.accountName,
             proposal_type: 'role',
+            publish: true,
             ...testRole
         });
         
@@ -192,6 +194,7 @@ describe('Roles', () => {
       await expect(environment.dao.contract.propose({
         proposer: assignee.accountName,
         proposal_type: 'assignment',
+        publish: true,
         ...assignmentProp
       })).rejects.toThrow('Cannot create assignment proposal of suspened role');
   });

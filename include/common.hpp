@@ -28,6 +28,7 @@ namespace common
     constexpr auto DAO_TITLE = "dao_title";
     constexpr auto PERIOD_DURATION = "period_duration_sec";
     constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
+    constexpr auto DAO_USES_SEEDS = "uses_seeds";
 
     //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
 
@@ -179,6 +180,7 @@ namespace common
 #define TREASURY_CONTRACT "treasury_contract"
 #define REWARD_TOKEN_CONTRACT "reward_token_contract"
 #define GOVERNANCE_TOKEN_CONTRACT "governance_token_contract"
+#define COMMENTS_CONTRACT "comments_contract"
 
 #define UPDATED_DATE "updated_date"
 #define SEEDS_DEFERRAL_FACTOR_X100 "seeds_deferral_factor_x100"
@@ -218,6 +220,8 @@ namespace common
 // #define HUSD_SALARY_PER_PERIOD "husd_salary_per_phase"
 // #define HVOICE_SALARY_PER_PERIOD "hvoice_salary_per_phase"
 #define SETTINGS "settings"
+#define ONBOARDERS "onboarders"
+#define ADMINS "admins"
 
 #define VOTE_POWER "vote_power"
 #define VOTE_LABEL "vote"

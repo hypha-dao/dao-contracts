@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <eosio/eosio.hpp>
+#include <eosio/binary_extension.hpp>
 #include <eosio/name.hpp>
 #include <eosio/contract.hpp>
 #include <eosio/crypto.hpp>
@@ -70,17 +71,26 @@ namespace hypha
                           eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
           payment_table;
 
-      ACTION clean();
-      ACTION propose(const checksum256& dao_hash, const name &proposer, const name &proposal_type, ContentGroups &content_groups);
-      ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, string notes);
+
+      //TODO: Remove eosio::binary_extension<int64_t> and replace to bool (it was needed on testnet)
+      ACTION propose(const checksum256& dao_hash, const name &proposer, const name &proposal_type, ContentGroups &content_groups, bool publish);
+      ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, const std::optional<string> & notes);
       ACTION closedocprop(const checksum256 &proposal_hash);
+
+      ACTION proposepub(const name &proposer, const checksum256 &proposal_hash);
+      ACTION proposerem(const name &proposer, const checksum256 &proposal_hash);
+      ACTION proposeupd(const name &proposer, const checksum256 &proposal_hash, ContentGroups &content_groups);
       //Sets a dho/contract level setting
-      ACTION setsetting(const string &key, const Content::FlexValue &value);
-
+      ACTION setsetting(const string &key, const Content::FlexValue &value, eosio::binary_extension<std::string> group);
+      
       //Sets a dao level setting
-      ACTION setdaosetting(const eosio::checksum256& dao_hash, const std::string &key, const Content::FlexValue &value);
+      ACTION setdaosetting(const eosio::checksum256& dao_hash, const std::string &key, const Content::FlexValue &value, eosio::binary_extension<std::string> group);
+      ACTION adddaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
 
-      //Removes a dao/contract level setting
+      ACTION remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group);
+      ACTION remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
+      
+      //Removes a dho/contract level setting
       ACTION remsetting(const string &key);
 
       ACTION addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
@@ -96,8 +106,9 @@ namespace hypha
       ACTION remalert(const std::string &notes);
 
       /**Testenv only
-      ACTION addedge(const checksum256& from, const checksum256& to, const name& edge_name);
       ACTION autoenroll(const checksum256& dao_hash, const name& enroller, const name& member);
+      ACTION clean();
+      ACTION addedge(const checksum256& from, const checksum256& to, const name& edge_name);
       ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
       ACTION deletetok(asset asset, name contract) {
 
@@ -180,8 +191,6 @@ namespace hypha
       ACTION createroot(const std::string &notes);
       ACTION createdao(ContentGroups &config);
       
-      void setSetting(const eosio::checksum256& dao_hash, const string &key, const Content::FlexValue &value);
-
       void setSetting(const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,
@@ -200,6 +209,11 @@ namespace hypha
                             std::string_view modifier);
 
    private:
+
+      void checkAdminstAuth(Settings* daoSettings);
+
+      void checkEnrollerAuth(const name& account, Settings* daoSettings);
+
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
       void addPeriod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);

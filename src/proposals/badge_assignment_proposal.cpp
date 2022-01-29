@@ -50,7 +50,7 @@ namespace hypha
             Period period(&m_dao, std::get<eosio::checksum256>(startPeriod->value));
         } else {
             // default START_PERIOD to next period
-            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoID).next().getID ()});
+            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoID).next().getHash()});
         }
 
         // PERIOD_COUNT - number of periods the assignment is valid for

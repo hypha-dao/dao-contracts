@@ -11,6 +11,23 @@ export class Expect {
         this.dao = dao;
     }
 
+    toNotHaveEdge(from: Document, to: Document, edgeName: string) {
+        const edges = this.dao.getDaoEdges();
+        const filter = {
+            edge_name: edgeName,
+            from_node: from.hash,
+            to_node: to.hash
+        };
+        const filtered = getEdgesByFilter(edges, filter);
+        if (filtered.length !== 0) {
+            throw new Error(
+                `${filter.from_node} ---${filter.edge_name}---> ${filter.to_node} was found.`
+                );
+        }
+        
+        expect(filtered.length).toBe(0);
+    }
+
     toHaveEdge(from: Document, to: Document, edgeName: string) {
         const edges = this.dao.getDaoEdges();
         const filter = {

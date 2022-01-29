@@ -22,24 +22,25 @@
 
 namespace hypha
 {
+   /**Testenv only 
+   
    ACTION dao::clean()
    {
      require_auth(get_self());
 
-     document_table docs(get_self(), get_self().value);
+     Document::document_table docs(get_self(), get_self().value);
 
      for (auto it = docs.begin(); it != docs.end(); ) {
        it = docs.erase(it);
      }
 
-     edge_table edges(get_self(), get_self().value);
+     Edge::edge_table edges(get_self(), get_self().value);
 
      for (auto it = edges.begin(); it != edges.end(); ) {
        it = edges.erase(it);
      }
    }
-
-   /**Testenv only 
+   
    ACTION
    dao::autoenroll(const checksum256& dao_hash, const name& enroller, const name& member)
    {
@@ -90,19 +91,20 @@ namespace hypha
    void dao::propose(const checksum256& dao_hash,
                      const name &proposer,
                      const name &proposal_type,
-                     ContentGroups &content_groups)
+                     ContentGroups &content_groups,
+                     bool publish)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      //TODO: Change to dao_hash instead of dao_name
+      //TODO: Change to dao_id instead of dao_hash
       Document daoDoc(get_self(), dao_hash);
 
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type));
-      proposal->propose(proposer, content_groups);
+      proposal->propose(proposer, content_groups, publish);
    }
 
-   void dao::vote(const name &voter, const checksum256 &proposal_hash, string &vote, string notes)
+   void dao::vote(const name& voter, const checksum256 &proposal_hash, string &vote, const std::optional<string> &notes)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -111,9 +113,7 @@ namespace hypha
 
       auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
 
-      auto daoDoc = Document(get_self(), daoID);
-
-      Proposal *proposal = ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type);
+      Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
       proposal->vote(voter, vote, docprop, notes);
    }
 
@@ -126,12 +126,52 @@ namespace hypha
 
       auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
 
-      auto daoDoc = Document(get_self(), daoID);
-
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
-      Proposal *proposal = ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type);
+      Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
       proposal->close(docprop);
+   }
+
+   void dao::proposepub(const name &proposer, const checksum256 &proposal_hash)
+   {
+      TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+      Document docprop(get_self(), proposal_hash);
+      name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
+
+      auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
+
+      Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+      proposal->publish(proposer, docprop);
+   }
+
+   void dao::proposerem(const name &proposer, const checksum256 &proposal_hash)
+   {
+      TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+      Document docprop(get_self(), proposal_hash);
+      name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
+      
+      auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
+
+      Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+      proposal->remove(proposer, docprop);
+   }
+
+   void dao::proposeupd(const name &proposer, const checksum256 &proposal_hash, ContentGroups &content_groups) 
+   {
+      TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+      Document docprop(get_self(), proposal_hash);
+      name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
+
+      auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
+
+      Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+      proposal->update(proposer, docprop, content_groups);
    }
 
    void dao::proposeextend(const checksum256 &assignment_hash, const int64_t additional_periods)
@@ -145,11 +185,11 @@ namespace hypha
       eosio::name assignee = assignment.getAssignee().getAccount();
       eosio::require_auth(assignee);
       
-      auto daoHash = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
+      auto daoID = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
 
       //Get the DAO edge from the hash
       EOS_CHECK(
-        Member::isMember(get_self(), daoHash, assignee), 
+        Member::isMember(get_self(), daoID, assignee), 
         "assignee must be a current member to request an extension: " + assignee.to_string());
 
       eosio::print("\nproposer is: " + assignee.to_string() + "\n");
@@ -163,11 +203,9 @@ namespace hypha
         }
       };
 
-      Document daoDoc(get_self(), daoHash);
-
       // propose the extension
-      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoDoc.getID(), common::EXTENSION));
-      proposal->propose(assignee, contentGroups);
+      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoID, common::EXTENSION));
+      proposal->propose(assignee, contentGroups, false);
    }
 
    void dao::withdraw(name owner, eosio::checksum256 hash) 
@@ -271,7 +309,7 @@ namespace hypha
 
      Document daoDoc(get_self(), daoID);
 
-     propose(daoDoc.getHash(), proposer, common::SUSPEND, cgs);
+     propose(daoDoc.getHash(), proposer, common::SUSPEND, cgs, true);
    }
 
    void dao::claimnextper(const eosio::checksum256 &assignment_hash)
@@ -289,8 +327,6 @@ namespace hypha
 
       // assignee must still be a DHO member
       auto daoID = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
-
-      Document daoDoc(get_self(), daoID);
       
       EOS_CHECK(
         Member::isMember(get_self(), daoID, assignee), 
@@ -447,7 +483,7 @@ namespace hypha
       ab.voice = voice;
       ab.peg = peg;
 
-      ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoDoc.getID(), ab);
+      ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoID, ab);
 
       makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.reward, memo, eosio::name{0}, daoTokens);
       makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{0}, daoTokens);
@@ -588,7 +624,6 @@ namespace hypha
       require_auth(applicant);
       Document daoDoc(get_self(), dao_hash);
 
-      //Auto enroll
       std::unique_ptr<Member> member;
       
       const checksum256 memberHash = Member::calcHash(applicant);
@@ -607,17 +642,12 @@ namespace hypha
    {
       TRACE_FUNCTION()
 
+      require_auth(enroller);
+
       //Verify enroller is valid for the given dao
       auto daoSettings = getSettingsDocument(dao_hash);
 
-      const name onboarderAcc = daoSettings->getOrFail<eosio::name>(common::ONBOARDER_ACCOUNT);
-
-      EOS_CHECK(
-        enroller == onboarderAcc,
-        util::to_str("Only ", onboarderAcc, " is allowed to enroll users for dao: ", dao_hash)
-      )
-
-      require_auth(enroller);
+      checkEnrollerAuth(enroller, daoSettings);
 
       Document daoDoc(get_self(), dao_hash);
 
@@ -670,35 +700,50 @@ namespace hypha
       return getSettingsDocument(getRoot(get_self()));
    }
 
-   void dao::setsetting(const string &key, const Content::FlexValue &value)
+   void dao::setsetting(const string &key, const Content::FlexValue &value, eosio::binary_extension<std::string> group)
    {
       TRACE_FUNCTION()
       require_auth(get_self());
-      setSetting(key, value);
-   }
-
-   void dao::setSetting(const string &key, const Content::FlexValue &value)
-   {
-      TRACE_FUNCTION()
       auto settings = getSettingsDocument();
-      settings->setSetting(Content{key, value});
+
+      settings->setSetting(group.value_or(string{"settings"}), Content{key, value});
    }
 
-   void dao::setdaosetting(const eosio::checksum256& dao_hash, const string &key, const Content::FlexValue &value)
+   void dao::setdaosetting(const eosio::checksum256& dao_hash, const string &key, const Content::FlexValue &value, eosio::binary_extension<std::string> group)
    {
-      TRACE_FUNCTION()
-      auto settings = getSettingsDocument(dao_hash);
-      auto onboarder = settings->getOrFail<name>(common::ONBOARDER_ACCOUNT);
-      require_auth(onboarder);
-
-      setSetting(dao_hash, key, value);
+     TRACE_FUNCTION()
+      
+     auto settings = getSettingsDocument(dao_hash);
+     
+     checkAdminstAuth(settings);
+     settings->setSetting(group.value_or(string{"settings"}), Content{key, value});
    }
 
-   void dao::setSetting(const eosio::checksum256& dao_hash, const string &key, const Content::FlexValue &value)
+   void dao::adddaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group)
    {
-      TRACE_FUNCTION()
-      auto settings = getSettingsDocument(dao_hash);
-      settings->setSetting(Content{key, value});
+     TRACE_FUNCTION()
+     auto settings = getSettingsDocument(dao_id);
+     
+     checkAdminstAuth(settings);
+     settings->addSetting(group.value_or(string{"settings"}), Content{key, value});
+   }
+
+   void dao::remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group)
+   {
+     TRACE_FUNCTION()
+     auto settings = getSettingsDocument(dao_id);
+     
+     checkAdminstAuth(settings);
+     settings->remSetting(group.value_or(string{"settings"}), key);
+   }
+   
+   void dao::remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group)
+   {
+     TRACE_FUNCTION()
+     auto settings = getSettingsDocument(dao_id);
+     
+     checkAdminstAuth(settings);
+     settings->remKVSetting(group.value_or(string{"settings"}), Content{ key, value });
    }
 
    void dao::remsetting(const string &key)
@@ -723,9 +768,7 @@ namespace hypha
 
       auto settings = getSettingsDocument(dao_hash);
 
-      auto onboarder = settings->getOrFail<eosio::name>(common::ONBOARDER_ACCOUNT);
-
-      require_auth(onboarder);
+      checkAdminstAuth(settings);
 
       genPeriods(dao_hash, period_count);
    }
@@ -831,6 +874,14 @@ namespace hypha
 
       votingAllignment->getAs<int64_t>();
 
+      int64_t useSeeds = 0;
+
+      if (auto [_, daoUsesSeeds] = configCW.get(detailsIdx, common::DAO_USES_SEEDS); 
+          daoUsesSeeds) 
+      {
+        useSeeds = daoUsesSeeds->getAs<int64_t>();
+      }
+
       require_auth(onboarder);
       
       // Create the settings document as well and add an edge to it
@@ -848,7 +899,16 @@ namespace hypha
               *votingDurationSeconds,
               *onboarderAcc,
               *votingQuorum,
-              *votingAllignment 
+              *votingAllignment,
+              Content{common::DAO_USES_SEEDS, useSeeds}
+          },
+          ContentGroup{
+              Content(CONTENT_GROUP_LABEL, ADMINS),
+              Content{"account", onboarder}
+          },
+          ContentGroup{
+              Content(CONTENT_GROUP_LABEL, ONBOARDERS),
+              Content{"account", onboarder}
           },
           ContentGroup{
               Content(CONTENT_GROUP_LABEL, SYSTEM),
@@ -1223,6 +1283,66 @@ namespace hypha
          // predecessor is not a period, so use "start" edge
          Edge::write(get_self(), get_self(), previous.getID(), newPeriod.getID(), common::START);
       }
+  }
+
+  void dao::checkEnrollerAuth(const name& account, Settings* daoSettings)
+  {
+    TRACE_FUNCTION()
+
+    auto cw = daoSettings->getContentWrapper();
+
+    auto [onboardersIdx, onboardersGroup] = cw.getGroup(ONBOARDERS);
+
+    EOS_CHECK(
+      onboardersGroup != nullptr,
+      "Missing oboarders group in settings document"
+    )
+
+    {
+      auto groupLabelIdx = cw.get(onboardersIdx, CONTENT_GROUP_LABEL).first;
+      //Verify that content_group_label item exists and it's the first one
+      EOS_CHECK(
+        groupLabelIdx == 0,
+        util::to_str("Group label is missing or in the wrong index (expected to be at 0 but got ", groupLabelIdx, ")")
+      )
+    }
+
+    EOS_CHECK(
+      std::any_of(onboardersGroup->begin() + 1, onboardersGroup->end(), [account](const Content& onboarder) {
+        return onboarder.getAs<eosio::name>() == account;
+      }),
+      util::to_str("Only enrollers of the dao are allowed to perform this action")
+    )
+  }
+
+  void dao::checkAdminstAuth(Settings* daoSettings)
+  {
+    TRACE_FUNCTION()
+
+    auto cw = daoSettings->getContentWrapper();
+
+    auto [adminsIdx, adminsGroup] = cw.getGroup(ADMINS);
+
+    EOS_CHECK(
+      adminsGroup != nullptr,
+      "Missing admins group in settings document"
+    )
+
+    {
+      auto groupLabelIdx = cw.get(adminsIdx, CONTENT_GROUP_LABEL).first;
+      //Verify that content_group_label item exists and it's the first one
+      EOS_CHECK(
+        groupLabelIdx == 0,
+        util::to_str("Group label is missing or in the wrong index (expected to be at 0 but got ", groupLabelIdx, ")")
+      )
+    }
+
+    EOS_CHECK(
+      std::any_of(adminsGroup->begin() + 1, adminsGroup->end(), [](const Content& admin) {
+        return eosio::has_auth(admin.getAs<eosio::name>());
+      }),
+      util::to_str("Only admins of the dao are allowed to perform this action")
+    )
   }
 
   void dao::genPeriods(const checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/)
