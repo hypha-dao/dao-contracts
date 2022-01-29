@@ -122,21 +122,6 @@ namespace hypha
         ).send();
       }
       */
-     ACTION fixdao(uint64_t daoId) 
-     {
-        require_auth(get_self());
-
-        auto settings = getSettingsDocument(daoId);
-        
-        if (auto creator = settings->getSettingOpt<eosio::name>(common::ONBOARDER_ACCOUNT)) {
-           settings->remSetting(common::ONBOARDER_ACCOUNT);
-           settings->setSetting(ONBOARDERS, Content{ "account", creator.value() });
-           settings->setSetting(ADMINS, Content{ "account", creator.value() });
-        }
-        else {
-           EOS_CHECK(false, "Dao already fixed")
-        }
-     }
      
       DocumentGraph &getGraph();
       Settings* getSettingsDocument();
