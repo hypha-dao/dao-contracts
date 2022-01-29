@@ -91,7 +91,8 @@ namespace hypha
    void dao::propose(const checksum256& dao_hash,
                      const name &proposer,
                      const name &proposal_type,
-                     ContentGroups &content_groups)
+                     ContentGroups &content_groups,
+                     bool publish)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -100,7 +101,7 @@ namespace hypha
       Document daoDoc(get_self(), dao_hash);
 
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type));
-      proposal->propose(proposer, content_groups, true);
+      proposal->propose(proposer, content_groups, publish);
    }
 
    void dao::vote(const name& voter, const checksum256 &proposal_hash, string &vote, const std::optional<string> &notes)

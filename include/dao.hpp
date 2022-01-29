@@ -73,7 +73,7 @@ namespace hypha
 
 
       //TODO: Remove eosio::binary_extension<int64_t> and replace to bool (it was needed on testnet)
-      ACTION propose(const checksum256& dao_hash, const name &proposer, const name &proposal_type, ContentGroups &content_groups);
+      ACTION propose(const checksum256& dao_hash, const name &proposer, const name &proposal_type, ContentGroups &content_groups, bool publish);
       ACTION vote(const name& voter, const checksum256 &proposal_hash, string &vote, const std::optional<string> & notes);
       ACTION closedocprop(const checksum256 &proposal_hash);
 
