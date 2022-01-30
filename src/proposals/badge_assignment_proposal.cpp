@@ -72,7 +72,7 @@ namespace hypha
         //We use getOrNew since the user could have held this badge already
         Edge::getOrNew(m_dao.get_self(), m_dao.get_self(), assignee, badge.getHash(), common::HOLDS_BADGE);
         Edge::getOrNew(m_dao.get_self(), m_dao.get_self(), badge.getHash(), assignee, common::HELD_BY);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getHash(), assignee, common::HELD_BY);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), assignee, proposal.getHash(), common::ASSIGN_BADGE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getHash(), proposal.getHash(), common::ASSIGNMENT);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getHash(), badge.getHash(), common::BADGE_NAME);
 
