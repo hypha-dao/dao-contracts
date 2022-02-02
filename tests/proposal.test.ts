@@ -165,8 +165,8 @@ describe('Proposal', () => {
         ));
 
         const daoExpect = getDaoExpect(environment);
-        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'stagingprop');
+        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'proposal');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'stagingprop');
         daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
         daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
@@ -232,8 +232,8 @@ describe('Proposal', () => {
         ));
 
         // Should be published
-        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'stagingprop');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'proposal');
+        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'stagingprop');
         daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
         daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
@@ -266,7 +266,7 @@ describe('Proposal', () => {
         })
 
         daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'stagingprop');
+        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'stagingprop');
         daoExpect.toNotHaveEdge(dao.members[0].doc, proposal, 'owns');
         daoExpect.toNotHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
@@ -275,7 +275,7 @@ describe('Proposal', () => {
             'role'
         ));
         daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'stagingprop');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'stagingprop');
         daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
         daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
@@ -295,8 +295,8 @@ describe('Proposal', () => {
             environment.getDaoDocuments(),
             'role'
         ))).not.toEqual(proposal);
-        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'stagingprop');
+        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'proposal');
+        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'stagingprop');
         daoExpect.toNotHaveEdge(dao.members[0].doc, proposal, 'owns');
         daoExpect.toNotHaveEdge(proposal, dao.members[0].doc, 'ownedby');
     })

@@ -87,6 +87,8 @@ namespace hypha
             Edge::write(m_dao.get_self(), proposer, root, proposalNode.getID(), STAGING_PROPOSAL);
         }
 
+        Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), root, common::DAO);
+
         return proposalNode;
     }
 
@@ -384,8 +386,6 @@ namespace hypha
         TRACE_FUNCTION()
         // the DHO also links to the document as a proposal, another graph EDGE
         Edge::write(m_dao.get_self(), proposer, rootID, proposal.getID (), common::PROPOSAL);
-
-        Edge::write(m_dao.get_self(), proposer, proposal.getID (), rootID, common::DAO);
 
         // Sets an empty tally
         VoteTally(m_dao, proposal, m_daoSettings);

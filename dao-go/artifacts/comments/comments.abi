@@ -16,6 +16,10 @@
                     "type": "uint64"
                 },
                 {
+                    "name": "tenant",
+                    "type": "name"
+                },
+                {
                     "name": "section",
                     "type": "name"
                 },
@@ -45,6 +49,14 @@
             "name": "Section",
             "base": "",
             "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "tenant",
+                    "type": "name"
+                },
                 {
                     "name": "section",
                     "type": "name"
@@ -84,6 +96,10 @@
                     "type": "name"
                 },
                 {
+                    "name": "tenant",
+                    "type": "name"
+                },
+                {
                     "name": "section",
                     "type": "name"
                 },
@@ -110,6 +126,10 @@
                     "type": "name"
                 },
                 {
+                    "name": "tenant",
+                    "type": "name"
+                },
+                {
                     "name": "section",
                     "type": "name"
                 },
@@ -125,6 +145,10 @@
             "fields": [
                 {
                     "name": "scope",
+                    "type": "name"
+                },
+                {
+                    "name": "tenant",
                     "type": "name"
                 },
                 {
@@ -146,6 +170,10 @@
                     "type": "name"
                 },
                 {
+                    "name": "tenant",
+                    "type": "name"
+                },
+                {
                     "name": "section",
                     "type": "name"
                 }
@@ -157,6 +185,10 @@
             "fields": [
                 {
                     "name": "scope",
+                    "type": "name"
+                },
+                {
+                    "name": "tenant",
                     "type": "name"
                 },
                 {
@@ -179,6 +211,10 @@
             "fields": [
                 {
                     "name": "scope",
+                    "type": "name"
+                },
+                {
+                    "name": "tenant",
                     "type": "name"
                 },
                 {
@@ -211,6 +247,10 @@
             "fields": [
                 {
                     "name": "scope",
+                    "type": "name"
+                },
+                {
+                    "name": "tenant",
                     "type": "name"
                 },
                 {

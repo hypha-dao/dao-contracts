@@ -340,6 +340,10 @@ export class DaoBlockchain extends Blockchain {
                 this.buildAction(this.daoContract, 'createroot', { notes: 'notes' }),
                 // governance token contract
                 this.buildAction(this.daoContract, 'setsetting', {
+                    key: 'comments_contract',
+                    value: [ 'name', this.peerContracts.comments.accountName ]
+                }),
+                this.buildAction(this.daoContract, 'setsetting', {
                     key: 'governance_token_contract',
                     value: [ 'name', this.peerContracts.voice.accountName ]
                 }),

@@ -1,7 +1,15 @@
 import { setupEnvironment } from './setup';
 import { Document } from './types/Document';
 import { last } from './utils/Arrays';
-import { getContent, getContentGroupByLabel, getDetailsGroup, getDocumentByHash, getDocumentsByType, getEdgesByFilter } from './utils/Dao';
+import {
+    getContent,
+    getContentGroupByLabel,
+    getDetailsGroup,
+    getDocumentByHash,
+    getDocumentById,
+    getDocumentsByType,
+    getEdgesByFilter
+} from './utils/Dao';
 import { getDaoExpect } from './utils/Expect';
 import { UnderwaterBasketweaver } from './sample-data/RoleSamples';
 import { DaoBlockchain } from './dao/DaoBlockchain';
@@ -72,7 +80,7 @@ export const claimRemainingPeriods = async (dao: Dao, assignment: Document,
 
         expect(nextEdge).toHaveLength(1);
 
-        const nextPeriod = getDocumentByHash(docs, nextEdge[0].to_node);
+        const nextPeriod = getDocumentById(docs, nextEdge[0].to_node);
 
         let now = getPeriodStartDate(nextPeriod);
 
@@ -208,7 +216,7 @@ describe('Assignments', () => {
 
         const docs = environment.getDaoDocuments();
 
-        getDaoExpect(environment).toHaveEdge(assignment, getDocumentByHash(docs, startPeriod as string), 'start');
+        getDaoExpect(environment).toHaveEdge(assignment, getDocumentById(docs, startPeriod as string), 'start');
 
         getDaoExpect(environment).toHaveEdge(assignment, role, 'role');
 
@@ -273,11 +281,11 @@ describe('Assignments', () => {
 
         for (let i = 0; i < periodCount; ++i) {
 
-            let nextEdge = getEdgesByFilter(edges, { from_node: currentPeriod.hash, edge_name: 'next' });
+            let nextEdge = getEdgesByFilter(edges, { from_node: currentPeriod.id, edge_name: 'next' });
 
             expect(nextEdge).toHaveLength(1);
 
-            const nextPeriod = getDocumentByHash(docs, nextEdge[0].to_node);
+            const nextPeriod = getDocumentById(docs, nextEdge[0].to_node);
 
             now = getPeriodStartDate(nextPeriod);
 
@@ -307,12 +315,14 @@ describe('Assignments', () => {
             publish: true,
             ...assignProposal2
         });
+        console.log('done.');
 
         assignment = last(getDocumentsByType(
           environment.getDaoDocuments(),
           'assignment'
         ));
 
+        console.log('voting...');
         //Vote but don't close
         for (let i = 0; i < dao.members.length; ++i) {
           await environment.daoContract.contract.vote({
@@ -323,6 +333,7 @@ describe('Assignments', () => {
               notes: 'votes pass'
           });
         }
+        console.log('done...');
 
         let details = getContentGroupByLabel(assignment, 'details');
 
@@ -332,9 +343,12 @@ describe('Assignments', () => {
 
         let startPeriodHash = getContent(details, 'start_period').value[1] as string;
 
-        const startPeriod = getDocumentByHash(environment.getDaoDocuments(), startPeriodHash);
+        const startPeriod = getDocumentById(environment.getDaoDocuments(), startPeriodHash);
 
         let period = startPeriod;
+
+
+        console.log('here');
 
         for (let i = 0; i < periodCount2; ++i) {
 
@@ -342,7 +356,7 @@ describe('Assignments', () => {
 
             expect(nextEdge).toHaveLength(1);
 
-            const nextPeriod = getDocumentByHash(docs, nextEdge[0].to_node);
+            const nextPeriod = getDocumentById(docs, nextEdge[0].to_node);
 
             period = nextPeriod;
         }
@@ -386,7 +400,7 @@ describe('Assignments', () => {
 
             let nextEdge = getEdgesByFilter(edges, { from_node: period.hash, edge_name: 'next' });
 
-            const nextPeriod = getDocumentByHash(docs, nextEdge[0].to_node);
+            const nextPeriod = getDocumentById(docs, nextEdge[0].to_node);
 
             getDaoExpect(environment).toHaveEdge(assignment, period, 'claimed');
 
@@ -519,7 +533,7 @@ describe('Assignments', () => {
         .toBe('suspended');
 
         getDaoExpect(environment)
-        .toHaveEdge(environment.getRoot(), suspendedAssignment, 'suspended');
+        .toHaveEdge(dao.getRoot(), suspendedAssignment, 'suspended');
     });
 
     it('Withdraw assignment', async () => {
