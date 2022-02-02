@@ -884,6 +884,36 @@ namespace hypha
     m_documentGraph.updateDocument(issuer, assignment_hash, cw.getContentGroups());
   }
 
+   void dao::on_husd(const name& from, const name& to, const asset& quantity, const string& memo) {
+      
+      EOS_CHECK(quantity.amount > 0, "quantity must be > 0");
+      EOS_CHECK(quantity.is_valid(), "quantity invalid");
+      
+      asset hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE); // 0.5000 USD
+      EOS_CHECK(
+         hyphaUsdVal.symbol.precision() == 4,
+         util::to_str("Expected HYPHA_USD_VALUE precision to be 4, but got:", hyphaUsdVal.symbol.precision())
+      );
+      double factor = (hyphaUsdVal.amount / 10000.0); // 0.5
+      
+      eosio::print("factor" + std::to_string(factor));
+
+      EOS_CHECK(common::S_HUSD.precision() == common::S_HYPHA.precision(), "unexpected precision mismatch");
+
+      asset hyphaAmount = asset( quantity.amount / factor, common::S_HYPHA);
+
+      eosio::print("hyphaAmount" + hyphaAmount.to_string());
+      
+      hypha::issueToken(
+         getSettingOrFail<eosio::name>(HYPHA_TOKEN_CONTRACT),
+         get_self(),
+         from,
+         hyphaAmount,
+         string("Buy HYPHA for " + quantity.to_string())
+      );
+
+   }
+
    void dao::modifyCommitment(Assignment& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
    {
       TRACE_FUNCTION()
