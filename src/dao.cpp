@@ -965,12 +965,12 @@ namespace hypha
       EOS_CHECK(quantity.amount > 0, "quantity must be > 0");
       EOS_CHECK(quantity.is_valid(), "quantity invalid");
       
-      asset hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE); // 0.5000 USD
+      asset hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
       EOS_CHECK(
          hyphaUsdVal.symbol.precision() == 4,
          util::to_str("Expected hypha_usd_value precision to be 4, but got:", hyphaUsdVal.symbol.precision())
       );
-      double factor = (hyphaUsdVal.amount / 10000.0); // 0.5
+      double factor = (hyphaUsdVal.amount / 10000.0);
       
       EOS_CHECK(common::S_HUSD.precision() == common::S_HYPHA.precision(), "unexpected precision mismatch");
 
