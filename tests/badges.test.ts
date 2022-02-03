@@ -161,9 +161,9 @@ describe('Badges', () => {
 
           const assignmentDetails = getContentGroupByLabel(assignment, 'details');
 
-          const husd = getAssetContent(assignmentDetails, 'husd_salary_per_phase');
+          const husd = getAssetContent(assignmentDetails, 'peg_salary_per_period');
 
-          const hvoice = getAssetContent(assignmentDetails, 'hvoice_salary_per_phase');
+          const hvoice = getAssetContent(assignmentDetails, 'voice_salary_per_period');
 
           const usdSalary = getAssetContent(assignmentDetails, 'usd_salary_value_per_phase');
 
