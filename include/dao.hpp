@@ -165,6 +165,17 @@ namespace hypha
                             std::optional<eosio::time_point> fixedStartDate,
                             std::string_view modifier);
 
+      [[eosio::on_notify("husd.hypha::transfer")]]
+      void onhusd(const name& from, const name& to, const asset& quantity, const string& memo) {
+         if (get_first_receiver() == "husd.hypha"_n && 
+            to == get_self() && 
+            quantity.symbol == common::S_HUSD ) 
+         {
+            on_husd(from, to, quantity, memo);
+         }
+
+      }
+
    private:
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
@@ -185,5 +196,8 @@ namespace hypha
       std::vector<Document> getCurrentBadges(Period & period, const eosio::name &member);
 
       bool isPaused();
+
+      void on_husd(const name& from, const name& to, const asset& quantity, const string& memo);
+
    };
 } // namespace hypha

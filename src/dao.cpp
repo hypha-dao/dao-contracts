@@ -959,4 +959,31 @@ namespace hypha
 
       Edge::write(get_self(), get_self(), assignment.getHash(), newTimeShareDoc.getHash(), common::LAST_TIME_SHARE);
    }
+
+   void dao::on_husd(const name& from, const name& to, const asset& quantity, const string& memo) {
+      
+      EOS_CHECK(quantity.amount > 0, "quantity must be > 0");
+      EOS_CHECK(quantity.is_valid(), "quantity invalid");
+      
+      asset hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
+      EOS_CHECK(
+         hyphaUsdVal.symbol.precision() == 4,
+         util::to_str("Expected hypha_usd_value precision to be 4, but got:", hyphaUsdVal.symbol.precision())
+      );
+      double factor = (hyphaUsdVal.amount / 10000.0);
+      
+      EOS_CHECK(common::S_HUSD.precision() == common::S_HYPHA.precision(), "unexpected precision mismatch");
+
+      asset hyphaAmount = asset( quantity.amount / factor, common::S_HYPHA);
+      
+      hypha::issueToken(
+         getSettingOrFail<eosio::name>(HYPHA_TOKEN_CONTRACT),
+         get_self(),
+         from,
+         hyphaAmount,
+         string("Buy HYPHA for " + quantity.to_string())
+      );
+
+   }
+
 } // namespace hypha
