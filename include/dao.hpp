@@ -93,7 +93,6 @@ namespace hypha
       //Removes a dho/contract level setting
       ACTION remsetting(const string &key);
 
-      ACTION addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
       ACTION genperiods(const eosio::checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/);
       
       ACTION claimnextper(const eosio::checksum256 &assignment_hash);
@@ -216,7 +215,6 @@ namespace hypha
 
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
-      void addPeriod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label);
       void genPeriods(const eosio::checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/);
 
       void removeSetting(const string &key);

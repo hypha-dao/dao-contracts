@@ -773,14 +773,6 @@ namespace hypha
       genPeriods(dao_hash, period_count);
    }
 
-   void dao::addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label)
-   {
-      TRACE_FUNCTION()
-      require_auth(get_self());
-
-      addPeriod(predecessor, start_time, label);
-   }
-
    void dao::createdao(ContentGroups &config)
    {
       TRACE_FUNCTION()
@@ -938,18 +930,15 @@ namespace hypha
       member->enroll(onboarder, daoDoc.getID(), "DAO Onboarder");
       
       //TODO: Create enroller edge
-      
       //Create start period
-      addPeriod(
-        daoDoc.getHash(), 
-        eosio::current_time_point(), 
-        util::to_str(dao, " - start period")
-      );
-
+      Period newPeriod(this, eosio::current_time_point(), util::to_str(dao, " start period"));
       auto startEdge = Edge::get(get_self(), daoDoc.getID(), common::START);
 
-      //Create end period edge
-      Edge(get_self(), get_self(), daoDoc.getID(), startEdge.getToNode(), common::END);
+      //Create start & end edges
+      Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::START);
+      Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::END);
+      Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::PERIOD);
+      Edge(get_self(), get_self(), newPeriod.getID(), daoDoc.getID(), common::DAO);
 
       // EOS_CHECK(
       //   inititialPeriods->getAs<int64_t>() - 1 <= 30,
@@ -1259,32 +1248,6 @@ namespace hypha
       Edge::write(get_self(), get_self(), assignment.getID(), newTimeShareDoc.getID(), common::LAST_TIME_SHARE);
    }
 
-  void dao::addPeriod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label) 
-  {
-    Period newPeriod(this, start_time, label);
-
-      // check that predecessor exists
-      Document previous(get_self(), predecessor);
-      ContentWrapper contentWrapper = previous.getContentWrapper();
-
-      // if it's a period, make sure the start time comes before
-      auto [idx, predecessorType] = contentWrapper.get(SYSTEM, TYPE);
-      if (predecessorType && predecessorType->getAs<eosio::name>() == common::PERIOD)
-      {
-         EOS_CHECK(contentWrapper.getOrFail(DETAILS, START_TIME)->getAs<eosio::time_point>().sec_since_epoch() <
-                          start_time.sec_since_epoch(),
-                      "start_time of period predecessor must be before the new period's start_time");
-
-         // predecessor is a period, so use "next" edge
-         Edge::write(get_self(), get_self(), previous.getID(), newPeriod.getID(), common::NEXT);
-      }
-      else
-      {
-         // predecessor is not a period, so use "start" edge
-         Edge::write(get_self(), get_self(), previous.getID(), newPeriod.getID(), common::START);
-      }
-  }
-
   void dao::checkEnrollerAuth(const name& account, Settings* daoSettings)
   {
     TRACE_FUNCTION()
@@ -1368,7 +1331,7 @@ namespace hypha
                                     .getStartTime()
                                     .sec_since_epoch();
 
-    for (int64_t i = 0; i < period_count; ++i) {
+    for (int64_t i = 0; i < std::min(MAX_PERIODS_PER_CALL, period_count); ++i) {
       time_point nextPeriodStart(eosio::seconds(lastPeriodStartSecs + periodDurationSecs));
 
       Period nextPeriod(
@@ -1378,6 +1341,8 @@ namespace hypha
       );
       
       Edge(get_self(), get_self(), lastPeriodID, nextPeriod.getID(), common::NEXT);
+      Edge(get_self(), get_self(), daoDoc.getID(), nextPeriod.getID(), common::PERIOD);
+      Edge(get_self(), get_self(), nextPeriod.getID(), daoDoc.getID(), common::DAO);
 
       lastPeriodStartSecs = nextPeriodStart.sec_since_epoch();
       lastPeriodID = nextPeriod.getID();
