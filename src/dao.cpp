@@ -6,6 +6,7 @@
 #include <proposals/proposal_factory.hpp>
 #include <payers/payer_factory.hpp>
 #include <payers/payer.hpp>
+#include <payers/hypha_payer.hpp>
 #include <logger/logger.hpp>
 
 #include <dao.hpp>
@@ -976,13 +977,8 @@ namespace hypha
 
       asset hyphaAmount = asset( quantity.amount / factor, common::S_HYPHA);
       
-      hypha::issueToken(
-         getSettingOrFail<eosio::name>(HYPHA_TOKEN_CONTRACT),
-         get_self(),
-         from,
-         hyphaAmount,
-         string("Buy HYPHA for " + quantity.to_string())
-      );
+      std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, hyphaAmount.symbol, eosio::name{0}));
+      payer->pay(from, hyphaAmount, string("Buy HYPHA for " + quantity.to_string()));
 
    }
 
