@@ -158,6 +158,7 @@ export class DaoBlockchain extends Blockchain {
         data: TTransaction['actions'][number]['data'],
         permissions?: TTransaction['actions'][number]['authorization']
     ): TTransaction['actions'][number] {
+        this.validateParams(account, action, data);
         return {
             account: account.accountName,
             name: action,
@@ -416,6 +417,37 @@ export class DaoBlockchain extends Blockchain {
                 throw new Error('Invalid dao document:' + JSON.stringify(daoDoc));
             }
         });
+    }
+
+    private validateParams(account: Account, action: string, data: any) {
+        // Not currently connected.
+        // Need to support optionals values
+        // It can be added to the accounts by creating a Proxy
+        // and in the `buildAction` is easily callable
+        //
+        // Validate that data does not have any more params than it is required
+        // It currently warns when an abi/action/struct is not found.
+
+        if (!account.abi) {
+            console.log(`Abi for account ${account.accountName} not found when calling action: ${action}`);
+            return;
+        }
+
+        const abiAction = account.abi.actions.find(a => a.name === action);
+        if (!abiAction) {
+            console.log(`action for account ${account.accountName} not found when calling action: ${action}`);
+            return;
+        }
+
+        const struct = account.abi.structs.find(s => s.name === abiAction.type);
+        if (!struct) {
+            console.log(`action type for account ${account.accountName} not found when calling action: ${action}`);
+            return;
+        }
+
+        const targetKeys = Object.keys(data);
+        const expectedKeys = struct.fields.map(f => f.name);
+        expect(targetKeys).toEqual(expectedKeys);
     }
 
     private createDaoAction(dao: Dao): TTransaction['actions'][number] {
