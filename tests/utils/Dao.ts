@@ -8,8 +8,8 @@ const TYPE_LABEL = 'type';
 export const getContentGroupByLabel = (document: Document, groupLabel: string): ContentGroup | undefined => {
     return document.content_groups.find(
         group => group.find(
-            content => content.label === CONTENT_GROUP_LABEL && 
-            content.value[0] === ContentType.STRING && 
+            content => content.label === CONTENT_GROUP_LABEL &&
+            content.value[0] === ContentType.STRING &&
             content.value[1] === groupLabel
         )
     );
@@ -50,6 +50,10 @@ export const getDocumentByHash = (documents: Array<Document>, hash: string): Doc
     return documents.find(document => document.hash.toUpperCase() === hash.toUpperCase());
 }
 
+export const getDocumentById = (documents: Array<Document>, id: string): Document => {
+    return documents.find(document => document.id === id);
+}
+
 type EdgeFilter = Partial<Edge>;
 
 const keys: Array<keyof Edge> = [
@@ -84,7 +88,7 @@ export const getNextPeriod = (environment: DaoBlockchain, currentPeriod: Documen
     throw Error(`Period (${currentPeriod.hash}) doesn't have next edge`);
   }
 
-  const nextPeriod = getDocumentByHash(docs ?? environment.getDaoDocuments(), 
+  const nextPeriod = getDocumentById(docs ?? environment.getDaoDocuments(),
                                        nextEdge[0].to_node);
 
   return new Period(nextPeriod);

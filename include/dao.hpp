@@ -226,8 +226,12 @@ namespace hypha
       asset getProRatedAsset(ContentWrapper * assignment, const symbol &symbol,
                              const string &key, const float &proration);
 
+      void createVoiceToken(const eosio::name& daoName,
+                            const eosio::asset& voiceToken,
+                            const uint64_t& decayPeriod,
+                            const uint64_t& decayPerPeriodx10M);
+
       void createTokens(const eosio::name& daoName,
-                        const eosio::asset& voiceToken,
                         const eosio::asset& rewardToken,
                         const eosio::asset& pegToken);
 

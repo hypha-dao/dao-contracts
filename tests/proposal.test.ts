@@ -40,16 +40,18 @@ describe('Proposal', () => {
 
     it('Proposal failed', async() => {
         const environment = await setupEnvironment();
+        const dao = environment.getDao('test');
 
         const now = new Date();
         const whenVoteExpires = new Date();
-        whenVoteExpires.setSeconds( whenVoteExpires.getSeconds() + environment.settings.votingDurationSeconds + 1);
+        whenVoteExpires.setSeconds( whenVoteExpires.getSeconds() + dao.settings.votingDurationSeconds + 1);
 
         environment.setCurrentTime(now);
 
         // Proposing
-        await environment.dao.contract.propose({
-            proposer: environment.members[0].account.accountName,
+        await environment.daoContract.contract.propose({
+            dao_hash: dao.getHash(),
+            proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
             content_groups: getSampleRole().content_groups
@@ -61,38 +63,40 @@ describe('Proposal', () => {
         ));
 
         const daoExpect = getDaoExpect(environment);
-        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toHaveEdge(environment.members[0].doc, proposal, 'owns');
-        daoExpect.toHaveEdge(proposal, environment.members[0].doc, 'ownedby');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'proposal');
+        daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
+        daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
         // Sets the time to the end of proposal
         environment.setCurrentTime(whenVoteExpires);
 
         // Now we can close the proposal
-        await environment.dao.contract.closedocprop({
+        await environment.daoContract.contract.closedocprop({
             proposal_hash: proposal.hash
-        }, environment.members[0].getPermissions());
+        }, dao.members[0].getPermissions());
 
         proposal = last(getDocumentsByType(
           environment.getDaoDocuments(),
           'role'
         ));
 
-        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'failedprops');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'failedprops');
     });
 
     it('Proposal passes', async() => {
         const environment = await setupEnvironment();
+        const dao = environment.getDao('test');
 
         const now = new Date();
         const whenVoteExpires = new Date();
-        whenVoteExpires.setSeconds( whenVoteExpires.getSeconds() + environment.settings.votingDurationSeconds + 1);
+        whenVoteExpires.setSeconds( whenVoteExpires.getSeconds() + dao.settings.votingDurationSeconds + 1);
 
         environment.setCurrentTime(now);
 
         // Proposing
-        await environment.dao.contract.propose({
-            proposer: environment.members[0].account.accountName,
+        await environment.daoContract.contract.propose({
+            dao_hash: dao.getHash(),
+            proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
             content_groups: getSampleRole().content_groups
@@ -104,12 +108,12 @@ describe('Proposal', () => {
         ));
 
         const daoExpect = getDaoExpect(environment);
-        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toHaveEdge(environment.members[0].doc, proposal, 'owns');
-        daoExpect.toHaveEdge(proposal, environment.members[0].doc, 'ownedby');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'proposal');
+        daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
+        daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
-        await environment.dao.contract.vote({
-            voter: environment.members[0].account.accountName,
+        await environment.daoContract.contract.vote({
+            voter: dao.members[0].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'pass',
             notes: 'vote pass'
@@ -119,9 +123,9 @@ describe('Proposal', () => {
         environment.setCurrentTime(whenVoteExpires);
 
         // Now we can close the proposal
-        await environment.dao.contract.closedocprop({
+        await environment.daoContract.contract.closedocprop({
             proposal_hash: proposal.hash
-        }, environment.members[0].getPermissions());
+        }, dao.members[0].getPermissions());
 
         // When passing, the proposal is updated
         proposal = last(getDocumentsByType(
@@ -129,21 +133,25 @@ describe('Proposal', () => {
             'role'
         ));
 
-        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'passedprops');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'passedprops');
     });
 
     it('Staging proposals', async () => {
         const environment = await setupEnvironment({
-            periodCount: 0
+            'test': {
+                periodCount: 0
+            }
         });
+        const dao = environment.getDao('test');
         const now = new Date();
         const whenVoteExpires = new Date();
-        whenVoteExpires.setSeconds( whenVoteExpires.getSeconds() + environment.settings.votingDurationSeconds + 1);
+        whenVoteExpires.setSeconds( whenVoteExpires.getSeconds() + dao.settings.votingDurationSeconds + 1);
         environment.setCurrentTime(now);
 
         // Stage proposal
-        await environment.dao.contract.propose({
-            proposer: environment.members[0].account.accountName,
+        await environment.daoContract.contract.propose({
+            dao_hash: dao.getHash(),
+            proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: false,
             content_groups: getSampleRole().content_groups
@@ -155,59 +163,59 @@ describe('Proposal', () => {
         ));
 
         const daoExpect = getDaoExpect(environment);
-        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'stagingprop');
-        daoExpect.toHaveEdge(environment.members[0].doc, proposal, 'owns');
-        daoExpect.toHaveEdge(proposal, environment.members[0].doc, 'ownedby');
+        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'proposal');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'stagingprop');
+        daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
+        daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
         // can't vote
-        await expect(environment.dao.contract.vote({
-            voter: environment.members[0].account.accountName,
+        await expect(environment.daoContract.contract.vote({
+            voter: dao.members[0].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'pass',
             notes: 'vote pass'
         })).rejects.toThrowError('Only published proposals can be voted');
 
         // can't close
-        await expect(environment.dao.contract.closedocprop({
+        await expect(environment.daoContract.contract.closedocprop({
             proposal_hash: proposal.hash
-        }, environment.members[0].getPermissions()))
+        }, dao.members[0].getPermissions()))
         .rejects.toThrowError('Only published proposals can be closed');
 
         // publish
-        await environment.dao.contract.proposepub({
-            proposer: environment.members[0].account.accountName,
+        await environment.daoContract.contract.proposepub({
+            proposer: dao.members[0].account.accountName,
             proposal_hash: proposal.hash
         });
 
-        await passProposal(proposal, 'role', environment);
+        await passProposal(dao, proposal, 'role', environment);
 
         proposal = last(getDocumentsByType(environment.getDaoDocuments(), 'role'));
         // can't publish
-        await expect(environment.dao.contract.proposepub({
-            proposer: environment.members[0].account.accountName,
+        await expect(environment.daoContract.contract.proposepub({
+            proposer: dao.members[0].account.accountName,
             proposal_hash: proposal.hash
         })).rejects.toThrowError(/Only proposes in staging can be published/i);
 
         // can't update
-        await expect(environment.dao.contract.proposeupd({
-            proposer: environment.members[1].account.accountName,
+        await expect(environment.daoContract.contract.proposeupd({
+            proposer: dao.members[1].account.accountName,
             proposal_hash: proposal.hash,
             content_groups: getSampleRole2().content_groups
         })).rejects.toThrowError(/Only proposes in staging can be updated/i);
 
         // can't remove
-        await expect(environment.dao.contract.proposerem({
-            proposer: environment.members[1].account.accountName,
+        await expect(environment.daoContract.contract.proposerem({
+            proposer: dao.members[1].account.accountName,
             proposal_hash: proposal.hash,
         })).rejects.toThrowError(/Only proposes in staging can be removed/i);
 
         // Create suspend proposal
-        await environment.dao.contract.suspend({
-            proposer: environment.members[0].account.accountName,
+        await environment.daoContract.contract.suspend({
+            proposer: dao.members[0].account.accountName,
             hash: proposal.hash,
             reason: 'I would like to suspend'
-        }, environment.members[0].getPermissions());
+        }, dao.members[0].getPermissions());
 
         proposal = last(getDocumentsByType(
             environment.getDaoDocuments(),
@@ -215,14 +223,15 @@ describe('Proposal', () => {
         ));
 
         // Should be published
-        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'stagingprop');
-        daoExpect.toHaveEdge(environment.members[0].doc, proposal, 'owns');
-        daoExpect.toHaveEdge(proposal, environment.members[0].doc, 'ownedby');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'proposal');
+        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'stagingprop');
+        daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
+        daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
         // Staging proposals can also be updated or removed (by proposer)
-        await environment.dao.contract.propose({
-            proposer: environment.members[0].account.accountName,
+        await environment.daoContract.contract.propose({
+            dao_hash: dao.getHash(),
+            proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: false,
             content_groups: getSampleRole().content_groups
@@ -233,39 +242,39 @@ describe('Proposal', () => {
             'role'
         ));
 
-        await expect(environment.dao.contract.proposeupd({
-            proposer: environment.members[1].account.accountName,
+        await expect(environment.daoContract.contract.proposeupd({
+            proposer: dao.members[1].account.accountName,
             proposal_hash: proposal.hash,
             content_groups: getSampleRole2().content_groups
         })).rejects.toThrowError(/Only the proposer can update the proposal/i);
 
-        await environment.dao.contract.proposeupd({
-            proposer: environment.members[0].account.accountName,
+        await environment.daoContract.contract.proposeupd({
+            proposer: dao.members[0].account.accountName,
             proposal_hash: proposal.hash,
             content_groups: getSampleRole2().content_groups
         })
 
         daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'stagingprop');
-        daoExpect.toNotHaveEdge(environment.members[0].doc, proposal, 'owns');
-        daoExpect.toNotHaveEdge(proposal, environment.members[0].doc, 'ownedby');
+        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'stagingprop');
+        daoExpect.toNotHaveEdge(dao.members[0].doc, proposal, 'owns');
+        daoExpect.toNotHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
         proposal = last(getDocumentsByType(
             environment.getDaoDocuments(),
             'role'
         ));
         daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toHaveEdge(environment.getRoot(), proposal, 'stagingprop');
-        daoExpect.toHaveEdge(environment.members[0].doc, proposal, 'owns');
-        daoExpect.toHaveEdge(proposal, environment.members[0].doc, 'ownedby');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'stagingprop');
+        daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
+        daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
-        await expect(environment.dao.contract.proposerem({
-            proposer: environment.members[1].account.accountName,
+        await expect(environment.daoContract.contract.proposerem({
+            proposer: dao.members[1].account.accountName,
             proposal_hash: proposal.hash,
         })).rejects.toThrowError(/Only the proposer can remove the proposal/i);
 
-        await environment.dao.contract.proposerem({
-            proposer: environment.members[0].account.accountName,
+        await environment.daoContract.contract.proposerem({
+            proposer: dao.members[0].account.accountName,
             proposal_hash: proposal.hash
         });
 
@@ -273,9 +282,9 @@ describe('Proposal', () => {
             environment.getDaoDocuments(),
             'role'
         ))).not.toEqual(proposal);
-        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'stagingprop');
-        daoExpect.toNotHaveEdge(environment.members[0].doc, proposal, 'owns');
-        daoExpect.toNotHaveEdge(proposal, environment.members[0].doc, 'ownedby');
+        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'proposal');
+        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'stagingprop');
+        daoExpect.toNotHaveEdge(dao.members[0].doc, proposal, 'owns');
+        daoExpect.toNotHaveEdge(proposal, dao.members[0].doc, 'ownedby');
     })
 });

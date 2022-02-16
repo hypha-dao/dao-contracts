@@ -83,17 +83,20 @@ describe('Voting', () => {
         // Time doesn't move in the test unless we set the current time.
         const now = new Date();
 
+        const dao = environment.getDao('test');
+
         // We have to set the initial time if we care about any timing
         environment.setCurrentTime(now);
 
         // Proposing
-        await environment.dao.contract.propose({
-            proposer: environment.members[0].account.accountName,
+        await environment.daoContract.contract.propose({
+            dao_hash: dao.getHash(),
+            proposer: environment.daos[0].members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
             ...getSampleRole()
         });
-        
+
         const proposal = last(getDocumentsByType(
             environment.getDaoDocuments(),
             'role'
@@ -103,13 +106,14 @@ describe('Voting', () => {
         testVoteEdges(environment, proposal, lastTally);
 
         // Proposing other role to test
-        await environment.dao.contract.propose({
-            proposer: environment.members[0].account.accountName,
+        await environment.daoContract.contract.propose({
+            dao_hash: dao.getHash(),
+            proposer: environment.daos[0].members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
             ...getSampleRole('foobar')
         });
-        
+
         const proposal2 = last(getDocumentsByType(
             environment.getDaoDocuments(),
             'role'
@@ -120,36 +124,36 @@ describe('Voting', () => {
         testVoteEdges(environment, proposal2, lastTally);
 
         // Member 1 votes something wrong
-        await expect(environment.dao.contract.vote({
-            voter: environment.members[0].account.accountName,
+        await expect(environment.daoContract.contract.vote({
+            voter: environment.daos[0].members[0].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'foobar',
             notes: 'vote something wrong'
         })).rejects.toThrow(/invalid vote/i);
 
         // Now votes pass
-        await environment.dao.contract.vote({
-            voter: environment.members[0].account.accountName,
+        await environment.daoContract.contract.vote({
+            voter: environment.daos[0].members[0].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'pass',
             notes: 'vote pass'
         });
 
-        
+
         lastTally = getLastTally(environment, false, lastTally);
         testLastVoteTally(lastTally, { pass: 100, fail: 0, abstain: 0 });
         let lastVote = testLastVote(environment, {
             vote: 'pass',
             date: toISOString(now),
             power: '100.00 HVOICE',
-            voter: environment.members[0].account.accountName,
+            voter: environment.daos[0].members[0].account.accountName,
             notes: 'vote pass'
         });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // Changes vote to fail
-        await environment.dao.contract.vote({
-            voter: environment.members[0].account.accountName,
+        await environment.daoContract.contract.vote({
+            voter: environment.daos[0].members[0].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'fail',
             notes: 'votes fail'
@@ -160,14 +164,14 @@ describe('Voting', () => {
             vote: 'fail',
             date: toISOString(now),
             power: '100.00 HVOICE',
-            voter: environment.members[0].account.accountName,
+            voter: environment.daos[0].members[0].account.accountName,
             notes: 'votes fail'
         });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // member[1] votes to abstain
-        await environment.dao.contract.vote({
-            voter: environment.members[1].account.accountName,
+        await environment.daoContract.contract.vote({
+            voter: environment.daos[0].members[1].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'abstain',
             notes: 'votes abstain'
@@ -178,14 +182,14 @@ describe('Voting', () => {
             vote: 'abstain',
             date: toISOString(now),
             power: '1.00 HVOICE',
-            voter: environment.members[1].account.accountName,
+            voter: environment.daos[0].members[1].account.accountName,
             notes: 'votes abstain'
         });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // member[2] votes to abstain
-        await environment.dao.contract.vote({
-            voter: environment.members[2].account.accountName,
+        await environment.daoContract.contract.vote({
+            voter: environment.daos[0].members[2].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'abstain',
             notes: 'votes abstain 2'
@@ -196,14 +200,14 @@ describe('Voting', () => {
             vote: 'abstain',
             date: toISOString(now),
             power: '1.00 HVOICE',
-            voter: environment.members[2].account.accountName,
+            voter: environment.daos[0].members[2].account.accountName,
             notes: 'votes abstain 2'
         });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // member[3] votes to pass
-        await environment.dao.contract.vote({
-            voter: environment.members[3].account.accountName,
+        await environment.daoContract.contract.vote({
+            voter: environment.daos[0].members[3].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'pass',
             notes: 'votes pass'
@@ -214,14 +218,14 @@ describe('Voting', () => {
             vote: 'pass',
             date: toISOString(now),
             power: '1.00 HVOICE',
-            voter: environment.members[3].account.accountName,
+            voter: environment.daos[0].members[3].account.accountName,
             notes: 'votes pass'
         });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // member[0] changes vote to pass
-        await environment.dao.contract.vote({
-            voter: environment.members[0].account.accountName,
+        await environment.daoContract.contract.vote({
+            voter: environment.daos[0].members[0].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'pass',
             notes: 'votes pass'
@@ -231,16 +235,16 @@ describe('Voting', () => {
             vote: 'pass',
             date: toISOString(now),
             power: '100.00 HVOICE',
-            voter: environment.members[0].account.accountName,
+            voter: environment.daos[0].members[0].account.accountName,
             notes: 'votes pass'
         });
         testLastVoteTally(lastTally, { pass: 101, fail: 0, abstain: 2 });
         testVoteEdges(environment, proposal, lastTally, lastVote);
 
         // closes proposal
-        await expect(environment.dao.contract.closedocprop({
+        await expect(environment.daoContract.contract.closedocprop({
             proposal_hash: proposal.hash
-        }, environment.members[0].getPermissions())
+        }, environment.daos[0].members[0].getPermissions())
         ).rejects.toThrow(/voting is still active/i);
 
         // Sets the time to the end of proposal
@@ -248,17 +252,17 @@ describe('Voting', () => {
         tomorrow.setDate(tomorrow.getDate() + 1);
         environment.setCurrentTime(tomorrow);
 
-        // Now we can close the proposal
-        environment.dao.contract.closedocprop({
-            proposal_hash: proposal.hash
-        }, environment.members[0].getPermissions());
-
-        // Proposal is closed, can't vote
-        await expect(environment.dao.contract.vote({
-            voter: environment.members[0].account.accountName,
+        // Voting expired
+        await expect(environment.daoContract.contract.vote({
+            voter: environment.daos[0].members[0].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'pass',
             notes: 'votes when proposal is closed'
         })).rejects.toThrow(/voting has expired/i);
+
+        // Now we can close the proposal
+        await environment.daoContract.contract.closedocprop({
+            proposal_hash: proposal.hash
+        }, environment.daos[0].members[0].getPermissions());
     });
 });
