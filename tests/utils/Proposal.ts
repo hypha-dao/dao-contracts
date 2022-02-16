@@ -16,7 +16,6 @@ async (dao: Dao, proposal: Document, type: string, environment: DaoBlockchain): 
   setDate(environment, next);
 
   await environment.daoContract.contract.closedocprop({
-    dao_hash: dao.getHash(),
     proposal_hash: proposal.hash
   }, dao.members[0].getPermissions());
 
@@ -31,7 +30,6 @@ async (dao: Dao, proposal: Document, type: string, environment: DaoBlockchain): 
 
     await environment.sendTransaction({
         actions: dao.members.map(m => environment.buildAction(environment.daoContract, 'vote', {
-            dao_hash: dao.getHash(),
             voter: m.account.accountName,
             proposal_hash: proposal.hash,
             vote: 'pass',

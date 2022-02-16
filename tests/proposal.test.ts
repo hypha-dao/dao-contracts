@@ -113,7 +113,6 @@ describe('Proposal', () => {
         daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
         await environment.daoContract.contract.vote({
-            dao_hash: dao.getHash(),
             voter: dao.members[0].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'pass',
@@ -125,7 +124,6 @@ describe('Proposal', () => {
 
         // Now we can close the proposal
         await environment.daoContract.contract.closedocprop({
-            dao_hash: dao.getHash(),
             proposal_hash: proposal.hash
         }, dao.members[0].getPermissions());
 
@@ -172,7 +170,6 @@ describe('Proposal', () => {
 
         // can't vote
         await expect(environment.daoContract.contract.vote({
-            dao_hash: dao.getHash(),
             voter: dao.members[0].account.accountName,
             proposal_hash: proposal.hash,
             vote: 'pass',
@@ -181,7 +178,6 @@ describe('Proposal', () => {
 
         // can't close
         await expect(environment.daoContract.contract.closedocprop({
-            dao_hash: dao.getHash(),
             proposal_hash: proposal.hash
         }, dao.members[0].getPermissions()))
         .rejects.toThrowError('Only published proposals can be closed');

@@ -53,7 +53,6 @@ const adjustDeferralPerc = async (dao: Dao, environment: DaoBlockchain,
                                   assignment: Document,
                                   deferralPerc: number) => {
     await environment.daoContract.contract.adjustdeferr({
-        dao_hash: dao.getHash(),
         issuer,
         assignment_hash: assignment.hash,
         new_deferred_perc_x100: deferralPerc
@@ -88,7 +87,6 @@ export const claimRemainingPeriods = async (dao: Dao, assignment: Document,
 
         try {
           await environment.daoContract.contract.claimnextper({
-              dao_hash: dao.getHash(),
               assignment_hash: assignment.hash
           });
         }
@@ -292,7 +290,6 @@ describe('Assignments', () => {
             setDate(environment, now, 0);
 
             await environment.daoContract.contract.claimnextper({
-                dao_hash: dao.getHash(),
                 assignment_hash: assignment.hash
             });
 
@@ -326,7 +323,6 @@ describe('Assignments', () => {
         //Vote but don't close
         for (let i = 0; i < dao.members.length; ++i) {
           await environment.daoContract.contract.vote({
-              dao_hash: dao.getHash(),
               voter: dao.members[i].account.accountName,
               proposal_hash: assignment.hash,
               vote: 'pass',
@@ -367,7 +363,6 @@ describe('Assignments', () => {
         setDate(environment, now, 0);
 
         await environment.daoContract.contract.closedocprop({
-            dao_hash: dao.getHash(),
             proposal_hash: assignment.hash
         }, dao.members[0].getPermissions());
 
@@ -392,7 +387,6 @@ describe('Assignments', () => {
         for (let i = 0; i < periodCount2 - 1; ++i) {
 
             await environment.daoContract.contract.claimnextper({
-                dao_hash: dao.getHash(),
                 assignment_hash: assignment.hash
             });
 

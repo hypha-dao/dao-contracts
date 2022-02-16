@@ -202,7 +202,6 @@ describe('Badges', () => {
           for (let i = 0; i < badgeAssingPeriodCount; ++i) {
 
             await environment.daoContract.contract.claimnextper({
-                dao_hash: dao.getHash(),
                 assignment_hash: assignment.hash
             });
 
@@ -218,7 +217,6 @@ describe('Badges', () => {
           for (let i = 0; i < Math.min(1, assignmentPeriodCount - badgeAssingPeriodCount); ++i) {
 
             await environment.daoContract.contract.claimnextper({
-                dao_hash: dao.getHash(),
                 assignment_hash: assignment.hash
             });
 
