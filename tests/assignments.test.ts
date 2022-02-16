@@ -495,7 +495,6 @@ describe('Assignments', () => {
         const suspendReason = 'Testing porpouses';
 
         await environment.daoContract.contract.suspend({
-            dao_hash: dao.getHash(),
             proposer: suspender.account.accountName,
             hash: assignment.hash,
             reason: suspendReason
@@ -550,7 +549,6 @@ describe('Assignments', () => {
         assignment = await proposeAndPass(dao, assignProposal, 'assignment', environment);
 
         await environment.daoContract.contract.withdraw({
-            dao_hash: dao.getHash(),
             owner: assignee.account.accountName,
             hash: assignment.hash
         }, getAccountPermission(assignee.account));

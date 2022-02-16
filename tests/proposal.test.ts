@@ -184,7 +184,6 @@ describe('Proposal', () => {
 
         // publish
         await environment.daoContract.contract.proposepub({
-            dao_hash: dao.getHash(),
             proposer: dao.members[0].account.accountName,
             proposal_hash: proposal.hash
         });
@@ -194,14 +193,12 @@ describe('Proposal', () => {
         proposal = last(getDocumentsByType(environment.getDaoDocuments(), 'role'));
         // can't publish
         await expect(environment.daoContract.contract.proposepub({
-            dao_hash: dao.getHash(),
             proposer: dao.members[0].account.accountName,
             proposal_hash: proposal.hash
         })).rejects.toThrowError(/Only proposes in staging can be published/i);
 
         // can't update
         await expect(environment.daoContract.contract.proposeupd({
-            dao_hash: dao.getHash(),
             proposer: dao.members[1].account.accountName,
             proposal_hash: proposal.hash,
             content_groups: getSampleRole2().content_groups
@@ -209,14 +206,12 @@ describe('Proposal', () => {
 
         // can't remove
         await expect(environment.daoContract.contract.proposerem({
-            dao_hash: dao.getHash(),
             proposer: dao.members[1].account.accountName,
             proposal_hash: proposal.hash,
         })).rejects.toThrowError(/Only proposes in staging can be removed/i);
 
         // Create suspend proposal
         await environment.daoContract.contract.suspend({
-            dao_hash: dao.getHash(),
             proposer: dao.members[0].account.accountName,
             hash: proposal.hash,
             reason: 'I would like to suspend'
@@ -248,14 +243,12 @@ describe('Proposal', () => {
         ));
 
         await expect(environment.daoContract.contract.proposeupd({
-            dao_hash: dao.getHash(),
             proposer: dao.members[1].account.accountName,
             proposal_hash: proposal.hash,
             content_groups: getSampleRole2().content_groups
         })).rejects.toThrowError(/Only the proposer can update the proposal/i);
 
         await environment.daoContract.contract.proposeupd({
-            dao_hash: dao.getHash(),
             proposer: dao.members[0].account.accountName,
             proposal_hash: proposal.hash,
             content_groups: getSampleRole2().content_groups
@@ -276,13 +269,11 @@ describe('Proposal', () => {
         daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
         await expect(environment.daoContract.contract.proposerem({
-            dao_hash: dao.getHash(),
             proposer: dao.members[1].account.accountName,
             proposal_hash: proposal.hash,
         })).rejects.toThrowError(/Only the proposer can remove the proposal/i);
 
         await environment.daoContract.contract.proposerem({
-            dao_hash: dao.getHash(),
             proposer: dao.members[0].account.accountName,
             proposal_hash: proposal.hash
         });
