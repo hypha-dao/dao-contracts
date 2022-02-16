@@ -644,12 +644,9 @@ namespace hypha
 
       require_auth(enroller);
 
-      //Verify enroller is valid for the given dao
-      auto daoSettings = getSettingsDocument(dao_hash);
-
-      checkEnrollerAuth(enroller, daoSettings);
-
       Document daoDoc(get_self(), dao_hash);
+
+      checkEnrollerAuth(daoDoc.getID(), enroller);
 
       Member member = Member::get(*this, applicant);
       member.enroll(enroller, daoDoc.getID(), content);
@@ -700,7 +697,7 @@ namespace hypha
       return getSettingsDocument(getRoot(get_self()));
    }
 
-   void dao::setsetting(const string &key, const Content::FlexValue &value, eosio::binary_extension<std::string> group)
+   void dao::setsetting(const string &key, const Content::FlexValue &value, std::optional<std::string> group)
    {
       TRACE_FUNCTION()
       require_auth(get_self());
@@ -709,40 +706,35 @@ namespace hypha
       settings->setSetting(group.value_or(string{"settings"}), Content{key, value});
    }
 
-   void dao::setdaosetting(const eosio::checksum256& dao_hash, const string &key, const Content::FlexValue &value, eosio::binary_extension<std::string> group)
+   void dao::setdaosetting(const uint64_t& dao_id, const string &key, const Content::FlexValue &value, std::optional<std::string> group)
    {
      TRACE_FUNCTION()
-      
-     auto settings = getSettingsDocument(dao_hash);
-     
-     checkAdminstAuth(settings);
+     checkAdminsAuth(dao_id);
+     auto settings = getSettingsDocument(dao_id);
      settings->setSetting(group.value_or(string{"settings"}), Content{key, value});
    }
 
    void dao::adddaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group)
    {
-     TRACE_FUNCTION()
+     TRACE_FUNCTION()     
+     checkAdminsAuth(dao_id);
      auto settings = getSettingsDocument(dao_id);
-     
-     checkAdminstAuth(settings);
      settings->addSetting(group.value_or(string{"settings"}), Content{key, value});
    }
 
    void dao::remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group)
    {
-     TRACE_FUNCTION()
+     TRACE_FUNCTION()     
+     checkAdminsAuth(dao_id);
      auto settings = getSettingsDocument(dao_id);
-     
-     checkAdminstAuth(settings);
      settings->remSetting(group.value_or(string{"settings"}), key);
    }
    
    void dao::remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group)
    {
      TRACE_FUNCTION()
+     checkAdminsAuth(dao_id);
      auto settings = getSettingsDocument(dao_id);
-     
-     checkAdminstAuth(settings);
      settings->remKVSetting(group.value_or(string{"settings"}), Content{ key, value });
    }
 
@@ -750,27 +742,42 @@ namespace hypha
    {
       TRACE_FUNCTION()
       require_auth(get_self());
-      removeSetting(key);
-   }
-
-   void dao::removeSetting(const string &key)
-   {
-      TRACE_FUNCTION()
-      
       auto settings = getSettingsDocument();
       settings->remSetting(key);
    }
 
+   void  dao::addenroller(const uint64_t dao_id, name enroller_account)
+   {
+     TRACE_FUNCTION()
+     checkAdminsAuth(dao_id);
+     Edge::getOrNew(get_self(), get_self(), dao_id, getMemberDoc(enroller_account).getID(), common::ENROLLER);
+   }
+   void dao::addadmin(const uint64_t dao_id, name admin_account)
+   {
+     TRACE_FUNCTION()
+     checkAdminsAuth(dao_id);
+     Edge::getOrNew(get_self(), get_self(), dao_id, getMemberDoc(admin_account).getID(), common::ADMIN);
+   }
+   void dao::remenroller(const uint64_t dao_id, name enroller_account)
+   {
+     TRACE_FUNCTION()
+     checkAdminsAuth(dao_id);
+     Edge::get(get_self(), dao_id, getMemberDoc(enroller_account).getID(), common::ENROLLER).erase();
+   }
+   void dao::remadmin(const uint64_t dao_id, name admin_account)
+   {
+     TRACE_FUNCTION()
+     checkAdminsAuth(dao_id);
+     Edge::get(get_self(), dao_id, getMemberDoc(admin_account).getID(), common::ADMIN).erase();
+   }
 
-   ACTION dao::genperiods(const eosio::checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/)
+   ACTION dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/)
    {
       TRACE_FUNCTION()
 
-      auto settings = getSettingsDocument(dao_hash);
+      checkAdminsAuth(dao_id);
 
-      checkAdminstAuth(settings);
-
-      genPeriods(dao_hash, period_count);
+      genPeriods(dao_id, period_count);
    }
 
    void dao::createdao(ContentGroups &config)
@@ -895,14 +902,6 @@ namespace hypha
               Content{common::DAO_USES_SEEDS, useSeeds}
           },
           ContentGroup{
-              Content(CONTENT_GROUP_LABEL, ADMINS),
-              Content{"account", onboarder}
-          },
-          ContentGroup{
-              Content(CONTENT_GROUP_LABEL, ONBOARDERS),
-              Content{"account", onboarder}
-          },
-          ContentGroup{
               Content(CONTENT_GROUP_LABEL, SYSTEM),
               Content(TYPE, common::SETTINGS_EDGE),
               Content(NODE_LABEL, "Settings")
@@ -929,10 +928,13 @@ namespace hypha
       member->apply(daoDoc.getID(), "DAO Onboarder");
       member->enroll(onboarder, daoDoc.getID(), "DAO Onboarder");
       
-      //TODO: Create enroller edge
+      //Create owner, admin and enroller edges
+      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ENROLLER);
+      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::OWNER);
+      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ADMIN);
+
       //Create start period
       Period newPeriod(this, eosio::current_time_point(), util::to_str(dao, " start period"));
-      auto startEdge = Edge::get(get_self(), daoDoc.getID(), common::START);
 
       //Create start & end edges
       Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::START);
@@ -1247,82 +1249,54 @@ namespace hypha
 
       Edge::write(get_self(), get_self(), assignment.getID(), newTimeShareDoc.getID(), common::LAST_TIME_SHARE);
    }
+  
+  Document dao::getMemberDoc(const name& account)
+  {
+    return Document(get_self(), Member::calcHash(account));
+  }
 
-  void dao::checkEnrollerAuth(const name& account, Settings* daoSettings)
+  void dao::checkEnrollerAuth(uint64_t dao_id, const name& account)
   {
     TRACE_FUNCTION()
 
-    auto cw = daoSettings->getContentWrapper();
-
-    auto [onboardersIdx, onboardersGroup] = cw.getGroup(ONBOARDERS);
+    auto memberID = getMemberDoc(account).getID();
 
     EOS_CHECK(
-      onboardersGroup != nullptr,
-      "Missing oboarders group in settings document"
-    )
-
-    {
-      auto groupLabelIdx = cw.get(onboardersIdx, CONTENT_GROUP_LABEL).first;
-      //Verify that content_group_label item exists and it's the first one
-      EOS_CHECK(
-        groupLabelIdx == 0,
-        util::to_str("Group label is missing or in the wrong index (expected to be at 0 but got ", groupLabelIdx, ")")
-      )
-    }
-
-    EOS_CHECK(
-      std::any_of(onboardersGroup->begin() + 1, onboardersGroup->end(), [account](const Content& onboarder) {
-        return onboarder.getAs<eosio::name>() == account;
-      }),
+      Edge::exists(get_self(), dao_id, memberID, common::ENROLLER),
       util::to_str("Only enrollers of the dao are allowed to perform this action")
     )
   }
 
-  void dao::checkAdminstAuth(Settings* daoSettings)
+  void dao::checkAdminsAuth(uint64_t dao_id)
   {
     TRACE_FUNCTION()
 
-    auto cw = daoSettings->getContentWrapper();
-
-    auto [adminsIdx, adminsGroup] = cw.getGroup(ADMINS);
+    auto adminEdges = m_documentGraph.getEdgesFrom(dao_id, common::ADMIN);
 
     EOS_CHECK(
-      adminsGroup != nullptr,
-      "Missing admins group in settings document"
-    )
-
-    {
-      auto groupLabelIdx = cw.get(adminsIdx, CONTENT_GROUP_LABEL).first;
-      //Verify that content_group_label item exists and it's the first one
-      EOS_CHECK(
-        groupLabelIdx == 0,
-        util::to_str("Group label is missing or in the wrong index (expected to be at 0 but got ", groupLabelIdx, ")")
-      )
-    }
-
-    EOS_CHECK(
-      std::any_of(adminsGroup->begin() + 1, adminsGroup->end(), [](const Content& admin) {
-        return eosio::has_auth(admin.getAs<eosio::name>());
+      std::any_of(adminEdges.begin(), adminEdges.end(), [this](const Edge& adminEdge) {
+        Member member(*this, adminEdge.to_node);
+        return eosio::has_auth(member.getAccount());
       }),
       util::to_str("Only admins of the dao are allowed to perform this action")
     )
   }
 
-  void dao::genPeriods(const checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/)
+  void dao::genPeriods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/)
   {
     //Max number of periods that should be created in one call
     const int64_t MAX_PERIODS_PER_CALL = 30;
 
     //Get last period
-    Document daoDoc(get_self(), dao_hash);
+    //Document daoDoc(get_self(), dao_id);
 
-    auto settings = getSettingsDocument(dao_hash);
+    auto settings = getSettingsDocument(dao_id);
 
     int64_t periodDurationSecs = settings->getOrFail<int64_t>(common::PERIOD_DURATION);
 
     name daoName = settings->getOrFail<eosio::name>(DAO_NAME);
 
-    auto lastEdge = Edge::get(get_self(), daoDoc.getID(), common::END);
+    auto lastEdge = Edge::get(get_self(), dao_id, common::END);
     lastEdge.erase();
 
     uint64_t lastPeriodID = lastEdge.getToNode();
@@ -1341,14 +1315,14 @@ namespace hypha
       );
       
       Edge(get_self(), get_self(), lastPeriodID, nextPeriod.getID(), common::NEXT);
-      Edge(get_self(), get_self(), daoDoc.getID(), nextPeriod.getID(), common::PERIOD);
-      Edge(get_self(), get_self(), nextPeriod.getID(), daoDoc.getID(), common::DAO);
+      Edge(get_self(), get_self(), dao_id, nextPeriod.getID(), common::PERIOD);
+      Edge(get_self(), get_self(), nextPeriod.getID(), dao_id, common::DAO);
 
       lastPeriodStartSecs = nextPeriodStart.sec_since_epoch();
       lastPeriodID = nextPeriod.getID();
     }
 
-    Edge(get_self(), get_self(), daoDoc.getID(), lastPeriodID, common::END);
+    Edge(get_self(), get_self(), dao_id, lastPeriodID, common::END);
 
     //Check if there are more periods to created
 
@@ -1357,7 +1331,7 @@ namespace hypha
         eosio::permission_level(get_self(), "active"_n),
         get_self(),
         "genperiods"_n,
-        std::make_tuple(dao_hash, 
+        std::make_tuple(dao_id, 
                         period_count - MAX_PERIODS_PER_CALL)
       ).send();
     }

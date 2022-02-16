@@ -51,6 +51,9 @@ namespace common
     constexpr name MEMBER_OF = name("memberof");
     constexpr name APPLICANT = name("applicant");
     constexpr name APPLICANT_OF = name("applicantof");
+    constexpr name ENROLLER = name("enroller");
+    constexpr name ADMIN = name("admin");
+    constexpr name OWNER = name("owner");
 
     constexpr name ASSIGN_BADGE = name("assignbadge");
     constexpr name VOTE_TALLY = name("votetally");
@@ -78,6 +81,7 @@ namespace common
     constexpr        auto STATE_SUSPENDED = "suspended";
     constexpr        auto STATE_EXPIRED = "expired";
     constexpr        auto STATE_WITHDRAWED = "withdrawed";
+    
     constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
     constexpr name PERIOD = name("period");
     constexpr name START = name ("start");
@@ -220,8 +224,6 @@ namespace common
 // #define HUSD_SALARY_PER_PERIOD "husd_salary_per_phase"
 // #define HVOICE_SALARY_PER_PERIOD "hvoice_salary_per_phase"
 #define SETTINGS "settings"
-#define ONBOARDERS "onboarders"
-#define ADMINS "admins"
 
 #define VOTE_POWER "vote_power"
 #define VOTE_LABEL "vote"

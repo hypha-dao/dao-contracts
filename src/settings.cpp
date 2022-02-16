@@ -20,6 +20,9 @@ Settings::Settings(dao& dao,
   void Settings::setSetting(const std::string& group, const Content& setting)
   {
     TRACE_FUNCTION()
+
+    EOS_CHECK(group != SYSTEM, "system group is not editable")
+
     auto oldID = getID();
     auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
@@ -54,6 +57,7 @@ Settings::Settings(dao& dao,
   void Settings::addSetting(const std::string& group, const Content& setting)
   {
     TRACE_FUNCTION()
+    EOS_CHECK(group != SYSTEM, "system group is not editable")
     auto oldID = getID();
     auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
@@ -82,6 +86,8 @@ Settings::Settings(dao& dao,
   void Settings::remSetting(const std::string& group, const std::string& key)
   {
     TRACE_FUNCTION()
+    
+    EOS_CHECK(group != SYSTEM, "system group is not editable")
     
     auto oldID = getID();
     
@@ -112,6 +118,8 @@ Settings::Settings(dao& dao,
   void Settings::remKVSetting(const std::string& group, const Content& setting)
   {
     TRACE_FUNCTION()
+    
+    EOS_CHECK(group != SYSTEM, "system group is not editable")
 
     auto oldID = getID();
 

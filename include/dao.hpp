@@ -4,7 +4,6 @@
 #include <memory>
 
 #include <eosio/eosio.hpp>
-#include <eosio/binary_extension.hpp>
 #include <eosio/name.hpp>
 #include <eosio/contract.hpp>
 #include <eosio/crypto.hpp>
@@ -81,19 +80,24 @@ namespace hypha
       ACTION proposerem(const name &proposer, const checksum256 &proposal_hash);
       ACTION proposeupd(const name &proposer, const checksum256 &proposal_hash, ContentGroups &content_groups);
       //Sets a dho/contract level setting
-      ACTION setsetting(const string &key, const Content::FlexValue &value, eosio::binary_extension<std::string> group);
+      ACTION setsetting(const string &key, const Content::FlexValue &value, std::optional<std::string> group);
       
       //Sets a dao level setting
-      ACTION setdaosetting(const eosio::checksum256& dao_hash, const std::string &key, const Content::FlexValue &value, eosio::binary_extension<std::string> group);
+      ACTION setdaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
       ACTION adddaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
 
       ACTION remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group);
       ACTION remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
       
+      ACTION addenroller(const uint64_t dao_id, name enroller_account);
+      ACTION addadmin(const uint64_t dao_id, name admin_account);
+      ACTION remenroller(const uint64_t dao_id, name enroller_account);
+      ACTION remadmin(const uint64_t dao_id, name admin_account);
+
       //Removes a dho/contract level setting
       ACTION remsetting(const string &key);
 
-      ACTION genperiods(const eosio::checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/);
+      ACTION genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/);
       
       ACTION claimnextper(const eosio::checksum256 &assignment_hash);
       ACTION proposeextend (const eosio::checksum256 &assignment_hash, const int64_t additional_periods);
@@ -209,15 +213,15 @@ namespace hypha
 
    private:
 
-      void checkAdminstAuth(Settings* daoSettings);
+      Document getMemberDoc(const name& account);
 
-      void checkEnrollerAuth(const name& account, Settings* daoSettings);
+      void checkAdminsAuth(uint64_t dao_id);
+
+      void checkEnrollerAuth(uint64_t dao_id, const name& account);
 
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
-      void genPeriods(const eosio::checksum256& dao_hash, int64_t period_count/*, int64_t period_duration_sec*/);
-
-      void removeSetting(const string &key);
+      void genPeriods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/);
 
       asset getProRatedAsset(ContentWrapper * assignment, const symbol &symbol,
                              const string &key, const float &proration);
