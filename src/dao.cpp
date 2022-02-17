@@ -844,6 +844,8 @@ namespace hypha
       auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
 
       auto voiceToken = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN).second;
+      auto voiceTokenDecayPeriod = configCW.getOrFail(detailsIdx, "voice_token_decay_period").second;
+      auto voiceTokenDecayPerPeriodX10M = configCW.getOrFail(detailsIdx, "voice_token_decay_per_period_x10M").second;
 
       auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
 
@@ -911,7 +913,14 @@ namespace hypha
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), daoDoc.getID(), settingsDoc.getID(), common::SETTINGS_EDGE);
 
-      createTokens(dao, voiceToken->getAs<asset>(), rewardToken->getAs<asset>(), pegToken->getAs<asset>());
+      createVoiceToken(
+          dao,
+          voiceToken->getAs<asset>(),
+          voiceTokenDecayPeriod->getAs<int64_t>(),
+          voiceTokenDecayPerPeriodX10M->getAs<int64_t>()
+      );
+
+      createTokens(dao, rewardToken->getAs<asset>(), pegToken->getAs<asset>());
 
       //Auto enroll
       std::unique_ptr<Member> member;
@@ -1337,28 +1346,34 @@ namespace hypha
     }
   }
 
-  void dao::createTokens(const eosio::name& daoName,
-                         const eosio::asset& voiceToken,
-                         const eosio::asset& rewardToken,
-                         const eosio::asset& pegToken)
+  void dao::createVoiceToken(const eosio::name& daoName,
+                             const eosio::asset& voiceToken,
+                             const uint64_t& decayPeriod,
+                             const uint64_t& decayPerPeriodx10M)
   {
-    
     auto dhoSettings = getSettingsDocument();
-
     name governanceContract = dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
     eosio::action(
-      eosio::permission_level{governanceContract, name("active")},
-      governanceContract, 
-      name("create"),
-      std::make_tuple(
-        daoName,
-        get_self(),
-        asset{-getTokenUnit(voiceToken), voiceToken.symbol},
-        uint64_t{0},
-        uint64_t{0}
-      )
-    ).send();
+          eosio::permission_level{governanceContract, name("active")},
+          governanceContract,
+          name("create"),
+          std::make_tuple(
+            daoName,
+            get_self(),
+            asset{-getTokenUnit(voiceToken), voiceToken.symbol},
+            decayPeriod,
+            decayPerPeriodx10M
+          )
+        ).send();
+  }
+
+  void dao::createTokens(const eosio::name& daoName,
+                         const eosio::asset& rewardToken,
+                         const eosio::asset& pegToken)
+  {
+
+    auto dhoSettings = getSettingsDocument();
 
     name rewardContract = dhoSettings->getOrFail<eosio::name>(REWARD_TOKEN_CONTRACT);
 

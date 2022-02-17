@@ -1,4 +1,5 @@
 import { ContentGroup, ContentGroups, Document, makeAssetContent, makeChecksum256Content, makeContentGroup, makeInt64Content, makeNameContent, makeStringContent, makeTimePointContent } from "../types/Document";
+import {Asset} from "../types/Asset";
 
 type BuilderFunction<T> = (builder: T) => void;
 
@@ -73,7 +74,7 @@ export class DocumentBuilder {
 
 }
 
-class ContentGroupBuilder {
+export class ContentGroupBuilder {
 
     private _contentGroup: ContentGroup;
     private _groupLabel?: string;
@@ -98,9 +99,10 @@ class ContentGroupBuilder {
         return this;
     }
 
-    public asset(label: string, value: string): ContentGroupBuilder {
+    public asset(label: string, value: string | Asset): ContentGroupBuilder {
+        const rawValue = value instanceof Asset ? value.toString() : value;
         this._contentGroup.push(
-            makeAssetContent(label, value)
+            makeAssetContent(label, rawValue)
         );
         return this;
     }

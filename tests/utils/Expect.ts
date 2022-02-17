@@ -32,16 +32,16 @@ export class Expect {
         const edges = this.dao.getDaoEdges();
         const filter = {
             edge_name: edgeName,
-            from_node: from.hash,
-            to_node: to.hash
+            from_node: from.id,
+            to_node: to.id
         };
         const filtered = getEdgesByFilter(edges, filter);
         if (filtered.length === 0) {
             // Ok so we got an error. Lets make it easier to the test implementers to find out what's wrong
             // Spit the last 5 of each combination (from, to), (from, name), (to, name)
-            const fromTo = getEdgesByFilter(edges, { from_node: from.hash, to_node: to.hash });
-            const fromName = getEdgesByFilter(edges, { from_node: from.hash, edge_name: edgeName });
-            const toName = getEdgesByFilter(edges, { to_node: to.hash, edge_name: edgeName });
+            const fromTo = getEdgesByFilter(edges, { from_node: from.id, to_node: to.id });
+            const fromName = getEdgesByFilter(edges, { from_node: from.id, edge_name: edgeName });
+            const toName = getEdgesByFilter(edges, { to_node: to.id, edge_name: edgeName });
 
             const message: Array<string> = [];
             message.push(`${filter.from_node} ---${filter.edge_name}---> ${filter.to_node} not found.`);
@@ -62,7 +62,7 @@ export class Expect {
             } else {
                 message.push('No valid combinations found');
             }
-            
+
             throw new Error(message.join('\n'));
         }
         expect(filtered.length).toEqual(1);
