@@ -32,9 +32,6 @@ namespace hypha
       double voiceMultipler = 2.0;
     };
 
-    eosio::checksum256 getRoot(const eosio::name &contract);
-    eosio::checksum256 getDAO(const eosio::name &dao_name);
-    
     /**
      * @brief Gets the phase to year ratio using the dao setting variable for the period duration
      * 

@@ -15,8 +15,8 @@
 
 namespace hypha
 {
-    Assignment::Assignment(dao *dao, const eosio::checksum256 &hash) 
-    : Document(dao->get_self(), hash),
+    Assignment::Assignment(dao *dao, uint64_t id) 
+    : Document(dao->get_self(), id),
       m_dao{dao},
       m_daoID{Edge::get(dao->get_self(), getID(), common::DAO).getToNode()},
       m_daoSettings{dao->getSettingsDocument(m_daoID)}

@@ -18,6 +18,14 @@ namespace hypha
         TRACE_FUNCTION()
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
 
+        // recipient must exist and be a DHO member
+        name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
+        
+        EOS_CHECK(
+            Member::isMember(m_dao, m_daoID, recipient), 
+            "only members are eligible for payouts: " + recipient.to_string()
+        );
+
         // if end_period is provided, use that for the price timestamp, but
         // default the timepoint to now
         eosio::time_point seedsPriceTimePoint = eosio::current_block_time();
@@ -149,10 +157,8 @@ namespace hypha
 
         // recipient must exist and be a DHO member
         name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
-        //TODO: Check to which dao this proposal belongs to
-        //EOS_CHECK(Member::isMember(m_dao.get_self(), recipient), "only members are eligible for payouts: " + recipient.to_string());
 
-        Document recipientDoc(m_dao.get_self(), Member::calcHash(recipient));
+        Document recipientDoc(m_dao.get_self(), m_dao.getMemberID(recipient));
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), recipientDoc.getID(), proposal.getID(), common::PAYOUT);
 

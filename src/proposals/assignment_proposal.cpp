@@ -22,7 +22,7 @@ namespace hypha
         name assignee = assignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
         
         EOS_CHECK(
-            Member::isMember(m_dao.get_self(), m_daoID, assignee), 
+            Member::isMember(m_dao, m_daoID, assignee), 
             "only members can be assigned to assignments " + assignee.to_string()
         );
 
@@ -158,8 +158,8 @@ namespace hypha
     {
         TRACE_FUNCTION()
         ContentWrapper contentWrapper = proposal.getContentWrapper();
-        eosio::checksum256 assignee = Member::calcHash(contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>());
-        Document assigneeDoc(m_dao.get_self(), assignee);
+        name assignee = contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
+        Document assigneeDoc(m_dao.get_self(), m_dao.getMemberID(assignee));
 
         auto assignmentToRoleEdge = m_dao.getGraph().getEdgesFrom(proposal.getID (), common::ROLE_NAME);
       

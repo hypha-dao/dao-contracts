@@ -17,7 +17,7 @@ namespace hypha
         name assignee = badgeAssignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
 
         EOS_CHECK(
-            Member::isMember(m_dao.get_self(), m_daoID, assignee), 
+            Member::isMember(m_dao, m_daoID, assignee), 
             "only members can be assigned to badges " + assignee.to_string()
         );
 
@@ -73,8 +73,8 @@ namespace hypha
         TRACE_FUNCTION()
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
-        eosio::checksum256 assignee = Member::calcHash((contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>()));
-        Document assigneeDoc(m_dao.get_self(), assignee);
+        eosio::name assignee = contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
+        Document assigneeDoc(m_dao.get_self(), m_dao.getMemberID(assignee));
         Document badge(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
 
         // update graph edges:

@@ -19,7 +19,10 @@ namespace hypha
     {   
         TRACE_FUNCTION()
         // the original document must be an assignment
-        Assignment assignment (&m_dao, contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
+        Assignment assignment (
+          &m_dao, 
+          static_cast<uint64_t>(contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>())
+        );
 
         int64_t currentPeriodCount = assignment.getPeriodCount();
         int64_t newPeriodCount = contentWrapper.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();

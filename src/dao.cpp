@@ -42,7 +42,7 @@ namespace hypha
    }
    
    ACTION
-   dao::autoenroll(const checksum256& dao_hash, const name& enroller, const name& member)
+   dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
    {
      require_auth(get_self());
 
@@ -58,7 +58,7 @@ namespace hypha
        mem = std::make_unique<Member>(*this, member, member);
      }
 
-     Document daoDoc(get_self(), dao_hash);
+     Document daoDoc(get_self(), dao_id);
 
      mem->apply(daoDoc.getID(), "Auto enrolled member");
      mem->enroll(enroller, daoDoc.getID(), "Auto enrolled member");
@@ -88,7 +88,7 @@ namespace hypha
    }
    */
 
-   void dao::propose(const checksum256& dao_hash,
+   void dao::propose(uint64_t dao_id,
                      const name &proposer,
                      const name &proposal_type,
                      ContentGroups &content_groups,
@@ -97,18 +97,15 @@ namespace hypha
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      //TODO: Change to dao_id instead of dao_hash
-      Document daoDoc(get_self(), dao_hash);
-
-      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoDoc.getID(), proposal_type));
+      std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, dao_id, proposal_type));
       proposal->propose(proposer, content_groups, publish);
    }
 
-   void dao::vote(const name& voter, const checksum256 &proposal_hash, string &vote, const std::optional<string> &notes)
+   void dao::vote(const name& voter, uint64_t proposal_id, string &vote, const std::optional<string> &notes)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-      Document docprop(get_self(), proposal_hash);
+      Document docprop(get_self(), proposal_id);
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
       auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
@@ -117,12 +114,12 @@ namespace hypha
       proposal->vote(voter, vote, docprop, notes);
    }
 
-   void dao::closedocprop(const checksum256 &proposal_hash)
+   void dao::closedocprop(uint64_t proposal_id)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
       
-      Document docprop(get_self(), proposal_hash);
+      Document docprop(get_self(), proposal_id);
 
       auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
 
@@ -132,12 +129,12 @@ namespace hypha
       proposal->close(docprop);
    }
 
-   void dao::proposepub(const name &proposer, const checksum256 &proposal_hash)
+   void dao::proposepub(const name &proposer, uint64_t proposal_id)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      Document docprop(get_self(), proposal_hash);
+      Document docprop(get_self(), proposal_id);
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
       auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
@@ -146,12 +143,12 @@ namespace hypha
       proposal->publish(proposer, docprop);
    }
 
-   void dao::proposerem(const name &proposer, const checksum256 &proposal_hash)
+   void dao::proposerem(const name &proposer, uint64_t proposal_id)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      Document docprop(get_self(), proposal_hash);
+      Document docprop(get_self(), proposal_id);
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
       
       auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
@@ -160,12 +157,12 @@ namespace hypha
       proposal->remove(proposer, docprop);
    }
 
-   void dao::proposeupd(const name &proposer, const checksum256 &proposal_hash, ContentGroups &content_groups) 
+   void dao::proposeupd(const name &proposer, uint64_t proposal_id, ContentGroups &content_groups) 
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      Document docprop(get_self(), proposal_hash);
+      Document docprop(get_self(), proposal_id);
       name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
       auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
@@ -174,12 +171,12 @@ namespace hypha
       proposal->update(proposer, docprop, content_groups);
    }
 
-   void dao::proposeextend(const checksum256 &assignment_hash, const int64_t additional_periods)
+   void dao::proposeextend(uint64_t assignment_id, const int64_t additional_periods)
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      Assignment assignment(this, assignment_hash);
+      Assignment assignment(this, assignment_id);
 
       // only the assignee can submit an extension proposal
       eosio::name assignee = assignment.getAssignee().getAccount();
@@ -189,7 +186,7 @@ namespace hypha
 
       //Get the DAO edge from the hash
       EOS_CHECK(
-        Member::isMember(get_self(), daoID, assignee), 
+        Member::isMember(*this, daoID, assignee), 
         "assignee must be a current member to request an extension: " + assignee.to_string());
 
       eosio::print("\nproposer is: " + assignee.to_string() + "\n");
@@ -208,18 +205,18 @@ namespace hypha
       proposal->propose(assignee, contentGroups, false);
    }
 
-   void dao::withdraw(name owner, eosio::checksum256 hash) 
+   void dao::withdraw(name owner, uint64_t document_id) 
    {  
      TRACE_FUNCTION()
      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
      
-     Assignment assignment(this, hash);
+     Assignment assignment(this, document_id);
 
      eosio::name assignee = assignment.getAssignee().getAccount();
 
      EOS_CHECK(
        assignee == owner, 
-       to_str("Only the member [", assignee.to_string() ,"] can withdraw the assignment [", hash, "]")
+       to_str("Only the member [", assignee.to_string() ,"] can withdraw the assignment [", document_id, "]")
      );
 
      eosio::require_auth(owner);
@@ -229,11 +226,7 @@ namespace hypha
      auto state = cw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
      EOS_CHECK(
-       state != common::STATE_PROPOSED &&
-       state != common::STATE_WITHDRAWED && 
-       state != common::STATE_SUSPENDED &&
-       state != common::STATE_EXPIRED &&
-       state != common::STATE_REJECTED,
+       state == common::STATE_APPROVED,
        to_str("Cannot withdraw ", state, " assignments")
      )
 
@@ -250,7 +243,7 @@ namespace hypha
 
      EOS_CHECK(
        originalPeriods >= periodsToCurrent,
-       to_str("Withdrawal of expired assignment: ", hash, " is not allowed")
+       to_str("Withdrawal of expired assignment: ", document_id, " is not allowed")
      );
 
      auto detailsGroup = cw.getGroupOrFail(DETAILS);
@@ -259,17 +252,19 @@ namespace hypha
  
      ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_WITHDRAWED });
  
-     hash = m_documentGraph.updateDocument(assignment.getCreator(), 
-                                           assignment.getID(), 
-                                           cw.getContentGroups()).getHash();
+     m_documentGraph.updateDocument(assignment.getCreator(), 
+                                    assignment.getID(), 
+                                    cw.getContentGroups()).getHash();
  
-     assignment = Assignment(this, hash);
+     assignment = Assignment(this, document_id);
      
      //This has to be the last step, since adjustcmtmnt could change the assignment hash
      //to old assignments
      ContentGroups adjust {
        ContentGroup {
-         Content { ASSIGNMENT_STRING, hash },
+         //We might want to support uint64_t types as well altough int64_t should be enought to store
+         //document ids
+         Content { ASSIGNMENT_STRING, static_cast<int64_t>(document_id) },
          Content { NEW_TIME_SHARE, 0 },
          Content { common::ADJUST_MODIFIER, common::MOD_WITHDRAW },
        }
@@ -279,7 +274,7 @@ namespace hypha
     adjustcmtmnt(owner, adjust);
    }
 
-   void dao::suspend(name proposer, eosio::checksum256 hash, string reason)
+   void dao::suspend(name proposer, uint64_t document_id, string reason)
    {
      TRACE_FUNCTION()
      EOS_CHECK(
@@ -287,13 +282,11 @@ namespace hypha
        "Contract is paused for maintenance. Please try again later."
      );
 
-     Document doc(get_self(), hash);
-
      //Get the DAO edge from the hash
-     auto daoID = Edge::get(get_self(), doc.getID(), common::DAO).getToNode();
+     auto daoID = Edge::get(get_self(), document_id, common::DAO).getToNode();
 
      EOS_CHECK(
-       Member::isMember(get_self(), daoID, proposer), 
+       Member::isMember(*this, daoID, proposer), 
        to_str("Only members are allowed to propose suspensions")
      );
 
@@ -303,16 +296,14 @@ namespace hypha
        ContentGroup {
           Content { CONTENT_GROUP_LABEL, DETAILS },
           Content { DESCRIPTION, std::move(reason) },
-          Content { ORIGINAL_DOCUMENT, hash },
+          Content { ORIGINAL_DOCUMENT, static_cast<int64_t>(document_id) },
        },
      };
 
-     Document daoDoc(get_self(), daoID);
-
-     propose(daoDoc.getHash(), proposer, common::SUSPEND, cgs, true);
+     propose(daoID, proposer, common::SUSPEND, cgs, true);
    }
 
-   void dao::claimnextper(const eosio::checksum256 &assignment_hash)
+   void dao::claimnextper(uint64_t assignment_id)
    {
       TRACE_FUNCTION()
 
@@ -321,7 +312,7 @@ namespace hypha
         "Contract is paused for maintenance. Please try again later."
       );
 
-      Assignment assignment(this, assignment_hash);
+      Assignment assignment(this, assignment_id);
 
       eosio::name assignee = assignment.getAssignee().getAccount();
 
@@ -329,12 +320,12 @@ namespace hypha
       auto daoID = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
       
       EOS_CHECK(
-        Member::isMember(get_self(), daoID, assignee), 
+        Member::isMember(*this, daoID, assignee), 
         "assignee must be a current member to claim pay: " + assignee.to_string()
       );
 
       std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
-      EOS_CHECK(periodToClaim != std::nullopt, "All available periods for this assignment have been claimed: " + readableHash(assignment_hash));
+      EOS_CHECK(periodToClaim != std::nullopt, util::to_str("All available periods for this assignment have been claimed: ", assignment_id));
 
       // require_auth(assignee);
       EOS_CHECK(has_auth(assignee) || has_auth(get_self()), "only assignee or " + get_self().to_string() + " can claim pay");
@@ -507,7 +498,7 @@ namespace hypha
       TRACE_FUNCTION()
       std::vector<Document> current_badges;
 
-      Member memDoc(*this, Member::calcHash(member));
+      Member memDoc(*this, getMemberID(member));
 
       std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(memDoc.getID(), common::ASSIGN_BADGE);
       for (Edge e : badge_assignment_edges)
@@ -613,23 +604,21 @@ namespace hypha
 
       std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, daoSettings, quantity.symbol, paymentType, daoTokens));
       Document paymentReceipt = payer->pay(recipient, quantity, memo);
-      Document recipientDoc(get_self(), Member::calcHash(recipient));
+      Document recipientDoc(get_self(), getMemberID(recipient));
       Edge::write(get_self(), get_self(), fromNode, paymentReceipt.getID(), common::PAYMENT);
       Edge::write(get_self(), get_self(), recipientDoc.getID(), paymentReceipt.getID(), common::PAID);
    }
 
-   void dao::apply(const eosio::name &applicant, const checksum256& dao_hash, const std::string &content)
+   void dao::apply(const eosio::name &applicant, uint64_t dao_id, const std::string &content)
    {
       TRACE_FUNCTION()
       require_auth(applicant);
-      Document daoDoc(get_self(), dao_hash);
+      Document daoDoc(get_self(), dao_id);
 
       std::unique_ptr<Member> member;
-      
-      const checksum256 memberHash = Member::calcHash(applicant);
 
-      if (Document::exists(get_self(), memberHash)) {
-        member = std::make_unique<Member>(*this, memberHash);
+      if (Member::exists(*this, applicant)) {
+        member = std::make_unique<Member>(*this, getMemberID(applicant));
       }
       else {
         member = std::make_unique<Member>(*this, applicant, applicant);
@@ -638,34 +627,23 @@ namespace hypha
       member->apply(daoDoc.getID(), content);
    }
 
-   void dao::enroll(const eosio::name &enroller, const checksum256& dao_hash, const eosio::name &applicant, const std::string &content)
+   void dao::enroll(const eosio::name &enroller, uint64_t dao_id, const eosio::name &applicant, const std::string &content)
    {
       TRACE_FUNCTION()
 
       require_auth(enroller);
 
-      Document daoDoc(get_self(), dao_hash);
+      Document daoDoc(get_self(), dao_id);
 
       checkEnrollerAuth(daoDoc.getID(), enroller);
 
-      Member member = Member::get(*this, applicant);
+      auto memberID = getMemberID(applicant);
+
+      Member member = Member(*this, memberID);
       member.enroll(enroller, daoDoc.getID(), content);
    }
 
    bool dao::isPaused() { return false; }
-
-   Settings* dao::getSettingsDocument(const eosio::name &dao_name)
-   {
-      TRACE_FUNCTION()
-      return getSettingsDocument(getDAO(dao_name));
-   }
-
-   Settings* dao::getSettingsDocument(const checksum256& daoHash)
-   {
-     TRACE_FUNCTION()
-     Document daoDoc(get_self(), daoHash);
-     return getSettingsDocument(daoDoc.getID());
-   }
 
    Settings* dao::getSettingsDocument(uint64_t daoID)
    {
@@ -694,7 +672,8 @@ namespace hypha
    Settings* dao::getSettingsDocument()
    {
       TRACE_FUNCTION()
-      return getSettingsDocument(getRoot(get_self()));
+
+      return getSettingsDocument(getRootID());
    }
 
    void dao::setsetting(const string &key, const Content::FlexValue &value, std::optional<std::string> group)
@@ -750,25 +729,25 @@ namespace hypha
    {
      TRACE_FUNCTION()
      checkAdminsAuth(dao_id);
-     Edge::getOrNew(get_self(), get_self(), dao_id, getMemberDoc(enroller_account).getID(), common::ENROLLER);
+     Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER);
    }
    void dao::addadmin(const uint64_t dao_id, name admin_account)
    {
      TRACE_FUNCTION()
      checkAdminsAuth(dao_id);
-     Edge::getOrNew(get_self(), get_self(), dao_id, getMemberDoc(admin_account).getID(), common::ADMIN);
+     Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(admin_account), common::ADMIN);
    }
    void dao::remenroller(const uint64_t dao_id, name enroller_account)
    {
      TRACE_FUNCTION()
      checkAdminsAuth(dao_id);
-     Edge::get(get_self(), dao_id, getMemberDoc(enroller_account).getID(), common::ENROLLER).erase();
+     Edge::get(get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER).erase();
    }
    void dao::remadmin(const uint64_t dao_id, name admin_account)
    {
      TRACE_FUNCTION()
      checkAdminsAuth(dao_id);
-     Edge::get(get_self(), dao_id, getMemberDoc(admin_account).getID(), common::ADMIN).erase();
+     Edge::get(get_self(), dao_id, getMemberID(admin_account), common::ADMIN).erase();
    }
 
    ACTION dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/)
@@ -797,28 +776,21 @@ namespace hypha
       auto daoName = configCW.getOrFail(detailsIdx, DAO_NAME).second;
 
       const name dao = daoName->getAs<name>();
+
+      //This is a reserved name for the root document
+      EOS_CHECK(
+        dao != common::DHO_ROOT_NAME,
+        util::to_str(dao, " is a reserved name and can't be used to create a DAO.")
+      )
       
       Document daoDoc(get_self(), get_self(), getDAOContent(daoName->getAs<name>()));
 
+      addNameID<dao_table>(dao, daoDoc.getID());
+
       //Verify Root exists
-      Document root(get_self(), getRoot(get_self()));
+      Document root = Document(get_self(), getRootID());
 
       Edge(get_self(), get_self(), root.getID(), daoDoc.getID(), common::DAO);
-      
-      // dao_table daos(get_self(), get_self().value);
-
-      // auto bynameIdx = daos.get_index<"byname"_n>();
-
-      // EOS_CHECK(
-      //   bynameIdx.find(dao_name.value) == bynameIdx.end(),
-      //   util::to_str("Dao with name: ", dao_name, " already exists")
-      // )
-
-      // daos.emplace(get_self(), [&](Dao& newDao){ 
-      //   newDao.id = daos.available_primary_key();
-      //   newDao.name = dao_name;
-      //   newDao.hash = dao.getHash();
-      // });
 
       auto votingDurationSeconds = configCW.getOrFail(detailsIdx, VOTING_DURATION_SEC).second;
 
@@ -925,10 +897,8 @@ namespace hypha
       //Auto enroll
       std::unique_ptr<Member> member;
       
-      const checksum256 memberHash = Member::calcHash(onboarder);
-
-      if (Document::exists(get_self(), memberHash)) {
-        member = std::make_unique<Member>(*this, memberHash);
+      if (Member::exists(*this, onboarder)) {
+        member = std::make_unique<Member>(*this, getMemberID(onboarder));
       }
       else {
         member = std::make_unique<Member>(*this, onboarder, onboarder);
@@ -982,13 +952,15 @@ namespace hypha
 
       Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
       Edge::write(get_self(), get_self(), rootDoc.getID(), settingsDoc.getID(), common::SETTINGS_EDGE);
+
+      addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
    }
 
    void dao::setalert(const eosio::name &level, const std::string &content)
    {
       TRACE_FUNCTION()
 
-      Document rootDoc(get_self(), getRoot(get_self()));
+      Document rootDoc(get_self(), getRootID());
 
       auto [exists, edge] = Edge::getIfExists(get_self(), rootDoc.getID(), common::ALERT);
       if (exists)
@@ -1014,7 +986,7 @@ namespace hypha
    {
       TRACE_FUNCTION()
 
-      Document rootDoc(get_self(), getRoot(get_self()));
+      Document rootDoc(get_self(), getRootID());
 
       Edge alertEdge = Edge::get(get_self(), rootDoc.getID(), common::ALERT);
       Document alert(get_self(), alertEdge.getToNode());
@@ -1046,70 +1018,72 @@ namespace hypha
   *   ]
   * ]
   */
-   ACTION dao::adjustcmtmnt(name issuer, ContentGroups &adjust_info)
-   {
-      TRACE_FUNCTION()
-      require_auth(issuer);
+  ACTION dao::adjustcmtmnt(name issuer, ContentGroups &adjust_info)
+  {
+    TRACE_FUNCTION()
+    require_auth(issuer);
 
-      ContentWrapper cw(adjust_info);
+    ContentWrapper cw(adjust_info);
 
-      for (size_t i = 0; i < adjust_info.size(); ++i)
-      {
+    for (size_t i = 0; i < adjust_info.size(); ++i)
+    {
 
-         Assignment assignment = Assignment(this,
-                                            cw.getOrFail(i, "assignment").second->getAs<checksum256>());
+      Assignment assignment = Assignment(
+        this,
+      static_cast<uint64_t>(cw.getOrFail(i, "assignment").second->getAs<int64_t>())
+      );
 
-         EOS_CHECK(assignment.getAssignee().getAccount() == issuer,
-                      "Only the owner of the assignment can adjust it");
+      EOS_CHECK(assignment.getAssignee().getAccount() == issuer,
+                  "Only the owner of the assignment can adjust it");
 
-         int64_t newTimeShare = cw.getOrFail(i, NEW_TIME_SHARE).second->getAs<int64_t>();
+      int64_t newTimeShare = cw.getOrFail(i, NEW_TIME_SHARE).second->getAs<int64_t>();
 
-         auto [modifierIdx, modifier] = cw.get(i, common::ADJUST_MODIFIER);
+      auto [modifierIdx, modifier] = cw.get(i, common::ADJUST_MODIFIER);
 
-         string_view modstr = modifier ? string_view{modifier->getAs<string>()} : string_view{};
+      string_view modstr = modifier ? string_view{modifier->getAs<string>()} : string_view{};
 
-         auto [idx, startDate] = cw.get(i, TIME_SHARE_START_DATE);
+      auto [idx, startDate] = cw.get(i, TIME_SHARE_START_DATE);
 
-         auto fixedStartDate = startDate ? std::optional<time_point>{startDate->getAs<time_point>()} : std::nullopt;
+      auto fixedStartDate = startDate ? std::optional<time_point>{startDate->getAs<time_point>()} : std::nullopt;
 
-         auto assignmentCW = assignment.getContentWrapper();
+      auto assignmentCW = assignment.getContentWrapper();
 
-         if (modstr.empty()) {
-           
-           auto lastPeriod = assignment.getLastPeriod();
-           auto assignmentExpirationTime = lastPeriod.getEndTime();
-
-           EOS_CHECK(
-             assignmentExpirationTime.sec_since_epoch() > eosio::current_time_point().sec_since_epoch(),
-             to_str("Cannot adjust expired assignment: ", assignment.getHash(), " last period: ", lastPeriod.getHash())
-           )
-
-           auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
-
-           EOS_CHECK(
-             state != common::STATE_PROPOSED &&
-             state != common::STATE_WITHDRAWED && 
-             state != common::STATE_SUSPENDED &&
-             state != common::STATE_EXPIRED &&
-             state != common::STATE_REJECTED,
-             to_str("Cannot adjust commitment for ", state, " assignments")
-           )
-         }
+      if (modstr.empty()) {
         
-         modifyCommitment(assignment, 
-                          newTimeShare, 
-                          fixedStartDate,  
-                          modstr);
-      }
-   }
+        auto lastPeriod = assignment.getLastPeriod();
+        auto assignmentExpirationTime = lastPeriod.getEndTime();
 
-  ACTION dao::adjustdeferr(name issuer, checksum256 assignment_hash, int64_t new_deferred_perc_x100)
+        EOS_CHECK(
+          assignmentExpirationTime.sec_since_epoch() > eosio::current_time_point().sec_since_epoch(),
+          to_str("Cannot adjust expired assignment: ", assignment.getHash(), " last period: ", lastPeriod.getHash())
+        )
+
+        auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+        EOS_CHECK(
+          state != common::STATE_PROPOSED &&
+          state != common::STATE_WITHDRAWED && 
+          state != common::STATE_SUSPENDED &&
+          state != common::STATE_EXPIRED &&
+          state != common::STATE_REJECTED,
+          to_str("Cannot adjust commitment for ", state, " assignments")
+        )
+      }
+    
+      modifyCommitment(assignment, 
+                      newTimeShare, 
+                      fixedStartDate,  
+                      modstr);
+    }
+  }
+
+  ACTION dao::adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferred_perc_x100)
   {
     TRACE_FUNCTION()
 
     require_auth(issuer);
 
-    Assignment assignment = Assignment(this, assignment_hash);
+    Assignment assignment = Assignment(this, assignment_id);
 
     EOS_CHECK(
       assignment.getAssignee().getAccount() == issuer,
@@ -1258,17 +1232,42 @@ namespace hypha
 
       Edge::write(get_self(), get_self(), assignment.getID(), newTimeShareDoc.getID(), common::LAST_TIME_SHARE);
    }
-  
-  Document dao::getMemberDoc(const name& account)
+
+  uint64_t dao::getRootID()
   {
-    return Document(get_self(), Member::calcHash(account));
+    auto rootID = getDAOID(common::DHO_ROOT_NAME);
+
+    //Verify root entry exists
+    EOS_CHECK(
+      rootID.has_value(),
+      util::to_str("Missing root document entry")
+    )
+
+    return *rootID;
+  }
+
+  std::optional<uint64_t> dao::getDAOID(const name& daoName)
+  {
+    return getNameID<dao_table>(daoName);
+  }
+
+  uint64_t dao::getMemberID(const name& memberName)
+  { 
+    auto id = getNameID<member_table>(memberName);
+
+    EOS_CHECK(
+      id.has_value(),
+      util::to_str("There is no member with name:", memberName)
+    )
+
+    return *id;
   }
 
   void dao::checkEnrollerAuth(uint64_t dao_id, const name& account)
   {
     TRACE_FUNCTION()
 
-    auto memberID = getMemberDoc(account).getID();
+    auto memberID = getMemberID(account);
 
     EOS_CHECK(
       Edge::exists(get_self(), dao_id, memberID, common::ENROLLER),

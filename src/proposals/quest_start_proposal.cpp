@@ -13,7 +13,7 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID(), common::QUEST_START);
         
         ContentWrapper contentWrapper = proposal.getContentWrapper();
-        Member assignee = Member(m_dao, Member::calcHash(contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>()));
+        Member assignee = Member(m_dao, m_dao.getMemberID(contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>()));
         
         Edge::write(m_dao.get_self(), m_dao.get_self(), assignee.getID(), proposal.getID(), common::ASSIGNED);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID(), assignee.getID(), common::ASSIGNEE_NAME);

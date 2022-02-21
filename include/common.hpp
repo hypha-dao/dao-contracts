@@ -55,6 +55,7 @@ namespace common
     constexpr name ADMIN = name("admin");
     constexpr name OWNER = name("owner");
 
+    constexpr name DHO_ROOT_NAME = name("dhoroot");
     constexpr name ASSIGN_BADGE = name("assignbadge");
     constexpr name VOTE_TALLY = name("votetally");
     constexpr name ASSIGNMENT = name("assignment");

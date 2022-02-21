@@ -17,7 +17,7 @@ namespace hypha
     class Assignment : public Document
     {
     public:
-        Assignment(dao *dao, const eosio::checksum256 &hash);
+        Assignment(dao *dao, uint64_t id);
         
         std::optional<Period> getNextClaimablePeriod ();
         bool isClaimed (Period* period);

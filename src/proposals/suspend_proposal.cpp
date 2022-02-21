@@ -21,7 +21,7 @@ namespace hypha
       TRACE_FUNCTION()
 
       EOS_CHECK(
-        Member::isMember(m_dao.get_self(), m_daoID , proposer),
+        Member::isMember(m_dao, m_daoID , proposer),
         util::to_str("Only members of: ", m_daoID , " can suspend this proposal")
       )
 
@@ -66,7 +66,7 @@ namespace hypha
       {
       case common::ASSIGNMENT.value: {
         
-        Assignment assignment(&m_dao, originalDoc.getHash());
+        Assignment assignment(&m_dao, originalDoc.getID());
 
         auto currentTimeSecs = eosio::current_time_point().sec_since_epoch();
 
@@ -137,7 +137,7 @@ namespace hypha
       {
       case common::ASSIGNMENT.value: {
 
-        Assignment assignment(&m_dao, originalDoc.getHash());
+        Assignment assignment(&m_dao, originalDoc.getID());
 
         auto cw = assignment.getContentWrapper();
 
@@ -162,7 +162,7 @@ namespace hypha
                                                          assignment.getID(), 
                                                          cw.getContentGroups());
 
-          assignment = Assignment(&m_dao, originalDoc.getHash());
+          assignment = Assignment(&m_dao, originalDoc.getID());
         }
 
         m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);

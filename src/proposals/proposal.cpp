@@ -35,7 +35,7 @@ namespace hypha
     Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish)
     {
         TRACE_FUNCTION()
-        EOS_CHECK(Member::isMember(m_dao.get_self(), m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
+        EOS_CHECK(Member::isMember(m_dao, m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
@@ -56,17 +56,15 @@ namespace hypha
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
         // creates the document, or the graph NODE
-        eosio::checksum256 memberHash = Member::calcHash(proposer);
-
-        Document memberDoc(m_dao.get_self(), memberHash);
+        auto memberID = m_dao.getMemberID(proposer);
 
         uint64_t root = m_daoID;
 
         // the proposer OWNS the proposal; this creates the graph EDGE
-        Edge::write(m_dao.get_self(), proposer, memberDoc.getID(), proposalNode.getID (), common::OWNS);
+        Edge::write(m_dao.get_self(), proposer, memberID, proposalNode.getID (), common::OWNS);
 
         // the proposal was PROPOSED_BY proposer; this creates the graph EDGE
-        Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), memberDoc.getID(), common::OWNED_BY);
+        Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), memberID, common::OWNED_BY);
 
         name commentsContract = m_dhoSettings->getOrFail<eosio::name>(COMMENTS_CONTRACT);
 

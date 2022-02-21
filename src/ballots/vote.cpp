@@ -47,7 +47,7 @@ namespace hypha
             "Voting has expired for this proposal"
         );
 
-        Document voterDoc(dao.get_self(), Member::calcHash(voter));
+        Document voterDoc(dao.get_self(), dao.getMemberID(voter));
 
         std::vector<Edge> votes = dao.getGraph().getEdgesFrom(proposal.getID(), common::VOTE);
         for (auto vote : votes) {
