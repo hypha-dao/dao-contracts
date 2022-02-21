@@ -501,21 +501,21 @@ namespace hypha
       Member memDoc(*this, getMemberID(member));
 
       std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(memDoc.getID(), common::ASSIGN_BADGE);
-      for (Edge e : badge_assignment_edges)
+      for (const Edge& e : badge_assignment_edges)
       {
-        Document badgeAssignmentDoc(get_self(), e.getToNode());
+        Document badgeAssignmentDoc(get_self(), e.to_node);
         Edge badge_edge = Edge::get(get_self(), badgeAssignmentDoc.getID(), common::BADGE_NAME);
         
         //Verify badge still exists
         EOS_CHECK(
           Document::exists(get_self(), badge_edge.getToNode()),
           util::to_str("Badge document doesn't exits for badge assignment:", 
-                 badgeAssignmentDoc.getHash(),
+                 badgeAssignmentDoc.getID(),
                  " badge:", badge_edge.getToNode())
         )
 
         //Verify the badge is actually from the requested DAO
-        if (Edge::get(get_self(), badge_edge.getToNode(), common::DAO).getToNode() != dao) {
+        if (Edge::get(get_self(), e.to_node, common::DAO).getToNode() != dao) {
           continue;
         }
 
