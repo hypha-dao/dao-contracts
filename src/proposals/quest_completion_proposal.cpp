@@ -14,13 +14,13 @@ namespace hypha
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
 
         // Validate the associated quest_start exists
-        const eosio::checksum256 questStartHash = contentWrapper.getOrFail(
+        const uint64_t questStartID = contentWrapper.getOrFail(
             DETAILS,
             QUEST_START,
             "Associated quest_start document not found in the contents"
-        )->getAs<eosio::checksum256>();
+        )->getAs<int64_t>();
 
-        Document questStart(m_dao.get_self(), questStartHash);
+        Document questStart(m_dao.get_self(), questStartID);
         eosio::check(questStart.getCreator() == proposer, "Quest start proposal not owned by proposer");
 
         const eosio::name documentType = questStart.getContentWrapper().getOrFail(
@@ -37,11 +37,11 @@ namespace hypha
 
         auto contentWrapper = proposal.getContentWrapper();
         
-        const eosio::checksum256 questStartHash = contentWrapper.getOrFail(
+        const uint64_t questStartHash = contentWrapper.getOrFail(
             DETAILS,
             QUEST_START,
             "Associated quest_start document not found in the contents"
-        )->getAs<eosio::checksum256>();
+        )->getAs<int64_t>();
 
         Document questStartDoc(m_dao.get_self(), questStartHash);
 

@@ -26,7 +26,7 @@ namespace hypha
       )
 
       // original_document is a required hash
-      auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
+      auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>();
 
       Document originalDoc(m_dao.get_self(), originalDocHash);
 
@@ -100,13 +100,11 @@ namespace hypha
     void SuspendProposal::postProposeImpl (Document &proposal) 
     {
       TRACE_FUNCTION()
-      auto originalDocHash = proposal.getContentWrapper()
+      auto originalDocID = proposal.getContentWrapper()
                                      .getOrFail(DETAILS, ORIGINAL_DOCUMENT)
-                                     ->getAs<eosio::checksum256>();
+                                     ->getAs<int64_t>();
 
-      Document originalDoc(m_dao.get_self(), originalDocHash);
-
-      Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getID(), originalDoc.getID(), common::SUSPEND);
+      Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getID(), originalDocID, common::SUSPEND);
     }
 
     void SuspendProposal::passImpl(Document &proposal)
@@ -116,7 +114,7 @@ namespace hypha
 
       EOS_CHECK(
         edges.size() == 1, 
-        "Missing edge from suspension proposal: " + readableHash(proposal.getHash()) + " to document"
+        "Missing edge from suspension proposal: " + util::to_str(proposal.getID()) + " to document"
       );
 
       Document originalDoc(m_dao.get_self(), edges[0].getToNode());

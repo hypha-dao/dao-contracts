@@ -22,7 +22,7 @@ namespace hypha
         );
 
          // badge assignment proposal must link to a valid badge
-        Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
+        Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<int64_t>());
         
         auto badge = badgeDocument.getContentWrapper();
 
@@ -43,11 +43,7 @@ namespace hypha
         auto detailsGroup = badgeAssignment.getGroupOrFail(DETAILS);
         if (auto [idx, startPeriod] = badgeAssignment.get(DETAILS, START_PERIOD); startPeriod)
         {
-            EOS_CHECK(std::holds_alternative<eosio::checksum256>(startPeriod->value),
-                         "fatal error: expected to be a checksum256 type: " + startPeriod->label);
-
-            // verifies the period as valid
-            Period period(&m_dao, std::get<eosio::checksum256>(startPeriod->value));
+            Period period(&m_dao, std::get<int64_t>(startPeriod->value));
         } else {
             // default START_PERIOD to next period
             ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoID).next().getHash()});
@@ -75,7 +71,7 @@ namespace hypha
 
         eosio::name assignee = contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
         Document assigneeDoc(m_dao.get_self(), m_dao.getMemberID(assignee));
-        Document badge(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, BADGE_STRING)->getAs<eosio::checksum256>());
+        Document badge(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, BADGE_STRING)->getAs<int64_t>());
 
         // update graph edges:
         //    member            ---- holdsbadge     ---->   badge
@@ -93,7 +89,7 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getID (), proposal.getID (), common::ASSIGNMENT);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), badge.getID (), common::BADGE_NAME);
 
-        Document startPer(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+        Document startPer(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>());
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), startPer.getID(), common::START);
     }

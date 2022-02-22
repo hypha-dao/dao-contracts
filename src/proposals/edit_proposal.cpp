@@ -21,7 +21,7 @@ namespace hypha
         util::to_str("Only members of: ", m_daoID, " can edit this proposal")
       )
 
-      auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
+      auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>();
 
       Document originalDoc(m_dao.get_self(), originalDocHash);
 
@@ -146,7 +146,7 @@ namespace hypha
         
         EOS_CHECK(
           edges.size() == 1, 
-          "Missing edge from extension proposal: " + readableHash(proposal.getHash()) + " to original document"
+          "Missing edge from extension proposal: " + util::to_str(proposal.getID()) + " to original document"
         );
 
         Document original (m_dao.get_self(), edges[0].getToNode());

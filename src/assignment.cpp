@@ -50,7 +50,7 @@ namespace hypha
 
         auto [detailsIdx, _] = cw.getGroup(DETAILS);
 
-        EOS_CHECK(detailsIdx != -1, "Missing details group for assignment [" + readableHash(getHash()) + "]");
+        EOS_CHECK(detailsIdx != -1, util::to_str("Missing details group for assignment [", getID(), "]"));
 
         if (auto [idx, legacyCreatedDate] = cw.get(SYSTEM, "legacy_object_created_date"); legacyCreatedDate)
         {
@@ -137,7 +137,14 @@ namespace hypha
     Period Assignment::getStartPeriod()
     {
       TRACE_FUNCTION()
-      return Period(m_dao, getContentWrapper().getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>());
+      return Period(
+        m_dao, 
+        static_cast<uint64_t>(
+          getContentWrapper()
+          .getOrFail(DETAILS, START_PERIOD)
+          ->getAs<int64_t>()
+        )
+      );
     }
     
     Period Assignment::getLastPeriod()

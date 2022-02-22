@@ -77,7 +77,7 @@ namespace hypha
      doc.update(get_self(), std::move(cw.getContentGroups()));
    }
 
-   ACTION dao::addedge(const checksum256& from, const checksum256& to, const name& edge_name)
+   ACTION dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
    {
      require_auth(get_self());
 
@@ -465,9 +465,6 @@ namespace hypha
 
       string memo = assignmentNodeLabel + ", period: " + periodToClaim.value().getNodeLabel();      
 
-      // string memo = "[assignment_label:" + assignmentNodeLabel + ",period_label:" + periodToClaim.value().getNodeLabel()
-      //          + ",assignment_hash:" + readableHash(assignment.getHash()) + ",period_hash:" + readableHash(periodToClaim.value().getHash()) + "]";
-      
       // creating a single struct improves performance for table queries here
       AssetBatch ab{};
       ab.reward = reward;
@@ -521,15 +518,13 @@ namespace hypha
 
         auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
         Document badge(get_self(), badge_edge.getToNode());
-        
-        //Check if badge assignment is old (start_period was stored as an integer)
-        //If the type of start_period is no checksum then let's skip this badge assignment
-        Content* startPeriodContent = badgeAssignment.getOrFail(DETAILS, START_PERIOD);
-        if (!std::holds_alternative<eosio::checksum256>(startPeriodContent->value)) {
-          continue;
-        }
 
-        Period startPeriod(this, startPeriodContent->getAs<eosio::checksum256>());
+        Content* startPeriodContent = badgeAssignment.getOrFail(DETAILS, START_PERIOD);
+
+        Period startPeriod(
+          this, 
+          static_cast<uint64_t>(startPeriodContent->getAs<int64_t>())
+        );
         int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
         auto endPeriod = startPeriod.getNthPeriodAfter(periodCount);
         
@@ -754,7 +749,9 @@ namespace hypha
    {
       TRACE_FUNCTION()
 
-      checkAdminsAuth(dao_id);
+      if (!eosio::has_auth(get_self())) {
+        checkAdminsAuth(dao_id);  
+      }
 
       genPeriods(dao_id, period_count);
    }
@@ -944,7 +941,7 @@ namespace hypha
       ContentGroups settingCgs{
           ContentGroup{
               Content(CONTENT_GROUP_LABEL, SETTINGS),
-              Content(ROOT_NODE, readableHash(rootDoc.getHash()))},
+              Content(ROOT_NODE, util::to_str(rootDoc.getHash()))},
           ContentGroup{
               Content(CONTENT_GROUP_LABEL, SYSTEM),
               Content(TYPE, common::SETTINGS_EDGE),
@@ -1004,16 +1001,16 @@ namespace hypha
   * ContentGroups
   * [
   *   Group Assignment 0 Details: [
-  *     assignment: [checksum256]
+  *     assignment: [int64_t]
   *     new_time_share_x100: [int64_t] min_time_share_x100 <= new_time_share_x100 <= time_share_x100
   *     modifier: [withdraw]
   *   ],
   *   Group Assignment 1 Details: [
-  *     assignment: [checksum256]
+  *     assignment: [int64_t]
   *     new_time_share_x100: [int64_t] min_time_share_x100 <= new_time_share_x100 <= time_share_x100
   *   ],
   *   Group Assignment N Details: [
-  *     assignment: [checksum256]
+  *     assignment: [int64_t]
   *     new_time_share_x100: [int64_t] min_time_share_x100 <= new_time_share_x100 <= time_share_x100
   *   ]
   * ]

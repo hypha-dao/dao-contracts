@@ -45,9 +45,6 @@ namespace hypha
         //TODO: This edge has to cleaned up when proposal fails
         // connect the edit proposal to the original
         Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getID(), original.getID(), common::ORIGINAL);
-        eosio::print("writing edge from proposal to original. proposal: " + readableHash(proposal.getHash()) + "\n");
-        eosio::print("original: " + readableHash(original.getHash()) + "\n");
-
     }
 
     void AssignmentExtensionProposal::passImpl(Document &proposal)
@@ -96,7 +93,7 @@ namespace hypha
         
         EOS_CHECK(
           edges.size() == 1, 
-          "Missing edge from extension proposal: " + readableHash(proposal.getHash()) + " to original document"
+          "Missing edge from extension proposal: " + util::to_str(proposal.getHash()) + " to original document"
         );
 
         Document original (m_dao.get_self(), edges[0].getToNode());

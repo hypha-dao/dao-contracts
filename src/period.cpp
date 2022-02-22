@@ -46,11 +46,6 @@ namespace hypha
     {
     }
 
-    Period::Period(dao *dao, const eosio::checksum256 &hash) 
-      : Document(dao->get_self(), hash), m_dao{dao}
-    {
-    }
-
     Period::Period(dao *dao, uint64_t id)
       : Document(dao->get_self(), id), m_dao{dao}
     {        

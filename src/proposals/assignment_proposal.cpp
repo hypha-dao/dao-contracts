@@ -26,7 +26,10 @@ namespace hypha
             "only members can be assigned to assignments " + assignee.to_string()
         );
 
-        Document roleDocument(m_dao.get_self(), assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<eosio::checksum256>());
+        Document roleDocument(
+            m_dao.get_self(), 
+            static_cast<uint64_t>(assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<int64_t>())
+        );
 
         auto role = roleDocument.getContentWrapper();
 
@@ -75,15 +78,18 @@ namespace hypha
         auto detailsGroup = assignment.getGroupOrFail(DETAILS);
         if (auto [idx, startPeriod] = assignment.get(DETAILS, START_PERIOD); startPeriod)
         {
-            EOS_CHECK(std::holds_alternative<eosio::checksum256>(startPeriod->value),
-                         "fatal error: expected to be a checksum256 type: " + startPeriod->label);
-
             //TODO: Store the dao in the period document and validate it 
             // verifies the period as valid
-            Period period(&m_dao, std::get<eosio::checksum256>(startPeriod->value));
+            Period period(&m_dao, std::get<int64_t>(startPeriod->value));
         } else {
             // default START_PERIOD to next period
-            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoID).next().getHash ()});
+            ContentWrapper::insertOrReplace(
+                *detailsGroup,
+                Content {
+                    START_PERIOD, 
+                    static_cast<int64_t>(Period::current(&m_dao, m_daoID).next().getID())
+                }
+            );
         }
 
         // PERIOD_COUNT - number of periods the assignment is valid for
@@ -149,7 +155,7 @@ namespace hypha
             m_dao.get_self(),
             proposal.getContentWrapper()
                     .getOrFail(DETAILS, ROLE_STRING)
-                    ->getAs<eosio::checksum256>());
+                    ->getAs<int64_t>());
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), roleDoc.getID(), common::ROLE_NAME);
     }
@@ -181,11 +187,11 @@ namespace hypha
         
         //Start period edge
         // assignment ---- start ----> period
-        eosio::checksum256 startPeriodHash = contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<eosio::checksum256>();
-        Document startPerDoc(m_dao.get_self(), startPeriodHash);
+        uint64_t startPeriodID = static_cast<uint64_t>(contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>());
+        Document startPerDoc(m_dao.get_self(), startPeriodID);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), startPerDoc.getID(), common::START);
 
-        Period startPeriod(&m_dao, startPeriodHash);
+        Period startPeriod(&m_dao, startPeriodID);
 
         //Initial time share for proposal
         int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
