@@ -50,7 +50,7 @@ describe('Roles', () => {
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
-            ...testRole
+            content_groups: testRole.content_groups
         });
 
         let proposal = last(getDocumentsByType(
@@ -82,7 +82,7 @@ describe('Roles', () => {
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
-            ...testRole
+            content_groups: testRole.content_groups
         });
 
         proposal = last(getDocumentsByType(
@@ -213,7 +213,7 @@ describe('Roles', () => {
         proposer: assignee.accountName,
         proposal_type: 'assignment',
         publish: true,
-        ...assignmentProp
+        content_groups: assignmentProp.content_groups
       })).rejects.toThrow('Cannot create assignment proposal of suspened role');
   });
 });
