@@ -31,6 +31,22 @@ export interface DaoPeerContracts {
     comments: Account;
 }
 
+expect.extend({
+    _toBeEmpty(received, message) {
+        if (this.equals(received, [])) {
+            return {
+                message: () => message + this.utils.printExpected(received),
+                pass: true
+            };
+        } else {
+            return {
+                message: () => message + this.utils.printExpected(received),
+                pass: false
+            }
+        }
+    }
+});
+
 export class DaoBlockchain extends Blockchain {
 
     readonly config: THydraConfig;
@@ -122,14 +138,31 @@ export class DaoBlockchain extends Blockchain {
 
         const endTime = performance.now();
         console.log(`It took ${Math.round((endTime - startTime)/1000.0)}s to run the setup`);
-
         return blockchain;
     }
 
     createContract(accountName: string, templateName: string): Account {
-        const account = this.createAccount(accountName);
-        account.setContract(this.contractTemplates[templateName]);
-        return account;
+        const contractAccount = new Proxy(this.createAccount(accountName), {
+            get: (account: Account, p: string | symbol) => {
+                // We need to do this everytime, because this gets constantly override at some other point
+                if (p === 'contract') {
+                    return new Proxy(account[p], {
+                        get: (target: any, action: string | symbol) => {
+                            return new Proxy(target[String(action)], {
+                                apply: (target: any, thisArg: any, argArray: any[]) => {
+                                    this.validateParams(account, String(action), argArray[0]);
+                                    return target(...argArray);
+                                }
+                            })
+                        }
+                    });
+                }
+
+                return account[p];
+            }
+        });
+        contractAccount.setContract(this.contractTemplates[templateName]);
+        return contractAccount;
     }
 
     private async createPeriods(dao: Dao) {
@@ -260,6 +293,8 @@ export class DaoBlockchain extends Blockchain {
 
     async setup() {
         this.daoContract.resetTables();
+
+
         this.setupDate = new Date();
         this.currentDate = new Date(this.setupDate);
         this.setCurrentTime(this.setupDate);
@@ -429,25 +464,35 @@ export class DaoBlockchain extends Blockchain {
         // It currently warns when an abi/action/struct is not found.
 
         if (!account.abi) {
-            console.log(`Abi for account ${account.accountName} not found when calling action: ${action}`);
+            console.warn(`Abi for account ${account.accountName} not found when calling action: ${action}`);
             return;
         }
 
         const abiAction = account.abi.actions.find(a => a.name === action);
         if (!abiAction) {
-            console.log(`action for account ${account.accountName} not found when calling action: ${action}`);
+            console.warn(`action for account ${account.accountName} not found when calling action: ${action}`);
             return;
         }
 
         const struct = account.abi.structs.find(s => s.name === abiAction.type);
         if (!struct) {
-            console.log(`action type for account ${account.accountName} not found when calling action: ${action}`);
+            console.warn(`action type for account ${account.accountName} not found when calling action: ${action}`);
             return;
         }
 
-        const targetKeys = Object.keys(data);
-        const expectedKeys = struct.fields.map(f => f.name);
-        expect(targetKeys).toEqual(expectedKeys);
+        const targetKeys = Object.keys(data).sort();
+        const expectedKeys = struct
+            .fields
+            .map(f => ({ name: f.name, isOptional: f.type.endsWith('$') || f.type.endsWith('?') }))
+            .sort((a,b) => a.name > b.name ? 1 : -1);
+
+        const missing = expectedKeys.filter(e => !e.isOptional && !targetKeys.includes(e.name));
+        const expectedRawKeys = expectedKeys.map(e => e.name);
+        const excess = targetKeys.filter(t => !expectedRawKeys.includes(t));
+
+
+        (expect(missing) as any)._toBeEmpty(`Expected params in call ${account.accountName}.${action} but were missing`);
+        (expect(excess) as any)._toBeEmpty(`Did not expect the following params in call ${account.accountName}.${action}`);
     }
 
     private createDaoAction(dao: Dao): TTransaction['actions'][number] {

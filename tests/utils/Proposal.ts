@@ -47,7 +47,7 @@ async (dao: Dao, proposal: Document, type: string, environment: DaoBlockchain): 
         dao_hash: dao.getHash(),
         proposer: dao.members[0].account.accountName,
         proposal_type: type,
-        ...proposal
+        content_groups: proposal.content_groups
     });
 
     let propDoc = last(getDocumentsByType(
@@ -66,7 +66,7 @@ async (dao: Dao, proposal: Document, type: string, environment: DaoBlockchain): 
         proposer: dao.members[0].account.accountName,
         proposal_type: type,
         publish: true,
-        ...proposal
+        content_groups: proposal.content_groups
     });
 
     let propDoc = last(getDocumentsByType(

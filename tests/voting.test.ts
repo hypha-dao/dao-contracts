@@ -94,7 +94,7 @@ describe('Voting', () => {
             proposer: environment.daos[0].members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
-            ...getSampleRole()
+            content_groups: getSampleRole().content_groups
         });
 
         const proposal = last(getDocumentsByType(
@@ -111,7 +111,7 @@ describe('Voting', () => {
             proposer: environment.daos[0].members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
-            ...getSampleRole('foobar')
+            content_groups: getSampleRole('foobar').content_groups
         });
 
         const proposal2 = last(getDocumentsByType(
