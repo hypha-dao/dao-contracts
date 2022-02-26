@@ -7,7 +7,6 @@ export class DocumentBuilder {
 
     private _contentGroups: ContentGroups;
     private _id: string;
-    private _hash: string;
     private _creator: string;
     private _certificates: Array<unknown>;
     private _created_date: string;
@@ -16,7 +15,6 @@ export class DocumentBuilder {
     private constructor() {
         this._contentGroups = [];
         this._id = '';
-        this._hash = '';
         this._creator = '';
         this._certificates = [];
         this._created_date = '';
@@ -29,11 +27,6 @@ export class DocumentBuilder {
 
     public id(id: string): DocumentBuilder {
         this._id = id;
-        return this;
-    }
-
-    public hash(hash: string): DocumentBuilder {
-        this._hash = hash;
         return this;
     }
 
@@ -63,7 +56,6 @@ export class DocumentBuilder {
     public build(): Document {
         return {
             id: this._id,
-            hash: this._hash,
             creator: this._creator,
             content_groups: this._contentGroups,
             certificates: this._certificates,

@@ -10,7 +10,7 @@ import {last} from '../utils/Arrays';
 import {
     getContent,
     getDetailsGroup,
-    getDocumentByHash,
+    getDocumentById,
     getDocumentsByType,
 } from '../utils/Dao';
 import {ContentGroupBuilder} from '../utils/DocumentBuilder';
@@ -32,7 +32,8 @@ export interface DaoPeerContracts {
 }
 
 expect.extend({
-    _toBeEmpty(received, message) {
+    _toBeAbsent(received, account, action) {
+        const message = `Did not expect the following params in call ${account.accountName}.${action}`;
         if (this.equals(received, [])) {
             return {
                 message: () => message + this.utils.printExpected(received),
@@ -41,6 +42,26 @@ expect.extend({
         } else {
             return {
                 message: () => message + this.utils.printExpected(received),
+                pass: false
+            }
+        }
+    },
+    _toBePresent(received, account, action) {
+        const explain = () => {
+            const includeNullRequired = received.some(r => r.nullRequired);
+            return `Expected params in call ${account.accountName}.${action} but were missing.`
+            + (includeNullRequired ? ' Some parameters are optional but are required to be in the data as null.' : '')
+            + this.utils.printExpected(received);
+        };
+
+        if (this.equals(received, [])) {
+            return {
+                message: () => explain(),
+                pass: true
+            };
+        } else {
+            return {
+                message: () => explain(),
                 pass: false
             }
         }
@@ -55,7 +76,6 @@ export class DaoBlockchain extends Blockchain {
     readonly peerContracts: DaoPeerContracts;
 
     // There should be a better way to get this - But currently seems stable
-    readonly rootHash = 'D9B40C418C850A65B71CA55ABB0DE9B0E4646A02B95B230E3917E877610BFAE5';
     private root: Document;
     private setupDate: Date;
     public currentDate: Date;
@@ -174,7 +194,7 @@ export class DaoBlockchain extends Blockchain {
       await this.sendTransaction({
           actions: [
               this.buildAction(this.daoContract, 'genperiods', {
-                  dao_hash: dao.getHash(),
+                  dao_id: dao.getId(),
                   period_count: dao.settings.periodCount
               }, getAccountPermission(dao.settings.onboarderAccount))
           ]
@@ -220,12 +240,12 @@ export class DaoBlockchain extends Blockchain {
         return [
             this.buildAction(this.daoContract, 'apply', {
                 applicant: account.accountName,
-                dao_hash: dao.getHash(),
+                dao_id: dao.getId(),
                 content: 'Apply to DAO'
             }, getAccountPermission(account)),
             this.buildAction(this.daoContract, 'enroll', {
                 enroller: dao.settings.onboarderAccount,
-                dao_hash: dao.getHash(),
+                dao_id: dao.getId(),
                 applicant: account.accountName,
                 content: 'Enroll in dao'
             }, getAccountPermission(dao.settings.onboarderAccount))
@@ -253,12 +273,12 @@ export class DaoBlockchain extends Blockchain {
             actions: [
                 this.buildAction(this.daoContract, 'apply', {
                     applicant: account.accountName,
-                    dao_hash: dao.getHash(),
+                    dao_id: dao.getId(),
                     content: 'Apply to DAO'
                 }, getAccountPermission(account)),
                 this.buildAction(this.daoContract, 'enroll', {
                     enroller: dao.settings.onboarderAccount,
-                    dao_hash: dao.getHash(),
+                    dao_id: dao.getId(),
                     applicant: account.accountName,
                     content: 'Enroll in dao'
                 }, getAccountPermission(dao.settings.onboarderAccount))
@@ -377,31 +397,36 @@ export class DaoBlockchain extends Blockchain {
                 // governance token contract
                 this.buildAction(this.daoContract, 'setsetting', {
                     key: 'comments_contract',
-                    value: [ 'name', this.peerContracts.comments.accountName ]
+                    value: [ 'name', this.peerContracts.comments.accountName ],
+                    group: null
                 }),
                 this.buildAction(this.daoContract, 'setsetting', {
                     key: 'governance_token_contract',
-                    value: [ 'name', this.peerContracts.voice.accountName ]
+                    value: [ 'name', this.peerContracts.voice.accountName ],
+                    group: null
                 }),
                 this.buildAction(this.daoContract, 'setsetting', {
                     key: 'reward_token_contract',
-                    value: [ 'name', this.peerContracts.voice.accountName ]
+                    value: [ 'name', this.peerContracts.voice.accountName ],
+                    group: null
                 }),
                 this.buildAction(this.daoContract, 'setsetting', {
                     key: 'peg_token_contract',
-                    value: [ 'name', this.peerContracts.voice.accountName ]
+                    value: [ 'name', this.peerContracts.voice.accountName ],
+                    group: null
                 }),
                 this.buildAction(this.daoContract, 'setsetting', {
                     key: 'treasury_contract',
-                    value: [ 'name', this.peerContracts.bank.accountName ]
+                    value: [ 'name', this.peerContracts.bank.accountName ],
+                    group: null
                 }),
                 ...this.daos.map(dao => this.createDaoAction(dao))
             ]
         });
 
-        this.fillDaoHashes();
+        this.fillDaoDocument();
 
-        this.root = getDocumentByHash(this.getDaoDocuments(), this.rootHash);
+        this.root = getDocumentById(this.getDaoDocuments(), '1');
         for (const dao of this.daos) {
             await this.createPeriods(dao);
         }
@@ -441,12 +466,12 @@ export class DaoBlockchain extends Blockchain {
         return this.setupDate;
     }
 
-    private fillDaoHashes() {
+    private fillDaoDocument() {
         getDocumentsByType(this.getDaoDocuments(), 'dao').forEach(daoDoc => {
             const nameContent = getContent(getDetailsGroup(daoDoc), 'dao_name');
             if (nameContent.value[0] === ContentType.NAME) {
                 const dao = this.getDao(nameContent.value[1]);
-                dao.setHash(daoDoc.hash);
+                dao.setId(daoDoc.id);
                 dao.setRoot(daoDoc);
             } else {
                 throw new Error('Invalid dao document:' + JSON.stringify(daoDoc));
@@ -483,7 +508,12 @@ export class DaoBlockchain extends Blockchain {
         const targetKeys = Object.keys(data).sort();
         const expectedKeys = struct
             .fields
-            .map(f => ({ name: f.name, isOptional: f.type.endsWith('$') || f.type.endsWith('?') }))
+            .map(f => ({
+                name: f.name,
+                isOptional: f.type.endsWith('$'),
+                nullRequired: f.type.endsWith('?'),
+                type: f.type
+            }))
             .sort((a,b) => a.name > b.name ? 1 : -1);
 
         const missing = expectedKeys.filter(e => !e.isOptional && !targetKeys.includes(e.name));
@@ -491,8 +521,8 @@ export class DaoBlockchain extends Blockchain {
         const excess = targetKeys.filter(t => !expectedRawKeys.includes(t));
 
 
-        (expect(missing) as any)._toBeEmpty(`Expected params in call ${account.accountName}.${action} but were missing`);
-        (expect(excess) as any)._toBeEmpty(`Did not expect the following params in call ${account.accountName}.${action}`);
+        (expect(missing) as any)._toBePresent(account, action);
+        (expect(excess) as any)._toBeAbsent(account, action);
     }
 
     private createDaoAction(dao: Dao): TTransaction['actions'][number] {

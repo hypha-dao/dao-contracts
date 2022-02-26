@@ -16,7 +16,7 @@ async (dao: Dao, proposal: Document, type: string, environment: DaoBlockchain): 
   setDate(environment, next);
 
   await environment.daoContract.contract.closedocprop({
-    proposal_hash: proposal.hash
+    proposal_id: proposal.id
   }, dao.members[0].getPermissions());
 
   return last(getDocumentsByType(
@@ -31,7 +31,7 @@ async (dao: Dao, proposal: Document, type: string, environment: DaoBlockchain): 
     await environment.sendTransaction({
         actions: dao.members.map(m => environment.buildAction(environment.daoContract, 'vote', {
             voter: m.account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'pass',
             notes: 'votes pass'
         }))
@@ -44,7 +44,7 @@ export const createProposal =
 async (dao: Dao, proposal: Document, type: string, environment: DaoBlockchain): Promise<Document> => {
 
     await environment.daoContract.contract.propose({
-        dao_hash: dao.getHash(),
+        dao_id: dao.getId(),
         proposer: dao.members[0].account.accountName,
         proposal_type: type,
         content_groups: proposal.content_groups
@@ -62,7 +62,7 @@ export const proposeAndPass =
 async (dao: Dao, proposal: Document, type: string, environment: DaoBlockchain): Promise<Document> => {
 
     await environment.daoContract.contract.propose({
-        dao_hash: dao.getHash(),
+        dao_id: dao.getId(),
         proposer: dao.members[0].account.accountName,
         proposal_type: type,
         publish: true,

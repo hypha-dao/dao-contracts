@@ -46,10 +46,6 @@ export const getDocumentsByType = (documents: Array<Document>, documentType: str
     });
 }
 
-export const getDocumentByHash = (documents: Array<Document>, hash: string): Document => {
-    return documents.find(document => document.hash.toUpperCase() === hash.toUpperCase());
-}
-
 export const getDocumentById = (documents: Array<Document>, id: string): Document => {
     return documents.find(document => document.id === id);
 }
@@ -82,10 +78,10 @@ export const getEdgesByFilter = (edges: Array<Edge>, filter: EdgeFilter): Array<
 export const getNextPeriod = (environment: DaoBlockchain, currentPeriod: Document, edges?: Edge[], docs?: Document[]) => {
 
   let nextEdge = getEdgesByFilter(edges ?? environment.getDaoEdges(),
-                                  { from_node: currentPeriod.hash, edge_name: 'next' });
+                                  { from_node: currentPeriod.id, edge_name: 'next' });
 
   if (nextEdge.length !== 1) {
-    throw Error(`Period (${currentPeriod.hash}) doesn't have next edge`);
+    throw Error(`Period (${currentPeriod.id}) doesn't have next edge`);
   }
 
   const nextPeriod = getDocumentById(docs ?? environment.getDaoDocuments(),

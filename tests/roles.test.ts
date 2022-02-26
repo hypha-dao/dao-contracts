@@ -46,7 +46,7 @@ describe('Roles', () => {
         environment.setCurrentTime(now);
 
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
@@ -78,7 +78,7 @@ describe('Roles', () => {
 
         // Proposing
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
@@ -124,7 +124,7 @@ describe('Roles', () => {
 
         await proposeAndPass(
           dao,
-          getEditProposal(role.hash, newRoleTitle, newRoleTimeShare, newRoleSalary),
+          getEditProposal(role.id, newRoleTitle, newRoleTimeShare, newRoleSalary),
           'edit',
           environment
         );
@@ -168,7 +168,7 @@ describe('Roles', () => {
 
       await environment.daoContract.contract.suspend({
         proposer: suspender.account.accountName,
-        hash: role.hash,
+        document_id: role.id,
         reason: suspendReason
       }, getAccountPermission(suspender.account));
 
@@ -182,7 +182,7 @@ describe('Roles', () => {
       .toBe(suspendReason);
 
       expect(getContent(suspendDetails, 'original_document').value[1])
-      .toBe(role.hash);
+      .toBe(role.id);
 
       getDaoExpect(environment).toHaveEdge(suspendProp, role, 'suspend');
 
@@ -205,11 +205,11 @@ describe('Roles', () => {
 
       const assignmentProp = getAssignmentProposal({
         assignee: assignee.accountName,
-        role: suspendedRole.hash
+        role: suspendedRole.id
       });
 
       await expect(environment.daoContract.contract.propose({
-        dao_hash: dao.getHash(),
+        dao_id: dao.getId(),
         proposer: assignee.accountName,
         proposal_type: 'assignment',
         publish: true,

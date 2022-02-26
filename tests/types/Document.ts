@@ -1,8 +1,5 @@
-import { createHash } from 'crypto';
-
 export interface Document {
     id: string;
-    hash: string;
     creator: string;
     content_groups: ContentGroups;
     certificates: Array<unknown>,
@@ -33,7 +30,7 @@ type ContentValueTimePoint = ContentValueStringType<ContentType.TIME_POINT>;
 type ContentValueInt64 = ContentValueNumberType<ContentType.INT64>;
 type ContentValueChecksum256 = ContentValueStringType<ContentType.CHECKSUM256>;
 
-export type ContentValue = 
+export type ContentValue =
 // string
 ContentValueString | ContentValueAsset | ContentValueName | ContentValueTimePoint | ContentValueChecksum256
 // number
@@ -62,7 +59,7 @@ export const makeChecksum256Content = (label: string, value: string): Content  =
 
 export const makeContentGroup = (groupLabel: string | undefined, ...content: ContentGroup) : ContentGroup => {
     return [
-        ...(groupLabel !== undefined ? [ makeStringContent(CONTENT_GROUP_LABEL, groupLabel) ] : []), 
+        ...(groupLabel !== undefined ? [ makeStringContent(CONTENT_GROUP_LABEL, groupLabel) ] : []),
         ...content
     ];
 };
@@ -76,15 +73,4 @@ const valueToString = (value: ContentValue) => {
     }
 
     return `${value[0]},${val}`;
-};
-
-export const getHash = (document: Document) => {
-    const canonical = '[' + document.content_groups.map(cg => {
-        const content = cg.map(c => {
-            return `{${c.label}=[${valueToString(c.value)}]}`;
-        }).join(',');
-        return `[${content}]`;
-    }).join(',') + ']';
-
-    return createHash('sha256').update(canonical).digest('hex').toUpperCase();
 };
