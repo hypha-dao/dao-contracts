@@ -11,18 +11,18 @@
 #define VOTE_DATE "date"
 #define VOTE_NOTE "notes"
 
-namespace hypha 
+namespace hypha
 {
     Vote::Vote(hypha::dao& dao, uint64_t id)
     : TypedDocument(dao, id)
     {
         TRACE_FUNCTION()
     }
-    
+
     Vote::Vote(
-        hypha::dao& dao, 
-        const eosio::name voter, 
-        std::string vote, 
+        hypha::dao& dao,
+        const eosio::name voter,
+        std::string vote,
         Document& proposal,
         std::optional<std::string> notes
     )
@@ -32,7 +32,7 @@ namespace hypha
         // Could be replaced by i.e. proposal.hasVote(vote) when proposal is no longer just a "Document"
         // the goal is to have an easier API
         proposal.getContentWrapper().getOrFail(BALLOT_OPTIONS, vote, "Invalid vote");
-        
+
         auto daoHash = Edge::get(dao.get_self(), proposal.getID(), common::DAO).getToNode();
 
         EOS_CHECK(
@@ -52,7 +52,7 @@ namespace hypha
         std::vector<Edge> votes = dao.getGraph().getEdgesFrom(proposal.getID(), common::VOTE);
         for (auto vote : votes) {
             if (vote.getCreator() == voter) {
-                
+
                 Document voteDocument(dao.get_self(), vote.getToNode());
 
                 // Already voted, erase edges and allow to vote again.
@@ -100,7 +100,7 @@ namespace hypha
             }
         };
 
-        initializeDocument(dao, contentGroups, false);
+        initializeDocument(dao, contentGroups);
 
         // an edge from the member to the vote named vote
         // Note: This edge could already exist, as voteDocument is likely to be re-used.
@@ -121,8 +121,8 @@ namespace hypha
     {
         TRACE_FUNCTION()
         return getDocument().getContentWrapper().getOrFail(
-            CONTENT_GROUP_LABEL_VOTE, 
-            VOTE_LABEL, 
+            CONTENT_GROUP_LABEL_VOTE,
+            VOTE_LABEL,
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
         )->template getAs<std::string>();
     }
@@ -131,8 +131,8 @@ namespace hypha
     {
         TRACE_FUNCTION()
         return getDocument().getContentWrapper().getOrFail(
-            CONTENT_GROUP_LABEL_VOTE, 
-            VOTE_POWER, 
+            CONTENT_GROUP_LABEL_VOTE,
+            VOTE_POWER,
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
         )->template getAs<eosio::asset>();
     }
@@ -141,8 +141,8 @@ namespace hypha
     {
         TRACE_FUNCTION()
         return getDocument().getContentWrapper().getOrFail(
-            CONTENT_GROUP_LABEL_VOTE, 
-            VOTER_LABEL, 
+            CONTENT_GROUP_LABEL_VOTE,
+            VOTER_LABEL,
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
         )->template getAs<eosio::name>();
     }
@@ -151,10 +151,10 @@ namespace hypha
     {
         TRACE_FUNCTION()
         std::string vote = ContentWrapper(content).getOrFail(
-            CONTENT_GROUP_LABEL_VOTE, 
-            VOTE_LABEL, 
+            CONTENT_GROUP_LABEL_VOTE,
+            VOTE_LABEL,
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
-        )->template getAs<std::string>(); 
+        )->template getAs<std::string>();
         return "Vote: " + vote;
     }
 

@@ -9,7 +9,6 @@ namespace hypha
     class TypedDocument
     {
         public:
-            TypedDocument(dao& dao, const eosio::checksum256& hash);
             TypedDocument(dao& dao, uint64_t id);
             const std::string& getNodeLabel();
             Document& getDocument();
@@ -17,9 +16,8 @@ namespace hypha
         protected:
             TypedDocument(dao& dao);
             void initializeDocument(dao& dao, ContentGroups &content);
-            void initializeDocument(dao& dao, ContentGroups &content, bool failIfExists);
             dao& getDao() const;
-            std::optional<eosio::checksum256> documentExists(dao& dao, ContentGroups &content);
+            bool documentExists(dao& dao, const uint64_t& id);
             virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
 
         private:

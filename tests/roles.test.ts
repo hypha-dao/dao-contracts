@@ -46,11 +46,11 @@ describe('Roles', () => {
         environment.setCurrentTime(now);
 
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
-            ...testRole
+            content_groups: testRole.content_groups
         });
 
         let proposal = last(getDocumentsByType(
@@ -78,11 +78,11 @@ describe('Roles', () => {
 
         // Proposing
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
-            ...testRole
+            content_groups: testRole.content_groups
         });
 
         proposal = last(getDocumentsByType(
@@ -124,7 +124,7 @@ describe('Roles', () => {
 
         await proposeAndPass(
           dao,
-          getEditProposal(role.hash, newRoleTitle, newRoleTimeShare, newRoleSalary),
+          getEditProposal(role.id, newRoleTitle, newRoleTimeShare, newRoleSalary),
           'edit',
           environment
         );
@@ -168,7 +168,7 @@ describe('Roles', () => {
 
       await environment.daoContract.contract.suspend({
         proposer: suspender.account.accountName,
-        hash: role.hash,
+        document_id: role.id,
         reason: suspendReason
       }, getAccountPermission(suspender.account));
 
@@ -182,7 +182,7 @@ describe('Roles', () => {
       .toBe(suspendReason);
 
       expect(getContent(suspendDetails, 'original_document').value[1])
-      .toBe(role.hash);
+      .toBe(role.id);
 
       getDaoExpect(environment).toHaveEdge(suspendProp, role, 'suspend');
 
@@ -205,15 +205,15 @@ describe('Roles', () => {
 
       const assignmentProp = getAssignmentProposal({
         assignee: assignee.accountName,
-        role: suspendedRole.hash
+        role: suspendedRole.id
       });
 
       await expect(environment.daoContract.contract.propose({
-        dao_hash: dao.getHash(),
+        dao_id: dao.getId(),
         proposer: assignee.accountName,
         proposal_type: 'assignment',
         publish: true,
-        ...assignmentProp
+        content_groups: assignmentProp.content_groups
       })).rejects.toThrow('Cannot create assignment proposal of suspened role');
   });
 });
