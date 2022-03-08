@@ -42,7 +42,7 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
-        document = Document(dao.get_self(), dao.get_self(), content);
+        document = Document(dao.get_self(), dao.get_self(), processContent(content));
     }
 
     template<typename std::string& T>
