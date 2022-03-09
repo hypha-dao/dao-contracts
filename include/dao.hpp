@@ -25,6 +25,7 @@ using eosio::name;
 namespace hypha
 {
    class Assignment;
+   class Member;
 
    CONTRACT dao : public eosio::contract
    {
@@ -110,10 +111,11 @@ namespace hypha
       ACTION setalert(const eosio::name &level, const std::string &content);
       ACTION remalert(const std::string &notes);
 
-      /**Testenv only
-      ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
       ACTION clean();
-      ACTION addedge(uint64_t from, uint64_t& to, const name& edge_name);
+      ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
+      ACTION adddoc(Document& doc);
+      ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
+      /**Testenv only
       ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
       ACTION deletetok(asset asset, name contract) {
 
@@ -219,6 +221,8 @@ namespace hypha
       uint64_t getRootID();
 
       std::optional<uint64_t> getDAOID(const name& daoName);
+
+      Member getOrCreateMember(const name& member);
 
       void checkAdminsAuth(uint64_t dao_id);
 

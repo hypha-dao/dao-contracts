@@ -38,6 +38,9 @@ namespace common
     //365.25*24*60*60
     constexpr int64_t YEAR_DURATION_SEC = 31557600;
 
+    constexpr size_t MAX_PROPOSAL_TITLE_CHARS = 50;
+    constexpr size_t MAX_PROPOSAL_DESC_CHARS = 2000;
+
     // 49.36 phases per annum, so each phase is 2.026% of the total
     //const float PHASE_TO_YEAR_RATIO = 0.02026009582;
 
@@ -108,6 +111,7 @@ namespace common
     // graph edges hanging off of primary DHO node
     constexpr name BADGE_NAME = name("badge");
     constexpr name PROPOSAL = name("proposal");
+    constexpr name VOTABLE = name("votable");
     constexpr name FAILED_PROPS = name("failedprops");
     constexpr name PASSED_PROPS = name("passedprops");
     constexpr name MEMBER = name("member");

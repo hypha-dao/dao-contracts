@@ -41,10 +41,26 @@ namespace hypha
 
         const name commentSection = _newCommentSection();
 
+        const std::string title = getTitle(proposalContent);
+
+        //Verify title lenght is less or equal than 50 chars
+        EOS_CHECK(
+            title.length() <= common::MAX_PROPOSAL_TITLE_CHARS,
+            util::to_str("Proposal title length has to be less or equal to ", common::MAX_PROPOSAL_TITLE_CHARS, " characters")
+        )
+
+        const std::string description = getDescription(proposalContent);
+        
+         //Verify description lenght is less or equal than 50 chars
+        EOS_CHECK(
+            description.length() <= common::MAX_PROPOSAL_DESC_CHARS,
+            util::to_str("Proposal description length has to be less or equal to ", common::MAX_PROPOSAL_DESC_CHARS, " characters")
+        )
+
         contentGroups.push_back(makeSystemGroup(proposer,
                                                 getProposalType(),
-                                                getTitle(proposalContent),
-                                                getDescription(proposalContent),
+                                                title,
+                                                description,
                                                 commentSection));
         
         contentGroups.push_back(makeBallotGroup());
@@ -86,6 +102,8 @@ namespace hypha
         }
 
         Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), root, common::DAO);
+
+        Edge::write(m_dao.get_self(), proposer, root, proposalNode.getID(), common::VOTABLE);
 
         return proposalNode;
     }

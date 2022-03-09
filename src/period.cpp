@@ -150,14 +150,14 @@ namespace hypha
           "Count has to be greater or equal to 0"
         );
 
-        Period next = *this;
+        int64_t nextID = id;
 
         while (count-- > 0)
         {
-            if (auto [hasNext, edge] = Edge::getIfExists(m_dao->get_self(), next.getID (), common::NEXT);
+            if (auto [hasNext, edge] = Edge::getIfExists(m_dao->get_self(), nextID, common::NEXT);
                 hasNext) 
             {
-                next = Period(m_dao, edge.getToNode());
+                nextID = edge.getToNode();
             }
             else
             {
@@ -165,7 +165,7 @@ namespace hypha
             }
         }
 
-        return next;
+        return Period(m_dao, nextID);
     }
 
     int64_t Period::getPeriodCountTo(Period& other)

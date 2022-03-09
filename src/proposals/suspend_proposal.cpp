@@ -82,6 +82,11 @@ namespace hypha
       case common::ROLE_NAME.value:
         //We don't have to do anything special for roles
         break;
+      case common::BADGE_NAME.value:        
+        break;
+      case common::ASSIGN_BADGE.value:
+        
+        break;
       default:
         EOS_CHECK(
           false,

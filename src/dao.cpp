@@ -22,47 +22,52 @@
 
 namespace hypha
 {
+  ACTION dao::clean()
+  {
+    require_auth(get_self());
+
+    Document::document_table docs(get_self(), get_self().value);
+
+    for (auto it = docs.begin(); it != docs.end(); ) {
+      it = docs.erase(it);
+    }
+
+    Edge::edge_table edges(get_self(), get_self().value);
+
+    for (auto it = edges.begin(); it != edges.end(); ) {
+      it = edges.erase(it);
+    }
+  }
+
+  ACTION dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
+  {
+    require_auth(get_self());
+
+    Edge(get_self(), get_self(), from, to, edge_name);
+  }
+
+  ACTION dao::adddoc(Document& doc) 
+  {
+    require_auth(get_self());
+    Document::document_table d_t(get_self(), get_self().value);
+    d_t.emplace(get_self(), [&doc](Document& newDoc){ 
+      newDoc = std::move(doc);
+    });
+  }
+
+  ACTION
+  dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
+  {
+    require_auth(get_self());
+
+    //Auto enroll      
+    auto mem = getOrCreateMember(member);
+
+    mem.apply(dao_id, "Auto enrolled member");
+    mem.enroll(enroller, dao_id, "Auto enrolled member");
+  }
+
    /**Testenv only 
-   
-   ACTION dao::clean()
-   {
-     require_auth(get_self());
-
-     Document::document_table docs(get_self(), get_self().value);
-
-     for (auto it = docs.begin(); it != docs.end(); ) {
-       it = docs.erase(it);
-     }
-
-     Edge::edge_table edges(get_self(), get_self().value);
-
-     for (auto it = edges.begin(); it != edges.end(); ) {
-       it = edges.erase(it);
-     }
-   }
-   
-   ACTION
-   dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
-   {
-     require_auth(get_self());
-
-     //Auto enroll      
-     std::unique_ptr<Member> mem;
-     
-     const checksum256 memberHash = Member::calcHash(member);
- 
-     if (Document::exists(get_self(), memberHash)) {
-       mem = std::make_unique<Member>(*this, memberHash);
-     }
-     else {
-       mem = std::make_unique<Member>(*this, member, member);
-     }
-
-     Document daoDoc(get_self(), dao_id);
-
-     mem->apply(daoDoc.getID(), "Auto enrolled member");
-     mem->enroll(enroller, daoDoc.getID(), "Auto enrolled member");
-   }
 
    ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
    {
@@ -608,18 +613,10 @@ namespace hypha
    {
       TRACE_FUNCTION()
       require_auth(applicant);
-      Document daoDoc(get_self(), dao_id);
 
-      std::unique_ptr<Member> member;
+      auto member = getOrCreateMember(applicant);
 
-      if (Member::exists(*this, applicant)) {
-        member = std::make_unique<Member>(*this, getMemberID(applicant));
-      }
-      else {
-        member = std::make_unique<Member>(*this, applicant, applicant);
-      }
-
-      member->apply(daoDoc.getID(), content);
+      member.apply(dao_id, content);
    }
 
    void dao::enroll(const eosio::name &enroller, uint64_t dao_id, const eosio::name &applicant, const std::string &content)
@@ -628,14 +625,12 @@ namespace hypha
 
       require_auth(enroller);
 
-      Document daoDoc(get_self(), dao_id);
-
-      checkEnrollerAuth(daoDoc.getID(), enroller);
+      checkEnrollerAuth(dao_id, enroller);
 
       auto memberID = getMemberID(applicant);
 
       Member member = Member(*this, memberID);
-      member.enroll(enroller, daoDoc.getID(), content);
+      member.enroll(enroller, dao_id, content);
    }
 
    bool dao::isPaused() { return false; }
@@ -685,6 +680,12 @@ namespace hypha
      TRACE_FUNCTION()
      checkAdminsAuth(dao_id);
      auto settings = getSettingsDocument(dao_id);
+     //Only hypha dao should be able to use this flag
+     EOS_CHECK(
+       key != "is_hypha" ||
+       settings->getOrFail<eosio::name>(DAO_NAME) ==  "hypha"_n,
+       "Only hypha dao is allowed to add this setting"
+     )
      settings->setSetting(group.value_or(string{"settings"}), Content{key, value});
    }
 
@@ -693,6 +694,12 @@ namespace hypha
      TRACE_FUNCTION()     
      checkAdminsAuth(dao_id);
      auto settings = getSettingsDocument(dao_id);
+     //Only hypha dao should be able to use this flag
+     EOS_CHECK(
+       key != "is_hypha" ||
+       settings->getOrFail<eosio::name>(DAO_NAME) ==  "hypha"_n,
+       "Only hypha dao is allowed to add this setting"
+     )
      settings->addSetting(group.value_or(string{"settings"}), Content{key, value});
    }
 
@@ -724,12 +731,26 @@ namespace hypha
    {
      TRACE_FUNCTION()
      checkAdminsAuth(dao_id);
+     auto mem = getOrCreateMember(enroller_account);
+     if (!Member::isMember(*this, dao_id, enroller_account)) {
+        if (!Edge::exists(get_self(), dao_id, mem.getID(), common::APPLICANT)) {
+          mem.apply(dao_id, "Auto enrolled member");
+        }
+        mem.enroll(get_self(), dao_id, "Auto enrolled member");
+     }
      Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER);
    }
    void dao::addadmin(const uint64_t dao_id, name admin_account)
    {
      TRACE_FUNCTION()
      checkAdminsAuth(dao_id);
+     auto mem = getOrCreateMember(admin_account);
+     if (!Member::isMember(*this, dao_id, admin_account)) {
+        if (!Edge::exists(get_self(), dao_id, mem.getID(), common::APPLICANT)) {
+          mem.apply(dao_id, "Auto enrolled member");
+        }
+        mem.enroll(get_self(), dao_id, "Auto enrolled member");
+     }
      Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(admin_account), common::ADMIN);
    }
    void dao::remenroller(const uint64_t dao_id, name enroller_account)
@@ -1243,6 +1264,16 @@ namespace hypha
     return *rootID;
   }
 
+  Member dao::getOrCreateMember(const name& member)
+  {
+    if (Member::exists(*this, member)) {
+      return Member(*this, getMemberID(member));
+    }
+    else {
+      return Member(*this, member, member);
+    }
+  }
+
   std::optional<uint64_t> dao::getDAOID(const name& daoName)
   {
     return getNameID<dao_table>(daoName);
@@ -1275,6 +1306,11 @@ namespace hypha
   void dao::checkAdminsAuth(uint64_t dao_id)
   {
     TRACE_FUNCTION()
+
+    //Contract account has admin perms over all DAO's
+    if (eosio::has_auth(get_self())){
+      return;
+    }
 
     auto adminEdges = m_documentGraph.getEdgesFrom(dao_id, common::ADMIN);
 

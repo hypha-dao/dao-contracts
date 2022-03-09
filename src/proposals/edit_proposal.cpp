@@ -72,14 +72,14 @@ namespace hypha
                            
             auto currentTimeSecs = eosio::current_time_point().sec_since_epoch();
 
-            auto lastPeriodStartSecs = assignment.getLastPeriod()
-                                                  .getStartTime()
-                                                  .sec_since_epoch();
+            auto lastGracePeriodEndSecs = assignment.getLastPeriod()
+                                             .getNthPeriodAfter(2)
+                                             .getEndTime()
+                                             .sec_since_epoch();
 
             EOS_CHECK(
-              lastPeriodStartSecs > currentTimeSecs, 
-              "There has to be at least 1 remaining period before editing/extending an assignment"
-              ", create a new one instead"
+              lastGracePeriodEndSecs > currentTimeSecs, 
+              "Assignment extension grace period (2 periods after expiration) is over, create a new one instead"
             );
             
             original = std::move(*static_cast<Document*>(&assignment));
