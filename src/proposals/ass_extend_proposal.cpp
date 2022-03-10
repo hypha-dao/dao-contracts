@@ -93,7 +93,7 @@ namespace hypha
         
         EOS_CHECK(
           edges.size() == 1, 
-          "Missing edge from extension proposal: " + util::to_str(proposal.getHash()) + " to original document"
+          "Missing edge to original document from extension proposal: " + util::to_str(proposal.getID()) + " to original document"
         );
 
         Document original (m_dao.get_self(), edges[0].getToNode());

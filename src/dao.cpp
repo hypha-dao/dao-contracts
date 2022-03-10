@@ -202,7 +202,7 @@ namespace hypha
               Content(CONTENT_GROUP_LABEL, DETAILS),
               Content(PERIOD_COUNT, assignment.getPeriodCount() + additional_periods),
               Content(TITLE, std::string("Assignment Extension Proposal")),
-              Content(ORIGINAL_DOCUMENT, assignment.getHash())
+              Content(ORIGINAL_DOCUMENT, static_cast<int64_t>(assignment.getID()))
         }
       };
 
@@ -428,7 +428,7 @@ namespace hypha
 
          //If the last used time share is different from current time share
          //let's update the edge
-         if (lastUsedTimeShare->getHash() != current.getHash())
+         if (lastUsedTimeShare->getID() != current.getID())
          {
             Edge::get(get_self(), assignment.getID(), common::CURRENT_TIME_SHARE).erase();
             Edge::write(get_self(), get_self(), assignment.getID(), lastUsedTimeShare->getID(), common::CURRENT_TIME_SHARE);
@@ -449,7 +449,7 @@ namespace hypha
 
       //If node_label is not present for any reason fallback to the assignment hash
       if (assignmentNodeLabel.empty()) {
-        assignmentNodeLabel = to_str(assignment.getHash());
+        assignmentNodeLabel = to_str(assignment.getID());
       }
 
       string memo = assignmentNodeLabel + ", period: " + periodToClaim.value().getNodeLabel();      
@@ -946,7 +946,7 @@ namespace hypha
       ContentGroups settingCgs{
           ContentGroup{
               Content(CONTENT_GROUP_LABEL, SETTINGS),
-              Content(ROOT_NODE, util::to_str(rootDoc.getHash()))},
+              Content(ROOT_NODE, util::to_str(rootDoc.getID()))},
           ContentGroup{
               Content(CONTENT_GROUP_LABEL, SYSTEM),
               Content(TYPE, common::SETTINGS_EDGE),
@@ -1057,7 +1057,7 @@ namespace hypha
 
         EOS_CHECK(
           assignmentExpirationTime.sec_since_epoch() > eosio::current_time_point().sec_since_epoch(),
-          to_str("Cannot adjust expired assignment: ", assignment.getHash(), " last period: ", lastPeriod.getHash())
+          to_str("Cannot adjust expired assignment: ", assignment.getID(), " last period: ", lastPeriod.getID())
         )
 
         auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();

@@ -46,7 +46,13 @@ namespace hypha
             Period period(&m_dao, std::get<int64_t>(startPeriod->value));
         } else {
             // default START_PERIOD to next period
-            ContentWrapper::insertOrReplace(*detailsGroup, Content{START_PERIOD, Period::current(&m_dao, m_daoID).next().getHash()});
+            ContentWrapper::insertOrReplace(
+                *detailsGroup, 
+                Content{
+                    START_PERIOD, 
+                    static_cast<int64_t>(Period::current(&m_dao, m_daoID).next().getID())
+                }
+            );
         }
 
         // PERIOD_COUNT - number of periods the assignment is valid for
