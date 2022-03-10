@@ -407,6 +407,26 @@ namespace hypha
         VoteTally(m_dao, proposal, m_daoSettings);
 
         postProposeImpl(proposal);
+
+        //Schedule a trx to close the proposal
+        eosio::transaction trx;
+        trx.actions.emplace_back(eosio::action(
+            permission_level(m_dao.get_self(), "active"_n),
+            m_dao.get_self(),
+            "closedocprop"_n,
+            std::make_tuple(proposal.getID())
+        ));
+
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+
+        constexpr auto aditionalDelaySec = 60;
+        trx.delay_sec = (expiration.sec_since_epoch() - eosio::current_time_point().sec_since_epoch()) + aditionalDelaySec;
+
+        auto nextID = m_dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
+
+        trx.send(nextID, m_dao.get_self());
+
+        m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
     }
 
     name Proposal::_newCommentSection() {

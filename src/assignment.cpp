@@ -16,10 +16,7 @@
 namespace hypha
 {
     Assignment::Assignment(dao *dao, uint64_t id) 
-    : Document(dao->get_self(), id),
-      m_dao{dao},
-      m_daoID{Edge::get(dao->get_self(), getID(), common::DAO).getToNode()},
-      m_daoSettings{dao->getSettingsDocument(m_daoID)}
+    : RecurringActivity(dao, id)
     {
         TRACE_FUNCTION()
         auto [idx, docType] = getContentWrapper().get(SYSTEM, TYPE);
@@ -29,45 +26,7 @@ namespace hypha
                      "invalid document type. Expected: " + common::ASSIGNMENT.to_string() +
                          "; actual: " + docType->getAs<eosio::name>().to_string());
     }
-
-    Member Assignment::getAssignee()
-    { 
-        TRACE_FUNCTION()
-        return Member(*m_dao, Edge::get(m_dao->get_self(), getID(), common::ASSIGNEE_NAME).getToNode());
-    }
-
-    int64_t Assignment::getPeriodCount() 
-    {
-        TRACE_FUNCTION()
-        return getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
-    }
-
-    // TODO: move to proposal class (needs some further design)
-    eosio::time_point Assignment::getApprovedTime()
-    { 
-        TRACE_FUNCTION()
-        auto cw = getContentWrapper();
-
-        auto [detailsIdx, _] = cw.getGroup(DETAILS);
-
-        EOS_CHECK(detailsIdx != -1, util::to_str("Missing details group for assignment [", getID(), "]"));
-
-        if (auto [idx, legacyCreatedDate] = cw.get(SYSTEM, "legacy_object_created_date"); legacyCreatedDate)
-        {
-            EOS_CHECK(std::holds_alternative<eosio::time_point>(legacyCreatedDate->value), "fatal error: expected time_point type: " + legacyCreatedDate->label);
-            return std::get<eosio::time_point>(legacyCreatedDate->value);
-        }
-        //All assignments should eventually contain this item 
-        else if (auto [approvedIdx, approvedDate] = cw.get(SYSTEM, common::APPROVED_DATE);
-                 approvedDate)
-        {
-          return approvedDate->getAs<eosio::time_point>();
-        }
-                
-        //Fallback for old assignments without time share document
-        return Edge::get(m_dao->get_self(), getAssignee().getID(), common::ASSIGNED).getCreated();
-    }
-
+    
     bool Assignment::isClaimed(Period *period)
     {
         TRACE_FUNCTION()
@@ -132,26 +91,6 @@ namespace hypha
     {
         return getContentWrapper()
                .getOrFail(DETAILS, common::PEG_SALARY_PER_PERIOD)->getAs<eosio::asset>();
-    }
-
-    Period Assignment::getStartPeriod()
-    {
-      TRACE_FUNCTION()
-      return Period(
-        m_dao, 
-        static_cast<uint64_t>(
-          getContentWrapper()
-          .getOrFail(DETAILS, START_PERIOD)
-          ->getAs<int64_t>()
-        )
-      );
-    }
-    
-    Period Assignment::getLastPeriod()
-    {
-      auto start = getStartPeriod();
-      auto periods = getPeriodCount();
-      return start.getNthPeriodAfter(periods-1);
     }
 
     TimeShare Assignment::getInitialTimeShare() 

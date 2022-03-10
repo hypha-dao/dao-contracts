@@ -25,6 +25,7 @@ using eosio::name;
 namespace hypha
 {
    class Assignment;
+   class RecurringActivity;
    class Member;
 
    CONTRACT dao : public eosio::contract
@@ -181,7 +182,7 @@ namespace hypha
                        const eosio::name &paymentType,
                        const AssetBatch& daoTokens);
 
-      void modifyCommitment(Assignment& assignment, 
+      void modifyCommitment(RecurringActivity& assignment, 
                             int64_t commitment,
                             std::optional<eosio::time_point> fixedStartDate,
                             std::string_view modifier);

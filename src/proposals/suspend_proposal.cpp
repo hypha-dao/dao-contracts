@@ -12,6 +12,7 @@
 #include <assignment.hpp>
 #include <period.hpp>
 #include <logger/logger.hpp>
+#include <recurring_activity.hpp>
 
 namespace hypha
 {
@@ -26,9 +27,9 @@ namespace hypha
       )
 
       // original_document is a required hash
-      auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>();
+      auto originalDocID = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>();
 
-      Document originalDoc(m_dao.get_self(), originalDocHash);
+      Document originalDoc(m_dao.get_self(), originalDocID);
 
       //Verify if this is a passed proposal
       EOS_CHECK(
@@ -52,11 +53,7 @@ namespace hypha
       auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
       EOS_CHECK(
-        state != common::STATE_PROPOSED &&
-        state != common::STATE_WITHDRAWED && 
-        state != common::STATE_SUSPENDED &&
-        state != common::STATE_EXPIRED &&
-        state != common::STATE_REJECTED,
+        state == common::STATE_APPROVED,
         to_str("Cannot open suspend proposals on ", state, " documents")
       )
 
@@ -64,9 +61,10 @@ namespace hypha
       
       switch (type.value)
       {
+      case common::ASSIGN_BADGE.value:
       case common::ASSIGNMENT.value: {
         
-        Assignment assignment(&m_dao, originalDoc.getID());
+        RecurringActivity assignment(&m_dao, originalDocID);
 
         auto currentTimeSecs = eosio::current_time_point().sec_since_epoch();
 
@@ -83,9 +81,6 @@ namespace hypha
         //We don't have to do anything special for roles
         break;
       case common::BADGE_NAME.value:        
-        break;
-      case common::ASSIGN_BADGE.value:
-        
         break;
       default:
         EOS_CHECK(
@@ -130,17 +125,16 @@ namespace hypha
 
       ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_SUSPENDED });
 
-      originalDoc = m_dao.getGraph().updateDocument(originalDoc.getCreator(), 
-                                                    originalDoc.getID(), 
-                                                    ocw.getContentGroups());
-
+      originalDoc.update(originalDoc.getCreator(), std::move(originalDoc.getContentGroups()));
+      
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
       
       switch (type.value)
       {
+      case common::ASSIGN_BADGE.value:
       case common::ASSIGNMENT.value: {
 
-        Assignment assignment(&m_dao, originalDoc.getID());
+        RecurringActivity assignment(&m_dao, originalDoc.getID());
 
         auto cw = assignment.getContentWrapper();
 
@@ -164,15 +158,18 @@ namespace hypha
           originalDoc = m_dao.getGraph().updateDocument(assignment.getCreator(), 
                                                          assignment.getID(), 
                                                          cw.getContentGroups());
-
-          assignment = Assignment(&m_dao, originalDoc.getID());
         }
 
-        m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
+        if (type == common::ASSIGNMENT) {
+            //This makes the last period partially claimable to the point where the assignment is suspended
+            m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
+        }
       } break;
       case common::ROLE_NAME.value: {
         //We don't have to do anything special for roles
       }  break;
+      case common::BADGE_NAME.value:
+        break;
       default: {
         EOS_CHECK(
           false,

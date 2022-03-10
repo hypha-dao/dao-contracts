@@ -6,7 +6,7 @@
 #include <eosio/crypto.hpp>
 #include <period.hpp>
 #include <member.hpp>
-#include <document_graph/document.hpp>
+#include <recurring_activity.hpp>
 
 namespace hypha
 {
@@ -14,19 +14,13 @@ namespace hypha
     class TimeShare;
     class Settings;
 
-    class Assignment : public Document
+    class Assignment : public RecurringActivity
     {
     public:
         Assignment(dao *dao, uint64_t id);
         
         std::optional<Period> getNextClaimablePeriod ();
         bool isClaimed (Period* period);
-        Period getStartPeriod();
-        Period getLastPeriod();
-        Member getAssignee();
-        eosio::name &getType();
-        eosio::time_point getApprovedTime();
-        int64_t getPeriodCount();
 
         TimeShare getInitialTimeShare();
         TimeShare getCurrentTimeShare();
@@ -36,12 +30,8 @@ namespace hypha
         eosio::asset getVoiceSalary();
         eosio::asset getPegSalary();
 
-        dao *m_dao;
-
         inline uint64_t getDaoID() { return m_daoID; }
     private: 
-        uint64_t m_daoID;
-        Settings* m_daoSettings;
         eosio::asset getAsset (std::string_view key);
     };
 } // namespace hypha

@@ -80,10 +80,11 @@ namespace common
     constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
     constexpr        auto STATE = "state";
     constexpr        auto STATE_PROPOSED = "proposed";
+    constexpr        auto STATE_ARCHIVED = "archived";
+    constexpr        auto STATE_DRAFTED = "drafted";
     constexpr        auto STATE_APPROVED = "approved";
     constexpr        auto STATE_REJECTED = "rejected";
     constexpr        auto STATE_SUSPENDED = "suspended";
-    constexpr        auto STATE_EXPIRED = "expired";
     constexpr        auto STATE_WITHDRAWED = "withdrawed";
     
     constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";

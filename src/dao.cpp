@@ -17,6 +17,7 @@
 #include <member.hpp>
 #include <period.hpp>
 #include <assignment.hpp>
+#include <recurring_activity.hpp>
 #include <time_share.hpp>
 #include <settings.hpp>
 
@@ -256,27 +257,10 @@ namespace hypha
      ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
  
      ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_WITHDRAWED });
- 
-     m_documentGraph.updateDocument(assignment.getCreator(), 
-                                    assignment.getID(), 
-                                    cw.getContentGroups()).getHash();
- 
-     assignment = Assignment(this, document_id);
-     
-     //This has to be the last step, since adjustcmtmnt could change the assignment hash
-     //to old assignments
-     ContentGroups adjust {
-       ContentGroup {
-         //We might want to support uint64_t types as well altough int64_t should be enought to store
-         //document ids
-         Content { ASSIGNMENT_STRING, static_cast<int64_t>(document_id) },
-         Content { NEW_TIME_SHARE, 0 },
-         Content { common::ADJUST_MODIFIER, common::MOD_WITHDRAW },
-       }
-     };
-
-    
-    adjustcmtmnt(owner, adjust);
+  
+     assignment.update(assignment.getCreator(), std::move(assignment.getContentGroups()));
+              
+     modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
    }
 
    void dao::suspend(name proposer, uint64_t document_id, string reason)
@@ -1048,7 +1032,7 @@ namespace hypha
 
       Assignment assignment = Assignment(
         this,
-      static_cast<uint64_t>(cw.getOrFail(i, "assignment").second->getAs<int64_t>())
+        static_cast<uint64_t>(cw.getOrFail(i, "assignment").second->getAs<int64_t>())
       );
 
       EOS_CHECK(assignment.getAssignee().getAccount() == issuer,
@@ -1079,11 +1063,7 @@ namespace hypha
         auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
         EOS_CHECK(
-          state != common::STATE_PROPOSED &&
-          state != common::STATE_WITHDRAWED && 
-          state != common::STATE_SUSPENDED &&
-          state != common::STATE_EXPIRED &&
-          state != common::STATE_REJECTED,
+          state == common::STATE_APPROVED,
           to_str("Cannot adjust commitment for ", state, " assignments")
         )
       }
@@ -1116,6 +1096,13 @@ namespace hypha
       detailsGroup != nullptr,
       "Missing details group from assignment"
     );
+
+    auto state = cw.getOrFail(detailsIdx, common::STATE).second->getAs<string>();
+
+     EOS_CHECK(
+       state == common::STATE_APPROVED,
+       to_str("Cannot change deferred percentage on", state, " assignments")
+     )
 
     auto approvedDeferredPerc = cw.getOrFail(detailsIdx, common::APPROVED_DEFERRED)
                                   .second->getAs<int64_t>();
@@ -1175,23 +1162,11 @@ namespace hypha
     m_documentGraph.updateDocument(issuer, assignment.getID(), cw.getContentGroups());
   }
 
-   void dao::modifyCommitment(Assignment& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
+   void dao::modifyCommitment(RecurringActivity& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
    {
       TRACE_FUNCTION()
       
       ContentWrapper assignmentCW = assignment.getContentWrapper();
-
-      //Should use the role edge instead of the role content item
-      //in case role document is modified (causes it's hash to change)
-      auto assignmentToRoleEdge = m_documentGraph.getEdgesFrom(assignment.getID(), common::ROLE_NAME);
-      
-      EOS_CHECK(
-        !assignmentToRoleEdge.empty(),
-        to_str("Missing 'role' edge from assignment: ", assignment.getHash())
-      )
-
-      Document roleDocument(get_self(), assignmentToRoleEdge.at(0).getToNode());
-      auto role = roleDocument.getContentWrapper();
 
       //Check min_time_share_x100 <= new_time_share_x100 <= time_share_x100
       int64_t originalTimeShare = assignmentCW.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
@@ -1214,16 +1189,16 @@ namespace hypha
 
       TimeShare lastTimeShare(get_self(), lastTimeShareEdge.getToNode());
 
-      if (fixedStartDate)
-      {
-        time_point lastStartDate = lastTimeShare.getContentWrapper()
+      time_point lastStartDate = lastTimeShare.getContentWrapper()
                                                 .getOrFail(DETAILS, TIME_SHARE_START_DATE)
                                                 ->getAs<time_point>();
-
+      if (fixedStartDate)
+      {
         startDate = *fixedStartDate;
-        EOS_CHECK(lastStartDate.sec_since_epoch() < startDate.sec_since_epoch(),
-                      "New time share start date must be greater than the previous time share start date");
       }
+
+      EOS_CHECK(lastStartDate.sec_since_epoch() < startDate.sec_since_epoch(),
+                "New time share start date must be greater than he previous time share start date");
 
       int64_t lastTimeSharex100 = lastTimeShare.getContentWrapper()
                                                .getOrFail(DETAILS, TIME_SHARE)

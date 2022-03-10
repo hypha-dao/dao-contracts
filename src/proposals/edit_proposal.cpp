@@ -94,7 +94,8 @@ namespace hypha
         auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
         EOS_CHECK(
-          state == common::STATE_APPROVED,
+          state == common::STATE_APPROVED ||
+          state == common::STATE_ARCHIVED, //We could still extend after the assignment expires
           to_str("Cannot open edit proposals on ", state, " documents")
         )
 
@@ -125,6 +126,7 @@ namespace hypha
             }
         }
 
+        //Warning: This will automatically change the state of the original document to approved
         auto ignoredDetailsItems = {ORIGINAL_DOCUMENT,
                                     common::BALLOT_TITLE,
                                     common::BALLOT_DESCRIPTION};
