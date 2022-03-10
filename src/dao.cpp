@@ -222,7 +222,7 @@ namespace hypha
 
      EOS_CHECK(
        assignee == owner, 
-       to_str("Only the member [", assignee.to_string() ,"] can withdraw the assignment [", document_id, "]")
+       util::to_str("Only the member [", assignee.to_string() ,"] can withdraw the assignment [", document_id, "]")
      );
 
      eosio::require_auth(owner);
@@ -233,7 +233,7 @@ namespace hypha
 
      EOS_CHECK(
        state == common::STATE_APPROVED,
-       to_str("Cannot withdraw ", state, " assignments")
+       util::to_str("Cannot withdraw ", state, " assignments")
      )
 
      auto originalPeriods = assignment.getPeriodCount();
@@ -249,7 +249,7 @@ namespace hypha
 
      EOS_CHECK(
        originalPeriods >= periodsToCurrent,
-       to_str("Withdrawal of expired assignment: ", document_id, " is not allowed")
+       util::to_str("Withdrawal of expired assignment: ", document_id, " is not allowed")
      );
 
      auto detailsGroup = cw.getGroupOrFail(DETAILS);
@@ -258,7 +258,7 @@ namespace hypha
  
      ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_WITHDRAWED });
   
-     assignment.update(assignment.getCreator(), std::move(assignment.getContentGroups()));
+     assignment.update();
               
      modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
    }
@@ -276,7 +276,7 @@ namespace hypha
 
      EOS_CHECK(
        Member::isMember(*this, daoID, proposer), 
-       to_str("Only members are allowed to propose suspensions")
+       util::to_str("Only members are allowed to propose suspensions")
      );
 
      eosio::require_auth(proposer);
@@ -449,7 +449,7 @@ namespace hypha
 
       //If node_label is not present for any reason fallback to the assignment hash
       if (assignmentNodeLabel.empty()) {
-        assignmentNodeLabel = to_str(assignment.getID());
+        assignmentNodeLabel = util::to_str(assignment.getID());
       }
 
       string memo = assignmentNodeLabel + ", period: " + periodToClaim.value().getNodeLabel();      
@@ -772,7 +772,7 @@ namespace hypha
 
       EOS_CHECK(
         detailsIdx != -1,
-        to_str("Missing Details Group")
+        util::to_str("Missing Details Group")
       )
 
       auto daoName = configCW.getOrFail(detailsIdx, DAO_NAME).second;
@@ -1057,14 +1057,14 @@ namespace hypha
 
         EOS_CHECK(
           assignmentExpirationTime.sec_since_epoch() > eosio::current_time_point().sec_since_epoch(),
-          to_str("Cannot adjust expired assignment: ", assignment.getID(), " last period: ", lastPeriod.getID())
+          util::to_str("Cannot adjust expired assignment: ", assignment.getID(), " last period: ", lastPeriod.getID())
         )
 
         auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
         EOS_CHECK(
           state == common::STATE_APPROVED,
-          to_str("Cannot adjust commitment for ", state, " assignments")
+          util::to_str("Cannot adjust commitment for ", state, " assignments")
         )
       }
     
@@ -1101,7 +1101,7 @@ namespace hypha
 
      EOS_CHECK(
        state == common::STATE_APPROVED,
-       to_str("Cannot change deferred percentage on", state, " assignments")
+       util::to_str("Cannot change deferred percentage on", state, " assignments")
      )
 
     auto approvedDeferredPerc = cw.getOrFail(detailsIdx, common::APPROVED_DEFERRED)
@@ -1109,15 +1109,15 @@ namespace hypha
 
     EOS_CHECK(
       new_deferred_perc_x100 >= approvedDeferredPerc,
-      to_str("New percentage has to be greater or equal to approved percentage: ", approvedDeferredPerc)
+      util::to_str("New percentage has to be greater or equal to approved percentage: ", approvedDeferredPerc)
     )
 
     const int64_t UPPER_LIMIT = 100;
 
     EOS_CHECK(
       approvedDeferredPerc <= new_deferred_perc_x100 && new_deferred_perc_x100 <= UPPER_LIMIT,
-      to_str("New percentage is out of valid range [", 
-             approvedDeferredPerc, " - ", UPPER_LIMIT, "]:", new_deferred_perc_x100)
+      util::to_str("New percentage is out of valid range [", 
+                   approvedDeferredPerc, " - ", UPPER_LIMIT, "]:", new_deferred_perc_x100)
     )
 
     asset usdPerPeriod = cw.getOrFail(detailsIdx, USD_SALARY_PER_PERIOD)
@@ -1159,7 +1159,7 @@ namespace hypha
       denormalizeToken(pegVal, pegToken)
     });
 
-    m_documentGraph.updateDocument(issuer, assignment.getID(), cw.getContentGroups());
+    assignment.update();
   }
 
    void dao::modifyCommitment(RecurringActivity& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
@@ -1174,12 +1174,12 @@ namespace hypha
               
       EOS_CHECK(
         commitment >= minTimeShare,
-        to_str(NEW_TIME_SHARE, " must be greater than or equal to: ", minTimeShare, " You submitted: ", commitment)
+        util::to_str(NEW_TIME_SHARE, " must be greater than or equal to: ", minTimeShare, " You submitted: ", commitment)
       );
 
       EOS_CHECK(
         commitment <= originalTimeShare,
-        to_str(NEW_TIME_SHARE, " must be less than or equal to original (approved) time_share_x100: ", originalTimeShare, " You submitted: ", commitment)
+        util::to_str(NEW_TIME_SHARE, " must be less than or equal to original (approved) time_share_x100: ", originalTimeShare, " You submitted: ", commitment)
       );
 
       //Update lasttimeshare
@@ -1209,7 +1209,7 @@ namespace hypha
       {
         EOS_CHECK(
           lastTimeSharex100 != commitment,
-          to_str("New commitment: [", commitment, "] must be different than current commitment: [", lastTimeSharex100, "]")
+          util::to_str("New commitment: [", commitment, "] must be different than current commitment: [", lastTimeSharex100, "]")
         );
       }
 

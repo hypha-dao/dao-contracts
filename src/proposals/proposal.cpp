@@ -169,18 +169,14 @@ namespace hypha
             // INVOKE child class close logic
             passImpl(proposal);
 
-            proposal = m_dao.getGraph().updateDocument(proposal.getCreator(), 
-                                                       proposal.getID (),
-                                                       std::move(proposal.getContentGroups()));
+            proposal.update();
             // if proposal passes, create an edge for PASSED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID (), common::PASSED_PROPS);
         }
         else
         {
             //TODO: Add failImpl()
-            proposal = m_dao.getGraph().updateDocument(proposal.getCreator(), 
-                                                       proposal.getID (),
-                                                       std::move(proposal.getContentGroups()));
+            proposal.update();
 
             // create edge for FAILED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID (), common::FAILED_PROPS);
@@ -353,7 +349,7 @@ namespace hypha
 
         EOS_CHECK(
           title != nullptr || ballotTitle != nullptr,
-          to_str("Proposal [details] group must contain at least one of the following items [", 
+          util::to_str("Proposal [details] group must contain at least one of the following items [", 
                   TITLE, ", ", common::BALLOT_TITLE, "]")
         );
 
@@ -371,7 +367,7 @@ namespace hypha
 
         EOS_CHECK(
           desc != nullptr || ballotDesc != nullptr,
-          to_str("Proposal [details] group must contain at least one of the following items [", 
+          util::to_str("Proposal [details] group must contain at least one of the following items [", 
                   DESCRIPTION, ", ", common::BALLOT_DESCRIPTION, "]")
         );
 

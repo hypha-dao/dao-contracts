@@ -23,7 +23,6 @@ Settings::Settings(dao& dao,
 
     EOS_CHECK(group != SYSTEM, "system group is not editable")
 
-    auto oldID = getID();
     auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
     ContentWrapper cw = getContentWrapper();
@@ -43,10 +42,7 @@ Settings::Settings(dao& dao,
       updateDateContent
     );
 
-    static_cast<Document&>(*this) = m_dao->getGraph()
-                                         .updateDocument(m_dao->get_self(), 
-                                                         oldID, 
-                                                         getContentGroups());
+    update();
   }
 
   void Settings::setSetting(const Content& setting)
@@ -58,7 +54,7 @@ Settings::Settings(dao& dao,
   {
     TRACE_FUNCTION()
     EOS_CHECK(group != SYSTEM, "system group is not editable")
-    auto oldID = getID();
+    
     auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
     ContentWrapper cw = getContentWrapper();
@@ -77,10 +73,7 @@ Settings::Settings(dao& dao,
     );
     settings->push_back(setting);
 
-    static_cast<Document&>(*this) = m_dao->getGraph()
-                                         .updateDocument(m_dao->get_self(), 
-                                                         oldID, 
-                                                         getContentGroups());
+    update();
   }
     
   void Settings::remSetting(const std::string& group, const std::string& key)
@@ -104,10 +97,7 @@ Settings::Settings(dao& dao,
       updateDateContent
     );
 
-    static_cast<Document&>(*this) = m_dao->getGraph()
-                                         .updateDocument(m_dao->get_self(), 
-                                                         oldID, 
-                                                         getContentGroups());
+    update();
   }
 
   void Settings::remSetting(const std::string& key)
@@ -143,10 +133,7 @@ Settings::Settings(dao& dao,
       updateDateContent
     );
 
-    static_cast<Document&>(*this) = m_dao->getGraph()
-                                         .updateDocument(m_dao->get_self(), 
-                                                         oldID, 
-                                                         getContentGroups());
+    update();
   }
 
   }

@@ -29,7 +29,7 @@ namespace hypha
           hasOpenEditProp) {
         EOS_CHECK(
           false,
-          to_str("There is an open edit proposal already:", proposalHash)  
+          util::to_str("There is an open edit proposal already:", proposalHash)  
         )
       }
     }
@@ -96,7 +96,7 @@ namespace hypha
         EOS_CHECK(
           state == common::STATE_APPROVED ||
           state == common::STATE_ARCHIVED, //We could still extend after the assignment expires
-          to_str("Cannot open edit proposals on ", state, " documents")
+          util::to_str("Cannot open edit proposals on ", state, " documents")
         )
 
         // connect the edit proposal to the original

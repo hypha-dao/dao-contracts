@@ -63,7 +63,7 @@ namespace hypha
         auto questStart = m_dao.getGraph().getEdgesFrom(proposal.getID(), common::QUEST_START);
         EOS_CHECK(
           !questStart.empty(),
-          to_str("Missing 'quest_start' edge from quest_completion: ", proposal.getID())
+          util::to_str("Missing 'quest_start' edge from quest_completion: ", proposal.getID())
         )
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), questStart.at(0).getToNode(), proposal.getID(), common::COMPLETED_BY);

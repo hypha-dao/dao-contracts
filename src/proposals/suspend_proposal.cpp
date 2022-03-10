@@ -41,7 +41,7 @@ namespace hypha
           hasOpenSuspendProp) {
         EOS_CHECK(
           false,
-          to_str("There is an open suspension proposal already:", proposalID)  
+          util::to_str("There is an open suspension proposal already:", proposalID)  
         )
       }
 
@@ -54,7 +54,7 @@ namespace hypha
 
       EOS_CHECK(
         state == common::STATE_APPROVED,
-        to_str("Cannot open suspend proposals on ", state, " documents")
+        util::to_str("Cannot open suspend proposals on ", state, " documents")
       )
 
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
@@ -85,7 +85,7 @@ namespace hypha
       default:
         EOS_CHECK(
           false,
-          to_str("Unexpected document type for suspension: ",
+          util::to_str("Unexpected document type for suspension: ",
                  type, ". Valid types [", common::ASSIGNMENT, ", ", common::ROLE_NAME ,"]")
         );
         break;
@@ -94,7 +94,7 @@ namespace hypha
       auto title = ocw.getOrFail(DETAILS, TITLE)->getAs<string>();
 
       ContentWrapper::insertOrReplace(*contentWrapper.getGroupOrFail(DETAILS), 
-                                      Content { TITLE, to_str("Suspension of ", type, ": ", title ) });
+                                      Content { TITLE, util::to_str("Suspension of ", type, ": ", title ) });
     }
 
     void SuspendProposal::postProposeImpl (Document &proposal) 
@@ -125,7 +125,7 @@ namespace hypha
 
       ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_SUSPENDED });
 
-      originalDoc.update(originalDoc.getCreator(), std::move(originalDoc.getContentGroups()));
+      originalDoc.update();
       
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
       
@@ -155,9 +155,7 @@ namespace hypha
 
           ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
 
-          originalDoc = m_dao.getGraph().updateDocument(assignment.getCreator(), 
-                                                         assignment.getID(), 
-                                                         cw.getContentGroups());
+          originalDoc.update();
         }
 
         if (type == common::ASSIGNMENT) {
@@ -173,7 +171,7 @@ namespace hypha
       default: {
         EOS_CHECK(
           false,
-          to_str("Unexpected document type for suspension: ",
+          util::to_str("Unexpected document type for suspension: ",
                  type, ". Valid types [", common::ASSIGNMENT ,"]")
         );
       } break;

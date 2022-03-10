@@ -201,7 +201,7 @@ namespace hypha
 
       EOS_CHECK(
         moment >= next.getStartTime(),
-        to_str("Moment must happen after period start date, [moment secs]:", 
+        util::to_str("Moment must happen after period start date, [moment secs]:", 
                 moment.sec_since_epoch(), " [period]:", getID ())
       );
 

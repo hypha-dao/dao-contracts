@@ -175,7 +175,7 @@ namespace hypha
       
         EOS_CHECK(
           !assignmentToRoleEdge.empty(),
-          to_str("Missing 'role' edge from assignment: ", proposal.getID ())
+          util::to_str("Missing 'role' edge from assignment: ", proposal.getID ())
         )
 
         Document role(m_dao.get_self(), assignmentToRoleEdge.at(0).getToNode());

@@ -40,7 +40,12 @@ namespace hypha
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
         // confirm that the original document exists
-        Document original (m_dao.get_self(), proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
+        Document original (
+          m_dao.get_self(), 
+          static_cast<uint64_t>(
+            proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>()
+          )
+        );            
 
         //TODO: This edge has to cleaned up when proposal fails
         // connect the edit proposal to the original
@@ -88,7 +93,6 @@ namespace hypha
         // confirm that the original document exists
         // Use the ORIGINAL edge since the original document could have changed since this was 
         // proposed
-        //Document original (m_dao.get_self(), proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
         auto edges = m_dao.getGraph().getEdgesFrom(proposal.getID(), common::ORIGINAL);
         
         EOS_CHECK(
