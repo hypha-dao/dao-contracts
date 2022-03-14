@@ -50,7 +50,7 @@ describe('Proposal', () => {
 
         // Proposing
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
@@ -72,7 +72,7 @@ describe('Proposal', () => {
 
         // Now we can close the proposal
         await environment.daoContract.contract.closedocprop({
-            proposal_hash: proposal.hash
+            proposal_id: proposal.id
         }, dao.members[0].getPermissions());
 
         proposal = last(getDocumentsByType(
@@ -95,7 +95,7 @@ describe('Proposal', () => {
 
         // Proposing
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
@@ -114,7 +114,7 @@ describe('Proposal', () => {
 
         await environment.daoContract.contract.vote({
             voter: dao.members[0].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'pass',
             notes: 'vote pass'
         });
@@ -124,7 +124,7 @@ describe('Proposal', () => {
 
         // Now we can close the proposal
         await environment.daoContract.contract.closedocprop({
-            proposal_hash: proposal.hash
+            proposal_id: proposal.id
         }, dao.members[0].getPermissions());
 
         // When passing, the proposal is updated
@@ -150,7 +150,7 @@ describe('Proposal', () => {
 
         // Stage proposal
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: false,
@@ -171,21 +171,21 @@ describe('Proposal', () => {
         // can't vote
         await expect(environment.daoContract.contract.vote({
             voter: dao.members[0].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'pass',
             notes: 'vote pass'
         })).rejects.toThrowError('Only published proposals can be voted');
 
         // can't close
         await expect(environment.daoContract.contract.closedocprop({
-            proposal_hash: proposal.hash
+            proposal_id: proposal.id
         }, dao.members[0].getPermissions()))
         .rejects.toThrowError('Only published proposals can be closed');
 
         // publish
         await environment.daoContract.contract.proposepub({
             proposer: dao.members[0].account.accountName,
-            proposal_hash: proposal.hash
+            proposal_id: proposal.id
         });
 
         await passProposal(dao, proposal, 'role', environment);
@@ -194,26 +194,26 @@ describe('Proposal', () => {
         // can't publish
         await expect(environment.daoContract.contract.proposepub({
             proposer: dao.members[0].account.accountName,
-            proposal_hash: proposal.hash
+            proposal_id: proposal.id
         })).rejects.toThrowError(/Only proposes in staging can be published/i);
 
         // can't update
         await expect(environment.daoContract.contract.proposeupd({
             proposer: dao.members[1].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             content_groups: getSampleRole2().content_groups
         })).rejects.toThrowError(/Only proposes in staging can be updated/i);
 
         // can't remove
         await expect(environment.daoContract.contract.proposerem({
             proposer: dao.members[1].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
         })).rejects.toThrowError(/Only proposes in staging can be removed/i);
 
         // Create suspend proposal
         await environment.daoContract.contract.suspend({
             proposer: dao.members[0].account.accountName,
-            hash: proposal.hash,
+            document_id: proposal.id,
             reason: 'I would like to suspend'
         }, dao.members[0].getPermissions());
 
@@ -230,7 +230,7 @@ describe('Proposal', () => {
 
         // Staging proposals can also be updated or removed (by proposer)
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: false,
@@ -244,13 +244,13 @@ describe('Proposal', () => {
 
         await expect(environment.daoContract.contract.proposeupd({
             proposer: dao.members[1].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             content_groups: getSampleRole2().content_groups
         })).rejects.toThrowError(/Only the proposer can update the proposal/i);
 
         await environment.daoContract.contract.proposeupd({
             proposer: dao.members[0].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             content_groups: getSampleRole2().content_groups
         })
 
@@ -270,12 +270,12 @@ describe('Proposal', () => {
 
         await expect(environment.daoContract.contract.proposerem({
             proposer: dao.members[1].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
         })).rejects.toThrowError(/Only the proposer can remove the proposal/i);
 
         await environment.daoContract.contract.proposerem({
             proposer: dao.members[0].account.accountName,
-            proposal_hash: proposal.hash
+            proposal_id: proposal.id
         });
 
         expect(last(getDocumentsByType(

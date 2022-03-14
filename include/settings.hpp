@@ -8,8 +8,6 @@ namespace hypha {
 
 class dao;
 
-using eosio::checksum256;
-
 /**
  * @brief 
  * Stores a setting document
@@ -119,7 +117,6 @@ public:
     static constexpr int64_t SETTINGS_IDX = 0;
 private:
     //bool m_dirty;
-    checksum256 m_rootHash;
     uint64_t m_rootID;
     dao* m_dao;
 };

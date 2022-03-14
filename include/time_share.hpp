@@ -12,7 +12,6 @@ class dao;
 
 using eosio::name;
 using eosio::time_point;
-using eosio::checksum256; 
 
 class TimeShare : public Document
 {

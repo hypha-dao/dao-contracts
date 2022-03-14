@@ -49,9 +49,9 @@ describe('Voting', () => {
         const lastTally = last(getDocumentsByType(documents, 'vote.tally'));
         if (oldTally) {
             if (isEqual) {
-                expect(oldTally.hash).toEqual(lastTally.hash);
+                expect(oldTally.id).toEqual(lastTally.id);
             } else {
-                expect(oldTally.hash).not.toEqual(lastTally.hash);
+                expect(oldTally.id).not.toEqual(lastTally.id);
             }
         }
 
@@ -90,28 +90,29 @@ describe('Voting', () => {
 
         // Proposing
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: environment.daos[0].members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
-            ...getSampleRole()
+            content_groups: getSampleRole().content_groups
         });
 
         const proposal = last(getDocumentsByType(
             environment.getDaoDocuments(),
             'role'
         ));
+        console.log(environment.getDaoDocuments());
         let lastTally = getLastTally(environment);
         testLastVoteTally(lastTally, { pass: 0, fail: 0, abstain: 0 });
         testVoteEdges(environment, proposal, lastTally);
 
         // Proposing other role to test
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: environment.daos[0].members[0].account.accountName,
             proposal_type: 'role',
             publish: true,
-            ...getSampleRole('foobar')
+            content_groups: getSampleRole('foobar').content_groups
         });
 
         const proposal2 = last(getDocumentsByType(
@@ -126,7 +127,7 @@ describe('Voting', () => {
         // Member 1 votes something wrong
         await expect(environment.daoContract.contract.vote({
             voter: environment.daos[0].members[0].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'foobar',
             notes: 'vote something wrong'
         })).rejects.toThrow(/invalid vote/i);
@@ -134,7 +135,7 @@ describe('Voting', () => {
         // Now votes pass
         await environment.daoContract.contract.vote({
             voter: environment.daos[0].members[0].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'pass',
             notes: 'vote pass'
         });
@@ -154,7 +155,7 @@ describe('Voting', () => {
         // Changes vote to fail
         await environment.daoContract.contract.vote({
             voter: environment.daos[0].members[0].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'fail',
             notes: 'votes fail'
         });
@@ -172,7 +173,7 @@ describe('Voting', () => {
         // member[1] votes to abstain
         await environment.daoContract.contract.vote({
             voter: environment.daos[0].members[1].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'abstain',
             notes: 'votes abstain'
         });
@@ -190,7 +191,7 @@ describe('Voting', () => {
         // member[2] votes to abstain
         await environment.daoContract.contract.vote({
             voter: environment.daos[0].members[2].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'abstain',
             notes: 'votes abstain 2'
         });
@@ -208,7 +209,7 @@ describe('Voting', () => {
         // member[3] votes to pass
         await environment.daoContract.contract.vote({
             voter: environment.daos[0].members[3].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'pass',
             notes: 'votes pass'
         });
@@ -226,7 +227,7 @@ describe('Voting', () => {
         // member[0] changes vote to pass
         await environment.daoContract.contract.vote({
             voter: environment.daos[0].members[0].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'pass',
             notes: 'votes pass'
         });
@@ -243,7 +244,7 @@ describe('Voting', () => {
 
         // closes proposal
         await expect(environment.daoContract.contract.closedocprop({
-            proposal_hash: proposal.hash
+                proposal_id: proposal.id
         }, environment.daos[0].members[0].getPermissions())
         ).rejects.toThrow(/voting is still active/i);
 
@@ -255,14 +256,14 @@ describe('Voting', () => {
         // Voting expired
         await expect(environment.daoContract.contract.vote({
             voter: environment.daos[0].members[0].account.accountName,
-            proposal_hash: proposal.hash,
+            proposal_id: proposal.id,
             vote: 'pass',
             notes: 'votes when proposal is closed'
         })).rejects.toThrow(/voting has expired/i);
 
         // Now we can close the proposal
         await environment.daoContract.contract.closedocprop({
-            proposal_hash: proposal.hash
+            proposal_id: proposal.id
         }, environment.daos[0].members[0].getPermissions());
     });
 });

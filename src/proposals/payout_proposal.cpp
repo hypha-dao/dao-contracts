@@ -18,24 +18,19 @@ namespace hypha
         TRACE_FUNCTION()
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
 
-        // if end_period is provided, use that for the price timestamp, but
-        // default the timepoint to now
-        eosio::time_point seedsPriceTimePoint = eosio::current_block_time();
+        // recipient must exist and be a DHO member
+        name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
+        
+        EOS_CHECK(
+            Member::isMember(m_dao, m_daoID, recipient), 
+            "only members are eligible for payouts: " + recipient.to_string()
+        );
 
         auto tokens = AssetBatch {
             .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
             .peg = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
             .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
         };
-
-        if (auto [idx, endPeriod] = contentWrapper.get(DETAILS, END_PERIOD); endPeriod)
-        {
-            EOS_CHECK(std::holds_alternative<eosio::checksum256>(endPeriod->value),
-                         "fatal error: expected to be a checksum256 type: " + endPeriod->label);
-
-            Period period(&m_dao, std::get<eosio::checksum256>(endPeriod->value));
-            seedsPriceTimePoint = period.getEndTime();
-        }
 
         // if usd_amount is provided in the DETAILS section, convert that to token components
         //  (deferred_perc_x100 will be required)
@@ -149,14 +144,12 @@ namespace hypha
 
         // recipient must exist and be a DHO member
         name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
-        //TODO: Check to which dao this proposal belongs to
-        //EOS_CHECK(Member::isMember(m_dao.get_self(), recipient), "only members are eligible for payouts: " + recipient.to_string());
 
-        Document recipientDoc(m_dao.get_self(), Member::calcHash(recipient));
+        Document recipientDoc(m_dao.get_self(), m_dao.getMemberID(recipient));
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), recipientDoc.getID(), proposal.getID(), common::PAYOUT);
 
-        std::string memo{"one-time payment on proposal: " + readableHash(proposal.getHash())};
+        std::string memo{"one-time payment on proposal: " + util::to_str(proposal.getID())};
 
         auto tokens = AssetBatch {
             .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),

@@ -38,6 +38,9 @@ namespace common
     //365.25*24*60*60
     constexpr int64_t YEAR_DURATION_SEC = 31557600;
 
+    constexpr size_t MAX_PROPOSAL_TITLE_CHARS = 50;
+    constexpr size_t MAX_PROPOSAL_DESC_CHARS = 2000;
+
     // 49.36 phases per annum, so each phase is 2.026% of the total
     //const float PHASE_TO_YEAR_RATIO = 0.02026009582;
 
@@ -55,6 +58,7 @@ namespace common
     constexpr name ADMIN = name("admin");
     constexpr name OWNER = name("owner");
 
+    constexpr name DHO_ROOT_NAME = name("dhoroot");
     constexpr name ASSIGN_BADGE = name("assignbadge");
     constexpr name VOTE_TALLY = name("votetally");
     constexpr name ASSIGNMENT = name("assignment");
@@ -76,10 +80,11 @@ namespace common
     constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
     constexpr        auto STATE = "state";
     constexpr        auto STATE_PROPOSED = "proposed";
+    constexpr        auto STATE_ARCHIVED = "archived";
+    constexpr        auto STATE_DRAFTED = "drafted";
     constexpr        auto STATE_APPROVED = "approved";
     constexpr        auto STATE_REJECTED = "rejected";
     constexpr        auto STATE_SUSPENDED = "suspended";
-    constexpr        auto STATE_EXPIRED = "expired";
     constexpr        auto STATE_WITHDRAWED = "withdrawed";
     
     constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
@@ -107,6 +112,7 @@ namespace common
     // graph edges hanging off of primary DHO node
     constexpr name BADGE_NAME = name("badge");
     constexpr name PROPOSAL = name("proposal");
+    constexpr name VOTABLE = name("votable");
     constexpr name FAILED_PROPS = name("failedprops");
     constexpr name PASSED_PROPS = name("passedprops");
     constexpr name MEMBER = name("member");

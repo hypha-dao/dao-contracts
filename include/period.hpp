@@ -21,8 +21,6 @@ namespace hypha
                const std::string &readable,
                const std::string &nodeLabel);
 
-        Period(dao *dao, const eosio::checksum256 &hash);
-
         Period(dao *dao, uint64_t id);
 
         eosio::time_point getStartTime();

@@ -13,7 +13,7 @@ describe('Badges', () => {
 
     const getAssignmentProp = (role: Document, accountName: string, title?: string) => {
       return getAssignmentProposal({
-        role: role.hash,
+        role: role.id,
         assignee: accountName,
         deferred_perc: 50,
         time_share: 100,
@@ -79,7 +79,7 @@ describe('Badges', () => {
 
         const assignee = dao.members[0];
 
-        let badgeAssignProp = getBadgeAssignmentProposal({ badge: badge.hash,
+        let badgeAssignProp = getBadgeAssignmentProposal({ badge: badge.id,
                                                            assignee: assignee.account.accountName,
                                                            period_count: 2 });
 
@@ -104,7 +104,7 @@ describe('Badges', () => {
           expect(
             getContent(badgeAssignDetails, 'badge').value[1]
           )
-          .toBe(badge.hash);
+          .toBe(badge.id);
 
           badgeAssingPeriodCount = parseInt(
             getContent(badgeAssignDetails, 'period_count').value[1] as string
@@ -149,7 +149,7 @@ describe('Badges', () => {
 
         //They should be the same since they
         //were voted & passed under the same period
-        expect(badgeAssignStartPeriod.hash).toBe(assignmentStartPeriod.hash);
+        expect(badgeAssignStartPeriod.id).toBe(assignmentStartPeriod.id);
 
         //TODO: Update so it doens't relies on the assingment salary amount, since it could change due
         //global settings configuration
@@ -202,7 +202,7 @@ describe('Badges', () => {
           for (let i = 0; i < badgeAssingPeriodCount; ++i) {
 
             await environment.daoContract.contract.claimnextper({
-                assignment_hash: assignment.hash
+                assignment_id: assignment.id
             });
 
             checkPayments({
@@ -217,7 +217,7 @@ describe('Badges', () => {
           for (let i = 0; i < Math.min(1, assignmentPeriodCount - badgeAssingPeriodCount); ++i) {
 
             await environment.daoContract.contract.claimnextper({
-                assignment_hash: assignment.hash
+                assignment_id: assignment.id
             });
 
             checkPayments({ hypha, husd, hvoice });

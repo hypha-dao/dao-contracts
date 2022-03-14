@@ -15,8 +15,8 @@ export class Expect {
         const edges = this.dao.getDaoEdges();
         const filter = {
             edge_name: edgeName,
-            from_node: from.hash,
-            to_node: to.hash
+            from_node: from.id,
+            to_node: to.id
         };
         const filtered = getEdgesByFilter(edges, filter);
         if (filtered.length !== 0) {
@@ -24,7 +24,7 @@ export class Expect {
                 `${filter.from_node} ---${filter.edge_name}---> ${filter.to_node} was found.`
                 );
         }
-        
+
         expect(filtered.length).toBe(0);
     }
 

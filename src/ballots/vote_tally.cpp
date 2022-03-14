@@ -17,7 +17,7 @@ namespace hypha
 
     VoteTally::VoteTally(
         dao& dao,
-        Document& proposal, 
+        Document& proposal,
         Settings* daoSettings
     )
     : TypedDocument(dao)
@@ -31,7 +31,7 @@ namespace hypha
             if (!dao.getGraph().hasEdges(oldTallyNode)) {
                 dao.getGraph().eraseDocument(oldTallyNode, false);
             }
-            
+
         }
 
         ContentGroup* contentOptions = proposal.getContentWrapper().getGroupOrFail(BALLOT_OPTIONS);
@@ -40,7 +40,7 @@ namespace hypha
 
         std::map<std::string, eosio::asset> optionsTally;
         std::vector<std::string> optionsTallyOrdered;
-        for (auto option : *contentOptions) 
+        for (auto option : *contentOptions)
         {
             if (option.label != CONTENT_GROUP_LABEL) {
                 optionsTally[option.label] = asset(0, voiceToken.symbol);
@@ -57,7 +57,7 @@ namespace hypha
         }
 
         ContentGroups tallyContentGroups;
-        for (auto option : optionsTallyOrdered) 
+        for (auto option : optionsTallyOrdered)
         {
             tallyContentGroups.push_back(ContentGroup{
                 Content(CONTENT_GROUP_LABEL, option),
@@ -65,7 +65,7 @@ namespace hypha
             });
         }
 
-        initializeDocument(dao, tallyContentGroups, false);
+        initializeDocument(dao, tallyContentGroups);
 
         Edge::write(dao.get_self(), dao.get_self(), proposal.getID(), getDocument().getID(), common::VOTE_TALLY);
     }

@@ -9,7 +9,7 @@ export class Dao {
     readonly settings: DeepReadonly<DaoSettings>;
     readonly members: Array<Member>;
     readonly periods: Array<Period>;
-    private hash: string;
+    private id: string;
     private root: Document;
 
     public constructor(name: string, settings: DaoSettings) {
@@ -19,16 +19,16 @@ export class Dao {
         this.periods = [];
     }
 
-    public setHash(hash: string) {
-        if (this.hash !== undefined) {
-            throw new Error('Hash already set');
+    public setId(id: string) {
+        if (this.id !== undefined) {
+            throw new Error('Id already set');
         }
 
-        this.hash = hash;
+        this.id = id;
     }
 
-    public getHash(): string {
-        return this.hash;
+    public getId(): string {
+        return this.id;
     }
 
     public setRoot(root: Document) {

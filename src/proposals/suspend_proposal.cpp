@@ -12,6 +12,7 @@
 #include <assignment.hpp>
 #include <period.hpp>
 #include <logger/logger.hpp>
+#include <recurring_activity.hpp>
 
 namespace hypha
 {
@@ -21,14 +22,14 @@ namespace hypha
       TRACE_FUNCTION()
 
       EOS_CHECK(
-        Member::isMember(m_dao.get_self(), m_daoID , proposer),
+        Member::isMember(m_dao, m_daoID , proposer),
         util::to_str("Only members of: ", m_daoID , " can suspend this proposal")
       )
 
       // original_document is a required hash
-      auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
+      auto originalDocID = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>();
 
-      Document originalDoc(m_dao.get_self(), originalDocHash);
+      Document originalDoc(m_dao.get_self(), originalDocID);
 
       //Verify if this is a passed proposal
       EOS_CHECK(
@@ -40,7 +41,7 @@ namespace hypha
           hasOpenSuspendProp) {
         EOS_CHECK(
           false,
-          to_str("There is an open suspension proposal already:", proposalID)  
+          util::to_str("There is an open suspension proposal already:", proposalID)  
         )
       }
 
@@ -52,21 +53,18 @@ namespace hypha
       auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
       EOS_CHECK(
-        state != common::STATE_PROPOSED &&
-        state != common::STATE_WITHDRAWED && 
-        state != common::STATE_SUSPENDED &&
-        state != common::STATE_EXPIRED &&
-        state != common::STATE_REJECTED,
-        to_str("Cannot open suspend proposals on ", state, " documents")
+        state == common::STATE_APPROVED,
+        util::to_str("Cannot open suspend proposals on ", state, " documents")
       )
 
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
       
       switch (type.value)
       {
+      case common::ASSIGN_BADGE.value:
       case common::ASSIGNMENT.value: {
         
-        Assignment assignment(&m_dao, originalDoc.getHash());
+        RecurringActivity assignment(&m_dao, originalDocID);
 
         auto currentTimeSecs = eosio::current_time_point().sec_since_epoch();
 
@@ -82,10 +80,12 @@ namespace hypha
       case common::ROLE_NAME.value:
         //We don't have to do anything special for roles
         break;
+      case common::BADGE_NAME.value:        
+        break;
       default:
         EOS_CHECK(
           false,
-          to_str("Unexpected document type for suspension: ",
+          util::to_str("Unexpected document type for suspension: ",
                  type, ". Valid types [", common::ASSIGNMENT, ", ", common::ROLE_NAME ,"]")
         );
         break;
@@ -94,19 +94,17 @@ namespace hypha
       auto title = ocw.getOrFail(DETAILS, TITLE)->getAs<string>();
 
       ContentWrapper::insertOrReplace(*contentWrapper.getGroupOrFail(DETAILS), 
-                                      Content { TITLE, to_str("Suspension of ", type, ": ", title ) });
+                                      Content { TITLE, util::to_str("Suspension of ", type, ": ", title ) });
     }
 
     void SuspendProposal::postProposeImpl (Document &proposal) 
     {
       TRACE_FUNCTION()
-      auto originalDocHash = proposal.getContentWrapper()
+      auto originalDocID = proposal.getContentWrapper()
                                      .getOrFail(DETAILS, ORIGINAL_DOCUMENT)
-                                     ->getAs<eosio::checksum256>();
+                                     ->getAs<int64_t>();
 
-      Document originalDoc(m_dao.get_self(), originalDocHash);
-
-      Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getID(), originalDoc.getID(), common::SUSPEND);
+      Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getID(), originalDocID, common::SUSPEND);
     }
 
     void SuspendProposal::passImpl(Document &proposal)
@@ -116,7 +114,7 @@ namespace hypha
 
       EOS_CHECK(
         edges.size() == 1, 
-        "Missing edge from suspension proposal: " + readableHash(proposal.getHash()) + " to document"
+        "Missing edge from suspension proposal: " + util::to_str(proposal.getID()) + " to document"
       );
 
       Document originalDoc(m_dao.get_self(), edges[0].getToNode());
@@ -127,17 +125,16 @@ namespace hypha
 
       ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_SUSPENDED });
 
-      originalDoc = m_dao.getGraph().updateDocument(originalDoc.getCreator(), 
-                                                    originalDoc.getID(), 
-                                                    ocw.getContentGroups());
-
+      originalDoc.update();
+      
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
       
       switch (type.value)
       {
+      case common::ASSIGN_BADGE.value:
       case common::ASSIGNMENT.value: {
 
-        Assignment assignment(&m_dao, originalDoc.getHash());
+        RecurringActivity assignment(&m_dao, originalDoc.getID());
 
         auto cw = assignment.getContentWrapper();
 
@@ -158,22 +155,23 @@ namespace hypha
 
           ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
 
-          originalDoc = m_dao.getGraph().updateDocument(assignment.getCreator(), 
-                                                         assignment.getID(), 
-                                                         cw.getContentGroups());
-
-          assignment = Assignment(&m_dao, originalDoc.getHash());
+          originalDoc.update();
         }
 
-        m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
+        if (type == common::ASSIGNMENT) {
+            //This makes the last period partially claimable to the point where the assignment is suspended
+            m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
+        }
       } break;
       case common::ROLE_NAME.value: {
         //We don't have to do anything special for roles
       }  break;
+      case common::BADGE_NAME.value:
+        break;
       default: {
         EOS_CHECK(
           false,
-          to_str("Unexpected document type for suspension: ",
+          util::to_str("Unexpected document type for suspension: ",
                  type, ". Valid types [", common::ASSIGNMENT ,"]")
         );
       } break;

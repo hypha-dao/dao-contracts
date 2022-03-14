@@ -4,13 +4,6 @@
 
 namespace hypha
 {
-    template<typename std::string& T>
-    TypedDocument<T>::TypedDocument(dao& dao, const eosio::checksum256& hash)
-    : m_dao(dao), document(Document(dao.get_self(), hash))
-    {
-        TRACE_FUNCTION()
-        validate();
-    }
 
     template<typename std::string& T>
     TypedDocument<T>::TypedDocument(dao& dao, uint64_t id)
@@ -32,8 +25,8 @@ namespace hypha
     {
         TRACE_FUNCTION()
         return document.getContentWrapper().getOrFail(
-            SYSTEM, 
-            NODE_LABEL, 
+            SYSTEM,
+            NODE_LABEL,
             "Typed document does not have a node label"
         )->template getAs<std::string>();
     }
@@ -47,33 +40,13 @@ namespace hypha
     template<typename std::string& T>
     void TypedDocument<T>::initializeDocument(dao& dao, ContentGroups &content)
     {
-        initializeDocument(dao, content, true);
-    }
-
-    template<typename std::string& T>
-    void TypedDocument<T>::initializeDocument(dao& dao, ContentGroups &content, bool failIfExists)
-    {
         TRACE_FUNCTION()
-        
-        bool createNewDocument = failIfExists;
 
-        if (!failIfExists)
-        {
-            std::optional<eosio::checksum256> existingHash = documentExists(dao, content);
-            if (existingHash) {
-                document = Document(dao.get_self(), *existingHash);
-            } else {
-                createNewDocument = true;
-            }
-        }
-
-        if (createNewDocument) {
-            document = Document(dao.get_self(), dao.get_self(), content);
-        }
+        document = Document(dao.get_self(), dao.get_self(), processContent(content));
     }
 
     template<typename std::string& T>
-    void TypedDocument<T>::validate() 
+    void TypedDocument<T>::validate()
     {
         auto [idx, docType] = document.getContentWrapper().get(SYSTEM, TYPE);
 
@@ -86,7 +59,7 @@ namespace hypha
     }
 
     template<typename std::string& T>
-    ContentGroups& TypedDocument<T>::processContent(ContentGroups& content) 
+    ContentGroups& TypedDocument<T>::processContent(ContentGroups& content)
     {
         ContentWrapper wrapper(content);
         auto [systemIndex, contentGroup] = wrapper.getGroupOrCreate(SYSTEM);
@@ -97,21 +70,17 @@ namespace hypha
     }
 
     template<typename std::string& T>
-    dao& TypedDocument<T>::getDao() const 
+    dao& TypedDocument<T>::getDao() const
     {
         return m_dao;
     }
 
     template<typename std::string& T>
-    std::optional<eosio::checksum256> TypedDocument<T>::documentExists(dao& dao, ContentGroups &content)
+    bool TypedDocument<T>::documentExists(dao& dao, const uint64_t& id)
     {
-        const eosio::checksum256 hash = Document::hashContents(
-            processContent(content)
-        );
-
-        bool exists = Document::exists(dao.get_self(), hash);
+        bool exists = Document::exists(dao.get_self(), id);
         if (exists) {
-            return hash;
+            return true;
         }
 
         return {};
@@ -130,4 +99,4 @@ namespace hypha
     template class TypedDocument<document_types::VOTE>;
     template class TypedDocument<document_types::VOTE_TALLY>;
 
-}  
+}

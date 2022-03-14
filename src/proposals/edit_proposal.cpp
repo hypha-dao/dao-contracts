@@ -17,11 +17,11 @@ namespace hypha
     void EditProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     { 
       EOS_CHECK(
-        Member::isMember(m_dao.get_self(), m_daoID, proposer),
+        Member::isMember(m_dao, m_daoID, proposer),
         util::to_str("Only members of: ", m_daoID, " can edit this proposal")
       )
 
-      auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
+      auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>();
 
       Document originalDoc(m_dao.get_self(), originalDocHash);
 
@@ -29,7 +29,7 @@ namespace hypha
           hasOpenEditProp) {
         EOS_CHECK(
           false,
-          to_str("There is an open edit proposal already:", proposalHash)  
+          util::to_str("There is an open edit proposal already:", proposalHash)  
         )
       }
     }
@@ -40,15 +40,17 @@ namespace hypha
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
         // original_document is a required hash
-        auto originalDocHash = proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>();
+        auto originalDocID = static_cast<uint64_t>(
+          proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>()
+        );
 
-        Document original(m_dao.get_self(), originalDocHash);
+        Document original;
 
-        if (auto edges = m_dao.getGraph().getEdgesTo(original.getID(), common::ASSIGNMENT);
+        if (auto edges = m_dao.getGraph().getEdgesTo(originalDocID, common::ASSIGNMENT);
             !edges.empty()) 
         {
             // the original document must be an assignment
-            Assignment assignment (&m_dao, originalDocHash);
+            Assignment assignment (&m_dao, originalDocID);
 
             int64_t currentPeriodCount = assignment.getPeriodCount();
             
@@ -70,21 +72,21 @@ namespace hypha
                            
             auto currentTimeSecs = eosio::current_time_point().sec_since_epoch();
 
-            auto lastPeriodStartSecs = assignment.getLastPeriod()
-                                                  .getStartTime()
-                                                  .sec_since_epoch();
+            auto lastGracePeriodEndSecs = assignment.getLastPeriod()
+                                             .getNthPeriodAfter(2)
+                                             .getEndTime()
+                                             .sec_since_epoch();
 
             EOS_CHECK(
-              lastPeriodStartSecs > currentTimeSecs, 
-              "There has to be at least 1 remaining period before editing/extending an assignment"
-              ", create a new one instead"
+              lastGracePeriodEndSecs > currentTimeSecs, 
+              "Assignment extension grace period (2 periods after expiration) is over, create a new one instead"
             );
             
             original = std::move(*static_cast<Document*>(&assignment));
         }
         else {
           // confirm that the original document exists
-            original = Document(m_dao.get_self(), originalDocHash);
+            original = Document(m_dao.get_self(), originalDocID);
         }
 
         ContentWrapper ocw = original.getContentWrapper();
@@ -92,12 +94,9 @@ namespace hypha
         auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
         EOS_CHECK(
-          state != common::STATE_PROPOSED &&
-          state != common::STATE_WITHDRAWED &&
-          state != common::STATE_SUSPENDED &&
-          state != common::STATE_EXPIRED &&
-          state != common::STATE_REJECTED,
-          to_str("Cannot open edit proposals on ", state, " documents")
+          state == common::STATE_APPROVED ||
+          state == common::STATE_ARCHIVED, //We could still extend after the assignment expires
+          util::to_str("Cannot open edit proposals on ", state, " documents")
         )
 
         // connect the edit proposal to the original
@@ -127,6 +126,7 @@ namespace hypha
             }
         }
 
+        //Warning: This will automatically change the state of the original document to approved
         auto ignoredDetailsItems = {ORIGINAL_DOCUMENT,
                                     common::BALLOT_TITLE,
                                     common::BALLOT_DESCRIPTION};
@@ -148,7 +148,7 @@ namespace hypha
         
         EOS_CHECK(
           edges.size() == 1, 
-          "Missing edge from extension proposal: " + readableHash(proposal.getHash()) + " to original document"
+          "Missing edge from extension proposal: " + util::to_str(proposal.getID()) + " to original document"
         );
 
         Document original (m_dao.get_self(), edges[0].getToNode());

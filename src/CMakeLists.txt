@@ -13,6 +13,7 @@ add_contract( dao dao
                 period.cpp
                 member.cpp
                 assignment.cpp
+                recurring_activity.cpp
                 time_share.cpp
                 settings.cpp
                 payers/payer.cpp

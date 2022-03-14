@@ -19,7 +19,10 @@ namespace hypha
     {   
         TRACE_FUNCTION()
         // the original document must be an assignment
-        Assignment assignment (&m_dao, contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
+        Assignment assignment (
+          &m_dao, 
+          static_cast<uint64_t>(contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>())
+        );
 
         int64_t currentPeriodCount = assignment.getPeriodCount();
         int64_t newPeriodCount = contentWrapper.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
@@ -37,14 +40,16 @@ namespace hypha
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
         // confirm that the original document exists
-        Document original (m_dao.get_self(), proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
+        Document original (
+          m_dao.get_self(), 
+          static_cast<uint64_t>(
+            proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>()
+          )
+        );            
 
         //TODO: This edge has to cleaned up when proposal fails
         // connect the edit proposal to the original
         Edge::write (m_dao.get_self(), m_dao.get_self(), proposal.getID(), original.getID(), common::ORIGINAL);
-        eosio::print("writing edge from proposal to original. proposal: " + readableHash(proposal.getHash()) + "\n");
-        eosio::print("original: " + readableHash(original.getHash()) + "\n");
-
     }
 
     void AssignmentExtensionProposal::passImpl(Document &proposal)
@@ -88,12 +93,11 @@ namespace hypha
         // confirm that the original document exists
         // Use the ORIGINAL edge since the original document could have changed since this was 
         // proposed
-        //Document original (m_dao.get_self(), proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<eosio::checksum256>());
         auto edges = m_dao.getGraph().getEdgesFrom(proposal.getID(), common::ORIGINAL);
         
         EOS_CHECK(
           edges.size() == 1, 
-          "Missing edge from extension proposal: " + readableHash(proposal.getHash()) + " to original document"
+          "Missing edge to original document from extension proposal: " + util::to_str(proposal.getID()) + " to original document"
         );
 
         Document original (m_dao.get_self(), edges[0].getToNode());

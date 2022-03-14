@@ -9,19 +9,6 @@
 
 namespace hypha
 {
-
-    eosio::checksum256 getRoot(const eosio::name &contract)
-    {
-        ContentGroups cgs = getRootContent (contract);
-        return Document::hashContents(cgs);
-    }
-
-    eosio::checksum256 getDAO(const eosio::name &dao_name)
-    {
-        ContentGroups cgs = getDAOContent (dao_name);
-        return Document::hashContents(cgs);
-    }
-
     float getPhaseToYearRatio(Settings* daoSettings)
     {
         int64_t periodDurationSec = daoSettings->getOrFail<int64_t>(common::PERIOD_DURATION);

@@ -5,7 +5,6 @@ import {
     getContent,
     getContentGroupByLabel,
     getDetailsGroup,
-    getDocumentByHash,
     getDocumentById,
     getDocumentsByType,
     getEdgesByFilter
@@ -54,7 +53,7 @@ const adjustDeferralPerc = async (dao: Dao, environment: DaoBlockchain,
                                   deferralPerc: number) => {
     await environment.daoContract.contract.adjustdeferr({
         issuer,
-        assignment_hash: assignment.hash,
+        assignment_id: assignment.id,
         new_deferred_perc_x100: deferralPerc
     });
 
@@ -75,7 +74,7 @@ export const claimRemainingPeriods = async (dao: Dao, assignment: Document,
 
     while (true) {
 
-        let nextEdge = getEdgesByFilter(edges, { from_node: currentPeriod.hash, edge_name: 'next' });
+        let nextEdge = getEdgesByFilter(edges, { from_node: currentPeriod.id, edge_name: 'next' });
 
         expect(nextEdge).toHaveLength(1);
 
@@ -87,7 +86,7 @@ export const claimRemainingPeriods = async (dao: Dao, assignment: Document,
 
         try {
           await environment.daoContract.contract.claimnextper({
-              assignment_hash: assignment.hash
+              assignment_id: assignment.id
           });
         }
         catch(error) {
@@ -111,7 +110,7 @@ describe('Assignments', () => {
 
     const getAssignmentProp = (role: Document, accountName: string, title?: string) => {
       return getAssignmentProposal({
-        role: role.hash,
+        role: role.id,
         assignee: accountName,
         deferred_perc: 50,
         time_share: 100,
@@ -290,7 +289,7 @@ describe('Assignments', () => {
             setDate(environment, now, 0);
 
             await environment.daoContract.contract.claimnextper({
-                assignment_hash: assignment.hash
+                assignment_id: assignment.id
             });
 
             getDaoExpect(environment).toHaveEdge(assignment, currentPeriod, 'claimed');
@@ -306,7 +305,7 @@ describe('Assignments', () => {
         const assignProposal2 = getAssignmentProp(role, assignee.account.accountName, 'Activation Date test');
 
         await environment.daoContract.contract.propose({
-            dao_hash: dao.getHash(),
+            dao_id: dao.getId(),
             proposer: dao.members[0].account.accountName,
             proposal_type: 'assignment',
             publish: true,
@@ -324,7 +323,7 @@ describe('Assignments', () => {
         for (let i = 0; i < dao.members.length; ++i) {
           await environment.daoContract.contract.vote({
               voter: dao.members[i].account.accountName,
-              proposal_hash: assignment.hash,
+              proposal_id: assignment.id,
               vote: 'pass',
               notes: 'votes pass'
           });
@@ -337,9 +336,9 @@ describe('Assignments', () => {
           getContent(details, 'period_count').value[1] as string
         );
 
-        let startPeriodHash = getContent(details, 'start_period').value[1] as string;
+        let startPeriodId = getContent(details, 'start_period').value[1] as string;
 
-        const startPeriod = getDocumentById(environment.getDaoDocuments(), startPeriodHash);
+        const startPeriod = getDocumentById(environment.getDaoDocuments(), startPeriodId);
 
         let period = startPeriod;
 
@@ -348,7 +347,7 @@ describe('Assignments', () => {
 
         for (let i = 0; i < periodCount2; ++i) {
 
-            let nextEdge = getEdgesByFilter(edges, { from_node: period.hash, edge_name: 'next' });
+            let nextEdge = getEdgesByFilter(edges, { from_node: period.id, edge_name: 'next' });
 
             expect(nextEdge).toHaveLength(1);
 
@@ -363,7 +362,7 @@ describe('Assignments', () => {
         setDate(environment, now, 0);
 
         await environment.daoContract.contract.closedocprop({
-            proposal_hash: assignment.hash
+            proposal_id: assignment.id
         }, dao.members[0].getPermissions());
 
         assignment = last(getDocumentsByType(
@@ -387,12 +386,12 @@ describe('Assignments', () => {
         for (let i = 0; i < periodCount2 - 1; ++i) {
 
             await environment.daoContract.contract.claimnextper({
-                assignment_hash: assignment.hash
+                assignment_id: assignment.id
             });
 
             checkPayments({ environment, husd: husd, hypha: hypha, hvoice: hvoice })
 
-            let nextEdge = getEdgesByFilter(edges, { from_node: period.hash, edge_name: 'next' });
+            let nextEdge = getEdgesByFilter(edges, { from_node: period.id, edge_name: 'next' });
 
             const nextPeriod = getDocumentById(docs, nextEdge[0].to_node);
 
@@ -447,7 +446,7 @@ describe('Assignments', () => {
 
         assignment = await proposeAndPass(dao, assignProposal, 'assignment', environment);
 
-        const editProp = getEditProposal(assignment.hash, 'Edited Title', 6);
+        const editProp = getEditProposal(assignment.id, 'Edited Title', 6);
 
         await proposeAndPass(dao, editProp, 'edit', environment);
 
@@ -458,7 +457,7 @@ describe('Assignments', () => {
         const details = getContentGroupByLabel(editedAssignment, 'details');
 
         //Original assignment shouldn't exist anymore
-        expect(getDocumentByHash(environment.getDaoDocuments(), assignment.hash))
+        expect(getDocumentById(environment.getDaoDocuments(), assignment.id))
         .toBeUndefined();
 
         expect(getContent(details, 'title').value[1])
@@ -496,7 +495,7 @@ describe('Assignments', () => {
 
         await environment.daoContract.contract.suspend({
             proposer: suspender.account.accountName,
-            hash: assignment.hash,
+            document_id: assignment.id,
             reason: suspendReason
         }, getAccountPermission(suspender.account));
 
@@ -510,7 +509,7 @@ describe('Assignments', () => {
         .toBe(suspendReason);
 
         expect(getContent(suspendDetails, 'original_document').value[1])
-        .toBe(assignment.hash);
+        .toBe(assignment.id);
 
         getDaoExpect(environment).toHaveEdge(suspendProp, assignment, 'suspend');
 
@@ -550,7 +549,7 @@ describe('Assignments', () => {
 
         await environment.daoContract.contract.withdraw({
             owner: assignee.account.accountName,
-            hash: assignment.hash
+            document_id: assignment.id
         }, getAccountPermission(assignee.account));
 
         let withdrawedAssignment = last(

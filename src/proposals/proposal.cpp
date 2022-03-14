@@ -35,16 +35,32 @@ namespace hypha
     Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish)
     {
         TRACE_FUNCTION()
-        EOS_CHECK(Member::isMember(m_dao.get_self(), m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
+        EOS_CHECK(Member::isMember(m_dao, m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
 
         const name commentSection = _newCommentSection();
 
+        const std::string title = getTitle(proposalContent);
+
+        //Verify title lenght is less or equal than 50 chars
+        EOS_CHECK(
+            title.length() <= common::MAX_PROPOSAL_TITLE_CHARS,
+            util::to_str("Proposal title length has to be less or equal to ", common::MAX_PROPOSAL_TITLE_CHARS, " characters")
+        )
+
+        const std::string description = getDescription(proposalContent);
+        
+         //Verify description lenght is less or equal than 50 chars
+        EOS_CHECK(
+            description.length() <= common::MAX_PROPOSAL_DESC_CHARS,
+            util::to_str("Proposal description length has to be less or equal to ", common::MAX_PROPOSAL_DESC_CHARS, " characters")
+        )
+
         contentGroups.push_back(makeSystemGroup(proposer,
                                                 getProposalType(),
-                                                getTitle(proposalContent),
-                                                getDescription(proposalContent),
+                                                title,
+                                                description,
                                                 commentSection));
         
         contentGroups.push_back(makeBallotGroup());
@@ -56,17 +72,15 @@ namespace hypha
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
         // creates the document, or the graph NODE
-        eosio::checksum256 memberHash = Member::calcHash(proposer);
-
-        Document memberDoc(m_dao.get_self(), memberHash);
+        auto memberID = m_dao.getMemberID(proposer);
 
         uint64_t root = m_daoID;
 
         // the proposer OWNS the proposal; this creates the graph EDGE
-        Edge::write(m_dao.get_self(), proposer, memberDoc.getID(), proposalNode.getID (), common::OWNS);
+        Edge::write(m_dao.get_self(), proposer, memberID, proposalNode.getID (), common::OWNS);
 
         // the proposal was PROPOSED_BY proposer; this creates the graph EDGE
-        Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), memberDoc.getID(), common::OWNED_BY);
+        Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), memberID, common::OWNED_BY);
 
         name commentsContract = m_dhoSettings->getOrFail<eosio::name>(COMMENTS_CONTRACT);
 
@@ -88,6 +102,8 @@ namespace hypha
         }
 
         Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), root, common::DAO);
+
+        Edge::write(m_dao.get_self(), proposer, root, proposalNode.getID(), common::VOTABLE);
 
         return proposalNode;
     }
@@ -153,18 +169,14 @@ namespace hypha
             // INVOKE child class close logic
             passImpl(proposal);
 
-            proposal = m_dao.getGraph().updateDocument(proposal.getCreator(), 
-                                                       proposal.getID (),
-                                                       std::move(proposal.getContentGroups()));
+            proposal.update();
             // if proposal passes, create an edge for PASSED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID (), common::PASSED_PROPS);
         }
         else
         {
             //TODO: Add failImpl()
-            proposal = m_dao.getGraph().updateDocument(proposal.getCreator(), 
-                                                       proposal.getID (),
-                                                       std::move(proposal.getContentGroups()));
+            proposal.update();
 
             // create edge for FAILED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID (), common::FAILED_PROPS);
@@ -337,7 +349,7 @@ namespace hypha
 
         EOS_CHECK(
           title != nullptr || ballotTitle != nullptr,
-          to_str("Proposal [details] group must contain at least one of the following items [", 
+          util::to_str("Proposal [details] group must contain at least one of the following items [", 
                   TITLE, ", ", common::BALLOT_TITLE, "]")
         );
 
@@ -355,7 +367,7 @@ namespace hypha
 
         EOS_CHECK(
           desc != nullptr || ballotDesc != nullptr,
-          to_str("Proposal [details] group must contain at least one of the following items [", 
+          util::to_str("Proposal [details] group must contain at least one of the following items [", 
                   DESCRIPTION, ", ", common::BALLOT_DESCRIPTION, "]")
         );
 
@@ -391,6 +403,26 @@ namespace hypha
         VoteTally(m_dao, proposal, m_daoSettings);
 
         postProposeImpl(proposal);
+
+        //Schedule a trx to close the proposal
+        eosio::transaction trx;
+        trx.actions.emplace_back(eosio::action(
+            permission_level(m_dao.get_self(), "active"_n),
+            m_dao.get_self(),
+            "closedocprop"_n,
+            std::make_tuple(proposal.getID())
+        ));
+
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+
+        constexpr auto aditionalDelaySec = 60;
+        trx.delay_sec = (expiration.sec_since_epoch() - eosio::current_time_point().sec_since_epoch()) + aditionalDelaySec;
+
+        auto nextID = m_dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
+
+        trx.send(nextID, m_dao.get_self());
+
+        m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
     }
 
     name Proposal::_newCommentSection() {
