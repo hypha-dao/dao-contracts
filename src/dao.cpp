@@ -23,20 +23,21 @@
 
 namespace hypha
 {
-  ACTION dao::clean()
+   /**Testenv only 
+  ACTION dao::clean(int64_t docs, int64_t edges)
   {
     require_auth(get_self());
 
-    Document::document_table docs(get_self(), get_self().value);
+    Document::document_table d_t(get_self(), get_self().value);
 
-    for (auto it = docs.begin(); it != docs.end(); ) {
-      it = docs.erase(it);
+    for (auto it = d_t.begin(); it != d_t.end() && docs-- > 0; ) {
+      it = d_t.erase(it);
     }
 
-    Edge::edge_table edges(get_self(), get_self().value);
+    Edge::edge_table e_t(get_self(), get_self().value);
 
-    for (auto it = edges.begin(); it != edges.end(); ) {
-      it = edges.erase(it);
+    for (auto it = e_t.begin(); it != e_t.end() && edges-- > 0; ) {
+      it = e_t.erase(it);
     }
   }
 
@@ -47,7 +48,7 @@ namespace hypha
     Edge(get_self(), get_self(), from, to, edge_name);
   }
 
-  ACTION dao::adddoc(Document& doc) 
+  ACTION dao::adddoc(Document& doc)
   {
     require_auth(get_self());
     Document::document_table d_t(get_self(), get_self().value);
@@ -68,7 +69,6 @@ namespace hypha
     mem.enroll(enroller, dao_id, "Auto enrolled member");
   }
 
-   /**Testenv only 
 
    ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
    {

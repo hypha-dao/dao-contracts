@@ -74,8 +74,6 @@ namespace hypha
                           eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
           payment_table;
 
-
-      //TODO: Remove eosio::binary_extension<int64_t> and replace to bool (it was needed on testnet)
       ACTION propose(uint64_t dao_id, const name &proposer, const name &proposal_type, ContentGroups &content_groups, bool publish);
       ACTION vote(const name& voter, uint64_t proposal_id, string &vote, const std::optional<string> & notes);
       ACTION closedocprop(uint64_t proposal_id);
@@ -112,11 +110,11 @@ namespace hypha
       ACTION setalert(const eosio::name &level, const std::string &content);
       ACTION remalert(const std::string &notes);
 
-      ACTION clean();
+      /**Testenv only
+      ACTION clean(int64_t docs, int64_t edges);
       ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
       ACTION adddoc(Document& doc);
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
-      /**Testenv only
       ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
       ACTION deletetok(asset asset, name contract) {
 
@@ -128,6 +126,31 @@ namespace hypha
           name("del"),
           std::make_tuple(asset)
         ).send();
+      }
+
+      ACTION remdoc(uint64_t doc_id)
+      {
+         eosio::require_auth(get_self());
+         m_documentGraph.eraseDocument(doc_id, true);
+      }
+
+      ACTION approve(uint64_t doc_id)
+      {
+         eosio::require_auth(get_self());
+
+         Document doc(get_self(), doc_id);
+         auto cw = doc.getContentWrapper();
+         cw.insertOrReplace(*cw.getGroupOrFail(DETAILS), Content{common::STATE, common::STATE_APPROVED});
+         doc.update();
+      }
+
+      ACTION reject(uint64_t doc_id)
+      {
+         eosio::require_auth(get_self());
+         Document doc(get_self(), doc_id);
+         auto cw = doc.getContentWrapper();
+         cw.insertOrReplace(*cw.getGroupOrFail(DETAILS), Content{common::STATE, common::STATE_REJECTED});
+         doc.update();
       }
       */
      

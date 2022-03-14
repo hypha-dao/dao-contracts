@@ -78,6 +78,7 @@ namespace common
     constexpr        auto APPROVED_DATE = "original_approved_date";
     constexpr        auto BALLOT_TITLE = "ballot_title";
     constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
+    constexpr        auto BALLOT_QUORUM = "ballot_quorum";
     constexpr        auto STATE = "state";
     constexpr        auto STATE_PROPOSED = "proposed";
     constexpr        auto STATE_ARCHIVED = "archived";

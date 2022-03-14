@@ -156,6 +156,11 @@ namespace hypha
           proposalDidPass ? common::STATE_APPROVED : common::STATE_REJECTED
         });
 
+        ContentWrapper::insertOrReplace(*details, Content {
+            common::BALLOT_QUORUM,
+            getVoiceSupply()
+        });
+
         if (proposalDidPass)
         {
 
@@ -301,23 +306,12 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
-        name voiceContract = m_dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
-        asset voiceToken = m_daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
         float quorumFactor = m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
         float alignmentFactor = m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
 
-        hypha::voice::stats statstable(voiceContract, voiceToken.symbol.code().raw());
-        auto stats_index = statstable.get_index<name("bykey")>();
+        auto voiceSupply = getVoiceSupply();
 
-        auto stat_itr = stats_index.find(
-            voice::currency_stats::build_key(
-                m_daoSettings->getOrFail<name>(DAO_NAME),
-                voiceToken.symbol.code()
-            )
-        );
-        EOS_CHECK(stat_itr != stats_index.end(), "No VOICE found");
-
-        asset quorum_threshold = adjustAsset(stat_itr->supply, quorumFactor);
+        asset quorum_threshold = adjustAsset(voiceSupply, quorumFactor);
 
         VoteTally tally(m_dao, tallyID);
 
@@ -391,6 +385,27 @@ namespace hypha
       }
 
       return { false, uint64_t{} };
+    }
+
+    eosio::asset Proposal::getVoiceSupply()
+    {
+        asset voiceToken = m_daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
+        name voiceContract = m_dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+        hypha::voice::stats statstable(voiceContract, voiceToken.symbol.code().raw());
+        auto stats_index = statstable.get_index<name("bykey")>();
+
+        auto daoName = m_daoSettings->getOrFail<name>(DAO_NAME);
+
+        auto stat_itr = stats_index.find(
+            voice::currency_stats::build_key(
+                daoName,
+                voiceToken.symbol.code()
+            )
+        );
+
+        EOS_CHECK(stat_itr != stats_index.end(), util::to_str("No VOICE found token: ", voiceToken, " DAO: ", daoName));
+
+        return stat_itr->supply;
     }
 
     void Proposal::_publish(const eosio::name &proposer, Document &proposal, uint64_t rootID)
