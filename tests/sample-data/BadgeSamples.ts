@@ -4,9 +4,9 @@ import { Document } from "../types/Document"
 export interface BadgeAssignmentProposal {
   title?: string
   description?: string
-  start_period?: string | undefined
+  start_period?: number
   period_count?: number
-  badge: string
+  badge: number
   assignee: string
 }
 
@@ -42,11 +42,11 @@ const getBadgeAssignmentProposal = ({
   .string('title', title)
   .string('description', description)
   .name('assignee', assignee)
-  .int64('badge', parseInt(badge)) // todo: Change id to number
+  .int64('badge', badge)
   .int64('period_count', period_count)
 
   if (start_period) {
-    builder.int64('start_period', parseInt(start_period)); // todo: Change id to number
+    builder.int64('start_period', start_period);
   }
 })
 .build();

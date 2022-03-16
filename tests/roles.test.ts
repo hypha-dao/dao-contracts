@@ -10,7 +10,7 @@ import { closeProposal, passProposal, proposeAndPass } from './utils/Proposal';
 import { getAccountPermission } from './utils/Permissions';
 import { getAssignmentProposal } from './sample-data/AssignmentSamples';
 
-const getEditProposal = (original: string,
+const getEditProposal = (original: number,
   newTitle: string,
   newTimeShare: number,
   newSalary: string): Document => {
@@ -21,7 +21,7 @@ const getEditProposal = (original: string,
     .groupLabel('details')
     .string('title', newTitle)
     .string('ballot_description', 'Edit role')
-    .int64('original_document', parseInt(original)) // todo: Change id to number
+    .int64('original_document', original)
     .int64('min_time_share_x100', newTimeShare)
     .asset('annual_usd_salary', newSalary)
     })

@@ -7,11 +7,11 @@ export interface AssignmentProposal {
   title?: string
   description?: string
   annual_usd_salary?: string
-  start_period?: string | undefined
+  start_period?: number
   period_count?: number
   time_share?: number
   deferred_perc?: number
-  role: string
+  role: number
   assignee: string
 }
 
@@ -32,13 +32,13 @@ const getAssignmentProposal = ({
   .string('title', title)
   .string('description', description)
   .name('assignee', assignee)
-  .int64('role', parseInt(role)) // todo: Change id to number
+  .int64('role', role)
   .int64('period_count', period_count)
   .int64('time_share_x100', time_share)
   .int64('deferred_perc_x100', deferred_perc);
 
   if (start_period) {
-    builder.int64('start_period', parseInt(start_period)); // todo: Change id to number
+    builder.int64('start_period', start_period);
   }
 })
 .build();

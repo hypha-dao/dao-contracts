@@ -31,7 +31,7 @@ const getPeriodStartDate = (period: Document): Date => {
     return new Date(startDate.value[1]);
 }
 
-const getEditProposal = (original: string,
+const getEditProposal = (original: number,
                          newTitle: string,
                          newPeriods: number): Document => {
     return DocumentBuilder
@@ -41,7 +41,7 @@ const getEditProposal = (original: string,
       .groupLabel('details')
       .string('title', newTitle)
       .string('ballot_description', 'Edit assignment')
-      .int64('original_document', parseInt(original)) // todo: Change id to number
+      .int64('original_document', original)
       .int64('period_count', newPeriods)
     })
     .build();
