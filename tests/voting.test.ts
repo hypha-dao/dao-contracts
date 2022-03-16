@@ -44,18 +44,9 @@ describe('Voting', () => {
     .contentGroup(builder => builder.groupLabel('system').name('type', 'vote').string('node_label', `Vote: ${props.vote}`))
     .build();
 
-    const getLastTally = (environment: DaoBlockchain, isEqual?: boolean, oldTally?: Document) => {
+    const getLastTally = (environment: DaoBlockchain) => {
         const documents = environment.getDaoDocuments();
-        const lastTally = last(getDocumentsByType(documents, 'vote.tally'));
-        if (oldTally) {
-            if (isEqual) {
-                expect(oldTally.id).toEqual(lastTally.id);
-            } else {
-                expect(oldTally.id).not.toEqual(lastTally.id);
-            }
-        }
-
-        return lastTally;
+        return last(getDocumentsByType(documents, 'vote.tally'));
     };
 
     const testLastVoteTally = (votetally: Document, props: { pass: number, abstain: number, fail: number }) => {
@@ -101,7 +92,6 @@ describe('Voting', () => {
             environment.getDaoDocuments(),
             'role'
         ));
-        console.log(environment.getDaoDocuments());
         let lastTally = getLastTally(environment);
         testLastVoteTally(lastTally, { pass: 0, fail: 0, abstain: 0 });
         testVoteEdges(environment, proposal, lastTally);
@@ -119,8 +109,7 @@ describe('Voting', () => {
             environment.getDaoDocuments(),
             'role'
         ));
-        // Tallies are reused when possible. In this case the same value is the same tally
-        lastTally = getLastTally(environment, true, lastTally);
+        lastTally = getLastTally(environment);
         testLastVoteTally(lastTally, { pass: 0, fail: 0, abstain: 0 });
         testVoteEdges(environment, proposal2, lastTally);
 
@@ -141,7 +130,7 @@ describe('Voting', () => {
         });
 
 
-        lastTally = getLastTally(environment, false, lastTally);
+        lastTally = getLastTally(environment);
         testLastVoteTally(lastTally, { pass: 100, fail: 0, abstain: 0 });
         let lastVote = testLastVote(environment, {
             vote: 'pass',
@@ -159,7 +148,7 @@ describe('Voting', () => {
             vote: 'fail',
             notes: 'votes fail'
         });
-        lastTally = getLastTally(environment, false, lastTally);
+        lastTally = getLastTally(environment);
         testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 0 });
         lastVote = testLastVote(environment, {
             vote: 'fail',
@@ -177,7 +166,7 @@ describe('Voting', () => {
             vote: 'abstain',
             notes: 'votes abstain'
         });
-        lastTally = getLastTally(environment, false, lastTally);
+        lastTally = getLastTally(environment);
         testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 1 });
         lastVote = testLastVote(environment, {
             vote: 'abstain',
@@ -195,7 +184,7 @@ describe('Voting', () => {
             vote: 'abstain',
             notes: 'votes abstain 2'
         });
-        lastTally = getLastTally(environment, false, lastTally);
+        lastTally = getLastTally(environment);
         testLastVoteTally(lastTally, { pass: 0, fail: 100, abstain: 2 });
         lastVote = testLastVote(environment, {
             vote: 'abstain',
@@ -213,7 +202,7 @@ describe('Voting', () => {
             vote: 'pass',
             notes: 'votes pass'
         });
-        lastTally = getLastTally(environment, false, lastTally);
+        lastTally = getLastTally(environment);
         testLastVoteTally(lastTally, { pass: 1, fail: 100, abstain: 2 });
         lastVote = testLastVote(environment, {
             vote: 'pass',
@@ -231,7 +220,7 @@ describe('Voting', () => {
             vote: 'pass',
             notes: 'votes pass'
         });
-        lastTally = getLastTally(environment, false, lastTally);
+        lastTally = getLastTally(environment);
         lastVote = testLastVote(environment, {
             vote: 'pass',
             date: toISOString(now),

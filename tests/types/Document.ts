@@ -1,5 +1,5 @@
 export interface Document {
-    id: string;
+    id: string; // todo: Change id to number
     creator: string;
     content_groups: ContentGroups;
     certificates: Array<unknown>,

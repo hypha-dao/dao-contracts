@@ -21,7 +21,7 @@ const getEditProposal = (original: string,
     .groupLabel('details')
     .string('title', newTitle)
     .string('ballot_description', 'Edit role')
-    .checksum256('original_document', original)
+    .int64('original_document', parseInt(original)) // todo: Change id to number
     .int64('min_time_share_x100', newTimeShare)
     .asset('annual_usd_salary', newSalary)
     })

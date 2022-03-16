@@ -78,7 +78,6 @@ describe('Badges', () => {
         }
 
         const assignee = dao.members[0];
-
         let badgeAssignProp = getBadgeAssignmentProposal({ badge: badge.id,
                                                            assignee: assignee.account.accountName,
                                                            period_count: 2 });

@@ -255,9 +255,9 @@ describe('Proposal', () => {
         })
 
         daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
-        daoExpect.toNotHaveEdge(dao.getRoot(), proposal, 'stagingprop');
-        daoExpect.toNotHaveEdge(dao.members[0].doc, proposal, 'owns');
-        daoExpect.toNotHaveEdge(proposal, dao.members[0].doc, 'ownedby');
+        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'stagingprop');
+        daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
+        daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
         proposal = last(getDocumentsByType(
             environment.getDaoDocuments(),
