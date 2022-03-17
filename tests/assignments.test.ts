@@ -31,7 +31,7 @@ const getPeriodStartDate = (period: Document): Date => {
     return new Date(startDate.value[1]);
 }
 
-const getEditProposal = (original: string,
+const getEditProposal = (original: number,
                          newTitle: string,
                          newPeriods: number): Document => {
     return DocumentBuilder
@@ -41,7 +41,7 @@ const getEditProposal = (original: string,
       .groupLabel('details')
       .string('title', newTitle)
       .string('ballot_description', 'Edit assignment')
-      .checksum256('original_document', original)
+      .int64('original_document', original)
       .int64('period_count', newPeriods)
     })
     .build();
@@ -311,14 +311,12 @@ describe('Assignments', () => {
             publish: true,
             ...assignProposal2
         });
-        console.log('done.');
 
         assignment = last(getDocumentsByType(
           environment.getDaoDocuments(),
           'assignment'
         ));
 
-        console.log('voting...');
         //Vote but don't close
         for (let i = 0; i < dao.members.length; ++i) {
           await environment.daoContract.contract.vote({
@@ -328,7 +326,6 @@ describe('Assignments', () => {
               notes: 'votes pass'
           });
         }
-        console.log('done...');
 
         let details = getContentGroupByLabel(assignment, 'details');
 
@@ -343,7 +340,6 @@ describe('Assignments', () => {
         let period = startPeriod;
 
 
-        console.log('here');
 
         for (let i = 0; i < periodCount2; ++i) {
 
@@ -470,7 +466,7 @@ describe('Assignments', () => {
     //TODO: Add check on both suspend & withdraw tests to verify that
     //assignment is not claimable after suspention/withdrawal
 
-    it('Suspend  assignment', async () => {
+    it.only('Suspend  assignment', async () => {
 
         let assignment: Document;
 

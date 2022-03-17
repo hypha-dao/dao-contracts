@@ -4,9 +4,9 @@ import { Document } from "../types/Document"
 export interface BadgeAssignmentProposal {
   title?: string
   description?: string
-  start_period?: string | undefined
+  start_period?: number
   period_count?: number
-  badge: string
+  badge: number
   assignee: string
 }
 
@@ -21,7 +21,7 @@ export interface BadgeProposal {
 }
 
 const masterOfPuppetsAssignment = {
-  title: `Puppet's master badge assignment`, 
+  title: `Puppet's master badge assignment`,
   description: 'Test badge assignment',
   start_period: '',
   period_count: 4,
@@ -42,11 +42,11 @@ const getBadgeAssignmentProposal = ({
   .string('title', title)
   .string('description', description)
   .name('assignee', assignee)
-  .checksum256('badge', badge)
+  .int64('badge', badge)
   .int64('period_count', period_count)
 
   if (start_period) {
-    builder.checksum256('start_period', start_period);
+    builder.int64('start_period', start_period);
   }
 })
 .build();
@@ -61,10 +61,10 @@ const masterOfPuppets: BadgeProposal = {
   husd_coefficient_x10000: 13000,
 }
 
-const getBadgeProposal = ( 
-  { title, 
-    description, 
-    icon, 
+const getBadgeProposal = (
+  { title,
+    description,
+    icon,
     seeds_coefficient_x10000,
     hypha_coefficient_x10000,
     hvoice_coefficient_x10000,
