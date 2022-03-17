@@ -5,7 +5,6 @@ build
 **/Makefile
 **/CMakeCache.txt
 hyphadao_project-prefix
-**/*.wasm
 **/.nyc*
 **/.nyc_output/**
 node_modules
