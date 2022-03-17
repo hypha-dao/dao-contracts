@@ -43,11 +43,14 @@ namespace hypha
 
         const std::string title = getTitle(proposalContent);
 
-        //Verify title lenght is less or equal than 50 chars
-        EOS_CHECK(
-            title.length() <= common::MAX_PROPOSAL_TITLE_CHARS,
-            util::to_str("Proposal title length has to be less or equal to ", common::MAX_PROPOSAL_TITLE_CHARS, " characters")
-        )
+        // Suspend proposal's title is based on the original proposal title, skip the following check for suspend proposals.
+        if (getProposalType() != common::SUSPEND) {
+            //Verify title length is less or equal than 50 chars.
+            EOS_CHECK(
+                title.length() <= common::MAX_PROPOSAL_TITLE_CHARS,
+                util::to_str("Proposal title length has to be less or equal to ", common::MAX_PROPOSAL_TITLE_CHARS, " characters")
+            )
+        }
 
         const std::string description = getDescription(proposalContent);
         
