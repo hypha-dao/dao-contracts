@@ -157,7 +157,10 @@ export class DaoBlockchain extends Blockchain {
         }
 
         const endTime = performance.now();
-        console.log(`It took ${Math.round((endTime - startTime)/1000.0)}s to run the setup`);
+        if (process.env.PRINT_SETUP_TIME) {
+            console.log(`It took ${Math.round((endTime - startTime)/1000.0)}s to run the setup`);
+        }
+
         return blockchain;
     }
 

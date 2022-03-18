@@ -31,7 +31,7 @@ const getPeriodStartDate = (period: Document): Date => {
     return new Date(startDate.value[1]);
 }
 
-const getEditProposal = (original: number,
+const getEditProposal = (original: string,
                          newTitle: string,
                          newPeriods: number): Document => {
     return DocumentBuilder

@@ -1,5 +1,5 @@
 export interface Document {
-    id: number;
+    id: string;
     creator: string;
     content_groups: ContentGroups;
     certificates: Array<unknown>,

@@ -9,7 +9,7 @@ export class Dao {
     readonly settings: DeepReadonly<DaoSettings>;
     readonly members: Array<Member>;
     readonly periods: Array<Period>;
-    private id: number;
+    private id: string;
     private root: Document;
 
     public constructor(name: string, settings: DaoSettings) {
@@ -19,7 +19,7 @@ export class Dao {
         this.periods = [];
     }
 
-    public setId(id: number) {
+    public setId(id: string) {
         if (this.id !== undefined) {
             throw new Error('Id already set');
         }
@@ -27,7 +27,7 @@ export class Dao {
         this.id = id;
     }
 
-    public getId(): number {
+    public getId(): string {
         return this.id;
     }
 

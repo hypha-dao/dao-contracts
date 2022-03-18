@@ -121,7 +121,8 @@ export class ContentGroupBuilder {
         return this;
     }
 
-    public int64(label: string, value: number): ContentGroupBuilder {
+    public int64(label: string, value: number | string): ContentGroupBuilder {
+        value = typeof value === 'string' ? parseInt(value) : value;
         this._contentGroup.push(
             makeInt64Content(label, value)
         );
