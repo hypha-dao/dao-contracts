@@ -11,7 +11,7 @@ export interface AssignmentProposal {
   period_count?: number
   time_share?: number
   deferred_perc?: number
-  role: number
+  role: string
   assignee: string
 }
 

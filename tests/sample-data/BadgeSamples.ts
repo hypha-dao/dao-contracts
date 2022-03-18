@@ -6,7 +6,7 @@ export interface BadgeAssignmentProposal {
   description?: string
   start_period?: number
   period_count?: number
-  badge: number
+  badge: string
   assignee: string
 }
 

@@ -10,7 +10,7 @@ import { closeProposal, passProposal, proposeAndPass } from './utils/Proposal';
 import { getAccountPermission } from './utils/Permissions';
 import { getAssignmentProposal } from './sample-data/AssignmentSamples';
 
-const getEditProposal = (original: number,
+const getEditProposal = (original: string,
   newTitle: string,
   newTimeShare: number,
   newSalary: string): Document => {
