@@ -159,11 +159,19 @@ namespace hypha
 
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
 
+        auto payoutItems = std::vector<std::string>{
+            common::VOICE_AMOUNT, 
+            common::REWARD_AMOUNT, 
+            common::PEG_AMOUNT
+        };
+
         for (Content &content : *detailsGroup)
         {
-            if (std::holds_alternative<eosio::asset>(content.value))
+            if (auto it = std::find(payoutItems.begin(), payoutItems.end(), content.label);
+                it != payoutItems.end())
             {
                 m_dao.makePayment(m_daoSettings, proposal.getID(), recipient, std::get<eosio::asset>(content.value), memo, eosio::name{0}, tokens);
+                payoutItems.erase(it);
             }
         }
     }
