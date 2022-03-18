@@ -2,9 +2,9 @@ name: test-hydra
 
 on:
   push:
-    branches: [ master, develop ]
+    branches: [ master, develop, multitenant ]
   pull_request_target:
-    branches: [ master, develop ]
+    branches: [ master, develop, multitenant ]
 
 jobs:
   test:
