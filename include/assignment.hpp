@@ -16,22 +16,26 @@ namespace hypha
 
     class Assignment : public RecurringActivity
     {
-    public:
-        Assignment(dao *dao, uint64_t id);
-        
-        std::optional<Period> getNextClaimablePeriod ();
-        bool isClaimed (Period* period);
+        public:
+            Assignment(dao *dao, uint64_t id);
 
-        TimeShare getInitialTimeShare();
-        TimeShare getCurrentTimeShare();
-        TimeShare getLastTimeShare();
+            std::optional <Period> getNextClaimablePeriod();
+            bool isClaimed(Period *period);
 
-        eosio::asset getRewardSalary();
-        eosio::asset getVoiceSalary();
-        eosio::asset getPegSalary();
+            TimeShare getInitialTimeShare();
+            TimeShare getCurrentTimeShare();
+            TimeShare getLastTimeShare();
 
-        inline uint64_t getDaoID() { return m_daoID; }
-    private: 
-        eosio::asset getAsset (std::string_view key);
+            eosio::asset getRewardSalary();
+            eosio::asset getVoiceSalary();
+            eosio::asset getPegSalary();
+
+            inline uint64_t getDaoID()
+            {
+                return(m_daoID);
+            }
+
+        private:
+            eosio::asset getAsset(std::string_view key);
     };
 } // namespace hypha

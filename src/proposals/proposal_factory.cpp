@@ -17,48 +17,48 @@
 
 namespace hypha
 {
-    Proposal* ProposalFactory::Factory(dao& dao, uint64_t daoHash, const name &proposal_type)
-    { 
+    Proposal *ProposalFactory::Factory(dao& dao, uint64_t daoHash, const name&proposal_type)
+    {
         TRACE_FUNCTION()
 
         switch (proposal_type.value)
         {
         case common::BADGE_NAME.value:
-            return new BadgeProposal(dao, daoHash);
-        
+            return(new BadgeProposal(dao, daoHash));
+
         case common::ASSIGN_BADGE.value:
-            return new BadgeAssignmentProposal(dao, daoHash);
+            return(new BadgeAssignmentProposal(dao, daoHash));
 
         case common::ROLE_NAME.value:
-            return new RoleProposal(dao, daoHash);
-        
+            return(new RoleProposal(dao, daoHash));
+
         case common::ASSIGNMENT.value:
-            return new AssignmentProposal(dao, daoHash);
+            return(new AssignmentProposal(dao, daoHash));
 
         case common::PAYOUT.value:
-            return new PayoutProposal(dao, daoHash);
+            return(new PayoutProposal(dao, daoHash));
 
         case common::ATTESTATION.value:
-            return new AttestationProposal(dao, daoHash);
+            return(new AttestationProposal(dao, daoHash));
 
-        case common::SUSPEND.value: 
-            return new SuspendProposal(dao, daoHash);
+        case common::SUSPEND.value:
+            return(new SuspendProposal(dao, daoHash));
 
         case common::EDIT.value:
-            return new EditProposal(dao, daoHash);
+            return(new EditProposal(dao, daoHash));
 
         case common::QUEST_START.value:
-            return new QuestStartProposal(dao, daoHash);
+            return(new QuestStartProposal(dao, daoHash));
 
         case common::QUEST_COMPLETION.value:
-            return new QuestCompletionProposal(dao, daoHash);
-    
+            return(new QuestCompletionProposal(dao, daoHash));
+
         // TODO: should be expanded to work with Badge Assignments as well
         case common::EXTENSION.value:
-            return new AssignmentExtensionProposal(dao, daoHash);
+            return(new AssignmentExtensionProposal(dao, daoHash));
         }
 
         EOS_CHECK(false, "Unknown proposal_type: " + proposal_type.to_string());
-        return nullptr;
+        return(nullptr);
     }
 } // namespace hypha

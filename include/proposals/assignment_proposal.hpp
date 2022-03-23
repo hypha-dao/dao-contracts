@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <eosio/name.hpp>
 #include <eosio/asset.hpp>
@@ -8,24 +8,22 @@
 #include "proposal.hpp"
 
 namespace hypha {
-
     class AssignmentProposal : public Proposal
     {
-    
-    public:
-        using Proposal::Proposal;
+        public:
+            using Proposal::Proposal;
 
-    protected:
+        protected:
 
-        void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;
-        void passImpl(Document &proposal) override;
-        string getBallotContent (ContentWrapper &contentWrapper) override;
-        name getProposalType () override;
+            void proposeImpl(const name&proposer, ContentWrapper&contentWrapper) override;
+            void passImpl(Document&proposal) override;
+            string getBallotContent(ContentWrapper&contentWrapper) override;
+            name getProposalType() override;
 
-        void postProposeImpl(Document &proposal) override;
-        
-    private: 
+            void postProposeImpl(Document&proposal) override;
 
-        asset calculateTimeShareUsdPerPeriod(const SalaryConfig& salaryConf);
+        private:
+
+            asset calculateTimeShareUsdPerPeriod(const SalaryConfig& salaryConf);
     };
 }

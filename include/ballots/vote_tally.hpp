@@ -7,17 +7,17 @@ namespace hypha
 {
     class Settings;
 
-    class VoteTally : public TypedDocument<hypha::document_types::VOTE_TALLY>
+    class VoteTally : public TypedDocument <hypha::document_types::VOTE_TALLY>
     {
-    public:
-        VoteTally(dao& dao, uint64_t id);
-        VoteTally(
-            dao& dao,
-            Document& proposal,
-            Settings* daoSettings
-        );
+        public:
+            VoteTally(dao& dao, uint64_t id);
+            VoteTally(
+                dao& dao,
+                Document& proposal,
+                Settings *daoSettings
+                );
 
-    protected:
-        virtual const std::string buildNodeLabel(ContentGroups &content);
+        protected:
+            virtual const std::string buildNodeLabel(ContentGroups&content);
     };
 }

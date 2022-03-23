@@ -5,7 +5,7 @@ namespace hypha
 {
     class dao;
 
-    template<typename std::string& T>
+    template <typename std::string& T>
     class TypedDocument
     {
         public:
@@ -15,17 +15,16 @@ namespace hypha
 
         protected:
             TypedDocument(dao& dao);
-            void initializeDocument(dao& dao, ContentGroups &content);
+            void initializeDocument(dao& dao, ContentGroups&content);
             dao& getDao() const;
             bool documentExists(dao& dao, const uint64_t& id);
-            virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
+            virtual const std::string buildNodeLabel(ContentGroups&content) = 0;
 
         private:
             dao& m_dao;
             Document document;
             void validate();
             ContentGroups& processContent(ContentGroups& content);
-
     };
 
     namespace document_types

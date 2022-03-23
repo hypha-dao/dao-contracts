@@ -7,24 +7,23 @@ namespace hypha
 {
     class dao;
 
-    class Vote : public TypedDocument<hypha::document_types::VOTE> 
+    class Vote : public TypedDocument <hypha::document_types::VOTE>
     {
-    public:
-        Vote(dao& dao, uint64_t id);
-        Vote(
-            dao& dao, 
-            const eosio::name voter,
-            std::string vote, 
-            Document& proposal,
-            std::optional<std::string> notes
-        );
+        public:
+            Vote(dao& dao, uint64_t id);
+            Vote(
+                dao& dao,
+                const eosio::name voter,
+                std::string vote,
+                Document& proposal,
+                std::optional <std::string> notes
+                );
 
-        const std::string& getVote();
-        const eosio::asset& getPower();
-        const eosio::name& getVoter();
+            const std::string& getVote();
+            const eosio::asset& getPower();
+            const eosio::name& getVoter();
 
-    protected:
-        virtual const std::string buildNodeLabel(ContentGroups &content);
-
+        protected:
+            virtual const std::string buildNodeLabel(ContentGroups&content);
     };
 }

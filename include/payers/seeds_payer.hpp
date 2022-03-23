@@ -9,19 +9,18 @@
 
 namespace hypha
 {
-
     class SeedsPayer : public Payer
     {
-    public:
-        using Payer::Payer;
+        public:
+            using Payer::Payer;
 
-        Document pay(const eosio::name &recipient,
-                      const eosio::asset &quantity,
-                      const string &memo);
+            Document pay(const eosio::name&recipient,
+                         const eosio::asset&quantity,
+                         const string&memo);
 
-    protected:
-        Document payImpl(const eosio::name &recipient,
-                          const eosio::asset &quantity,
-                          const string &memo) override;
+        protected:
+            Document payImpl(const eosio::name&recipient,
+                             const eosio::asset&quantity,
+                             const string&memo) override;
     };
 } // namespace hypha

@@ -7,14 +7,14 @@
 #include <voice/account.hpp>
 #include <logger/logger.hpp>
 
-#define CONTENT_GROUP_LABEL_VOTE "vote"
-#define VOTE_DATE "date"
-#define VOTE_NOTE "notes"
+#define CONTENT_GROUP_LABEL_VOTE    "vote"
+#define VOTE_DATE                   "date"
+#define VOTE_NOTE                   "notes"
 
 namespace hypha
 {
     Vote::Vote(hypha::dao& dao, uint64_t id)
-    : TypedDocument(dao, id)
+        : TypedDocument(dao, id)
     {
         TRACE_FUNCTION()
     }
@@ -24,9 +24,9 @@ namespace hypha
         const eosio::name voter,
         std::string vote,
         Document& proposal,
-        std::optional<std::string> notes
-    )
-    : TypedDocument(dao)
+        std::optional <std::string> notes
+        )
+        : TypedDocument(dao)
     {
         TRACE_FUNCTION()
         // Could be replaced by i.e. proposal.hasVote(vote) when proposal is no longer just a "Document"
@@ -38,21 +38,23 @@ namespace hypha
         EOS_CHECK(
             Edge::exists(dao.get_self(), daoHash, proposal.getID(), common::PROPOSAL),
             "Only allowed to vote active proposals"
-        );
+            );
 
-        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs <eosio::time_point>();
 
         EOS_CHECK(
             eosio::time_point_sec(eosio::current_time_point()) <= expiration,
             "Voting has expired for this proposal"
-        );
+            );
 
         Document voterDoc(dao.get_self(), dao.getMemberID(voter));
 
-        std::vector<Edge> votes = dao.getGraph().getEdgesFrom(proposal.getID(), common::VOTE);
-        for (auto vote : votes) {
-            if (vote.getCreator() == voter) {
+        std::vector <Edge> votes = dao.getGraph().getEdgesFrom(proposal.getID(), common::VOTE);
 
+        for (auto vote : votes)
+        {
+            if (vote.getCreator() == voter)
+            {
                 Document voteDocument(dao.get_self(), vote.getToNode());
 
                 // Already voted, erase edges and allow to vote again.
@@ -61,7 +63,8 @@ namespace hypha
                 Edge::get(dao.get_self(), voteDocument.getID(), voterDoc.getID(), common::OWNED_BY).erase();
                 Edge::get(dao.get_self(), voteDocument.getID(), proposal.getID(), common::VOTE_ON).erase();
 
-                if (!dao.getGraph().hasEdges(voteDocument.getID())) {
+                if (!dao.getGraph().hasEdges(voteDocument.getID()))
+                {
                     dao.getGraph().eraseDocument(voteDocument.getID(), false);
                 }
 
@@ -69,22 +72,23 @@ namespace hypha
             }
         }
 
-        Settings* daoSettings = dao.getSettingsDocument(daoHash);
+        Settings *daoSettings = dao.getSettingsDocument(daoHash);
 
         // Fetch vote power
         // Todo: Need to ensure that the balance does not need a decay.
-        name hvoiceContract = dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+        name hvoiceContract = dao.getSettingOrFail <eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
         hypha::voice::accounts acnts(hvoiceContract, voter.value);
-        auto account_index = acnts.get_index<name("bykey")>();
+        auto account_index = acnts.get_index <name("bykey")>();
 
-        asset voiceToken = daoSettings->getOrFail<asset>(common::VOICE_TOKEN);
+        asset voiceToken = daoSettings->getOrFail <asset>(common::VOICE_TOKEN);
 
         auto v_itr = account_index.find(
             voice::account::build_key(
-                daoSettings->getOrFail<name>(DAO_NAME),
+                daoSettings->getOrFail <name>(DAO_NAME),
                 voiceToken.symbol.code()
-            )
-        );
+                )
+            );
+
         eosio::check(v_itr != account_index.end(), "No VOICE found");
 
         asset votePower = v_itr->balance;
@@ -120,42 +124,42 @@ namespace hypha
     const std::string& Vote::getVote()
     {
         TRACE_FUNCTION()
-        return getDocument().getContentWrapper().getOrFail(
-            CONTENT_GROUP_LABEL_VOTE,
-            VOTE_LABEL,
-            "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
-        )->template getAs<std::string>();
+        return(getDocument().getContentWrapper().getOrFail(
+                   CONTENT_GROUP_LABEL_VOTE,
+                   VOTE_LABEL,
+                   "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
+                   )->template getAs <std::string>());
     }
 
     const eosio::asset& Vote::getPower()
     {
         TRACE_FUNCTION()
-        return getDocument().getContentWrapper().getOrFail(
-            CONTENT_GROUP_LABEL_VOTE,
-            VOTE_POWER,
-            "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
-        )->template getAs<eosio::asset>();
+        return(getDocument().getContentWrapper().getOrFail(
+                   CONTENT_GROUP_LABEL_VOTE,
+                   VOTE_POWER,
+                   "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
+                   )->template getAs <eosio::asset>());
     }
 
     const eosio::name& Vote::getVoter()
     {
         TRACE_FUNCTION()
-        return getDocument().getContentWrapper().getOrFail(
-            CONTENT_GROUP_LABEL_VOTE,
-            VOTER_LABEL,
-            "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
-        )->template getAs<eosio::name>();
+        return(getDocument().getContentWrapper().getOrFail(
+                   CONTENT_GROUP_LABEL_VOTE,
+                   VOTER_LABEL,
+                   "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
+                   )->template getAs <eosio::name>());
     }
 
-    const std::string Vote::buildNodeLabel(ContentGroups &content)
+    const std::string Vote::buildNodeLabel(ContentGroups&content)
     {
         TRACE_FUNCTION()
         std::string vote = ContentWrapper(content).getOrFail(
             CONTENT_GROUP_LABEL_VOTE,
             VOTE_LABEL,
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
-        )->template getAs<std::string>();
-        return "Vote: " + vote;
-    }
+            )->template getAs <std::string>();
 
+        return("Vote: " + vote);
+    }
 }

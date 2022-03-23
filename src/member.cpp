@@ -16,10 +16,10 @@
 
 namespace hypha
 {
-    Member::Member(dao& dao, const eosio::name &creator, const eosio::name &member)
+    Member::Member(dao& dao, const eosio::name&creator, const eosio::name&member)
         : Document(dao.get_self(), dao.get_self(), defaultContent(member)), m_dao(dao)
     {
-        m_dao.addNameID<dao::member_table>(member, getID());
+        m_dao.addNameID <dao::member_table>(member, getID());
     }
 
     Member::Member(dao& dao, uint64_t docID)
@@ -27,47 +27,47 @@ namespace hypha
     {
     }
 
-    ContentGroups Member::defaultContent(const eosio::name &member)
+    ContentGroups Member::defaultContent(const eosio::name&member)
     {
-        return ContentGroups{
+        return(ContentGroups{
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, DETAILS),
-                Content(MEMBER_STRING, member)},
+                Content(MEMBER_STRING, member) },
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, SYSTEM),
                 Content(TYPE, common::MEMBER),
-                Content(NODE_LABEL, member.to_string())}};
+                Content(NODE_LABEL, member.to_string()) } });
     }
 
-    bool Member::isMember(dao& dao, uint64_t daoID, const eosio::name &member)
-    {        
-        return Edge::exists(dao.get_self(), daoID, dao.getMemberID(member), common::MEMBER);
+    bool Member::isMember(dao& dao, uint64_t daoID, const eosio::name&member)
+    {
+        return(Edge::exists(dao.get_self(), daoID, dao.getMemberID(member), common::MEMBER));
     }
 
     bool Member::exists(dao& dao, const eosio::name& memberName)
     {
         dao::member_table m_t(dao.get_self(), dao.get_self().value);
 
-        return m_t.find(memberName.value) != m_t.end();
+        return(m_t.find(memberName.value) != m_t.end());
     }
 
     void Member::apply(uint64_t applyTo, const std::string content)
     {
         TRACE_FUNCTION()
-        
+
         EOS_CHECK(
             !Edge::exists(getContract(), applyTo, getID(), common::MEMBER),
             util::to_str("You are a member of this DAO already")
-        )
+            )
 
         Edge::write(getContract(), getAccount(), applyTo, getID(), common::APPLICANT);
         Edge::write(getContract(), getAccount(), getID(), applyTo, common::APPLICANT_OF);
     }
 
-    void Member::enroll(const eosio::name &enroller, uint64_t appliedTo, const std::string &content)
+    void Member::enroll(const eosio::name&enroller, uint64_t appliedTo, const std::string&content)
     {
         TRACE_FUNCTION()
-        
+
         uint64_t rootID = appliedTo;
 
         // create the new member edges
@@ -76,9 +76,11 @@ namespace hypha
 
         // remove the old applicant edges
         Edge rootApplicantEdge = Edge::get(getContract(), rootID, getID(), common::APPLICANT);
+
         rootApplicantEdge.erase();
 
         Edge applicantRootEdge = Edge::get(getContract(), getID(), rootID, common::APPLICANT_OF);
+
         applicantRootEdge.erase();
 
         // TODO: add as configuration setting for genesis amount
@@ -86,18 +88,18 @@ namespace hypha
         // TODO: change Payer.hpp to NOT require m_dao so this payment can be made using payer factory
 
         Document daoDoc(getContract(), appliedTo);
-        auto daoCW = daoDoc.getContentWrapper();
+        auto     daoCW = daoDoc.getContentWrapper();
 
-        auto daoName = daoCW.getOrFail(DETAILS, DAO_NAME)->getAs<name>();
+        auto daoName = daoCW.getOrFail(DETAILS, DAO_NAME)->getAs <name>();
 
         auto daoSettings = m_dao.getSettingsDocument(appliedTo);
 
-        auto voiceToken = daoSettings->getOrFail<asset>(common::VOICE_TOKEN);
+        auto voiceToken = daoSettings->getOrFail <asset>(common::VOICE_TOKEN);
 
-        eosio::asset genesis_voice{getTokenUnit(voiceToken), voiceToken.symbol};
-        std::string memo = util::to_str("genesis voice issuance during enrollment to ", daoName);
+        eosio::asset genesis_voice{ getTokenUnit(voiceToken), voiceToken.symbol };
+        std::string  memo = util::to_str("genesis voice issuance during enrollment to ", daoName);
 
-        name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+        name hyphaHvoice = m_dao.getSettingOrFail <eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
         hypha::issueTenantToken(
             hyphaHvoice,
@@ -106,7 +108,7 @@ namespace hypha
             getAccount(),
             genesis_voice,
             memo
-        );
+            );
 
         Document paymentReceipt(getContract(), getContract(), Payer::defaultReceipt(getAccount(), genesis_voice, memo));
 
@@ -122,7 +124,6 @@ namespace hypha
     eosio::name Member::getAccount()
     {
         TRACE_FUNCTION()
-        return getContentWrapper().getOrFail(DETAILS, MEMBER_STRING)->getAs<eosio::name>();
+        return(getContentWrapper().getOrFail(DETAILS, MEMBER_STRING)->getAs <eosio::name>());
     }
-
 } // namespace hypha
