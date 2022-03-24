@@ -5,9 +5,9 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - uses: "actions/checkout@master"
-      - name: "Build"
+      - name: "Uncrustify"
         uses: docker://josejulio/hypha-builder:release_1.7.x
         with:
-          entrypoint: "bash ./uncrustify.sh -u && git diff"
+          entrypoint: "bash -c './uncrustify.sh -u && git diff'"
         env:
             CODE: "/github/workspace/"

@@ -14,29 +14,29 @@ namespace hypha
     class TimeShare;
     class Settings;
 
-    /**
-     * @brief Used to wrap functionality of Assignments & Badge Assignments
-     *
-     */
+/**
+ * @brief Used to wrap functionality of Assignments & Badge Assignments
+ *
+ */
     class RecurringActivity : public Document
     {
-        public:
-            RecurringActivity(dao *dao, uint64_t id);
-            Period getStartPeriod();
-            Period getLastPeriod();
-            Member getAssignee();
-            eosio::time_point getApprovedTime();
-            int64_t getPeriodCount();
+public:
+        RecurringActivity(dao *dao, uint64_t id);
+        Period getStartPeriod();
+        Period getLastPeriod();
+        Member getAssignee();
+        eosio::time_point getApprovedTime();
+        int64_t getPeriodCount();
 
-            dao *m_dao;
+        dao *m_dao;
 
-            inline uint64_t getDaoID()
-            {
-                return(m_daoID);
-            }
+        inline uint64_t getDaoID()
+        {
+            return(m_daoID);
+        }
 
-        protected:
-            uint64_t m_daoID;
-            Settings *m_daoSettings;
+protected:
+        uint64_t m_daoID;
+        Settings *m_daoSettings;
     };
 } // namespace hypha

@@ -14,22 +14,22 @@ namespace hypha {
 
     class TimeShare : public Document
     {
-        public:
+public:
 
-            /**
-             * Inserts a new TimeShare in the Document Graph
-             */
-            TimeShare(name contract, name creator, int64_t timeShare, time_point startDate, uint64_t assignment);
+        /**
+         * Inserts a new TimeShare in the Document Graph
+         */
+        TimeShare(name contract, name creator, int64_t timeShare, time_point startDate, uint64_t assignment);
 
-            /**
-             * Loads a TimeShare with the given id
-             */
-            TimeShare(name contract, uint64_t id);
+        /**
+         * Loads a TimeShare with the given id
+         */
+        TimeShare(name contract, uint64_t id);
 
-            std::optional <TimeShare> getNext(name contract);
+        std::optional<TimeShare> getNext(name contract);
 
-        private:
+private:
 
-            ContentGroups constructContentGroups(int64_t timeShare, time_point startDate, uint64_t assignment);
+        ContentGroups constructContentGroups(int64_t timeShare, time_point startDate, uint64_t assignment);
     };
 }

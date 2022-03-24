@@ -14,10 +14,11 @@ namespace hypha
         TRACE_FUNCTION()
     }
 
+
     VoteTally::VoteTally(
-        dao& dao,
+        dao&      dao,
         Document& proposal,
-        Settings *daoSettings
+        Settings  *daoSettings
         )
         : TypedDocument(dao)
     {
@@ -36,10 +37,10 @@ namespace hypha
 
         ContentGroup *contentOptions = proposal.getContentWrapper().getGroupOrFail(BALLOT_OPTIONS);
 
-        auto voiceToken = daoSettings->getOrFail <eosio::asset>(common::VOICE_TOKEN);
+        auto voiceToken = daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
 
-        std::map <std::string, eosio::asset> optionsTally;
-        std::vector <std::string>            optionsTallyOrdered;
+        std::map<std::string, eosio::asset> optionsTally;
+        std::vector<std::string>            optionsTallyOrdered;
 
         for (auto option : *contentOptions)
         {
@@ -50,7 +51,7 @@ namespace hypha
             }
         }
 
-        std::vector <Edge> edges = dao.getGraph().getEdgesFrom(proposal.getID(), common::VOTE);
+        std::vector<Edge> edges = dao.getGraph().getEdgesFrom(proposal.getID(), common::VOTE);
 
         for (auto edge : edges)
         {
@@ -64,7 +65,7 @@ namespace hypha
 
         for (auto option : optionsTallyOrdered)
         {
-            tallyContentGroups.push_back(ContentGroup{
+            tallyContentGroups.push_back(ContentGroup {
                 Content(CONTENT_GROUP_LABEL, option),
                 Content(VOTE_POWER, optionsTally[option])
             });
@@ -75,7 +76,8 @@ namespace hypha
         Edge::write(dao.get_self(), dao.get_self(), proposal.getID(), getDocument().getID(), common::VOTE_TALLY);
     }
 
-    const std::string VoteTally::buildNodeLabel(ContentGroups&content)
+
+    const std::string VoteTally::buildNodeLabel(ContentGroups& content)
     {
         return("VoteTally");
     }

@@ -11,15 +11,17 @@ namespace hypha
 {
     float getPhaseToYearRatio(Settings *daoSettings)
     {
-        int64_t periodDurationSec = daoSettings->getOrFail <int64_t>(common::PERIOD_DURATION);
+        int64_t periodDurationSec = daoSettings->getOrFail<int64_t>(common::PERIOD_DURATION);
 
         return(getPhaseToYearRatio(daoSettings, periodDurationSec));
     }
 
+
     float getPhaseToYearRatio(Settings *daoSettings, int64_t periodDuration)
     {
-        return(static_cast <float>(periodDuration) / common::YEAR_DURATION_SEC);
+        return(static_cast<float>(periodDuration) / common::YEAR_DURATION_SEC);
     }
+
 
     AssetBatch calculateSalaries(const SalaryConfig& salaryConf, const AssetBatch& tokens)
     {
@@ -41,7 +43,8 @@ namespace hypha
         return(salaries);
     }
 
-    ContentGroups getRootContent(const eosio::name&contract)
+
+    ContentGroups getRootContent(const eosio::name& contract)
     {
         ContentGroups cgs({
             ContentGroup{
@@ -55,7 +58,8 @@ namespace hypha
         return(std::move(cgs));
     }
 
-    ContentGroups getDAOContent(const eosio::name&dao_name)
+
+    ContentGroups getDAOContent(const eosio::name& dao_name)
     {
         ContentGroups cgs({
             ContentGroup{
@@ -69,13 +73,15 @@ namespace hypha
         return(std::move(cgs));
     }
 
-    eosio::asset adjustAsset(const asset&originalAsset, const float&adjustment)
+
+    eosio::asset adjustAsset(const asset& originalAsset, const float& adjustment)
     {
-        return(eosio::asset{ static_cast <int64_t>(originalAsset.amount * adjustment), originalAsset.symbol });
+        return(eosio::asset{ static_cast<int64_t>(originalAsset.amount * adjustment), originalAsset.symbol });
     }
 
-    // retrieve the seeds price as of a specific point in time
-    float getSeedsPriceUsd(const eosio::time_point&price_time_point)
+
+// retrieve the seeds price as of a specific point in time
+    float getSeedsPriceUsd(const eosio::time_point& price_time_point)
     {
         price_history_tables ph_t(name("tlosto.seeds"), name("tlosto.seeds").value);
 
@@ -95,7 +101,8 @@ namespace hypha
         return((float)1 / (seeds_usd_float));
     }
 
-    // get the current SEEDS price
+
+// get the current SEEDS price
     float getSeedsPriceUsd()
     {
         configtables c_t(name("tlosto.seeds"), name("tlosto.seeds").value);
@@ -106,67 +113,72 @@ namespace hypha
         return((float)1 / ((float)config_t.seeds_per_usd.amount / (float)config_t.seeds_per_usd.symbol.precision()));
     }
 
-    void issueToken(const eosio::name&token_contract,
-                    const eosio::name&issuer,
-                    const eosio::name&to,
-                    const eosio::asset&token_amount,
-                    const string&memo)
+
+    void issueToken(const eosio::name&  token_contract,
+                    const eosio::name&  issuer,
+                    const eosio::name&  to,
+                    const eosio::asset& token_amount,
+                    const string&       memo)
     {
         TRACE_FUNCTION()
 
         eosio::action(
-            eosio::permission_level{ issuer, eosio::name("active") },
+            eosio::permission_level { issuer, eosio::name("active") },
             token_contract, eosio::name("issue"),
             std::make_tuple(issuer, token_amount, memo))
-        .send();
+           .send();
 
         eosio::action(
-            eosio::permission_level{ issuer, eosio::name("active") },
+            eosio::permission_level { issuer, eosio::name("active") },
             token_contract, eosio::name("transfer"),
             std::make_tuple(issuer, to, token_amount, memo))
-        .send();
+           .send();
     }
 
-    void issueTenantToken(const eosio::name&token_contract,
-                          const eosio::name&tenant,
-                          const eosio::name&issuer,
-                          const eosio::name&to,
-                          const eosio::asset&token_amount,
-                          const string&memo)
+
+    void issueTenantToken(const eosio::name&  token_contract,
+                          const eosio::name&  tenant,
+                          const eosio::name&  issuer,
+                          const eosio::name&  to,
+                          const eosio::asset& token_amount,
+                          const string&       memo)
     {
         TRACE_FUNCTION()
 
         eosio::action(
-            eosio::permission_level{ issuer, eosio::name("active") },
+            eosio::permission_level { issuer, eosio::name("active") },
             token_contract, eosio::name("issue"),
             std::make_tuple(tenant, issuer, token_amount, memo))
-        .send();
+           .send();
 
         eosio::action(
-            eosio::permission_level{ issuer, eosio::name("active") },
+            eosio::permission_level { issuer, eosio::name("active") },
             token_contract, eosio::name("transfer"),
             std::make_tuple(tenant, issuer, to, token_amount, memo))
-        .send();
+           .send();
     }
+
 
     double normalizeToken(const eosio::asset& token)
     {
         auto power = ::pow(10, token.symbol.precision());
 
-        return(static_cast <double>(token.amount) / power);
+        return(static_cast<double>(token.amount) / power);
     }
+
 
     eosio::asset denormalizeToken(double amountNormalized, const eosio::asset& token)
     {
         auto power = ::pow(10, token.symbol.precision());
 
-        return(eosio::asset{ static_cast <int64_t>(amountNormalized * power), token.symbol });
+        return(eosio::asset{ static_cast<int64_t>(amountNormalized * power), token.symbol });
     }
+
 
     int64_t getTokenUnit(const eosio::asset& token)
     {
         auto symb = token.symbol;
 
-        return(static_cast <int64_t>(::powf(10, symb.precision())));;
+        return(static_cast<int64_t>(::powf(10, symb.precision())));
     }
 } // namespace hypha

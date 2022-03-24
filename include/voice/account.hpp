@@ -30,10 +30,10 @@ namespace hypha {
             }
         };
 
-        using accounts_by_key = eosio::indexed_by <
+        using accounts_by_key = eosio::indexed_by<
             "bykey"_n,
-            eosio::const_mem_fun <account, uint128_t, &account::by_tenant_and_code>
+            eosio::const_mem_fun<account, uint128_t, &account::by_tenant_and_code>
             >;
-        using accounts = eosio::multi_index <"accounts"_n, account, accounts_by_key>;
+        using accounts = eosio::multi_index<"accounts"_n, account, accounts_by_key>;
     }
 }

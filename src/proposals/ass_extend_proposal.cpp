@@ -14,17 +14,17 @@
 
 namespace hypha
 {
-    void AssignmentExtensionProposal::proposeImpl(const name&proposer, ContentWrapper&contentWrapper)
+    void AssignmentExtensionProposal::proposeImpl(const name& proposer, ContentWrapper& contentWrapper)
     {
         TRACE_FUNCTION()
         // the original document must be an assignment
         Assignment assignment(
             &m_dao,
-            static_cast <uint64_t>(contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs <int64_t>())
+            static_cast<uint64_t>(contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>())
             );
 
         int64_t currentPeriodCount = assignment.getPeriodCount();
-        int64_t newPeriodCount     = contentWrapper.getOrFail(DETAILS, PERIOD_COUNT)->getAs <int64_t>();
+        int64_t newPeriodCount     = contentWrapper.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
 
         eosio::print("current period count is: " + std::to_string(currentPeriodCount) + "\n");
         eosio::print("new period count is: " + std::to_string(newPeriodCount) + "\n");
@@ -34,7 +34,8 @@ namespace hypha
                      std::to_string(currentPeriodCount) + "; proposed: " + std::to_string(newPeriodCount));
     }
 
-    void AssignmentExtensionProposal::postProposeImpl(Document&proposal)
+
+    void AssignmentExtensionProposal::postProposeImpl(Document& proposal)
     {
         TRACE_FUNCTION()
         ContentWrapper proposalContent = proposal.getContentWrapper();
@@ -42,8 +43,8 @@ namespace hypha
         // confirm that the original document exists
         Document original(
             m_dao.get_self(),
-            static_cast <uint64_t>(
-                proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs <int64_t>()
+            static_cast<uint64_t>(
+                proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>()
                 )
             );
 
@@ -52,7 +53,8 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID(), original.getID(), common::ORIGINAL);
     }
 
-    void AssignmentExtensionProposal::passImpl(Document&proposal)
+
+    void AssignmentExtensionProposal::passImpl(Document& proposal)
     {
         TRACE_FUNCTION()
         // merge the original with the edits and save
@@ -71,7 +73,7 @@ namespace hypha
                 group != nullptr)
             {
                 proposalContent.insertOrReplace(groupIdx,
-                                                Content{ "skip_from_merge", 0 });
+                                                Content { "skip_from_merge", 0 });
             }
         }
 
@@ -117,10 +119,12 @@ namespace hypha
         proposalContent.getContentGroups() = std::move(originalContents);
     }
 
-    std::string AssignmentExtensionProposal::getBallotContent(ContentWrapper&contentWrapper)
+
+    std::string AssignmentExtensionProposal::getBallotContent(ContentWrapper& contentWrapper)
     {
         return(std::string{ "Assignment Extension Proposal" });
     }
+
 
     name AssignmentExtensionProposal::getProposalType()
     {

@@ -7,16 +7,16 @@
 
 namespace hypha
 {
-    Period::Period(dao *dao,
-                   const eosio::time_point&start_time,
-                   const std::string&label)
+    Period::Period(dao                      *dao,
+                   const eosio::time_point& start_time,
+                   const std::string&       label)
         : Document(dao->get_self(), dao->get_self(),
-                   ContentGroups{
-        ContentGroup{
+                   ContentGroups {
+        ContentGroup {
             Content(CONTENT_GROUP_LABEL, DETAILS),
             Content(START_TIME, start_time),
             Content(LABEL, label) },
-        ContentGroup{
+        ContentGroup {
             Content(CONTENT_GROUP_LABEL, SYSTEM),
             Content(TYPE, common::PERIOD),
             Content(NODE_LABEL, label) } }),
@@ -24,18 +24,19 @@ namespace hypha
     {
     }
 
-    Period::Period(dao *dao,
-                   const eosio::time_point&start_time,
-                   const std::string&label,
-                   const std::string&readable,
-                   const std::string&nodeLabel)
+
+    Period::Period(dao                      *dao,
+                   const eosio::time_point& start_time,
+                   const std::string&       label,
+                   const std::string&       readable,
+                   const std::string&       nodeLabel)
         : Document(dao->get_self(), dao->get_self(),
-                   ContentGroups{
-        ContentGroup{
+                   ContentGroups {
+        ContentGroup {
             Content(CONTENT_GROUP_LABEL, DETAILS),
             Content(START_TIME, start_time),
             Content(LABEL, label) },
-        ContentGroup{
+        ContentGroup {
             Content(CONTENT_GROUP_LABEL, SYSTEM),
             Content(TYPE, common::PERIOD),
             // useful when reporting errors and for readable payment memos, albeit a bit overkill
@@ -46,49 +47,58 @@ namespace hypha
     {
     }
 
+
     Period::Period(dao *dao, uint64_t id)
         : Document(dao->get_self(), id), m_dao{dao}
     {
     }
 
+
     eosio::time_point Period::getStartTime()
     {
-        return(getContentWrapper().getOrFail(DETAILS, START_TIME)->getAs <eosio::time_point>());
+        return(getContentWrapper().getOrFail(DETAILS, START_TIME)->getAs<eosio::time_point>());
     }
+
 
     std::string Period::getReadable()
     {
-        return(getContentWrapper().getOrFail(SYSTEM, READABLE_START_TIME)->getAs <std::string>());
+        return(getContentWrapper().getOrFail(SYSTEM, READABLE_START_TIME)->getAs<std::string>());
     }
+
 
     std::string Period::getReadableDate()
     {
-        return(getContentWrapper().getOrFail(SYSTEM, READABLE_START_DATE)->getAs <std::string>());
+        return(getContentWrapper().getOrFail(SYSTEM, READABLE_START_DATE)->getAs<std::string>());
     }
+
 
     std::string Period::getNodeLabel()
     {
-        return(getContentWrapper().getOrFail(SYSTEM, NODE_LABEL)->getAs <std::string>());
+        return(getContentWrapper().getOrFail(SYSTEM, NODE_LABEL)->getAs<std::string>());
     }
+
 
     std::string Period::getLabel()
     {
-        return(getContentWrapper().getOrFail(DETAILS, LABEL)->getAs <std::string>());
+        return(getContentWrapper().getOrFail(DETAILS, LABEL)->getAs<std::string>());
     }
+
 
     eosio::time_point Period::getEndTime()
     {
         return(next().getStartTime());
     }
 
-    Period Period::createNext(const eosio::time_point&nextPeriodStart,
-                              const std::string&label)
+
+    Period Period::createNext(const eosio::time_point& nextPeriodStart,
+                              const std::string&       label)
     {
         Period nextPeriod(m_dao, nextPeriodStart, label);
 
         Edge::write(m_dao->get_self(), m_dao->get_self(), getID(), nextPeriod.getID(), common::NEXT);
         return(nextPeriod);
     }
+
 
     bool Period::isEnd()
     {
@@ -99,6 +109,7 @@ namespace hypha
         }
         return(false);
     }
+
 
     Period Period::asOf(dao *dao, uint64_t daoID, eosio::time_point moment)
     {
@@ -134,10 +145,12 @@ namespace hypha
         return(period);
     }
 
+
     Period Period::current(dao *dao, uint64_t daoID)
     {
         return(asOf(dao, daoID, eosio::current_time_point()));
     }
+
 
     Period Period::next()
     {
@@ -146,6 +159,7 @@ namespace hypha
         EOS_CHECK(exists, "End of calendar has been reached. Contact administrator to add more time periods.");
         return(Period(m_dao, period.getToNode()));
     }
+
 
     Period Period::getNthPeriodAfter(int64_t count) const
     {
@@ -173,6 +187,7 @@ namespace hypha
         return(Period(m_dao, nextID));
     }
 
+
     int64_t Period::getPeriodCountTo(Period& other)
     {
         TRACE_FUNCTION()
@@ -199,6 +214,7 @@ namespace hypha
 
         return(count);
     }
+
 
     Period Period::getPeriodUntil(eosio::time_point moment)
     {

@@ -8,14 +8,14 @@
 namespace hypha {
     class BadgeAssignmentProposal : public hypha::Proposal
     {
-        public:
-            using Proposal::Proposal;
+public:
+        using Proposal::Proposal;
 
-        protected:
+protected:
 
-            void proposeImpl(const name&proposer, ContentWrapper&contentWrapper) override;
-            void passImpl(Document&proposal) override;
-            string getBallotContent(ContentWrapper&contentWrapper) override;
-            name getProposalType() override;
+        void proposeImpl(const name& proposer, ContentWrapper& contentWrapper) override;
+        void passImpl(Document& proposal) override;
+        string getBallotContent(ContentWrapper& contentWrapper) override;
+        name getProposalType() override;
     };
 }

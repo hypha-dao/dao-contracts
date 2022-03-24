@@ -13,14 +13,14 @@
 
 namespace hypha
 {
-    void EditProposal::proposeImpl(const name&proposer, ContentWrapper&contentWrapper)
+    void EditProposal::proposeImpl(const name& proposer, ContentWrapper& contentWrapper)
     {
         EOS_CHECK(
             Member::isMember(m_dao, m_daoID, proposer),
             util::to_str("Only members of: ", m_daoID, " can edit this proposal")
             )
 
-        auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs <int64_t>();
+        auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>();
 
         Document originalDoc(m_dao.get_self(), originalDocHash);
 
@@ -34,14 +34,15 @@ namespace hypha
         }
     }
 
-    void EditProposal::postProposeImpl(Document&proposal)
+
+    void EditProposal::postProposeImpl(Document& proposal)
     {
         TRACE_FUNCTION()
         ContentWrapper proposalContent = proposal.getContentWrapper();
 
         // original_document is a required hash
-        auto originalDocID = static_cast <uint64_t>(
-            proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs <int64_t>()
+        auto originalDocID = static_cast<uint64_t>(
+            proposalContent.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>()
             );
 
         Document original;
@@ -58,7 +59,7 @@ namespace hypha
             if (auto [_, count] = proposalContent.get(DETAILS, PERIOD_COUNT);
                 count != nullptr)
             {
-                auto newPeriodCount = count->getAs <int64_t>();
+                auto newPeriodCount = count->getAs<int64_t>();
                 eosio::print("current period count is: " + std::to_string(currentPeriodCount) + "\n");
                 eosio::print("new period count is: " + std::to_string(newPeriodCount) + "\n");
 
@@ -73,16 +74,16 @@ namespace hypha
             auto currentTimeSecs = eosio::current_time_point().sec_since_epoch();
 
             auto lastGracePeriodEndSecs = assignment.getLastPeriod()
-                                          .getNthPeriodAfter(2)
-                                          .getEndTime()
-                                          .sec_since_epoch();
+                                             .getNthPeriodAfter(2)
+                                             .getEndTime()
+                                             .sec_since_epoch();
 
             EOS_CHECK(
                 lastGracePeriodEndSecs > currentTimeSecs,
                 "Assignment extension grace period (2 periods after expiration) is over, create a new one instead"
                 );
 
-            original = std::move(*static_cast <Document *>(&assignment));
+            original = std::move(*static_cast<Document *>(&assignment));
         }
         else
         {
@@ -92,7 +93,7 @@ namespace hypha
 
         ContentWrapper ocw = original.getContentWrapper();
 
-        auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs <string>();
+        auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
         EOS_CHECK(
             state == common::STATE_APPROVED ||
@@ -104,7 +105,8 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID(), original.getID(), common::ORIGINAL);
     }
 
-    void EditProposal::passImpl(Document&proposal)
+
+    void EditProposal::passImpl(Document& proposal)
     {
         TRACE_FUNCTION()
         // merge the original with the edits and save
@@ -123,7 +125,7 @@ namespace hypha
                 group != nullptr)
             {
                 proposalContent.insertOrReplace(groupIdx,
-                                                Content{ "skip_from_merge", 0 });
+                                                Content { "skip_from_merge", 0 });
             }
         }
 
@@ -169,11 +171,13 @@ namespace hypha
         proposalContent.getContentGroups() = std::move(originalContents);
     }
 
-    std::string EditProposal::getBallotContent(ContentWrapper&contentWrapper)
+
+    std::string EditProposal::getBallotContent(ContentWrapper& contentWrapper)
     {
         TRACE_FUNCTION()
         return(getTitle(contentWrapper));
     }
+
 
     name EditProposal::getProposalType()
     {

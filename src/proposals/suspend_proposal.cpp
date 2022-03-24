@@ -16,7 +16,7 @@
 
 namespace hypha
 {
-    void SuspendProposal::proposeImpl(const name&proposer, ContentWrapper&contentWrapper)
+    void SuspendProposal::proposeImpl(const name& proposer, ContentWrapper& contentWrapper)
     {
         TRACE_FUNCTION()
 
@@ -26,7 +26,7 @@ namespace hypha
             )
 
         // original_document is a required hash
-        auto originalDocID = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs <int64_t>();
+        auto originalDocID = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>();
 
         Document originalDoc(m_dao.get_self(), originalDocID);
 
@@ -50,32 +50,34 @@ namespace hypha
         //TODO-J: Add state item to all active Roles/Assignments
         //Check assignments from 2 months ago with dgraph and then send them to a fix action (should verify if they are still active or not)
         //Check all roles that are not suspened (?)
-        auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs <string>();
+        auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
         EOS_CHECK(
             state == common::STATE_APPROVED,
             util::to_str("Cannot open suspend proposals on ", state, " documents")
             )
 
-        auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs <name>();
+        auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
 
         switch (type.value)
         {
         case common::ASSIGN_BADGE.value:
-        case common::ASSIGNMENT.value: {
-            RecurringActivity assignment(&m_dao, originalDocID);
+        case common::ASSIGNMENT.value:
+           {
+               RecurringActivity assignment(&m_dao, originalDocID);
 
-            auto currentTimeSecs = eosio::current_time_point().sec_since_epoch();
+               auto currentTimeSecs = eosio::current_time_point().sec_since_epoch();
 
-            auto lastPeriodEndSecs = assignment.getLastPeriod()
-                                     .getEndTime()
-                                     .sec_since_epoch();
+               auto lastPeriodEndSecs = assignment.getLastPeriod()
+                                           .getEndTime()
+                                           .sec_since_epoch();
 
-            EOS_CHECK(
-                currentTimeSecs < lastPeriodEndSecs,
-                "Assignment is already expired"
-                );
-        } break;
+               EOS_CHECK(
+                   currentTimeSecs < lastPeriodEndSecs,
+                   "Assignment is already expired"
+                   );
+           }
+           break;
 
         case common::ROLE_NAME.value:
             //We don't have to do anything special for roles
@@ -93,23 +95,25 @@ namespace hypha
             break;
         }
 
-        auto title = ocw.getOrFail(DETAILS, TITLE)->getAs <string>();
+        auto title = ocw.getOrFail(DETAILS, TITLE)->getAs<string>();
 
         ContentWrapper::insertOrReplace(*contentWrapper.getGroupOrFail(DETAILS),
                                         Content { TITLE, util::to_str("Suspension of ", type, ": ", title) });
     }
 
-    void SuspendProposal::postProposeImpl(Document&proposal)
+
+    void SuspendProposal::postProposeImpl(Document& proposal)
     {
         TRACE_FUNCTION()
         auto originalDocID = proposal.getContentWrapper()
-                             .getOrFail(DETAILS, ORIGINAL_DOCUMENT)
-                             ->getAs <int64_t>();
+                                .getOrFail(DETAILS, ORIGINAL_DOCUMENT)
+                                ->getAs<int64_t>();
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID(), originalDocID, common::SUSPEND);
     }
 
-    void SuspendProposal::passImpl(Document&proposal)
+
+    void SuspendProposal::passImpl(Document& proposal)
     {
         TRACE_FUNCTION()
         auto edges = m_dao.getGraph().getEdgesFrom(proposal.getID(), common::SUSPEND);
@@ -129,68 +133,76 @@ namespace hypha
 
         originalDoc.update();
 
-        auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs <name>();
+        auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
 
         switch (type.value)
         {
         case common::ASSIGN_BADGE.value:
-        case common::ASSIGNMENT.value: {
-            RecurringActivity assignment(&m_dao, originalDoc.getID());
+        case common::ASSIGNMENT.value:
+           {
+               RecurringActivity assignment(&m_dao, originalDoc.getID());
 
-            auto cw = assignment.getContentWrapper();
+               auto cw = assignment.getContentWrapper();
 
-            auto originalPeriods = assignment.getPeriodCount();
+               auto originalPeriods = assignment.getPeriodCount();
 
-            auto startPeriod = assignment.getStartPeriod();
+               auto startPeriod = assignment.getStartPeriod();
 
-            //Calculate the number of periods since start period to the current period
-            auto currentPeriod = startPeriod.getPeriodUntil(eosio::current_time_point());
+               //Calculate the number of periods since start period to the current period
+               auto currentPeriod = startPeriod.getPeriodUntil(eosio::current_time_point());
 
-            auto periodsToCurrent = startPeriod.getPeriodCountTo(currentPeriod);
+               auto periodsToCurrent = startPeriod.getPeriodCountTo(currentPeriod);
 
-            periodsToCurrent = std::min(periodsToCurrent + 1, originalPeriods);
+               periodsToCurrent = std::min(periodsToCurrent + 1, originalPeriods);
 
-            if (originalPeriods != periodsToCurrent)
-            {
-                auto detailsGroup = cw.getGroupOrFail(DETAILS);
+               if (originalPeriods != periodsToCurrent)
+               {
+                   auto detailsGroup = cw.getGroupOrFail(DETAILS);
 
-                ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
+                   ContentWrapper::insertOrReplace(*detailsGroup, Content { PERIOD_COUNT, periodsToCurrent });
 
-                originalDoc.update();
-            }
+                   originalDoc.update();
+               }
 
-            if (type == common::ASSIGNMENT)
-            {
-                //This makes the last period partially claimable to the point where the assignment is suspended
-                m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
-            }
-        } break;
+               if (type == common::ASSIGNMENT)
+               {
+                   //This makes the last period partially claimable to the point where the assignment is suspended
+                   m_dao.modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
+               }
+           }
+           break;
 
-        case common::ROLE_NAME.value: {
-            //We don't have to do anything special for roles
-        }  break;
+        case common::ROLE_NAME.value:
+           {
+               //We don't have to do anything special for roles
+           }
+           break;
 
         case common::BADGE_NAME.value:
             break;
 
-        default: {
-            EOS_CHECK(
-                false,
-                util::to_str("Unexpected document type for suspension: ",
-                             type, ". Valid types [", common::ASSIGNMENT, "]")
-                );
-        } break;
+        default:
+           {
+               EOS_CHECK(
+                   false,
+                   util::to_str("Unexpected document type for suspension: ",
+                                type, ". Valid types [", common::ASSIGNMENT, "]")
+                   );
+           }
+           break;
         }
 
         //dao --> suspended --> proposal
         Edge(m_dao.get_self(), m_dao.get_self(), m_daoID, originalDoc.getID(), common::SUSPENDED);
     }
 
-    std::string SuspendProposal::getBallotContent(ContentWrapper&contentWrapper)
+
+    std::string SuspendProposal::getBallotContent(ContentWrapper& contentWrapper)
     {
         TRACE_FUNCTION()
         return(getTitle(contentWrapper));
     }
+
 
     name SuspendProposal::getProposalType()
     {

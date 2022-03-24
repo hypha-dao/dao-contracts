@@ -6,7 +6,7 @@ namespace hypha
 {
     constexpr auto QUEST_START = "quest_start";
 
-    void QuestCompletionProposal::proposeImpl(const name&proposer, ContentWrapper&contentWrapper)
+    void QuestCompletionProposal::proposeImpl(const name& proposer, ContentWrapper& contentWrapper)
     {
         TRACE_FUNCTION()
         PayoutProposal::proposeImpl(proposer, contentWrapper);
@@ -17,7 +17,7 @@ namespace hypha
             DETAILS,
             QUEST_START,
             "Associated quest_start document not found in the contents"
-            )->getAs <int64_t>();
+            )->getAs<int64_t>();
 
         Document questStart(m_dao.get_self(), questStartID);
 
@@ -27,12 +27,13 @@ namespace hypha
             SYSTEM,
             TYPE,
             "No type found on quest start document"
-            )->getAs <eosio::name>();
+            )->getAs<eosio::name>();
 
         eosio::check(documentType == common::QUEST_START, "Document type is not a quest start");
     }
 
-    void QuestCompletionProposal::postProposeImpl(Document&proposal)
+
+    void QuestCompletionProposal::postProposeImpl(Document& proposal)
     {
         TRACE_FUNCTION()
 
@@ -42,7 +43,7 @@ namespace hypha
             DETAILS,
             QUEST_START,
             "Associated quest_start document not found in the contents"
-            )->getAs <int64_t>();
+            )->getAs<int64_t>();
 
         Document questStartDoc(m_dao.get_self(), questStartHash);
 
@@ -55,7 +56,8 @@ namespace hypha
             );
     }
 
-    void QuestCompletionProposal::passImpl(Document&proposal)
+
+    void QuestCompletionProposal::passImpl(Document& proposal)
     {
         TRACE_FUNCTION()
         Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID(), common::QUEST_COMPLETION);
@@ -70,6 +72,7 @@ namespace hypha
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), questStart.at(0).getToNode(), proposal.getID(), common::COMPLETED_BY);
     }
+
 
     name QuestCompletionProposal::getProposalType()
     {

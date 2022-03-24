@@ -5,29 +5,32 @@
 
 namespace hypha
 {
-    Payer::Payer(dao&dao, Settings *daoSettings) : m_dao(dao)
+    Payer::Payer(dao& dao, Settings *daoSettings) : m_dao(dao)
     {
         this->m_daoSettings = daoSettings;
     }
+
 
     Payer::~Payer()
     {
     }
 
-    Document Payer::pay(const eosio::name&recipient,
-                        const eosio::asset&quantity,
-                        const string&memo)
+
+    Document Payer::pay(const eosio::name&  recipient,
+                        const eosio::asset& quantity,
+                        const string&       memo)
 
     {
         TRACE_FUNCTION()
         return(payImpl(recipient, quantity, memo));
     }
 
-    void Payer::issueToken(const eosio::name&token_contract,
-                           const eosio::name&issuer,
-                           const eosio::name&to,
-                           const eosio::asset&token_amount,
-                           const string&memo)
+
+    void Payer::issueToken(const eosio::name&  token_contract,
+                           const eosio::name&  issuer,
+                           const eosio::name&  to,
+                           const eosio::asset& token_amount,
+                           const string&       memo)
     {
         TRACE_FUNCTION()
         hypha::issueToken(
@@ -39,9 +42,10 @@ namespace hypha
             );
     }
 
-    ContentGroups Payer::defaultReceipt(const eosio::name&recipient,
-                                        const eosio::asset&quantity,
-                                        const string&memo)
+
+    ContentGroups Payer::defaultReceipt(const eosio::name&  recipient,
+                                        const eosio::asset& quantity,
+                                        const string&       memo)
     {
         return(ContentGroups{
             ContentGroup{

@@ -9,21 +9,24 @@
 
 namespace hypha
 {
-    void AttestationProposal::proposeImpl(const name&proposer, ContentWrapper&contentWrapper)
+    void AttestationProposal::proposeImpl(const name& proposer, ContentWrapper& contentWrapper)
     {
     }
 
-    void AttestationProposal::passImpl(Document&proposal)
+
+    void AttestationProposal::passImpl(Document& proposal)
     {
         TRACE_FUNCTION()
         Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID(), common::ATTESTATION);
     }
 
-    std::string AttestationProposal::getBallotContent(ContentWrapper&contentWrapper)
+
+    std::string AttestationProposal::getBallotContent(ContentWrapper& contentWrapper)
     {
         TRACE_FUNCTION()
-        return(contentWrapper.getOrFail(DETAILS, TITLE)->getAs <std::string>());
+        return(contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>());
     }
+
 
     name AttestationProposal::getProposalType()
     {

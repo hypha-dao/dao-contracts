@@ -16,18 +16,20 @@
 
 namespace hypha
 {
-    Member::Member(dao& dao, const eosio::name&creator, const eosio::name&member)
+    Member::Member(dao& dao, const eosio::name& creator, const eosio::name& member)
         : Document(dao.get_self(), dao.get_self(), defaultContent(member)), m_dao(dao)
     {
-        m_dao.addNameID <dao::member_table>(member, getID());
+        m_dao.addNameID<dao::member_table>(member, getID());
     }
+
 
     Member::Member(dao& dao, uint64_t docID)
         : Document(dao.get_self(), docID), m_dao(dao)
     {
     }
 
-    ContentGroups Member::defaultContent(const eosio::name&member)
+
+    ContentGroups Member::defaultContent(const eosio::name& member)
     {
         return(ContentGroups{
             ContentGroup{
@@ -39,10 +41,12 @@ namespace hypha
                 Content(NODE_LABEL, member.to_string()) } });
     }
 
-    bool Member::isMember(dao& dao, uint64_t daoID, const eosio::name&member)
+
+    bool Member::isMember(dao& dao, uint64_t daoID, const eosio::name& member)
     {
         return(Edge::exists(dao.get_self(), daoID, dao.getMemberID(member), common::MEMBER));
     }
+
 
     bool Member::exists(dao& dao, const eosio::name& memberName)
     {
@@ -50,6 +54,7 @@ namespace hypha
 
         return(m_t.find(memberName.value) != m_t.end());
     }
+
 
     void Member::apply(uint64_t applyTo, const std::string content)
     {
@@ -64,7 +69,8 @@ namespace hypha
         Edge::write(getContract(), getAccount(), getID(), applyTo, common::APPLICANT_OF);
     }
 
-    void Member::enroll(const eosio::name&enroller, uint64_t appliedTo, const std::string&content)
+
+    void Member::enroll(const eosio::name& enroller, uint64_t appliedTo, const std::string& content)
     {
         TRACE_FUNCTION()
 
@@ -90,16 +96,16 @@ namespace hypha
         Document daoDoc(getContract(), appliedTo);
         auto     daoCW = daoDoc.getContentWrapper();
 
-        auto daoName = daoCW.getOrFail(DETAILS, DAO_NAME)->getAs <name>();
+        auto daoName = daoCW.getOrFail(DETAILS, DAO_NAME)->getAs<name>();
 
         auto daoSettings = m_dao.getSettingsDocument(appliedTo);
 
-        auto voiceToken = daoSettings->getOrFail <asset>(common::VOICE_TOKEN);
+        auto voiceToken = daoSettings->getOrFail<asset>(common::VOICE_TOKEN);
 
         eosio::asset genesis_voice{ getTokenUnit(voiceToken), voiceToken.symbol };
         std::string  memo = util::to_str("genesis voice issuance during enrollment to ", daoName);
 
-        name hyphaHvoice = m_dao.getSettingOrFail <eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+        name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
         hypha::issueTenantToken(
             hyphaHvoice,
@@ -121,9 +127,10 @@ namespace hypha
         //     .send();
     }
 
+
     eosio::name Member::getAccount()
     {
         TRACE_FUNCTION()
-        return(getContentWrapper().getOrFail(DETAILS, MEMBER_STRING)->getAs <eosio::name>());
+        return(getContentWrapper().getOrFail(DETAILS, MEMBER_STRING)->getAs<eosio::name>());
     }
 } // namespace hypha

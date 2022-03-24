@@ -7,15 +7,15 @@
 namespace hypha {
     class RoleProposal : public Proposal
     {
-        public:
-            using Proposal::Proposal;
+public:
+        using Proposal::Proposal;
 
-        protected:
+protected:
 
-            void proposeImpl(const name&proposer, ContentWrapper&contentWrapper) override;
-            void passImpl(Document&proposal) override;
+        void proposeImpl(const name& proposer, ContentWrapper& contentWrapper) override;
+        void passImpl(Document& proposal) override;
 
-            string getBallotContent(ContentWrapper&contentWrapper) override;
-            name getProposalType() override;
+        string getBallotContent(ContentWrapper& contentWrapper) override;
+        name getProposalType() override;
     };
 }

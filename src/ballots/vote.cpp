@@ -19,12 +19,13 @@ namespace hypha
         TRACE_FUNCTION()
     }
 
+
     Vote::Vote(
-        hypha::dao& dao,
-        const eosio::name voter,
-        std::string vote,
-        Document& proposal,
-        std::optional <std::string> notes
+        hypha::dao&                dao,
+        const eosio::name          voter,
+        std::string                vote,
+        Document&                  proposal,
+        std::optional<std::string> notes
         )
         : TypedDocument(dao)
     {
@@ -40,7 +41,7 @@ namespace hypha
             "Only allowed to vote active proposals"
             );
 
-        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs <eosio::time_point>();
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
 
         EOS_CHECK(
             eosio::time_point_sec(eosio::current_time_point()) <= expiration,
@@ -49,7 +50,7 @@ namespace hypha
 
         Document voterDoc(dao.get_self(), dao.getMemberID(voter));
 
-        std::vector <Edge> votes = dao.getGraph().getEdgesFrom(proposal.getID(), common::VOTE);
+        std::vector<Edge> votes = dao.getGraph().getEdgesFrom(proposal.getID(), common::VOTE);
 
         for (auto vote : votes)
         {
@@ -76,15 +77,15 @@ namespace hypha
 
         // Fetch vote power
         // Todo: Need to ensure that the balance does not need a decay.
-        name hvoiceContract = dao.getSettingOrFail <eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+        name hvoiceContract = dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
         hypha::voice::accounts acnts(hvoiceContract, voter.value);
-        auto account_index = acnts.get_index <name("bykey")>();
+        auto account_index = acnts.get_index<name("bykey")>();
 
-        asset voiceToken = daoSettings->getOrFail <asset>(common::VOICE_TOKEN);
+        asset voiceToken = daoSettings->getOrFail<asset>(common::VOICE_TOKEN);
 
         auto v_itr = account_index.find(
             voice::account::build_key(
-                daoSettings->getOrFail <name>(DAO_NAME),
+                daoSettings->getOrFail<name>(DAO_NAME),
                 voiceToken.symbol.code()
                 )
             );
@@ -121,6 +122,7 @@ namespace hypha
         Edge::write(dao.get_self(), voter, getDocument().getID(), proposal.getID(), common::VOTE_ON);
     }
 
+
     const std::string& Vote::getVote()
     {
         TRACE_FUNCTION()
@@ -128,8 +130,9 @@ namespace hypha
                    CONTENT_GROUP_LABEL_VOTE,
                    VOTE_LABEL,
                    "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
-                   )->template getAs <std::string>());
+                   )->template getAs<std::string>());
     }
+
 
     const eosio::asset& Vote::getPower()
     {
@@ -138,8 +141,9 @@ namespace hypha
                    CONTENT_GROUP_LABEL_VOTE,
                    VOTE_POWER,
                    "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
-                   )->template getAs <eosio::asset>());
+                   )->template getAs<eosio::asset>());
     }
+
 
     const eosio::name& Vote::getVoter()
     {
@@ -148,17 +152,18 @@ namespace hypha
                    CONTENT_GROUP_LABEL_VOTE,
                    VOTER_LABEL,
                    "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
-                   )->template getAs <eosio::name>());
+                   )->template getAs<eosio::name>());
     }
 
-    const std::string Vote::buildNodeLabel(ContentGroups&content)
+
+    const std::string Vote::buildNodeLabel(ContentGroups& content)
     {
         TRACE_FUNCTION()
         std::string vote = ContentWrapper(content).getOrFail(
             CONTENT_GROUP_LABEL_VOTE,
             VOTE_LABEL,
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
-            )->template getAs <std::string>();
+            )->template getAs<std::string>();
 
         return("Vote: " + vote);
     }

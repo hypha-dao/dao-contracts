@@ -20,11 +20,11 @@ namespace hypha
 {
     constexpr char COMMENT_NAME[]         = "comment_name";
     constexpr char NEXT_COMMENT_SECTION[] = "next_comment_section";
-    //constexpr name COMMENTS_CONTRACT("comments");
+//constexpr name COMMENTS_CONTRACT("comments");
 
     constexpr name STAGING_PROPOSAL = name("stagingprop");
 
-    Proposal::Proposal(dao&contract, uint64_t daoID)
+    Proposal::Proposal(dao& contract, uint64_t daoID)
         : m_dao{contract},
         m_daoSettings(contract.getSettingsDocument(daoID)),
         m_dhoSettings(contract.getSettingsDocument()),
@@ -32,11 +32,13 @@ namespace hypha
     {
     }
 
+
     Proposal::~Proposal()
     {
     }
 
-    Document Proposal::propose(const eosio::name&proposer, ContentGroups&contentGroups, bool publish)
+
+    Document Proposal::propose(const eosio::name& proposer, ContentGroups& contentGroups, bool publish)
     {
         TRACE_FUNCTION()
         EOS_CHECK(Member::isMember(m_dao, m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
@@ -91,14 +93,14 @@ namespace hypha
         // the proposal was PROPOSED_BY proposer; this creates the graph EDGE
         Edge::write(m_dao.get_self(), proposer, proposalNode.getID(), memberID, common::OWNED_BY);
 
-        name commentsContract = m_dhoSettings->getOrFail <eosio::name>(COMMENTS_CONTRACT);
+        name commentsContract = m_dhoSettings->getOrFail<eosio::name>(COMMENTS_CONTRACT);
 
         eosio::action(
-            eosio::permission_level{ m_dao.get_self(), name("active") },
+            eosio::permission_level { m_dao.get_self(), name("active") },
             commentsContract, name("addsection"),
             std::make_tuple(
                 m_dao.get_self(),
-                m_daoSettings->getOrFail <name>(DAO_NAME), // scope. todo: use tenant here
+                m_daoSettings->getOrFail<name>(DAO_NAME),  // scope. todo: use tenant here
                 commentSection,                            // section
                 proposer                                   // author
                 )
@@ -120,11 +122,13 @@ namespace hypha
         return(proposalNode);
     }
 
-    void Proposal::postProposeImpl(Document&proposal)
+
+    void Proposal::postProposeImpl(Document& proposal)
     {
     }
 
-    void Proposal::vote(const eosio::name&voter, const std::string vote, Document& proposal, std::optional <std::string> notes)
+
+    void Proposal::vote(const eosio::name& voter, const std::string vote, Document& proposal, std::optional<std::string> notes)
     {
         TRACE_FUNCTION()
 
@@ -138,7 +142,8 @@ namespace hypha
         VoteTally(m_dao, proposal, m_daoSettings);
     }
 
-    void Proposal::close(Document&proposal)
+
+    void Proposal::close(Document& proposal)
     {
         TRACE_FUNCTION()
 
@@ -149,7 +154,7 @@ namespace hypha
 
         auto voteTallyEdge = Edge::get(m_dao.get_self(), proposal.getID(), common::VOTE_TALLY);
 
-        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs <eosio::time_point>();
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
 
         EOS_CHECK(
             eosio::time_point_sec(eosio::current_time_point()) > expiration,
@@ -168,7 +173,7 @@ namespace hypha
 
         auto details = proposal.getContentWrapper().getGroupOrFail(DETAILS);
 
-        ContentWrapper::insertOrReplace(*details, Content{
+        ContentWrapper::insertOrReplace(*details, Content {
             common::STATE,
             proposalDidPass ? common::STATE_APPROVED : common::STATE_REJECTED
         });
@@ -182,7 +187,7 @@ namespace hypha
         {
             auto system = proposal.getContentWrapper().getGroupOrFail(SYSTEM);
 
-            ContentWrapper::insertOrReplace(*system, Content{
+            ContentWrapper::insertOrReplace(*system, Content {
                 common::APPROVED_DATE,
                 eosio::current_time_point()
             });
@@ -204,7 +209,8 @@ namespace hypha
         }
     }
 
-    void Proposal::publish(const eosio::name&proposer, Document&proposal)
+
+    void Proposal::publish(const eosio::name& proposer, Document& proposal)
     {
         TRACE_FUNCTION()
 
@@ -226,7 +232,8 @@ namespace hypha
         _publish(proposer, proposal, m_daoID);
     }
 
-    void Proposal::remove(const eosio::name&proposer, Document&proposal)
+
+    void Proposal::remove(const eosio::name& proposer, Document& proposal)
     {
         TRACE_FUNCTION()
 
@@ -246,20 +253,21 @@ namespace hypha
 
         m_dao.getGraph().eraseDocument(proposal.getID(), true);
 
-        name commentsContract = m_dhoSettings->getOrFail <eosio::name>(COMMENTS_CONTRACT);
+        name commentsContract = m_dhoSettings->getOrFail<eosio::name>(COMMENTS_CONTRACT);
 
         eosio::action(
-            eosio::permission_level{ this->m_dao.get_self(), name("active") },
+            eosio::permission_level { this->m_dao.get_self(), name("active") },
             commentsContract, name("delsection"),
             std::make_tuple(
                 m_dao.get_self(),
-                m_daoSettings->getOrFail <name>(DAO_NAME),
-                proposal.getContentWrapper().getOrFail(SYSTEM, COMMENT_NAME, "Proposal has no comment section")->getAs <eosio::name>() // section
+                m_daoSettings->getOrFail<name>(DAO_NAME),
+                proposal.getContentWrapper().getOrFail(SYSTEM, COMMENT_NAME, "Proposal has no comment section")->getAs<eosio::name>()  // section
                 )
             ).send();
     }
 
-    void Proposal::update(const eosio::name&proposer, Document&proposal, ContentGroups&contentGroups)
+
+    void Proposal::update(const eosio::name& proposer, Document& proposal, ContentGroups& contentGroups)
     {
         TRACE_FUNCTION()
 
@@ -282,32 +290,35 @@ namespace hypha
         propose(proposer, contentGroups, false);
     }
 
-    ContentGroup Proposal::makeSystemGroup(const name&proposer,
-                                           const name&proposal_type,
-                                           const string&proposal_title,
-                                           const string&proposal_description,
-                                           const name&comment_name)
+
+    ContentGroup Proposal::makeSystemGroup(const name&   proposer,
+                                           const name&   proposal_type,
+                                           const string& proposal_title,
+                                           const string& proposal_description,
+                                           const name&   comment_name)
     {
         return(ContentGroup{
             Content(CONTENT_GROUP_LABEL, SYSTEM),
-            Content(CLIENT_VERSION, m_dhoSettings->getSettingOrDefault <std::string>(CLIENT_VERSION, DEFAULT_VERSION)),
-            Content(CONTRACT_VERSION, m_dhoSettings->getSettingOrDefault <std::string>(CONTRACT_VERSION, DEFAULT_VERSION)),
+            Content(CLIENT_VERSION, m_dhoSettings->getSettingOrDefault<std::string>(CLIENT_VERSION, DEFAULT_VERSION)),
+            Content(CONTRACT_VERSION, m_dhoSettings->getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)),
             Content(NODE_LABEL, proposal_title),
             Content(DESCRIPTION, proposal_description),
             Content(TYPE, proposal_type),
             Content(COMMENT_NAME, comment_name) });
     }
 
+
     ContentGroup Proposal::makeBallotGroup()
     {
         TRACE_FUNCTION()
-        auto expiration = time_point_sec(current_time_point()) + m_daoSettings->getOrFail <int64_t>(VOTING_DURATION_SEC);
+        auto expiration = time_point_sec(current_time_point()) + m_daoSettings->getOrFail<int64_t>(VOTING_DURATION_SEC);
 
         return(ContentGroup{
             Content(CONTENT_GROUP_LABEL, BALLOT),
             Content(EXPIRATION_LABEL, expiration)
         });
     }
+
 
     ContentGroup Proposal::makeBallotOptionsGroup()
     {
@@ -319,12 +330,13 @@ namespace hypha
         });
     }
 
+
     bool Proposal::didPass(uint64_t tallyID)
     {
         TRACE_FUNCTION()
 
-        float quorumFactor = m_daoSettings->getOrFail <int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
-        float alignmentFactor = m_daoSettings->getOrFail <int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
+        float quorumFactor = m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
+        float alignmentFactor = m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
 
         auto voiceSupply = getVoiceSupply();
 
@@ -334,15 +346,15 @@ namespace hypha
 
         // Currently get pass/fail
         // Todo: Abstract this part into VoteTally class
-        asset votes_pass    = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), VOTE_POWER)->getAs <eosio::asset>();
-        asset votes_abstain = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_ABSTAIN.to_string(), VOTE_POWER)->getAs <eosio::asset>();
-        asset votes_fail    = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs <eosio::asset>();
+        asset votes_pass    = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+        asset votes_abstain = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_ABSTAIN.to_string(), VOTE_POWER)->getAs<eosio::asset>();
+        asset votes_fail    = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs<eosio::asset>();
 
         asset total = votes_pass + votes_abstain + votes_fail;
         // pass / ( pass + fail ) > alignmentFactor
         bool passesAlignment = votes_pass > (alignmentFactor * (votes_pass + votes_fail));
 
-        if (total >= quorum_threshold &&      // must meet quorum
+        if ((total >= quorum_threshold) &&    // must meet quorum
             passesAlignment)
         {
             return(true);
@@ -352,6 +364,7 @@ namespace hypha
             return(false);
         }
     }
+
 
     string Proposal::getTitle(ContentWrapper cw) const
     {
@@ -366,9 +379,10 @@ namespace hypha
                          TITLE, ", ", common::BALLOT_TITLE, "]")
             );
 
-        return(title != nullptr ? title->getAs <std::string>() :
-               ballotTitle->getAs <std::string>());
+        return(title != nullptr ? title->getAs<std::string>() :
+               ballotTitle->getAs<std::string>());
     }
+
 
     string Proposal::getDescription(ContentWrapper cw) const
     {
@@ -384,11 +398,12 @@ namespace hypha
                          DESCRIPTION, ", ", common::BALLOT_DESCRIPTION, "]")
             );
 
-        return(desc != nullptr ? desc->getAs <std::string>() :
-               ballotDesc->getAs <std::string>());
+        return(desc != nullptr ? desc->getAs<std::string>() :
+               ballotDesc->getAs<std::string>());
     }
 
-    std::pair <bool, uint64_t> Proposal::hasOpenProposal(name proposalType, uint64_t docID)
+
+    std::pair<bool, uint64_t> Proposal::hasOpenProposal(name proposalType, uint64_t docID)
     {
         TRACE_FUNCTION()
         auto proposalEdges = m_dao.getGraph().getEdgesTo(docID, proposalType);
@@ -399,7 +414,7 @@ namespace hypha
             Document proposal(m_dao.get_self(), edge.getFromNode());
 
             auto cw = proposal.getContentWrapper();
-            if (cw.getOrFail(DETAILS, common::STATE)->getAs <string>() == common::STATE_PROPOSED)
+            if (cw.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_PROPOSED)
             {
                 return { true, edge.getFromNode() };
             }
@@ -408,14 +423,15 @@ namespace hypha
         return { false, uint64_t{} };
     }
 
+
     eosio::asset Proposal::getVoiceSupply()
     {
-        asset voiceToken    = m_daoSettings->getOrFail <eosio::asset>(common::VOICE_TOKEN);
-        name  voiceContract = m_dhoSettings->getOrFail <eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+        asset               voiceToken    = m_daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
+        name                voiceContract = m_dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
         hypha::voice::stats statstable(voiceContract, voiceToken.symbol.code().raw());
-        auto stats_index = statstable.get_index <name("bykey")>();
+        auto                stats_index = statstable.get_index<name("bykey")>();
 
-        auto daoName = m_daoSettings->getOrFail <name>(DAO_NAME);
+        auto daoName = m_daoSettings->getOrFail<name>(DAO_NAME);
 
         auto stat_itr = stats_index.find(
             voice::currency_stats::build_key(
@@ -429,7 +445,8 @@ namespace hypha
         return(stat_itr->supply);
     }
 
-    void Proposal::_publish(const eosio::name&proposer, Document&proposal, uint64_t rootID)
+
+    void Proposal::_publish(const eosio::name& proposer, Document& proposal, uint64_t rootID)
     {
         TRACE_FUNCTION()
         // the DHO also links to the document as a proposal, another graph EDGE
@@ -450,7 +467,7 @@ namespace hypha
                                      std::make_tuple(proposal.getID())
                                      ));
 
-        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs <eosio::time_point>();
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
 
         constexpr auto aditionalDelaySec = 60;
 
@@ -460,14 +477,15 @@ namespace hypha
 
         trx.send(nextID, m_dao.get_self());
 
-        m_dhoSettings->setSetting(Content{ "next_schedule_id", nextID + 1 });
+        m_dhoSettings->setSetting(Content { "next_schedule_id", nextID + 1 });
     }
+
 
     name Proposal::_newCommentSection()
     {
-        name next = name(m_daoSettings->getSettingOrDefault <name>(NEXT_COMMENT_SECTION, name()).value + 1);
+        name next = name(m_daoSettings->getSettingOrDefault<name>(NEXT_COMMENT_SECTION, name()).value + 1);
 
-        m_daoSettings->setSetting(Content{ NEXT_COMMENT_SECTION, next });
+        m_daoSettings->setSetting(Content { NEXT_COMMENT_SECTION, next });
         return(next);
     }
 } // namespace hypha

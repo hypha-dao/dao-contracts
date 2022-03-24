@@ -10,14 +10,14 @@
 
 namespace hypha
 {
-    Document PegPayer::payImpl(const eosio::name&recipient,
-                               const eosio::asset&quantity,
-                               const string&memo)
+    Document PegPayer::payImpl(const eosio::name&  recipient,
+                               const eosio::asset& quantity,
+                               const string&       memo)
     {
         TRACE_FUNCTION()
-        issueTenantToken(m_dao.getSettingOrFail <eosio::name>(PEG_TOKEN_CONTRACT),
-                         m_daoSettings->getOrFail <name>(DAO_NAME),
-                         m_dao.getSettingOrFail <eosio::name>(TREASURY_CONTRACT),
+        issueTenantToken(m_dao.getSettingOrFail<eosio::name>(PEG_TOKEN_CONTRACT),
+                         m_daoSettings->getOrFail<name>(DAO_NAME),
+                         m_dao.getSettingOrFail<eosio::name>(TREASURY_CONTRACT),
                          recipient,
                          quantity,
                          memo);

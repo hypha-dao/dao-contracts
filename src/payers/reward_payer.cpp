@@ -10,13 +10,13 @@
 
 namespace hypha
 {
-    Document RewardPayer::payImpl(const eosio::name&recipient,
-                                  const eosio::asset&quantity,
-                                  const string&memo)
+    Document RewardPayer::payImpl(const eosio::name&  recipient,
+                                  const eosio::asset& quantity,
+                                  const string&       memo)
     {
         TRACE_FUNCTION()
-        issueTenantToken(m_dao.getSettingOrFail <eosio::name>(REWARD_TOKEN_CONTRACT),
-                         m_daoSettings->getOrFail <name>(DAO_NAME),
+        issueTenantToken(m_dao.getSettingOrFail<eosio::name>(REWARD_TOKEN_CONTRACT),
+                         m_daoSettings->getOrFail<name>(DAO_NAME),
                          m_dao.get_self(),
                          recipient,
                          quantity,

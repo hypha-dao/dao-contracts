@@ -23,28 +23,28 @@ namespace common
     constexpr symbol S_SEEDS("SEEDS", 4);
     constexpr symbol S_USD("USD", 2);
 
-    //Dao settings
+//Dao settings
     constexpr auto DAO_DESCRIPTION   = "dao_description";
     constexpr auto DAO_TITLE         = "dao_title";
     constexpr auto PERIOD_DURATION   = "period_duration_sec";
     constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
     constexpr auto DAO_USES_SEEDS    = "uses_seeds";
 
-    //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
+//const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
 
-    // 365.25 / 7.4
-    //const float PHASES_PER_YEAR = 49.3581081081;
+// 365.25 / 7.4
+//const float PHASES_PER_YEAR = 49.3581081081;
 
-    //365.25*24*60*60
+//365.25*24*60*60
     constexpr int64_t YEAR_DURATION_SEC = 31557600;
 
     constexpr size_t MAX_PROPOSAL_TITLE_CHARS = 50;
     constexpr size_t MAX_PROPOSAL_DESC_CHARS  = 2000;
 
-    // 49.36 phases per annum, so each phase is 2.026% of the total
-    //const float PHASE_TO_YEAR_RATIO = 0.02026009582;
+// 49.36 phases per annum, so each phase is 2.026% of the total
+//const float PHASE_TO_YEAR_RATIO = 0.02026009582;
 
-    // graph edge names
+// graph edge names
     constexpr name ESCROW        = name("escrow");
     constexpr name SETTINGS_EDGE = name("settings");
     constexpr name HOLDS_BADGE   = name("holdsbadge");
@@ -107,10 +107,10 @@ namespace common
     constexpr name VOTE    = name("vote");
     constexpr name VOTE_ON = name("voteon");
 
-    // document types
+// document types
     constexpr name ALERT = name("alert");
 
-    // graph edges hanging off of primary DHO node
+// graph edges hanging off of primary DHO node
     constexpr name BADGE_NAME   = name("badge");
     constexpr name PROPOSAL     = name("proposal");
     constexpr name VOTABLE      = name("votable");
@@ -236,4 +236,4 @@ namespace common
 #define VOTE_LABEL          "vote"
 #define VOTER_LABEL         "voter"
 #define EXPIRATION_LABEL    "expiration"
-}; // namespace common
+}  // namespace common

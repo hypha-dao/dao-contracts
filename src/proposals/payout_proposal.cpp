@@ -12,13 +12,13 @@
 
 namespace hypha
 {
-    void PayoutProposal::proposeImpl(const name&proposer, ContentWrapper&contentWrapper)
+    void PayoutProposal::proposeImpl(const name& proposer, ContentWrapper& contentWrapper)
     {
         TRACE_FUNCTION()
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
 
         // recipient must exist and be a DHO member
-        name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs <eosio::name>();
+        name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
 
         EOS_CHECK(
             Member::isMember(m_dao, m_daoID, recipient),
@@ -26,25 +26,25 @@ namespace hypha
             );
 
         auto tokens = AssetBatch {
-            .reward = m_daoSettings->getOrFail <asset>(common::REWARD_TOKEN),
-            .peg    = m_daoSettings->getOrFail <asset>(common::PEG_TOKEN),
-            .voice  = m_daoSettings->getOrFail <asset>(common::VOICE_TOKEN)
+            .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+            .peg    = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+            .voice  = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
         };
 
         // if usd_amount is provided in the DETAILS section, convert that to token components
         //  (deferred_perc_x100 will be required)
         if (auto [idx, usdAmount] = contentWrapper.get(DETAILS, USD_AMOUNT); usdAmount)
         {
-            EOS_CHECK(std::holds_alternative <eosio::asset>(usdAmount->value),
+            EOS_CHECK(std::holds_alternative<eosio::asset>(usdAmount->value),
                       "fatal error: expected token type must be an asset value type: " + usdAmount->label);
-            eosio::asset usd = std::get <eosio::asset>(usdAmount->value);
+            eosio::asset usd = std::get<eosio::asset>(usdAmount->value);
 
             // deferred_x100 is required and must be greater than or equal to zero and less than or equal to 10000
-            int64_t deferred = contentWrapper.getOrFail(DETAILS, DEFERRED)->getAs <int64_t>();
+            int64_t deferred = contentWrapper.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>();
             EOS_CHECK(deferred >= 0, DEFERRED + string(" must be greater than or equal to zero. You submitted: ") + std::to_string(deferred));
             EOS_CHECK(deferred <= 10000, DEFERRED + string(" must be less than or equal to 10000 (=100%). You submitted: ") + std::to_string(deferred));
 
-            auto rewardPegVal = m_daoSettings->getOrFail <eosio::asset>(common::REWARD_TO_PEG_RATIO);
+            auto rewardPegVal = m_daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO);
 
             auto salaries = calculateSalaries(SalaryConfig {
                 .periodSalary     = normalizeToken(usd),
@@ -53,9 +53,9 @@ namespace hypha
                 .voiceMultipler   = 2.0
             }, tokens);
 
-            ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::PEG_AMOUNT, salaries.peg });
-            ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::VOICE_AMOUNT, salaries.voice });
-            ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::REWARD_AMOUNT, salaries.reward });
+            ContentWrapper::insertOrReplace(*detailsGroup, Content { common::PEG_AMOUNT, salaries.peg });
+            ContentWrapper::insertOrReplace(*detailsGroup, Content { common::VOICE_AMOUNT, salaries.voice });
+            ContentWrapper::insertOrReplace(*detailsGroup, Content { common::REWARD_AMOUNT, salaries.reward });
         }
 
         //Verify there is only 1 item of each token type
@@ -75,7 +75,7 @@ namespace hypha
                     )
 
                 EOS_CHECK(
-                    item.getAs <asset>().symbol == tokens.peg.symbol,
+                    item.getAs<asset>().symbol == tokens.peg.symbol,
                     util::to_str(common::PEG_AMOUNT,
                                  " unexpected token symbol. Expected: ",
                                  tokens.peg)
@@ -92,7 +92,7 @@ namespace hypha
                     )
 
                 EOS_CHECK(
-                    item.getAs <asset>().symbol == tokens.voice.symbol,
+                    item.getAs<asset>().symbol == tokens.voice.symbol,
                     util::to_str(common::VOICE_AMOUNT,
                                  " unexpected token symbol. Expected: ",
                                  tokens.voice)
@@ -109,7 +109,7 @@ namespace hypha
                     )
 
                 EOS_CHECK(
-                    item.getAs <asset>().symbol == tokens.reward.symbol,
+                    item.getAs<asset>().symbol == tokens.reward.symbol,
                     util::to_str(common::REWARD_AMOUNT,
                                  " unexpected token symbol. Expected: ",
                                  tokens.reward)
@@ -123,7 +123,8 @@ namespace hypha
         }
     }
 
-    void PayoutProposal::passImpl(Document&proposal)
+
+    void PayoutProposal::passImpl(Document& proposal)
     {
         TRACE_FUNCTION()
         // Graph updates:
@@ -135,14 +136,15 @@ namespace hypha
         pay(proposal, common::PAYOUT);
     }
 
-    void PayoutProposal::pay(Document&proposal, eosio::name edgeName)
+
+    void PayoutProposal::pay(Document& proposal, eosio::name edgeName)
     {
         TRACE_FUNCTION()
 
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
         // recipient must exist and be a DHO member
-        name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs <eosio::name>();
+        name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
 
         Document recipientDoc(m_dao.get_self(), m_dao.getMemberID(recipient));
 
@@ -151,27 +153,29 @@ namespace hypha
         std::string memo{ "one-time payment on proposal: " + util::to_str(proposal.getID()) };
 
         auto tokens = AssetBatch {
-            .reward = m_daoSettings->getOrFail <asset>(common::REWARD_TOKEN),
-            .peg    = m_daoSettings->getOrFail <asset>(common::PEG_TOKEN),
-            .voice  = m_daoSettings->getOrFail <asset>(common::VOICE_TOKEN)
+            .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+            .peg    = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+            .voice  = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
         };
 
         auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
 
-        for (Content&content : *detailsGroup)
+        for (Content& content : *detailsGroup)
         {
-            if (std::holds_alternative <eosio::asset>(content.value))
+            if (std::holds_alternative<eosio::asset>(content.value))
             {
-                m_dao.makePayment(m_daoSettings, proposal.getID(), recipient, std::get <eosio::asset>(content.value), memo, eosio::name{ 0 }, tokens);
+                m_dao.makePayment(m_daoSettings, proposal.getID(), recipient, std::get<eosio::asset>(content.value), memo, eosio::name { 0 }, tokens);
             }
         }
     }
 
-    std::string PayoutProposal::getBallotContent(ContentWrapper&contentWrapper)
+
+    std::string PayoutProposal::getBallotContent(ContentWrapper& contentWrapper)
     {
         TRACE_FUNCTION()
-        return(contentWrapper.getOrFail(DETAILS, TITLE)->getAs <std::string>());
+        return(contentWrapper.getOrFail(DETAILS, TITLE)->getAs<std::string>());
     }
+
 
     name PayoutProposal::getProposalType()
     {

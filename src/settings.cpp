@@ -7,7 +7,7 @@
 #include <logger/logger.hpp>
 
 namespace hypha {
-    Settings::Settings(dao& dao,
+    Settings::Settings(dao&     dao,
                        uint64_t id,
                        uint64_t rootID)
         : Document(dao.get_self(), id),
@@ -16,6 +16,7 @@ namespace hypha {
         //m_dirty(false)
     {
     }
+
 
     void Settings::setSetting(const std::string& group, const Content& setting)
     {
@@ -46,10 +47,12 @@ namespace hypha {
         update();
     }
 
+
     void Settings::setSetting(const Content& setting)
     {
         setSetting(SETTINGS, setting);
     }
+
 
     void Settings::addSetting(const std::string& group, const Content& setting)
     {
@@ -58,8 +61,8 @@ namespace hypha {
 
         auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
-        ContentWrapper cw       = getContentWrapper();
-        ContentGroup * settings = cw.getGroup(group).second;
+        ContentWrapper cw        = getContentWrapper();
+        ContentGroup   *settings = cw.getGroup(group).second;
 
         //Check if the group exits, otherwise create it
         if (settings == nullptr)
@@ -77,6 +80,7 @@ namespace hypha {
 
         update();
     }
+
 
     void Settings::remSetting(const std::string& group, const std::string& key)
     {
@@ -102,10 +106,12 @@ namespace hypha {
         update();
     }
 
+
     void Settings::remSetting(const std::string& key)
     {
         remSetting(SETTINGS, key);
     }
+
 
     void Settings::remKVSetting(const std::string& group, const Content& setting)
     {
