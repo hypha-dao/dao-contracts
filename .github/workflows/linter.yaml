@@ -5,7 +5,9 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - uses: "actions/checkout@master"
-      - name: Run style checks
-        uses: coleaeason/actions-uncrustify@v1
+      - name: "Build"
+        uses: docker://josejulio/hypha-builder:release_1.7.x
         with:
-          configPath: '.config/uncrustify.config'
+          entrypoint: "bash ./uncrustify.sh -u && git diff"
+        env:
+            CODE: "/github/workspace/"
