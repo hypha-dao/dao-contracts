@@ -47,9 +47,6 @@ namespace hypha
 
       ContentWrapper ocw = originalDoc.getContentWrapper();
 
-      //TODO-J: Add state item to all active Roles/Assignments
-      //Check assignments from 2 months ago with dgraph and then send them to a fix action (should verify if they are still active or not)
-      //Check all roles that are not suspened (?)
       auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
       EOS_CHECK(
@@ -74,8 +71,16 @@ namespace hypha
 
         EOS_CHECK(
           currentTimeSecs < lastPeriodEndSecs,
-          "Assignment is already expired"
-        );
+          util::to_str(type, " is already expired")
+        )
+
+        auto votingDurSecs = m_daoSettings->getOrFail<int64_t>(VOTING_DURATION_SEC);
+        
+        EOS_CHECK(
+          currentTimeSecs < (lastPeriodEndSecs - votingDurSecs),
+          util::to_str(type, " would expire before voting ends")
+        )
+
        } break;
       case common::ROLE_NAME.value:
         //We don't have to do anything special for roles

@@ -59,6 +59,8 @@ namespace hypha
         eosio::asset getVoiceSupply();
     private:
         bool oldDidPass(const eosio::name &ballotId);
+
+        virtual bool isRecurring() { return false; }
     protected:
         Settings* m_daoSettings;
         Settings* m_dhoSettings;

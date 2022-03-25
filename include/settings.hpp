@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include <document_graph/document.hpp>
 #include <logger/logger.hpp>
 #include <eosio/eosio.hpp>
@@ -28,6 +30,11 @@ public:
     * 
     */
     void setSetting(const std::string& group, const Content& setting);
+
+    /** @brief Replaces the values of an existing set of settings, or creates them if they don't exist
+    * 
+    */
+    void setSettings(const std::string& group, const std::map<std::string, Content::FlexValue>& kvs);
 
     /** @brief Adds a new setting to the specified group, even if there is an exiting item with the same key
     * 

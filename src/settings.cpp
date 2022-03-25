@@ -23,8 +23,6 @@ Settings::Settings(dao& dao,
 
     EOS_CHECK(group != SYSTEM, "system group is not editable")
 
-    auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
-
     ContentWrapper cw = getContentWrapper();
 
     ContentGroup* settings = cw.getGroup(group).second;
@@ -37,10 +35,6 @@ Settings::Settings(dao& dao,
     }
 
     ContentWrapper::insertOrReplace(*settings, setting);
-    ContentWrapper::insertOrReplace(
-      group != SETTINGS ? *cw.getGroupOrFail(SETTINGS) : *settings, 
-      updateDateContent
-    );
 
     update();
   }
@@ -50,13 +44,35 @@ Settings::Settings(dao& dao,
     setSetting(SETTINGS, setting);
   }
 
+  void Settings::setSettings(const std::string& group, const std::map<std::string, Content::FlexValue>& kvs)
+  {
+    TRACE_FUNCTION()
+
+    EOS_CHECK(group != SYSTEM, "system group is not editable")
+
+    ContentWrapper cw = getContentWrapper();
+
+    ContentGroup* settings = cw.getGroup(group).second;
+
+    //Check if the group exits, otherwise create it
+    if (settings == nullptr) {
+      auto& cg = getContentGroups();
+      cg.push_back({Content { CONTENT_GROUP_LABEL, group }});
+      settings = &cg.back();
+    }
+
+    for (auto& kv : kvs) {
+      ContentWrapper::insertOrReplace(*settings, Content{kv.first, kv.second});
+    }
+
+    update();
+  }
+
   void Settings::addSetting(const std::string& group, const Content& setting)
   {
     TRACE_FUNCTION()
     EOS_CHECK(group != SYSTEM, "system group is not editable")
     
-    auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
-
     ContentWrapper cw = getContentWrapper();
     ContentGroup* settings = cw.getGroup(group).second;
 
@@ -67,15 +83,11 @@ Settings::Settings(dao& dao,
       settings = &cg.back();
     }
 
-    ContentWrapper::insertOrReplace(
-      group != SETTINGS ? *cw.getGroupOrFail(SETTINGS) : *settings, 
-      updateDateContent
-    );
     settings->push_back(setting);
 
     update();
   }
-    
+  
   void Settings::remSetting(const std::string& group, const std::string& key)
   {
     TRACE_FUNCTION()

@@ -69,4 +69,29 @@ int64_t RecurringActivity::getPeriodCount()
     return getContentWrapper().getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
 }
 
+void RecurringActivity::scheduleArchive()
+{
+    //Schedule a trx to close the proposal
+    eosio::transaction trx;
+    trx.actions.emplace_back(eosio::action(
+        eosio::permission_level(m_dao->get_self(), "active"_n),
+        m_dao->get_self(),
+        "archiverecur"_n,
+        std::make_tuple(getID())
+    ));
+
+    auto expiration = getLastPeriod().getEndTime().sec_since_epoch();
+
+    constexpr auto aditionalDelaySec = 60;
+    trx.delay_sec = (expiration - eosio::current_time_point().sec_since_epoch()) + aditionalDelaySec;
+
+    auto dhoSettings = m_dao->getSettingsDocument();
+
+    auto nextID = dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
+
+    trx.send(nextID, m_dao->get_self());
+
+    dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
+}
+
 } // namespace hypha

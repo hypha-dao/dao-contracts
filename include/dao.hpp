@@ -85,8 +85,8 @@ namespace hypha
       ACTION setsetting(const string &key, const Content::FlexValue &value, std::optional<std::string> group);
       
       //Sets a dao level setting
-      ACTION setdaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
-      ACTION adddaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
+      ACTION setdaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
+      //ACTION adddaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 
       ACTION remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group);
       ACTION remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
@@ -110,12 +110,17 @@ namespace hypha
       ACTION setalert(const eosio::name &level, const std::string &content);
       ACTION remalert(const std::string &notes);
 
+      ACTION adddoc(Document& doc);
+      ACTION remdoc(uint64_t doc_id)
+      {
+         eosio::require_auth(get_self());
+         m_documentGraph.eraseDocument(doc_id, true);
+      }
+      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
       /**Testenv only
       ACTION clean(int64_t docs, int64_t edges);
       ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
-      ACTION adddoc(Document& doc);
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
-      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
       ACTION deletetok(asset asset, name contract) {
 
         require_auth(get_self());
@@ -128,11 +133,6 @@ namespace hypha
         ).send();
       }
 
-      ACTION remdoc(uint64_t doc_id)
-      {
-         eosio::require_auth(get_self());
-         m_documentGraph.eraseDocument(doc_id, true);
-      }
 
       ACTION approve(uint64_t doc_id)
       {
@@ -192,6 +192,8 @@ namespace hypha
 
       ACTION createroot(const std::string &notes);
       ACTION createdao(ContentGroups &config);
+
+      ACTION archiverecur(uint64_t document_id);
       
       void setSetting(const string &key, const Content::FlexValue &value);
 

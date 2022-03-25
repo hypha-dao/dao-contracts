@@ -13,6 +13,7 @@
 #include <voice/currency_stats.hpp>
 #include <util.hpp>
 #include <logger/logger.hpp>
+#include <recurring_activity.hpp>
 
 using namespace eosio;
 
@@ -180,6 +181,11 @@ namespace hypha
             proposal.update();
             // if proposal passes, create an edge for PASSED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID (), common::PASSED_PROPS);
+
+            if (isRecurring()) {
+                RecurringActivity recurAct(&m_dao, proposal.getID());
+                recurAct.scheduleArchive();
+            }
         }
         else
         {

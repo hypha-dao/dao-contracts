@@ -23,7 +23,10 @@ namespace hypha {
         name getProposalType () override;
 
         void postProposeImpl(Document &proposal) override;
-        
+        bool isRecurring() override
+        {
+            return true;
+        }
     private: 
 
         asset calculateTimeShareUsdPerPeriod(const SalaryConfig& salaryConf);

@@ -23,7 +23,29 @@
 
 namespace hypha
 {
-   /**Testenv only 
+  ACTION dao::adddoc(Document& doc)
+  {
+    require_auth(get_self());
+    Document::document_table d_t(get_self(), get_self().value);
+    d_t.emplace(get_self(), [&doc](Document& newDoc){ 
+      newDoc = std::move(doc);
+    });
+  }
+  
+  ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
+  {
+    require_auth(get_self());
+
+    Document doc(get_self(), doc_id);
+
+    auto cw = doc.getContentWrapper();
+
+    cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
+
+    doc.update();
+  }
+
+  /**Testenv only 
   ACTION dao::clean(int64_t docs, int64_t edges)
   {
     require_auth(get_self());
@@ -48,14 +70,6 @@ namespace hypha
     Edge(get_self(), get_self(), from, to, edge_name);
   }
 
-  ACTION dao::adddoc(Document& doc)
-  {
-    require_auth(get_self());
-    Document::document_table d_t(get_self(), get_self().value);
-    d_t.emplace(get_self(), [&doc](Document& newDoc){ 
-      newDoc = std::move(doc);
-    });
-  }
 
   ACTION
   dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
@@ -70,18 +84,6 @@ namespace hypha
   }
 
 
-   ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
-   {
-     require_auth(get_self());
-
-     Document doc(get_self(), doc_id);
-
-     auto cw = doc.getContentWrapper();
-
-     cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
-
-     doc.update(get_self(), std::move(cw.getContentGroups()));
-   }
 
    ACTION dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
    {
@@ -659,33 +661,34 @@ namespace hypha
       settings->setSetting(group.value_or(string{"settings"}), Content{key, value});
    }
 
-   void dao::setdaosetting(const uint64_t& dao_id, const string &key, const Content::FlexValue &value, std::optional<std::string> group)
+   void dao::setdaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group)
    {
      TRACE_FUNCTION()
      checkAdminsAuth(dao_id);
      auto settings = getSettingsDocument(dao_id);
      //Only hypha dao should be able to use this flag
      EOS_CHECK(
-       key != "is_hypha" ||
+       kvs.count("is_hypha") == 0 ||
        settings->getOrFail<eosio::name>(DAO_NAME) ==  "hypha"_n,
        "Only hypha dao is allowed to add this setting"
      )
-     settings->setSetting(group.value_or(string{"settings"}), Content{key, value});
+
+     settings->setSettings(group.value_or("settings"), kvs);
    }
 
-   void dao::adddaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group)
-   {
-     TRACE_FUNCTION()     
-     checkAdminsAuth(dao_id);
-     auto settings = getSettingsDocument(dao_id);
-     //Only hypha dao should be able to use this flag
-     EOS_CHECK(
-       key != "is_hypha" ||
-       settings->getOrFail<eosio::name>(DAO_NAME) ==  "hypha"_n,
-       "Only hypha dao is allowed to add this setting"
-     )
-     settings->addSetting(group.value_or(string{"settings"}), Content{key, value});
-   }
+  //  void dao::adddaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group)
+  //  {
+  //    TRACE_FUNCTION()     
+  //    checkAdminsAuth(dao_id);
+  //    auto settings = getSettingsDocument(dao_id);
+  //    //Only hypha dao should be able to use this flag
+  //    EOS_CHECK(
+  //      key != "is_hypha" ||
+  //      settings->getOrFail<eosio::name>(DAO_NAME) ==  "hypha"_n,
+  //      "Only hypha dao is allowed to add this setting"
+  //    )
+  //    settings->addSetting(group.value_or(string{"settings"}), Content{key, value});
+  //  }
 
    void dao::remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group)
    {
@@ -933,6 +936,50 @@ namespace hypha
       //   inititialPeriods->getAs<int64_t>() - 1, 
       //   periodDurationSeconds->getAs<int64_t>()
       // );
+   }
+
+   void dao::archiverecur(uint64_t document_id)
+   {
+      require_auth(get_self());
+
+      /**
+      * Notes
+      * Watch for:
+      * - Suspended documents
+      * - Withdrawed documents
+      * - Documents about to be suspended
+      */
+
+      RecurringActivity recurAct(this, document_id);
+
+      auto expirationDate = recurAct.getLastPeriod().getEndTime();
+
+      auto cw = recurAct.getContentWrapper();
+
+      auto state = cw.getOrFail(DETAILS, common::STATE)
+                      ->getAs<std::string>();
+
+      if (state == common::STATE_APPROVED) {
+        if (expirationDate < eosio::current_time_point()) {
+        
+          auto details = cw.getGroupOrFail(DETAILS);
+
+          cw.insertOrReplace(
+            *details, 
+            Content {
+              common::STATE,
+              common::STATE_ARCHIVED
+            }
+          );
+
+          recurAct.update();
+        }
+      }
+      //It could happen if the original recurring activity was extended}
+      //so reschedule with the new end period
+      else {
+        recurAct.scheduleArchive();
+      }
    }
 
    void dao::createroot(const std::string &notes)

@@ -30,6 +30,7 @@ namespace hypha
         dao *m_dao;
 
         inline uint64_t getDaoID() { return m_daoID; }
+        void scheduleArchive();
     protected: 
         uint64_t m_daoID;
         Settings* m_daoSettings;
