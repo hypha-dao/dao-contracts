@@ -10,6 +10,6 @@ namespace hypha {
     class ProposalFactory
     {
 public:
-        static Proposal *Factory(dao& dao, uint64_t daoHash, const eosio::name& proposal_type);
+        static Proposal* Factory(dao& dao, uint64_t daoHash, const eosio::name& proposal_type);
     };
 }

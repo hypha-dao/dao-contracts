@@ -178,9 +178,9 @@ public:
          */
 
         DocumentGraph& getGraph();
-        Settings *getSettingsDocument();
+        Settings* getSettingsDocument();
 
-        Settings *getSettingsDocument(uint64_t daoID);
+        Settings* getSettingsDocument(uint64_t daoID);
 
         template<class T>
         const T& getSettingOrFail(const std::string& setting)

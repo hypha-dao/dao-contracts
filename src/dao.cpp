@@ -117,7 +117,7 @@ namespace hypha
 
         auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
 
-        Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+        Proposal* proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
 
         proposal->vote(voter, vote, docprop, notes);
     }
@@ -134,7 +134,7 @@ namespace hypha
 
         name proposal_type = docprop.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
 
-        Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+        Proposal* proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
 
         proposal->close(docprop);
     }
@@ -150,7 +150,7 @@ namespace hypha
 
         auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
 
-        Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+        Proposal* proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
 
         proposal->publish(proposer, docprop);
     }
@@ -166,7 +166,7 @@ namespace hypha
 
         auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
 
-        Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+        Proposal* proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
 
         proposal->remove(proposer, docprop);
     }
@@ -182,7 +182,7 @@ namespace hypha
 
         auto daoID = Edge::get(get_self(), docprop.getID(), common::DAO).getToNode();
 
-        Proposal *proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
+        Proposal* proposal = ProposalFactory::Factory(*this, daoID, proposal_type);
 
         proposal->update(proposer, docprop, content_groups);
     }
@@ -487,7 +487,7 @@ namespace hypha
     }
 
 
-    asset dao::getProRatedAsset(ContentWrapper *assignment, const symbol& symbol, const string& key, const float& proration)
+    asset dao::getProRatedAsset(ContentWrapper* assignment, const symbol& symbol, const string& key, const float& proration)
     {
         TRACE_FUNCTION()
         asset assetToPay = asset{ 0, symbol };
@@ -532,7 +532,7 @@ namespace hypha
             auto     badgeAssignment = badgeAssignmentDoc.getContentWrapper();
             Document badge(get_self(), badge_edge.getToNode());
 
-            Content *startPeriodContent = badgeAssignment.getOrFail(DETAILS, START_PERIOD);
+            Content* startPeriodContent = badgeAssignment.getOrFail(DETAILS, START_PERIOD);
 
             Period startPeriod(
                 this,
@@ -599,7 +599,7 @@ namespace hypha
     }
 
 
-    void dao::makePayment(Settings            *daoSettings,
+    void dao::makePayment(Settings            * daoSettings,
                           uint64_t            fromNode,
                           const eosio::name&  recipient,
                           const eosio::asset& quantity,
@@ -656,7 +656,7 @@ namespace hypha
     }
 
 
-    Settings *dao::getSettingsDocument(uint64_t daoID)
+    Settings* dao::getSettingsDocument(uint64_t daoID)
     {
         TRACE_FUNCTION();
 
@@ -684,7 +684,7 @@ namespace hypha
     }
 
 
-    Settings *dao::getSettingsDocument()
+    Settings* dao::getSettingsDocument()
     {
         TRACE_FUNCTION()
 

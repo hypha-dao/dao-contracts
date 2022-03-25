@@ -10,7 +10,7 @@
 
 namespace hypha
 {
-    Payer *PayerFactory::Factory(dao& dao, Settings *daoSettings, const eosio::symbol& symbol, const eosio::name& paymentType, const AssetBatch& daoTokens)
+    Payer* PayerFactory::Factory(dao& dao, Settings* daoSettings, const eosio::symbol& symbol, const eosio::name& paymentType, const AssetBatch& daoTokens)
     {
         TRACE_FUNCTION()
 

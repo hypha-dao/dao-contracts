@@ -5,7 +5,7 @@
 #include "proposal.hpp"
 
 namespace hypha {
-    class EditProposal : public Proposal
+    class EditProposal: public Proposal
     {
 public:
         using Proposal::Proposal;

@@ -12,7 +12,7 @@ namespace hypha {
     using eosio::name;
     using eosio::time_point;
 
-    class TimeShare : public Document
+    class TimeShare: public Document
     {
 public:
 

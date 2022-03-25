@@ -18,7 +18,7 @@ namespace hypha
     VoteTally::VoteTally(
         dao&      dao,
         Document& proposal,
-        Settings  *daoSettings
+        Settings  * daoSettings
         )
         : TypedDocument(dao)
     {
@@ -35,7 +35,7 @@ namespace hypha
             }
         }
 
-        ContentGroup *contentOptions = proposal.getContentWrapper().getGroupOrFail(BALLOT_OPTIONS);
+        ContentGroup* contentOptions = proposal.getContentWrapper().getGroupOrFail(BALLOT_OPTIONS);
 
         auto voiceToken = daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
 

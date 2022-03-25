@@ -7,7 +7,7 @@
 
 namespace hypha
 {
-    Period::Period(dao                      *dao,
+    Period::Period(dao                      * dao,
                    const eosio::time_point& start_time,
                    const std::string&       label)
         : Document(dao->get_self(), dao->get_self(),
@@ -25,7 +25,7 @@ namespace hypha
     }
 
 
-    Period::Period(dao                      *dao,
+    Period::Period(dao                      * dao,
                    const eosio::time_point& start_time,
                    const std::string&       label,
                    const std::string&       readable,
@@ -48,7 +48,7 @@ namespace hypha
     }
 
 
-    Period::Period(dao *dao, uint64_t id)
+    Period::Period(dao* dao, uint64_t id)
         : Document(dao->get_self(), id), m_dao{dao}
     {
     }
@@ -111,7 +111,7 @@ namespace hypha
     }
 
 
-    Period Period::asOf(dao *dao, uint64_t daoID, eosio::time_point moment)
+    Period Period::asOf(dao* dao, uint64_t daoID, eosio::time_point moment)
     {
         TRACE_FUNCTION()
 
@@ -146,7 +146,7 @@ namespace hypha
     }
 
 
-    Period Period::current(dao *dao, uint64_t daoID)
+    Period Period::current(dao* dao, uint64_t daoID)
     {
         return(asOf(dao, daoID, eosio::current_time_point()));
     }

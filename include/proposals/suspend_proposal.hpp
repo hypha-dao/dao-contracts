@@ -5,7 +5,7 @@
 #include "proposal.hpp"
 
 namespace hypha {
-    class SuspendProposal : public Proposal
+    class SuspendProposal: public Proposal
     {
 public:
         using Proposal::Proposal;

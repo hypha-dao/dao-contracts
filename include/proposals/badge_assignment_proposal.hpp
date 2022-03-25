@@ -6,7 +6,7 @@
 #include "proposal.hpp"
 
 namespace hypha {
-    class BadgeAssignmentProposal : public hypha::Proposal
+    class BadgeAssignmentProposal: public hypha::Proposal
     {
 public:
         using Proposal::Proposal;

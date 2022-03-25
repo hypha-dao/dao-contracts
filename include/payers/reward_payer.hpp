@@ -9,7 +9,7 @@
 
 namespace hypha
 {
-    class RewardPayer : public Payer
+    class RewardPayer: public Payer
     {
 public:
         using Payer::Payer;

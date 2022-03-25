@@ -38,8 +38,8 @@ namespace hypha
  * @param daoSettings
  * @return Phase to year ratio
  */
-    float getPhaseToYearRatio(Settings *daoSettings);
-    float getPhaseToYearRatio(Settings *daoSettings, int64_t periodDuration);
+    float getPhaseToYearRatio(Settings* daoSettings);
+    float getPhaseToYearRatio(Settings* daoSettings, int64_t periodDuration);
 
     AssetBatch calculateSalaries(const SalaryConfig& salaryConf, const AssetBatch& tokens);
 

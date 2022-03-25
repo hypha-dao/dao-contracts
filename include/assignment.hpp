@@ -14,13 +14,13 @@ namespace hypha
     class TimeShare;
     class Settings;
 
-    class Assignment : public RecurringActivity
+    class Assignment: public RecurringActivity
     {
 public:
-        Assignment(dao *dao, uint64_t id);
+        Assignment(dao* dao, uint64_t id);
 
         std::optional<Period> getNextClaimablePeriod();
-        bool isClaimed(Period *period);
+        bool isClaimed(Period* period);
 
         TimeShare getInitialTimeShare();
         TimeShare getCurrentTimeShare();

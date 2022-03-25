@@ -11,8 +11,8 @@ namespace hypha
     class Payer
     {
 public:
-        Payer(dao& dao, Settings *daoSettings);
-        virtual ~Payer();
+        Payer(dao& dao, Settings* daoSettings);
+        virtual~Payer();
 
         Document pay(const eosio::name&  recipient,
                      const eosio::asset& quantity,
@@ -34,7 +34,7 @@ protected:
                         const string& memo);
 
         dao& m_dao;
-        Settings *m_daoSettings;
+        Settings* m_daoSettings;
 
 private:
     };

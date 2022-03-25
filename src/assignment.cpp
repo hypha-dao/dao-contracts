@@ -15,7 +15,7 @@
 
 namespace hypha
 {
-    Assignment::Assignment(dao *dao, uint64_t id)
+    Assignment::Assignment(dao* dao, uint64_t id)
         : RecurringActivity(dao, id)
     {
         TRACE_FUNCTION()
@@ -28,7 +28,7 @@ namespace hypha
     }
 
 
-    bool Assignment::isClaimed(Period *period)
+    bool Assignment::isClaimed(Period* period)
     {
         TRACE_FUNCTION()
         return(Edge::exists(m_dao->get_self(), getID(), period->getID(), common::CLAIMED));

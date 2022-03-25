@@ -5,7 +5,7 @@
 #include "proposal.hpp"
 
 namespace hypha {
-    class AssignmentExtensionProposal : public Proposal
+    class AssignmentExtensionProposal: public Proposal
     {
 public:
         using Proposal::Proposal;

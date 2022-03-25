@@ -73,7 +73,7 @@ namespace hypha
             }
         }
 
-        Settings *daoSettings = dao.getSettingsDocument(daoHash);
+        Settings* daoSettings = dao.getSettingsDocument(daoHash);
 
         // Fetch vote power
         // Todo: Need to ensure that the balance does not need a decay.

@@ -8,7 +8,7 @@ namespace hypha
 {
     class dao;
 
-    class Member : public Document
+    class Member: public Document
     {
 public:
         Member(dao& dao, const eosio::name& creator, const eosio::name& member);

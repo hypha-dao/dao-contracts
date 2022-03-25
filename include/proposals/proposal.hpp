@@ -14,7 +14,7 @@ namespace hypha
     {
 public:
         Proposal(dao& contract, uint64_t daoID);
-        virtual ~Proposal();
+        virtual~Proposal();
 
         Document propose(const eosio::name& proposer, ContentGroups& contentGroups, bool publish);
 
@@ -60,8 +60,8 @@ private:
         bool oldDidPass(const eosio::name& ballotId);
 
 protected:
-        Settings *m_daoSettings;
-        Settings *m_dhoSettings;
+        Settings* m_daoSettings;
+        Settings* m_dhoSettings;
         uint64_t m_daoID;
 
         void _publish(const eosio::name& proposer, Document& proposal, uint64_t rootID);

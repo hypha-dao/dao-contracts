@@ -7,7 +7,7 @@ namespace hypha
 {
     class dao;
 
-    class Vote : public TypedDocument<hypha::document_types::VOTE>
+    class Vote: public TypedDocument<hypha::document_types::VOTE>
     {
 public:
         Vote(dao& dao, uint64_t id);

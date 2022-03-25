@@ -9,7 +9,7 @@
 
 namespace hypha
 {
-    float getPhaseToYearRatio(Settings *daoSettings)
+    float getPhaseToYearRatio(Settings* daoSettings)
     {
         int64_t periodDurationSec = daoSettings->getOrFail<int64_t>(common::PERIOD_DURATION);
 
@@ -17,7 +17,7 @@ namespace hypha
     }
 
 
-    float getPhaseToYearRatio(Settings *daoSettings, int64_t periodDuration)
+    float getPhaseToYearRatio(Settings* daoSettings, int64_t periodDuration)
     {
         return(static_cast<float>(periodDuration) / common::YEAR_DURATION_SEC);
     }

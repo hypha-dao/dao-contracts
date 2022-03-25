@@ -28,7 +28,7 @@ namespace hypha {
 
         ContentWrapper cw = getContentWrapper();
 
-        ContentGroup *settings = cw.getGroup(group).second;
+        ContentGroup* settings = cw.getGroup(group).second;
 
         //Check if the group exits, otherwise create it
         if (settings == nullptr)
@@ -61,8 +61,8 @@ namespace hypha {
 
         auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 
-        ContentWrapper cw        = getContentWrapper();
-        ContentGroup   *settings = cw.getGroup(group).second;
+        ContentWrapper cw         = getContentWrapper();
+        ContentGroup   * settings = cw.getGroup(group).second;
 
         //Check if the group exits, otherwise create it
         if (settings == nullptr)

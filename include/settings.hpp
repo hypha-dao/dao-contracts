@@ -11,7 +11,7 @@ namespace hypha {
  * @brief
  * Stores a setting document
  */
-    class Settings : public Document
+    class Settings: public Document
     {
 public:
         Settings(dao&     dao,
@@ -119,6 +119,6 @@ public:
 private:
         //bool m_dirty;
         uint64_t m_rootID;
-        dao *m_dao;
+        dao* m_dao;
     };
 }

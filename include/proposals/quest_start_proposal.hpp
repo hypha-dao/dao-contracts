@@ -5,7 +5,7 @@
 
 namespace hypha
 {
-    class QuestStartProposal : public PayoutProposal
+    class QuestStartProposal: public PayoutProposal
     {
 public:
         using PayoutProposal::PayoutProposal;

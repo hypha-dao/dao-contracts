@@ -4,7 +4,7 @@
 
 namespace hypha
 {
-    RecurringActivity::RecurringActivity(dao *dao, uint64_t id)
+    RecurringActivity::RecurringActivity(dao* dao, uint64_t id)
         :  Document(dao->get_self(), id),
         m_dao{dao},
         m_daoID{Edge::get(dao->get_self(), getID(), common::DAO).getToNode()},

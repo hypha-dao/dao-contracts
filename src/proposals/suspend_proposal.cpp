@@ -173,23 +173,19 @@ namespace hypha
            break;
 
         case common::ROLE_NAME.value:
-           {
-               //We don't have to do anything special for roles
-           }
-           break;
+            //We don't have to do anything special for roles
+            break;
 
         case common::BADGE_NAME.value:
             break;
 
         default:
-           {
-               EOS_CHECK(
-                   false,
-                   util::to_str("Unexpected document type for suspension: ",
-                                type, ". Valid types [", common::ASSIGNMENT, "]")
-                   );
-           }
-           break;
+            EOS_CHECK(
+                false,
+                util::to_str("Unexpected document type for suspension: ",
+                             type, ". Valid types [", common::ASSIGNMENT, "]")
+                );
+            break;
         }
 
         //dao --> suspended --> proposal

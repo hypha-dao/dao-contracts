@@ -9,7 +9,7 @@
 #include "proposal.hpp"
 
 namespace hypha {
-    class BadgeProposal : public Proposal
+    class BadgeProposal: public Proposal
     {
 public:
         using Proposal::Proposal;

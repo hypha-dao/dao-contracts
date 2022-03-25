@@ -6,7 +6,7 @@
 
 namespace hypha
 {
-    class PayoutProposal : public Proposal
+    class PayoutProposal: public Proposal
     {
 public:
         using Proposal::Proposal;

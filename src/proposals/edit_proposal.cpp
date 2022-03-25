@@ -83,7 +83,7 @@ namespace hypha
                 "Assignment extension grace period (2 periods after expiration) is over, create a new one instead"
                 );
 
-            original = std::move(*static_cast<Document *>(&assignment));
+            original = std::move(*static_cast<Document*>(&assignment));
         }
         else
         {

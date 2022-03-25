@@ -18,17 +18,17 @@ namespace hypha
  * @brief Used to wrap functionality of Assignments & Badge Assignments
  *
  */
-    class RecurringActivity : public Document
+    class RecurringActivity: public Document
     {
 public:
-        RecurringActivity(dao *dao, uint64_t id);
+        RecurringActivity(dao* dao, uint64_t id);
         Period getStartPeriod();
         Period getLastPeriod();
         Member getAssignee();
         eosio::time_point getApprovedTime();
         int64_t getPeriodCount();
 
-        dao *m_dao;
+        dao* m_dao;
 
         inline uint64_t getDaoID()
         {
@@ -37,6 +37,6 @@ public:
 
 protected:
         uint64_t m_daoID;
-        Settings *m_daoSettings;
+        Settings* m_daoSettings;
     };
 } // namespace hypha

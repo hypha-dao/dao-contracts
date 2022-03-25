@@ -5,7 +5,7 @@
 #include "proposal.hpp"
 
 namespace hypha {
-    class RoleProposal : public Proposal
+    class RoleProposal: public Proposal
     {
 public:
         using Proposal::Proposal;

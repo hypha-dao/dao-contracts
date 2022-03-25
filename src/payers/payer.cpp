@@ -5,7 +5,7 @@
 
 namespace hypha
 {
-    Payer::Payer(dao& dao, Settings *daoSettings) : m_dao(dao)
+    Payer::Payer(dao& dao, Settings* daoSettings) : m_dao(dao)
     {
         this->m_daoSettings = daoSettings;
     }
