@@ -161,8 +161,18 @@ namespace hypha
         });
 
         ContentWrapper::insertOrReplace(*details, Content {
-            common::BALLOT_QUORUM,
+            common::BALLOT_SUPPLY,
             getVoiceSupply()
+        });
+
+        ContentWrapper::insertOrReplace(*details, Content {
+            common::BALLOT_QUORUM,
+            m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100)
+        });
+
+        ContentWrapper::insertOrReplace(*details, Content {
+            common::BALLOT_ALIGNMENT,
+            m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100)
         });
 
         if (proposalDidPass)

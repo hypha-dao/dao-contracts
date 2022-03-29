@@ -743,13 +743,27 @@ namespace hypha
    void dao::remenroller(const uint64_t dao_id, name enroller_account)
    {
      TRACE_FUNCTION()
+
      checkAdminsAuth(dao_id);
+
+     EOS_CHECK(
+       m_documentGraph.getEdgesFrom(dao_id, common::ENROLLER).size() > 1,
+       "Cannot remove enroller, there has to be at least 1"
+     )
+
      Edge::get(get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER).erase();
    }
    void dao::remadmin(const uint64_t dao_id, name admin_account)
    {
      TRACE_FUNCTION()
+
      checkAdminsAuth(dao_id);
+     
+     EOS_CHECK(
+       m_documentGraph.getEdgesFrom(dao_id, common::ADMIN).size() > 1,
+       "Cannot remove admin, there has to be at least 1"
+     )
+
      Edge::get(get_self(), dao_id, getMemberID(admin_account), common::ADMIN).erase();
    }
 
@@ -974,11 +988,11 @@ namespace hypha
 
           recurAct.update();
         }
-      }
-      //It could happen if the original recurring activity was extended}
-      //so reschedule with the new end period
-      else {
-        recurAct.scheduleArchive();
+        //It could happen if the original recurring activity was extended}
+        //so reschedule with the new end period
+        else {
+          recurAct.scheduleArchive();
+        }
       }
    }
 
@@ -1271,6 +1285,7 @@ namespace hypha
       lastTimeShareEdge.erase();
 
       Edge::write(get_self(), get_self(), assignment.getID(), newTimeShareDoc.getID(), common::LAST_TIME_SHARE);
+      Edge::write(get_self(), get_self(), assignment.getID(), newTimeShareDoc.getID(), common::TIME_SHARE_LABEL);
    }
 
   uint64_t dao::getRootID()

@@ -81,10 +81,10 @@ namespace hypha
             //TODO: Store the dao in the period document and validate it 
             // verifies the period as valid & in the future
             Period period(&m_dao, std::get<int64_t>(startPeriod->value));
-            EOS_CHECK(
-                period.getStartTime().sec_since_epoch() >= eosio::current_time_point().sec_since_epoch(),
-                "Only future periods are allowed for starting period"
-            )
+            // EOS_CHECK(
+            //     period.getStartTime().sec_since_epoch() >= eosio::current_time_point().sec_since_epoch(),
+            //     "Only future periods are allowed for starting period"
+            // )
         } else {
             // default START_PERIOD to next period
             ContentWrapper::insertOrReplace(
@@ -210,6 +210,7 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), initTimeShareDoc.getID (), common::INIT_TIME_SHARE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), initTimeShareDoc.getID (), common::CURRENT_TIME_SHARE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), initTimeShareDoc.getID (), common::LAST_TIME_SHARE);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), initTimeShareDoc.getID (), common::TIME_SHARE_LABEL);
 
         auto [detailsIdx, details] = contentWrapper.getGroup(DETAILS);
 

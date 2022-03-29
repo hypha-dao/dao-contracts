@@ -79,6 +79,8 @@ namespace common
     constexpr        auto BALLOT_TITLE = "ballot_title";
     constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
     constexpr        auto BALLOT_QUORUM = "ballot_quorum";
+    constexpr        auto BALLOT_SUPPLY = "ballot_supply";
+    constexpr        auto BALLOT_ALIGNMENT = "ballot_alignment";
     constexpr        auto STATE = "state";
     constexpr        auto STATE_PROPOSED = "proposed";
     constexpr        auto STATE_ARCHIVED = "archived";
