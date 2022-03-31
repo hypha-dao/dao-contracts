@@ -71,7 +71,12 @@ namespace hypha
         contentGroups.push_back(makeBallotOptionsGroup());
 
         ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(DETAILS), 
-                                        Content { common::STATE, common::STATE_PROPOSED });
+                                        Content { common::STATE, 
+                                                  publish ? common::STATE_PROPOSED : common::STATE_DRAFTED });
+
+        ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(DETAILS), 
+                                        Content { common::DAO.to_string(), 
+                                                  static_cast<int64_t>(m_daoID) });
 
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
@@ -108,6 +113,8 @@ namespace hypha
         Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), root, common::DAO);
 
         Edge::write(m_dao.get_self(), proposer, root, proposalNode.getID(), common::VOTABLE);
+
+        postProposeImpl(proposalNode);
 
         return proposalNode;
     }
@@ -436,7 +443,11 @@ namespace hypha
         // Sets an empty tally
         VoteTally(m_dao, proposal, m_daoSettings);
 
-        postProposeImpl(proposal);
+        ContentWrapper::insertOrReplace(*proposal.getContentWrapper()
+                                                 .getGroupOrFail(DETAILS), 
+                                        Content { common::STATE, common::STATE_PROPOSED });
+
+        proposal.update();
 
         //Schedule a trx to close the proposal
         eosio::transaction trx;

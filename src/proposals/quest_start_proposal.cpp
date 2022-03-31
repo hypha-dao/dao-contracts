@@ -15,8 +15,8 @@ namespace hypha
         ContentWrapper contentWrapper = proposal.getContentWrapper();
         Member assignee = Member(m_dao, m_dao.getMemberID(contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>()));
         
-        Edge::write(m_dao.get_self(), m_dao.get_self(), assignee.getID(), proposal.getID(), common::ASSIGNED);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID(), assignee.getID(), common::ASSIGNEE_NAME);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), assignee.getID(), proposal.getID(), common::ENTRUSTED_TO);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID(), assignee.getID(), common::ENTRUSTED);
     }
 
     name QuestStartProposal::getProposalType()

@@ -27,6 +27,13 @@ std::optional<TimeShare> TimeShare::getNext(name contract)
   return std::nullopt;
 }
 
+time_point TimeShare::getStartDate()
+{
+  return getContentWrapper()
+         .getOrFail(DETAILS, TIME_SHARE_START_DATE)
+         ->getAs<time_point>();
+}
+
 ContentGroups TimeShare::constructContentGroups(int64_t timeShare, time_point startDate, uint64_t assignment) 
 {
   return {

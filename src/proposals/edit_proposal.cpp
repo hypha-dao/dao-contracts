@@ -107,12 +107,11 @@ namespace hypha
     {
         TRACE_FUNCTION()
         // merge the original with the edits and save
-        ContentWrapper proposalContent = proposal.getContentWrapper();
+        auto proposalCpy = proposal.getContentGroups();
+
+        ContentWrapper proposalContent(proposalCpy);
 
         auto [detailsIdx, details] = proposalContent.getGroup(DETAILS);
-
-        //Save a copy of original details
-        auto originalContents = proposal.getContentGroups();
 
         auto skippedGroups = {SYSTEM, BALLOT, BALLOT_OPTIONS};
 
@@ -141,30 +140,26 @@ namespace hypha
         }
 
         // confirm that the original document exists
-        // Use the ORIGINAL edge since the original document could have changed since this was 
-        // proposed
-
         auto edges = m_dao.getGraph().getEdgesFrom(proposal.getID(), common::ORIGINAL);
         
         EOS_CHECK(
           edges.size() == 1, 
-          "Missing edge from extension proposal: " + util::to_str(proposal.getID()) + " to original document"
+          "Missing edge from edit proposal: " + util::to_str(proposal.getID()) + " to original document"
         );
 
         Document original (m_dao.get_self(), edges[0].getToNode());
         
+        Document toMerge;
+        toMerge.content_groups = std::move(proposalCpy);
         // update all edges to point to the new document
-        Document merged = Document::merge(original, proposal);
-        merged.emplace ();
+        Document merged = Document::merge(std::move(original), toMerge);
+        merged.update();
 
         // replace the original node with the new one in the edges table
-        m_dao.getGraph().replaceNode(original.getID(), merged.getID());
+        // m_dao.getGraph().replaceNode(original.getID(), merged.getID());
 
-        // erase the original document
-        m_dao.getGraph().eraseDocument(original.getID(), true);
-
-        //Restore groups
-        proposalContent.getContentGroups() = std::move(originalContents);
+        // // erase the original document
+        // m_dao.getGraph().eraseDocument(original.getID(), true);
     }
 
     std::string EditProposal::getBallotContent (ContentWrapper &contentWrapper)

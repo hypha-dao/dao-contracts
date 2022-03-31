@@ -105,6 +105,11 @@ namespace hypha
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
+      EOS_CHECK(
+        proposal_type != common::SUSPEND,
+        "Use 'suspend' action to create a suspend proposal"
+      )
+
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, dao_id, proposal_type));
       proposal->propose(proposer, content_groups, publish);
    }
@@ -242,17 +247,27 @@ namespace hypha
 
      auto startPeriod = assignment.getStartPeriod();
 
-     //Calculate the number of periods since start period to the current period
-     auto currentPeriod = startPeriod.getPeriodUntil(eosio::current_time_point());
-    
-     auto periodsToCurrent = startPeriod.getPeriodCountTo(currentPeriod);
+     auto now = eosio::current_time_point();
 
-     periodsToCurrent = std::max(periodsToCurrent, int64_t(0)) + 1;
+     auto periodsToCurrent = int64_t(0);
 
-     EOS_CHECK(
-       originalPeriods >= periodsToCurrent,
-       util::to_str("Withdrawal of expired assignment: ", document_id, " is not allowed")
-     );
+     //If the start period is in the future then we just set the period count to 0
+     //since it means that we are withdrawing before the start period
+     if (now > startPeriod.getStartTime()) {
+        //Calculate the number of periods since start period to the current period
+        auto currentPeriod = startPeriod.getPeriodUntil(now);
+      
+        periodsToCurrent = startPeriod.getPeriodCountTo(currentPeriod);
+
+        periodsToCurrent = std::max(periodsToCurrent, int64_t(0)) + 1;
+
+        EOS_CHECK(
+          originalPeriods >= periodsToCurrent,
+          util::to_str("Withdrawal of expired assignment: ", document_id, " is not allowed")
+        );
+
+        modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
+     }
 
      auto detailsGroup = cw.getGroupOrFail(DETAILS);
  
@@ -261,8 +276,6 @@ namespace hypha
      ContentWrapper::insertOrReplace(*detailsGroup, Content { common::STATE, common::STATE_WITHDRAWED });
   
      assignment.update();
-              
-     modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
    }
 
    void dao::suspend(name proposer, uint64_t document_id, string reason)
@@ -954,8 +967,6 @@ namespace hypha
 
    void dao::archiverecur(uint64_t document_id)
    {
-      require_auth(get_self());
-
       /**
       * Notes
       * Watch for:
@@ -965,6 +976,15 @@ namespace hypha
       */
 
       RecurringActivity recurAct(this, document_id);
+
+      bool userCalled = eosio::has_auth(recurAct.getAssignee().getAccount());
+
+      if (!userCalled) {
+        require_auth(get_self());
+      }
+      else {
+        EOS_CHECK(false, "called by user");
+      }
 
       auto expirationDate = recurAct.getLastPeriod().getEndTime();
 
@@ -990,7 +1010,8 @@ namespace hypha
         }
         //It could happen if the original recurring activity was extended}
         //so reschedule with the new end period
-        else {
+        //Just re-schedule if the action was called by an scheduled transaction
+        else if (!userCalled) {
           recurAct.scheduleArchive();
         }
       }
@@ -1250,9 +1271,8 @@ namespace hypha
 
       TimeShare lastTimeShare(get_self(), lastTimeShareEdge.getToNode());
 
-      time_point lastStartDate = lastTimeShare.getContentWrapper()
-                                                .getOrFail(DETAILS, TIME_SHARE_START_DATE)
-                                                ->getAs<time_point>();
+      time_point lastStartDate = lastTimeShare.getStartDate();
+
       if (fixedStartDate)
       {
         startDate = *fixedStartDate;

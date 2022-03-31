@@ -27,6 +27,8 @@ public:
   TimeShare(name contract, uint64_t id);
 
   std::optional<TimeShare> getNext(name contract);
+
+  time_point getStartDate();
 private:
 
   ContentGroups constructContentGroups(int64_t timeShare, time_point startDate, uint64_t assignment);

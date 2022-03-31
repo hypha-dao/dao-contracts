@@ -155,13 +155,19 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
+        auto cw = proposal.getContentWrapper();
+
         Document roleDoc(
             m_dao.get_self(),
-            proposal.getContentWrapper()
-                    .getOrFail(DETAILS, ROLE_STRING)
-                    ->getAs<int64_t>());
+            cw.getOrFail(DETAILS, ROLE_STRING)->getAs<int64_t>()
+        );
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), roleDoc.getID(), common::ROLE_NAME);
+
+        //Start period edge
+        // assignment ---- start ----> period
+        uint64_t startPeriodID = static_cast<uint64_t>(cw.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>());
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), startPeriodID, common::START);
     }
 
     void AssignmentProposal::passImpl(Document &proposal)
@@ -189,13 +195,14 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), assigneeDoc.getID(), common::ASSIGNEE_NAME);
         Edge::write(m_dao.get_self(), m_dao.get_self(), role.getID (), proposal.getID (), common::ASSIGNMENT);
         
-        //Start period edge
-        // assignment ---- start ----> period
-        uint64_t startPeriodID = static_cast<uint64_t>(contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>());
-        Document startPerDoc(m_dao.get_self(), startPeriodID);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), startPerDoc.getID(), common::START);
+        auto startPeriodEdge = m_dao.getGraph().getEdgesFrom(proposal.getID(), common::START);
 
-        Period startPeriod(&m_dao, startPeriodID);
+        EOS_CHECK(
+            !startPeriodEdge.empty(),
+            util::to_str("Missing 'start' edge from assignment")
+        )
+
+        Period startPeriod(&m_dao, startPeriodEdge.at(0).getToNode());
 
         //Initial time share for proposal
         int64_t initTimeShare = contentWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();

@@ -70,9 +70,13 @@ namespace common
     constexpr name EXTENSION = name("extension");
     constexpr        name SUSPEND = name("suspend");
     constexpr        name SUSPENDED = name("suspended");
+    //Must only be used by Quests
+    constexpr        name ENTRUSTED_TO = name("entrustedto");
+    constexpr        name ENTRUSTED = name("entrusted");
     static constexpr name QUEST_START = name("queststart");
-    static constexpr name QUEST_COMPLETION = name("questcomple");
+    static constexpr name QUEST_COMPLETION = name("questcomplet");
 
+    //Must only be used by Assignments
     constexpr name ASSIGNED = name("assigned");
     constexpr name ASSIGNEE_NAME = name("assignee");
     constexpr        auto APPROVED_DATE = "original_approved_date";
