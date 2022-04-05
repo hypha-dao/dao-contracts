@@ -147,7 +147,7 @@ namespace hypha
 
         Document recipientDoc(m_dao.get_self(), m_dao.getMemberID(recipient));
 
-        Edge::write(m_dao.get_self(), m_dao.get_self(), recipientDoc.getID(), proposal.getID(), common::PAYOUT);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), recipientDoc.getID(), proposal.getID(), edgeName);
 
         std::string memo{"one-time payment on proposal: " + util::to_str(proposal.getID())};
 

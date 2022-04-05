@@ -982,9 +982,6 @@ namespace hypha
       if (!userCalled) {
         require_auth(get_self());
       }
-      else {
-        EOS_CHECK(false, "called by user");
-      }
 
       auto expirationDate = recurAct.getLastPeriod().getEndTime();
 
