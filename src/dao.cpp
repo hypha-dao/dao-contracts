@@ -32,6 +32,10 @@ namespace hypha
    ACTION 
    dao::fixassigns(std::vector<eosio::checksum256>& hashes)
    {
+     EOS_CHECK(
+       !isPaused(), "Contract is paused for maintenance. Please try again later."
+     ); 
+     
      const size_t maxHashesPerAction = 2;
 
      EOS_CHECK(
@@ -506,6 +510,11 @@ namespace hypha
    void dao::apply(const eosio::name &applicant, const std::string &content)
    {
       TRACE_FUNCTION()
+      
+      EOS_CHECK(
+         !isPaused(), "Contract is paused for maintenance. Please try again later."
+      );
+
       require_auth(applicant);
       Member member(*this, applicant, applicant);
       member.apply(getRoot(get_self()), content);
@@ -514,6 +523,11 @@ namespace hypha
    void dao::enroll(const eosio::name &enroller, const eosio::name &applicant, const std::string &content)
    {
       TRACE_FUNCTION()
+
+      EOS_CHECK(
+         !isPaused(), "Contract is paused for maintenance. Please try again later."
+      );
+
       require_auth(enroller);
       Member member = Member::get(*this, applicant);
       member.enroll(enroller, content);
@@ -559,6 +573,11 @@ namespace hypha
    void dao::remsetting(const string &key)
    {
       TRACE_FUNCTION()
+
+      EOS_CHECK(
+         !isPaused(), "Contract is paused for maintenance. Please try again later."
+      );
+      
       require_auth(get_self());
       removeSetting(key);
    }
@@ -566,6 +585,7 @@ namespace hypha
    void dao::removeSetting(const string &key)
    {
       TRACE_FUNCTION()
+
       auto document = getSettingsDocument();
       auto oldHash = document.getHash();
       auto contentGroups = document.getContentGroups();
@@ -591,6 +611,11 @@ namespace hypha
    void dao::addperiod(const eosio::checksum256 &predecessor, const eosio::time_point &start_time, const string &label)
    {
       TRACE_FUNCTION()
+      
+      EOS_CHECK(
+        !isPaused(), "Contract is paused for maintenance. Please try again later."
+      );
+
       require_auth(get_self());
 
       Period newPeriod(this, start_time, label);
@@ -662,6 +687,11 @@ namespace hypha
    void dao::createroot(const std::string &notes)
    {
       TRACE_FUNCTION()
+
+      EOS_CHECK(
+        !isPaused(), "Contract is paused for maintenance. Please try again later."
+      );
+
       require_auth(get_self());
 
       Document rootDoc(get_self(), get_self(), getRootContent(get_self()));
@@ -708,6 +738,11 @@ namespace hypha
    void dao::setalert(const eosio::name &level, const std::string &content)
    {
       TRACE_FUNCTION()
+
+      EOS_CHECK(
+         !isPaused(), "Contract is paused for maintenance. Please try again later."
+      );
+
       auto [exists, edge] = Edge::getIfExists(get_self(), getRoot(get_self()), common::ALERT);
       if (exists)
       {
@@ -731,6 +766,9 @@ namespace hypha
    void dao::remalert(const string &notes)
    {
       TRACE_FUNCTION()
+      EOS_CHECK(
+         !isPaused(), "Contract is paused for maintenance. Please try again later."
+      );
       Edge alertEdge = Edge::get(get_self(), getRoot(get_self()), common::ALERT);
       Document alert(get_self(), alertEdge.getToNode());
       getGraph().eraseDocument(alert.getHash());
@@ -764,6 +802,11 @@ namespace hypha
    ACTION dao::adjustcmtmnt(name issuer, ContentGroups &adjust_info)
    {
       TRACE_FUNCTION()
+      
+      EOS_CHECK(
+         !isPaused(), "Contract is paused for maintenance. Please try again later."
+      );
+
       require_auth(issuer);
 
       ContentWrapper cw(adjust_info);
@@ -820,6 +863,10 @@ namespace hypha
   ACTION dao::adjustdeferr(name issuer, checksum256 assignment_hash, int64_t new_deferred_perc_x100)
   {
     TRACE_FUNCTION()
+
+    EOS_CHECK(
+       !isPaused(), "Contract is paused for maintenance. Please try again later."
+    );
 
     require_auth(issuer);
 
