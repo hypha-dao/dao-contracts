@@ -519,7 +519,9 @@ namespace hypha
       member.enroll(enroller, content);
    }
 
-   bool dao::isPaused() { return false; }
+   bool dao::isPaused() { 
+      return getSettingOrDefault<int64_t>("paused", 0) == 1;
+   }
 
    Document dao::getSettingsDocument()
    {
