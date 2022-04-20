@@ -135,20 +135,20 @@ namespace hypha
         });
 
         // add remaining derived per period salary amounts to this document        
-        if (salaries.peg.amount > 0) {
+        //if (salaries.peg.amount > 0) {
             Content pegSalaryPerPeriod(common::PEG_SALARY_PER_PERIOD, salaries.peg);
             ContentWrapper::insertOrReplace(*detailsGroup, pegSalaryPerPeriod);
-        }
+        //}
 
-        if (salaries.reward.amount > 0) {
+        //if (salaries.reward.amount > 0) {
             Content rewardSalaryPerPeriod(common::REWARD_SALARY_PER_PERIOD, salaries.reward);
             ContentWrapper::insertOrReplace(*detailsGroup, rewardSalaryPerPeriod);
-        }
+        //}
 
-        if (salaries.voice.amount > 0) {
+        //if (salaries.voice.amount > 0) {
             Content voiceSalaryPerPeriod(common::VOICE_SALARY_PER_PERIOD, salaries.voice);
             ContentWrapper::insertOrReplace(*detailsGroup, voiceSalaryPerPeriod);
-        }
+        //}
     }
 
     void AssignmentProposal::postProposeImpl(Document &proposal)
