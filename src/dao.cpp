@@ -23,53 +23,83 @@
 
 namespace hypha
 {
-  ACTION dao::adddoc(Document& doc)
-  {
-    require_auth(get_self());
-    Document::document_table d_t(get_self(), get_self().value);
-    d_t.emplace(get_self(), [&doc](Document& newDoc){ 
-      newDoc = std::move(doc);
-    });
-  }
-  
-  ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
-  {
-    require_auth(get_self());
-
-    Document doc(get_self(), doc_id);
-
-    auto cw = doc.getContentWrapper();
-
-    cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
-
-    doc.update();
-  }
-
   /**Testenv only 
-  ACTION dao::clean(int64_t docs, int64_t edges)
-  {
-    require_auth(get_self());
 
-    Document::document_table d_t(get_self(), get_self().value);
+  // ACTION dao::adddocs(std::vector<Document>& docs)
+  // {
+  //   require_auth(get_self());
+  //   Document::document_table d_t(get_self(), get_self().value);
+    
+  //   for (auto& doc : docs) {
+  //     d_t.emplace(get_self(), [&doc](Document& newDoc){ 
+  //       newDoc = std::move(doc);
+  //     });
+  //   }
+  // }
+  
+  // ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
+  // {
+  //   require_auth(get_self());
 
-    for (auto it = d_t.begin(); it != d_t.end() && docs-- > 0; ) {
-      it = d_t.erase(it);
-    }
+  //   Document doc(get_self(), doc_id);
 
-    Edge::edge_table e_t(get_self(), get_self().value);
+  //   auto cw = doc.getContentWrapper();
 
-    for (auto it = e_t.begin(); it != e_t.end() && edges-- > 0; ) {
-      it = e_t.erase(it);
-    }
-  }
+  //   cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
 
-  ACTION dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
-  {
-    require_auth(get_self());
+  //   doc.update();
+  // }
 
-    Edge(get_self(), get_self(), from, to, edge_name);
-  }
+  // ACTION dao::clean(int64_t docs, int64_t edges)
+  // {
+  //   require_auth(get_self());
 
+  //   Document::document_table d_t(get_self(), get_self().value);
+
+  //   for (auto it = d_t.begin(); it != d_t.end() && docs-- > 0; ) {
+  //     it = d_t.erase(it);
+  //   }
+
+  //   Edge::edge_table e_t(get_self(), get_self().value);
+
+  //   for (auto it = e_t.begin(); it != e_t.end() && edges-- > 0; ) {
+  //     it = e_t.erase(it);
+  //   }
+  // }
+  
+  // ACTION dao::addedge(std::vector<InputEdge>& edges)
+  // {
+  //   require_auth(get_self());
+
+  //   Edge::edge_table e_t(get_self(), get_self().value);
+
+  //   for (auto& edge : edges) {
+  //     const int64_t edgeID = util::hashCombine(edge.from_node, edge.to_node, edge.edge_name);
+
+  //     EOS_CHECK(
+  //       e_t.find(edgeID) == e_t.end(), 
+  //       util::to_str("Edge from: ", edge.from_node, 
+  //                   " to: ", edge.to_node, 
+  //                   " with name: ", edge.edge_name, " already exists")
+  //     );
+
+  //     e_t.emplace(get_self(), [&](Edge &e) {
+
+  //       auto& [creator, created_date, from_node, to_node, edge_name] = edge;
+
+  //       e.id = edgeID;
+  //       e.from_node_edge_name_index = util::hashCombine(from_node, edge_name);
+  //       e.from_node_to_node_index = util::hashCombine(from_node, to_node);
+  //       e.to_node_edge_name_index = util::hashCombine(to_node, edge_name);
+  //       e.creator = creator;
+  //       e.contract = get_self();
+  //       e.from_node = from_node;
+  //       e.to_node = to_node;
+  //       e.edge_name = edge_name;
+  //       e.created_date = created_date;
+  //     });
+  //   }
+  // }
 
   ACTION
   dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
@@ -104,11 +134,6 @@ namespace hypha
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-
-      EOS_CHECK(
-        proposal_type != common::SUSPEND,
-        "Use 'suspend' action to create a suspend proposal"
-      )
 
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, dao_id, proposal_type));
       proposal->propose(proposer, content_groups, publish);
@@ -188,6 +213,7 @@ namespace hypha
    {
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+      EOS_CHECK(false, "Use propose action with 'edit' type")
 
       Assignment assignment(this, assignment_id);
 
@@ -632,7 +658,9 @@ namespace hypha
       member.enroll(enroller, dao_id, content);
    }
 
-   bool dao::isPaused() { return false; }
+   bool dao::isPaused() { 
+     return getSettingsDocument()->getSettingOrDefault<int64_t>("paused", 0) == 1; 
+   }
 
    Settings* dao::getSettingsDocument(uint64_t daoID)
    {
@@ -677,6 +705,8 @@ namespace hypha
    void dao::setdaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group)
    {
      TRACE_FUNCTION()
+     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
      checkAdminsAuth(dao_id);
      auto settings = getSettingsDocument(dao_id);
      //Only hypha dao should be able to use this flag
@@ -706,6 +736,8 @@ namespace hypha
    void dao::remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group)
    {
      TRACE_FUNCTION()     
+     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
      checkAdminsAuth(dao_id);
      auto settings = getSettingsDocument(dao_id);
      settings->remSetting(group.value_or(string{"settings"}), key);
@@ -714,6 +746,7 @@ namespace hypha
    void dao::remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group)
    {
      TRACE_FUNCTION()
+     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
      checkAdminsAuth(dao_id);
      auto settings = getSettingsDocument(dao_id);
      settings->remKVSetting(group.value_or(string{"settings"}), Content{ key, value });
@@ -722,6 +755,7 @@ namespace hypha
    void dao::remsetting(const string &key)
    {
       TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
       require_auth(get_self());
       auto settings = getSettingsDocument();
       settings->remSetting(key);
@@ -730,6 +764,8 @@ namespace hypha
    void  dao::addenroller(const uint64_t dao_id, name enroller_account)
    {
      TRACE_FUNCTION()
+     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
      checkAdminsAuth(dao_id);
      auto mem = getOrCreateMember(enroller_account);
      if (!Member::isMember(*this, dao_id, enroller_account)) {
@@ -743,6 +779,8 @@ namespace hypha
    void dao::addadmin(const uint64_t dao_id, name admin_account)
    {
      TRACE_FUNCTION()
+     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
      checkAdminsAuth(dao_id);
      auto mem = getOrCreateMember(admin_account);
      if (!Member::isMember(*this, dao_id, admin_account)) {
@@ -756,6 +794,7 @@ namespace hypha
    void dao::remenroller(const uint64_t dao_id, name enroller_account)
    {
      TRACE_FUNCTION()
+     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
      checkAdminsAuth(dao_id);
 
@@ -769,7 +808,7 @@ namespace hypha
    void dao::remadmin(const uint64_t dao_id, name admin_account)
    {
      TRACE_FUNCTION()
-
+     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
      checkAdminsAuth(dao_id);
      
      EOS_CHECK(
@@ -783,6 +822,7 @@ namespace hypha
    ACTION dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/)
    {
       TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       if (!eosio::has_auth(get_self())) {
         checkAdminsAuth(dao_id);  
@@ -794,6 +834,7 @@ namespace hypha
    void dao::createdao(ContentGroups &config)
    {
       TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       //Extract mandatory configurations
       auto configCW = ContentWrapper(config);
@@ -957,12 +998,6 @@ namespace hypha
       //   inititialPeriods->getAs<int64_t>() - 1 <= 30,
       //   util::to_str("The max number of initial periods is 30")
       // )
-
-      // genPeriods(
-      //   dao, 
-      //   inititialPeriods->getAs<int64_t>() - 1, 
-      //   periodDurationSeconds->getAs<int64_t>()
-      // );
    }
 
    void dao::archiverecur(uint64_t document_id)
@@ -1041,6 +1076,9 @@ namespace hypha
    {
       TRACE_FUNCTION()
 
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+
       Document rootDoc(get_self(), getRootID());
 
       auto [exists, edge] = Edge::getIfExists(get_self(), rootDoc.getID(), common::ALERT);
@@ -1066,6 +1104,7 @@ namespace hypha
    void dao::remalert(const string &notes)
    {
       TRACE_FUNCTION()
+      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
       Document rootDoc(get_self(), getRootID());
 
@@ -1102,6 +1141,8 @@ namespace hypha
   ACTION dao::adjustcmtmnt(name issuer, ContentGroups &adjust_info)
   {
     TRACE_FUNCTION()
+    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
     require_auth(issuer);
 
     ContentWrapper cw(adjust_info);
@@ -1157,6 +1198,9 @@ namespace hypha
   ACTION dao::adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferred_perc_x100)
   {
     TRACE_FUNCTION()
+
+    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
 
     require_auth(issuer);
 
@@ -1468,11 +1512,8 @@ namespace hypha
       rewardContract,
       name("create"),
       std::make_tuple(
-        daoName,
         get_self(),
-        asset{-getTokenUnit(rewardToken), rewardToken.symbol},
-        uint64_t{0},
-        uint64_t{0}
+        asset{-getTokenUnit(rewardToken), rewardToken.symbol}
       )
     ).send();
 
@@ -1485,11 +1526,8 @@ namespace hypha
       pegContract,
       name("create"),
       std::make_tuple(
-        daoName,
         treasuryContract,
-        asset{-getTokenUnit(pegToken), pegToken.symbol},
-        uint64_t{0},
-        uint64_t{0}
+        asset{-getTokenUnit(pegToken), pegToken.symbol}
       )
     ).send();
   }

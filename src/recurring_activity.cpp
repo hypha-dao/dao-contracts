@@ -17,11 +17,10 @@ Period RecurringActivity::getStartPeriod()
     TRACE_FUNCTION()
     return Period(
         m_dao, 
-        static_cast<uint64_t>(
-            getContentWrapper()
-            .getOrFail(DETAILS, START_PERIOD)
-            ->getAs<int64_t>()
-        )
+        m_dao->getGraph().getEdgesFromOrFail(
+            getID(),
+            common::START
+        )[0].getToNode()
     );
 }
 

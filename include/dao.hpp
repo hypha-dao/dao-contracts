@@ -110,16 +110,39 @@ namespace hypha
       ACTION setalert(const eosio::name &level, const std::string &content);
       ACTION remalert(const std::string &notes);
 
-      ACTION adddoc(Document& doc);
-      ACTION remdoc(uint64_t doc_id)
-      {
-         eosio::require_auth(get_self());
-         m_documentGraph.eraseDocument(doc_id, true);
-      }
-      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
+      /**TODO: Remove */
+      //ACTION adddocs(std::vector<Document>& docs);
+
+      /**TODO: Remove */
+      // ACTION remdoc(uint64_t doc_id)
+      // {
+      //    eosio::require_auth(get_self());
+      //    m_documentGraph.eraseDocument(doc_id, true);
+      // }
+
+      /**TODO: Remove */
+      // ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name)
+      // {
+      //    eosio::require_auth(get_self());
+      //    Edge::get(get_self(), from_node, to_node, edge_name).erase();
+      // }
+
+      /**TODO: Remove */
+      //ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
+      
+      /**TODO: Remove */
+      struct InputEdge {
+         eosio::name creator; 
+         eosio::time_point created_date;
+         uint64_t from_node;
+         uint64_t to_node;
+         name edge_name;
+      };
+
+      /**TODO: Remove */
+      //ACTION addedge(std::vector<InputEdge>& edges);
+
       /**Testenv only
-      ACTION clean(int64_t docs, int64_t edges);
-      ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
       ACTION deletetok(asset asset, name contract) {
 

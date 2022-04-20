@@ -196,6 +196,8 @@ namespace common
 #define PEG_TOKEN_CONTRACT "peg_token_contract"
 #define TREASURY_CONTRACT "treasury_contract"
 #define REWARD_TOKEN_CONTRACT "reward_token_contract"
+#define HYPHA_TOKEN_CONTRACT "hypha_token_contract"
+#define HYPHA_COSALE_CONTRACT "hypha_cosale_contract"
 #define GOVERNANCE_TOKEN_CONTRACT "governance_token_contract"
 #define COMMENTS_CONTRACT "comments_contract"
 

@@ -85,6 +85,10 @@ namespace hypha
         // TODO: connect the payment receipt to the period also
         // TODO: change Payer.hpp to NOT require m_dao so this payment can be made using payer factory
 
+        if (getAccount() == m_dao.get_self()) {
+            return;
+        }
+
         Document daoDoc(getContract(), appliedTo);
         auto daoCW = daoDoc.getContentWrapper();
 
