@@ -29,6 +29,7 @@ export interface DaoPeerContracts {
     hypha: Account;
     husd: Account;
     comments: Account;
+    token: Account;
 }
 
 expect.extend({
@@ -90,7 +91,8 @@ export class DaoBlockchain extends Blockchain {
             bank:  this.createContract('bank.hypha', 'treasury'),
             hypha: this.createContract('token.hypha', 'token'),
             husd: this.createContract('husd.hypha', 'token'),
-            comments: this.createContract('comments', 'comments')
+            comments: this.createContract('comments', 'comments'),
+            token: this.createContract('token', 'token')
         };
     }
 
@@ -384,6 +386,25 @@ export class DaoBlockchain extends Blockchain {
             ]
         });
 
+        this.peerContracts.token.updateAuth(`active`, `owner`, {
+            accounts: [
+                {
+                    permission: {
+                        actor: this.peerContracts.token.accountName,
+                        permission: `eosio.code`
+                    },
+                    weight: 1
+                },
+                {
+                    permission: {
+                        actor: this.daoContract.accountName,
+                        permission: `active`
+                    },
+                    weight: 1
+                }
+            ]
+        });
+
         const newAccounts = this.daos.reduce((accounts, dao) => {
             if (!this.accounts[dao.settings.onboarderAccount]) {
                 accounts.add(dao.settings.onboarderAccount)
@@ -410,12 +431,12 @@ export class DaoBlockchain extends Blockchain {
                 }),
                 this.buildAction(this.daoContract, 'setsetting', {
                     key: 'reward_token_contract',
-                    value: [ 'name', this.peerContracts.voice.accountName ],
+                    value: [ 'name', this.peerContracts.token.accountName ],
                     group: null
                 }),
                 this.buildAction(this.daoContract, 'setsetting', {
                     key: 'peg_token_contract',
-                    value: [ 'name', this.peerContracts.voice.accountName ],
+                    value: [ 'name', this.peerContracts.token.accountName ],
                     group: null
                 }),
                 this.buildAction(this.daoContract, 'setsetting', {

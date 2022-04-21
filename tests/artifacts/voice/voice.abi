@@ -8,6 +8,20 @@
             "base": "",
             "fields": [
                 {
+                    "name": "balance",
+                    "type": "asset"
+                },
+                {
+                    "name": "last_decay_period",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "accountv2",
+            "base": "",
+            "fields": [
+                {
                     "name": "id",
                     "type": "uint64"
                 },
@@ -71,6 +85,32 @@
         },
         {
             "name": "currency_stats",
+            "base": "",
+            "fields": [
+                {
+                    "name": "supply",
+                    "type": "asset"
+                },
+                {
+                    "name": "max_supply",
+                    "type": "asset"
+                },
+                {
+                    "name": "issuer",
+                    "type": "name"
+                },
+                {
+                    "name": "decay_per_period_x10M",
+                    "type": "uint64"
+                },
+                {
+                    "name": "decay_period",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "currency_statsv2",
             "base": "",
             "fields": [
                 {
@@ -158,6 +198,30 @@
             ]
         },
         {
+            "name": "migrateacc",
+            "base": "",
+            "fields": [
+                {
+                    "name": "tenant",
+                    "type": "name"
+                },
+                {
+                    "name": "accounts",
+                    "type": "name[]"
+                }
+            ]
+        },
+        {
+            "name": "migratestat",
+            "base": "",
+            "fields": [
+                {
+                    "name": "tenant",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "open",
             "base": "",
             "fields": [
@@ -233,6 +297,16 @@
             "ricardian_contract": ""
         },
         {
+            "name": "migrateacc",
+            "type": "migrateacc",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "migratestat",
+            "type": "migratestat",
+            "ricardian_contract": ""
+        },
+        {
             "name": "open",
             "type": "open",
             "ricardian_contract": ""
@@ -252,8 +326,22 @@
             "key_types": []
         },
         {
+            "name": "accounts.v2",
+            "type": "accountv2",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
             "name": "stat",
             "type": "currency_stats",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "stat.v2",
+            "type": "currency_statsv2",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

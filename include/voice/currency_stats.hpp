@@ -33,6 +33,6 @@ namespace hypha {
             "bykey"_n,
             eosio::const_mem_fun<currency_stats, uint128_t, &currency_stats::by_tenant_and_code>
         >;
-        using stats = eosio::multi_index<name("stat"), currency_stats, stats_by_key>;
+        using stats = eosio::multi_index<name("stat.v2"), currency_stats, stats_by_key>;
     }
 }
