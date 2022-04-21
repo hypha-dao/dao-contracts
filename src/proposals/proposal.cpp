@@ -36,6 +36,12 @@ namespace hypha
     Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish)
     {
         TRACE_FUNCTION()
+
+        EOS_CHECK(
+            publish,
+            "Staging proposals are not currently enabled"
+        )
+
         EOS_CHECK(Member::isMember(m_dao, m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);

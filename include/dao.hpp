@@ -114,11 +114,11 @@ namespace hypha
       //ACTION adddocs(std::vector<Document>& docs);
 
       /**TODO: Remove */
-      // ACTION remdoc(uint64_t doc_id)
-      // {
-      //    eosio::require_auth(get_self());
-      //    m_documentGraph.eraseDocument(doc_id, true);
-      // }
+      ACTION remdoc(uint64_t doc_id)
+      {
+         eosio::require_auth(get_self());
+         m_documentGraph.eraseDocument(doc_id, true);
+      }
 
       /**TODO: Remove */
       // ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name)
@@ -253,7 +253,20 @@ namespace hypha
          });
       }
 
+      [[eosio::on_notify("husd.hypha::transfer")]]
+      void onhusd(const name& from, const name& to, const asset& quantity, const string& memo) {
+         if (get_first_receiver() == "husd.hypha"_n && 
+            to == get_self() && 
+            quantity.symbol == common::S_HUSD) 
+         {
+            on_husd(from, to, quantity, memo);
+         }
+      }
+
    private:
+
+
+      void on_husd(const name& from, const name& to, const asset& quantity, const string& memo);
 
       template<class Table>
       std::optional<uint64_t> getNameID(const name& n)

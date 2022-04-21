@@ -22,6 +22,8 @@ namespace common
 
     constexpr symbol S_SEEDS("SEEDS", 4);
     constexpr symbol S_USD("USD", 2);
+    constexpr symbol S_HUSD("HUSD", 2);
+    constexpr symbol S_HYPHA("HYPHA", 2);
 
     //Dao settings
     constexpr auto DAO_DESCRIPTION = "dao_description";

@@ -344,6 +344,13 @@ namespace hypha
 
       Assignment assignment(this, assignment_id);
 
+      EOS_CHECK(
+        assignment.getContentWrapper()
+                  .getOrFail(DETAILS, DEFERRED)
+                  ->getAs<int64_t>() == 100,
+        "Claiming is disabled for assignments with deferral less than 100%"
+      )
+
       eosio::name assignee = assignment.getAssignee().getAccount();
 
       // assignee must still be a DHO member
@@ -547,6 +554,13 @@ namespace hypha
         }
 
         auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
+
+        //Check if badge assignment is old (it contains end_period)
+        if (badgeAssignment.exists(DETAILS, END_PERIOD)) {
+          continue;
+        }
+
+        //Verify Badge document exists
         Document badge(get_self(), badge_edge.getToNode());
 
         Content* startPeriodContent = badgeAssignment.getOrFail(DETAILS, START_PERIOD);
@@ -864,6 +878,16 @@ namespace hypha
       Document root = Document(get_self(), getRootID());
 
       Edge(get_self(), get_self(), root.getID(), daoDoc.getID(), common::DAO);
+
+      const std::map<std::string, std::vector<Content>> mandatoryFields = {
+        { 
+          "details", 
+          {
+            {"dao_name", Content::FlexValue{}},
+            {"dao_title", Content::FlexValue{}}
+          }
+        }
+      };
 
       auto votingDurationSeconds = configCW.getOrFail(detailsIdx, VOTING_DURATION_SEC).second;
 
@@ -1531,5 +1555,40 @@ namespace hypha
       )
     ).send();
   }
+
+  void dao::on_husd(const name& from, const name& to, const asset& quantity, const string& memo) {
+      
+    EOS_CHECK(quantity.amount > 0, "quantity must be > 0");
+    EOS_CHECK(quantity.is_valid(), "quantity invalid");
+    
+    asset hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
+    EOS_CHECK(
+        hyphaUsdVal.symbol.precision() == 4,
+        util::to_str("Expected hypha_usd_value precision to be 4, but got:", hyphaUsdVal.symbol.precision())
+    );
+    double factor = (hyphaUsdVal.amount / 10000.0);
+    
+    EOS_CHECK(common::S_HUSD.precision() == common::S_HYPHA.precision(), "unexpected precision mismatch");
+
+    asset hyphaAmount = asset( quantity.amount / factor, common::S_HYPHA);
+
+    auto hyphaID = getDAOID("hypha"_n);
+
+    EOS_CHECK(
+      hyphaID.has_value(),
+      "Missing hypha DAO entry"
+    )
+
+    auto daoSettings = getSettingsDocument(*hyphaID);
+
+    auto daoTokens = AssetBatch{
+      .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+      .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+      .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+    };
+    
+    std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, daoSettings, hyphaAmount.symbol, eosio::name{0}, daoTokens));
+    payer->pay(from, hyphaAmount, string("Buy HYPHA for " + quantity.to_string()));
+}
 
 } // namespace hypha
