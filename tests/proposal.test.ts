@@ -1,7 +1,7 @@
 import { setupEnvironment } from "./setup";
 import { Document } from './types/Document';
 import { last } from './utils/Arrays';
-import { getDocumentsByType } from './utils/Dao';
+import { getContent, getDocumentsByType, getSystemContentGroup } from './utils/Dao';
 import { DocumentBuilder } from './utils/DocumentBuilder';
 import { getDaoExpect } from './utils/Expect';
 import { passProposal } from './utils/Proposal';
@@ -234,13 +234,16 @@ describe('Proposal', () => {
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
             publish: false,
-            content_groups: getSampleRole().content_groups
+            content_groups: getSampleRole('old-title').content_groups
         });
 
         proposal = last(getDocumentsByType(
             environment.getDaoDocuments(),
             'role'
         ));
+
+        const commentSection = getContent(getSystemContentGroup(proposal), 'comment_name').value[1];
+        expect(commentSection).toBeTruthy();
 
         await expect(environment.daoContract.contract.proposeupd({
             proposer: dao.members[1].account.accountName,
@@ -251,18 +254,23 @@ describe('Proposal', () => {
         await environment.daoContract.contract.proposeupd({
             proposer: dao.members[0].account.accountName,
             proposal_id: proposal.id,
-            content_groups: getSampleRole2().content_groups
-        })
+            content_groups: getSampleRole2('new-title').content_groups
+        });
+
+        proposal = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'role'
+        ));
+
+        // The same comment section
+        expect(getContent(getSystemContentGroup(proposal), 'comment_name').value[1]).toEqual(commentSection);
+        expect(getContent(getSystemContentGroup(proposal), 'node_label').value[1]).toEqual('new-title');
 
         daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
         daoExpect.toHaveEdge(dao.getRoot(), proposal, 'stagingprop');
         daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
         daoExpect.toHaveEdge(proposal, dao.members[0].doc, 'ownedby');
 
-        proposal = last(getDocumentsByType(
-            environment.getDaoDocuments(),
-            'role'
-        ));
         daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
         daoExpect.toHaveEdge(dao.getRoot(), proposal, 'stagingprop');
         daoExpect.toHaveEdge(dao.members[0].doc, proposal, 'owns');
