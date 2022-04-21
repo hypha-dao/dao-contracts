@@ -60,6 +60,8 @@ namespace hypha
     private:
         bool oldDidPass(const eosio::name &ballotId);
 
+        Document internalPropose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish, name commentSection);
+
         virtual bool isRecurring() { return false; }
     protected:
         Settings* m_daoSettings;

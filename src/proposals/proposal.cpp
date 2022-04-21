@@ -37,10 +37,29 @@ namespace hypha
     {
         TRACE_FUNCTION()
         EOS_CHECK(Member::isMember(m_dao, m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
+
+        // Init actions are called here - The propose should only be called once in the lifecycle of a proposal
+        const name commentSection = _newCommentSection();
+        name commentsContract = m_dhoSettings->getOrFail<eosio::name>(COMMENTS_CONTRACT);
+
+        eosio::action(
+            eosio::permission_level{m_dao.get_self(), name("active")},
+            commentsContract, name("addsection"),
+            std::make_tuple(
+                m_dao.get_self(),
+                m_daoSettings->getOrFail<name>(DAO_NAME), // scope.
+                commentSection, // section
+                proposer// author
+            )
+        ).send();
+
+        return this->internalPropose(proposer, contentGroups, publish, commentSection);
+    }
+
+    Document Proposal::internalPropose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish, name commentSection)
+    {
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
-
-        const name commentSection = _newCommentSection();
 
         const std::string title = getTitle(proposalContent);
 
@@ -90,19 +109,6 @@ namespace hypha
 
         // the proposal was PROPOSED_BY proposer; this creates the graph EDGE
         Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), memberID, common::OWNED_BY);
-
-        name commentsContract = m_dhoSettings->getOrFail<eosio::name>(COMMENTS_CONTRACT);
-
-        eosio::action(
-            eosio::permission_level{m_dao.get_self(), name("active")},
-            commentsContract, name("addsection"),
-            std::make_tuple(
-                m_dao.get_self(),
-                m_daoSettings->getOrFail<name>(DAO_NAME), // scope. todo: use tenant here
-                commentSection, // section
-                proposer// author
-            )
-        ).send();
 
         if (publish) {
             _publish(proposer, proposalNode, root);
@@ -287,9 +293,14 @@ namespace hypha
             "Only the proposer can update the proposal"
         );
 
+        const eosio::name commentSection = proposal
+            .getContentWrapper()
+            .getOrFail(SYSTEM, COMMENT_NAME, "Comment section not found")
+            ->getAs<eosio::name>();
+
         m_dao.getGraph().eraseDocument(proposal.getID(), true);
 
-        propose(proposer, contentGroups, false);
+        this->internalPropose(proposer, contentGroups, false, commentSection);
     }
 
     ContentGroup Proposal::makeSystemGroup(const name &proposer,
