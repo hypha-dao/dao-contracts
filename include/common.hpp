@@ -10,7 +10,7 @@ using eosio::symbol;
 
 //TODO: Refacto into a Lazy load system to avoid allocating many std::strings that are not actually used
 namespace common
-{    
+{
     constexpr auto PEG_TOKEN = "peg_token";
     constexpr auto VOICE_TOKEN = "voice_token";
     constexpr auto REWARD_TOKEN = "reward_token";
@@ -34,7 +34,7 @@ namespace common
 
     // 365.25 / 7.4
     //const float PHASES_PER_YEAR = 49.3581081081;
-    
+
     //365.25*24*60*60
     constexpr int64_t YEAR_DURATION_SEC = 31557600;
 
@@ -93,7 +93,7 @@ namespace common
     constexpr        auto STATE_REJECTED = "rejected";
     constexpr        auto STATE_SUSPENDED = "suspended";
     constexpr        auto STATE_WITHDRAWED = "withdrawed";
-    
+
     constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
     constexpr name PERIOD = name("period");
     constexpr name START = name ("start");
@@ -112,6 +112,11 @@ namespace common
 
     constexpr name VOTE = name ("vote");
     constexpr name VOTE_ON = name ("voteon");
+
+    constexpr name COMMENT = name("comment");
+    constexpr name COMMENT_OF = name("commentof");
+    constexpr name COMMENT_SECTION = name("cmntsect");
+    constexpr name COMMENT_SECTION_OF = name("cmntsectof");
 
     // document types
     constexpr name ALERT = name ("alert");

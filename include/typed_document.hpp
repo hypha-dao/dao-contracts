@@ -12,6 +12,7 @@ namespace hypha
             TypedDocument(dao& dao, uint64_t id);
             const std::string& getNodeLabel();
             Document& getDocument();
+            uint64_t getId();
 
         protected:
             TypedDocument(dao& dao);
@@ -19,6 +20,8 @@ namespace hypha
             dao& getDao() const;
             bool documentExists(dao& dao, const uint64_t& id);
             virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
+            void update();
+            void erase();
 
         private:
             dao& m_dao;
@@ -32,5 +35,7 @@ namespace hypha
     {
         extern std::string VOTE;
         extern std::string VOTE_TALLY;
+        extern std::string COMMENT;
+        extern std::string COMMENT_SECTION;
     }
 }

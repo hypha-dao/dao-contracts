@@ -44,12 +44,12 @@ namespace hypha
       };
 
       typedef multi_index<name("daos"), NameToID,
-                          eosio::indexed_by<name("bydocid"), 
+                          eosio::indexed_by<name("bydocid"),
                           eosio::const_mem_fun<NameToID, uint64_t, &NameToID::by_id>>>
               dao_table;
 
       typedef multi_index<name("members"), NameToID,
-                          eosio::indexed_by<name("bydocid"), 
+                          eosio::indexed_by<name("bydocid"),
                           eosio::const_mem_fun<NameToID, uint64_t, &NameToID::by_id>>>
               member_table;
 
@@ -81,16 +81,24 @@ namespace hypha
       ACTION proposepub(const name &proposer, uint64_t proposal_id);
       ACTION proposerem(const name &proposer, uint64_t proposal_id);
       ACTION proposeupd(const name &proposer, uint64_t proposal_id, ContentGroups &content_groups);
+
+      // comment related
+      ACTION cmntlike(const name &user, const uint64_t comment_section_id);
+      ACTION cmntunlike(const name &user, const uint64_t comment_section_id);
+      ACTION cmntadd(const name &author, const string content, const uint64_t comment_or_section_id);
+      ACTION cmntupd(const string new_content, const uint64_t comment_id);
+      ACTION cmntrem(const uint64_t comment_id);
+
       //Sets a dho/contract level setting
       ACTION setsetting(const string &key, const Content::FlexValue &value, std::optional<std::string> group);
-      
+
       //Sets a dao level setting
       ACTION setdaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
       //ACTION adddaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 
       ACTION remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group);
       ACTION remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
-      
+
       ACTION addenroller(const uint64_t dao_id, name enroller_account);
       ACTION addadmin(const uint64_t dao_id, name admin_account);
       ACTION remenroller(const uint64_t dao_id, name enroller_account);
@@ -100,7 +108,7 @@ namespace hypha
       ACTION remsetting(const string &key);
 
       ACTION genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/);
-      
+
       ACTION claimnextper(uint64_t assignment_id);
       ACTION proposeextend (uint64_t assignment_id, const int64_t additional_periods);
 
@@ -129,10 +137,10 @@ namespace hypha
 
       /**TODO: Remove */
       //ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
-      
+
       /**TODO: Remove */
       struct InputEdge {
-         eosio::name creator; 
+         eosio::name creator;
          eosio::time_point created_date;
          uint64_t from_node;
          uint64_t to_node;
@@ -150,7 +158,7 @@ namespace hypha
 
         eosio::action(
           eosio::permission_level{contract, name("active")},
-          contract, 
+          contract,
           name("del"),
           std::make_tuple(asset)
         ).send();
@@ -176,10 +184,10 @@ namespace hypha
          doc.update();
       }
       */
-     
+
       DocumentGraph &getGraph();
       Settings* getSettingsDocument();
-      
+
       Settings* getSettingsDocument(uint64_t daoID);
 
       template <class T>
@@ -217,7 +225,7 @@ namespace hypha
       ACTION createdao(ContentGroups &config);
 
       ACTION archiverecur(uint64_t document_id);
-      
+
       void setSetting(const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,
@@ -230,7 +238,7 @@ namespace hypha
                        const eosio::name &paymentType,
                        const AssetBatch& daoTokens);
 
-      void modifyCommitment(RecurringActivity& assignment, 
+      void modifyCommitment(RecurringActivity& assignment,
                             int64_t commitment,
                             std::optional<eosio::time_point> fixedStartDate,
                             std::string_view modifier);
@@ -238,10 +246,10 @@ namespace hypha
       uint64_t getMemberID(const name& memberName);
 
       template<class Table>
-      void addNameID(const name& n, uint64_t id) 
+      void addNameID(const name& n, uint64_t id)
       {
          Table t(get_self(), get_self().value);
-         
+
          EOS_CHECK(
             t.find(n.value) == t.end(),
             util::to_str(n, ": entry already existis in table")

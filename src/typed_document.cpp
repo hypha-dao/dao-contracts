@@ -38,6 +38,12 @@ namespace hypha
     }
 
     template<typename std::string& T>
+    uint64_t TypedDocument<T>::getId()
+    {
+        return document.getID();
+    }
+
+    template<typename std::string& T>
     void TypedDocument<T>::initializeDocument(dao& dao, ContentGroups &content)
     {
         TRACE_FUNCTION()
@@ -85,6 +91,17 @@ namespace hypha
 
         return {};
     }
+    template<typename std::string& T>
+    void TypedDocument<T>::update()
+    {
+        this->document.update();
+    }
+
+    template<typename std::string& T>
+    void TypedDocument<T>::erase()
+    {
+        this->m_dao.getGraph().eraseDocument(getId());
+    }
 
     // Todo: All this could be replaced by macros to make it easier to:
     // define, instantiate and extend
@@ -93,10 +110,14 @@ namespace hypha
     {
         std::string VOTE = std::string("vote");
         std::string VOTE_TALLY = std::string("vote.tally");
+        std::string COMMENT = std::string("comment");
+        std::string COMMENT_SECTION = std::string("comment.section");
     }
 
     // Instantiate each template type
     template class TypedDocument<document_types::VOTE>;
     template class TypedDocument<document_types::VOTE_TALLY>;
+    template class TypedDocument<document_types::COMMENT>;
+    template class TypedDocument<document_types::COMMENT_SECTION>;
 
 }
