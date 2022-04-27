@@ -111,7 +111,7 @@ namespace hypha
         std::string VOTE = std::string("vote");
         std::string VOTE_TALLY = std::string("vote.tally");
         std::string COMMENT = std::string("comment");
-        std::string COMMENT_SECTION = std::string("comment.section");
+        std::string COMMENT_SECTION = std::string("cmnt.section");
     }
 
     // Instantiate each template type

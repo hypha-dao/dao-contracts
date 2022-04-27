@@ -20,6 +20,8 @@ namespace hypha
             const void remove();
             const void like(eosio::name user);
             const void unlike(eosio::name user);
+
+            const void move(Document& proposal);
         protected:
             virtual const std::string buildNodeLabel(ContentGroups &content);
     };

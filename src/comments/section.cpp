@@ -38,6 +38,15 @@ namespace hypha
         Edge::getOrNew(dao.get_self(), dao.get_self(), getId(), proposal.getID(), common::COMMENT_SECTION_OF);
     }
 
+    const void Section::move(Document& proposal)
+    {
+        Edge::getTo(this->getDao().get_self(), getId(), common::COMMENT_SECTION).erase();
+        Edge::get(this->getDao().get_self(), getId(), common::COMMENT_SECTION_OF).erase();
+
+        Edge::getOrNew(this->getDao().get_self(), this->getDao().get_self(), proposal.getID(), getId(), common::COMMENT_SECTION);
+        Edge::getOrNew(this->getDao().get_self(), this->getDao().get_self(), getId(), proposal.getID(), common::COMMENT_SECTION_OF);
+    }
+
     const std::string Section::buildNodeLabel(ContentGroups &content)
     {
         TRACE_FUNCTION()
