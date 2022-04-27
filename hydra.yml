@@ -32,8 +32,4 @@ contracts:
     abi: tests/artifacts/voice/voice.abi
     name: voice
     wasm: tests/artifacts/voice/voice.wasm
-  comments:
-    abi: tests/artifacts/comments/comments.abi
-    name: comments
-    wasm: tests/artifacts/comments/comments.wasm
 options: null
