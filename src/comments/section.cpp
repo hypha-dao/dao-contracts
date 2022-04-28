@@ -60,11 +60,7 @@ namespace hypha
 
         std::vector<Edge> comments = this->getDao().getGraph().getEdgesFrom(getId(), common::COMMENT);
         for (auto& edge : comments) {
-            Document toNode(this->getDao().get_self(), edge.getToNode());
-            std::string type = toNode.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<std::string>();
-            if (type == document_types::COMMENT) {
-                Comment(this->getDao(), edge.getToNode()).remove();
-            }
+            Comment(this->getDao(), edge.getToNode()).remove();
         }
 
         this->getDao().getGraph().removeEdges(getId());

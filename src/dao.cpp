@@ -216,6 +216,7 @@ namespace hypha
    {
        TRACE_FUNCTION()
        EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+       require_auth(user);
        Section(*this, comment_section_id).like(user);
    }
 
@@ -223,6 +224,7 @@ namespace hypha
    {
        TRACE_FUNCTION()
        EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+       require_auth(user);
        Section(*this, comment_section_id).unlike(user);
    }
 
@@ -230,10 +232,11 @@ namespace hypha
    {
        TRACE_FUNCTION()
        EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+       require_auth(author);
 
        Document commentOrSection(get_self(), comment_or_section_id);
-       std::string type = commentOrSection.getContentWrapper().getOrFail(SYSTEM, TYPE)->template getAs<std::string>();
-       if (type == document_types::COMMENT) {
+       eosio::name type = commentOrSection.getContentWrapper().getOrFail(SYSTEM, TYPE)->template getAs<eosio::name>();
+       if (type == eosio::name(document_types::COMMENT)) {
            Comment parent(*this, comment_or_section_id);
            Comment(
                *this,
@@ -241,7 +244,7 @@ namespace hypha
                author,
                content
            );
-       } else if (type == document_types::COMMENT_SECTION) {
+       } else if (type == eosio::name(document_types::COMMENT_SECTION)) {
            Section parent(*this, comment_or_section_id);
            Comment(
                *this,
@@ -259,7 +262,10 @@ namespace hypha
        TRACE_FUNCTION()
        EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-       Comment(*this, comment_id).edit(new_content);
+       Comment comment(*this, comment_id);
+       require_auth(comment.getAuthor());
+
+       comment.edit(new_content);
    }
 
    ACTION dao::cmntrem(const uint64_t comment_id)
@@ -267,7 +273,10 @@ namespace hypha
        TRACE_FUNCTION()
        EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-       Comment(*this, comment_id).markAsDeleted();
+       Comment comment(*this, comment_id);
+       require_auth(comment.getAuthor());
+
+       comment.markAsDeleted();
    }
 
    void dao::proposeextend(uint64_t assignment_id, const int64_t additional_periods)

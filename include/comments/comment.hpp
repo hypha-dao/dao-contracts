@@ -25,6 +25,8 @@ namespace hypha
             const string& content
         );
 
+        eosio::name getAuthor();
+
         void edit(const string& new_content);
         void markAsDeleted();
         void remove();

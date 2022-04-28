@@ -53,21 +53,18 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
-        auto content_wrapper = this->getDocument().getContentWrapper();
-
-        const std::string author = ContentWrapper(content).getOrFail(
-                    GROUP_COMMENT, ENTRY_AUTHOR
-                )->getAs<std::string>();
+        ContentWrapper content_wrapper(content);
+        const eosio::name author = content_wrapper.getOrFail(GROUP_COMMENT, ENTRY_AUTHOR)->getAs<eosio::name>();
 
         if (content_wrapper.exists(GROUP_COMMENT, ENTRY_DELETED)) {
-            return "Deleted content from: " + author;
+            return "Deleted content from: " + author.to_string();
         }
 
         const std::string comment = ContentWrapper(content).getOrFail(
             GROUP_COMMENT, ENTRY_CONTENT
         )->getAs<std::string>();
 
-        return author + ": " + comment.substr(0, 10) + (comment.size() > 10 ? "..." : "");
+        return author.to_string() + ": " + comment.substr(0, 10) + (comment.size() > 10 ? "..." : "");
     }
 
     void Comment::initComment(
@@ -77,8 +74,6 @@ namespace hypha
         const string& content
     )
     {
-        require_auth(author);
-
         ContentGroups contentGroups{
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, GROUP_COMMENT),
@@ -90,6 +85,13 @@ namespace hypha
 
         Edge::getOrNew(dao.get_self(), author, target_id, getId(), common::COMMENT);
         Edge::getOrNew(dao.get_self(), author, getId(), target_id, common::COMMENT_OF);
+    }
+
+    eosio::name Comment::getAuthor()
+    {
+        TRACE_FUNCTION()
+        auto content_wrapper = this->getDocument().getContentWrapper();
+        return content_wrapper.getOrFail(GROUP_COMMENT, ENTRY_AUTHOR)->getAs<eosio::name>();
     }
 
     void Comment::edit(const string& new_content)

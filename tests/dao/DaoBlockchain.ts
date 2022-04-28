@@ -171,6 +171,9 @@ export class DaoBlockchain extends Blockchain {
                 if (p === 'contract') {
                     return new Proxy(account[p], {
                         get: (target: any, action: string | symbol) => {
+                            if (!target[String(action)]) {
+                                throw new Error(`Action ${action.toString()} does not exist on contract ${p}`);
+                            }
                             return new Proxy(target[String(action)], {
                                 apply: (target: any, thisArg: any, argArray: any[]) => {
                                     this.validateParams(account, String(action), argArray[0]);

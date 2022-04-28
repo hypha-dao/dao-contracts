@@ -1,10 +1,11 @@
 import { setupEnvironment } from "./setup";
 import { Document } from './types/Document';
 import { last } from './utils/Arrays';
-import { getContent, getDocumentsByType, getSystemContentGroup } from './utils/Dao';
+import {getContent, getContentGroupByLabel, getDocumentsByType, getSystemContentGroup} from './utils/Dao';
 import { DocumentBuilder } from './utils/DocumentBuilder';
 import { getDaoExpect } from './utils/Expect';
 import { passProposal } from './utils/Proposal';
+import {getAccountPermission} from "./utils/Permissions";
 
 describe('Proposal', () => {
     const getSampleRole = (title: string = 'Underwater Basketweaver'): Document => DocumentBuilder
@@ -38,7 +39,7 @@ describe('Proposal', () => {
             dao_id: dao.getId(),
             proposer: dao.members[0].account.accountName,
             proposal_type: 'role',
-            publish: true,
+            publish: false,
             content_groups: getSampleRole().content_groups
         });
 
@@ -56,29 +57,166 @@ describe('Proposal', () => {
         daoExpect.toHaveEdge(proposal, commentSection, 'cmntsect');
         daoExpect.toHaveEdge(commentSection, proposal, 'cmntsectof');
 
-        /*
-        await environment.daoContract.contract.vote({
-            voter: dao.members[0].account.accountName,
+        // likes
+        await environment.daoContract.contract.cmntlike({
+            user: dao.members[0].account.accountName,
+            comment_section_id: commentSection.id
+        }, getAccountPermission(dao.members[0].account));
+        commentSection = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'cmnt.section'
+        ));
+        let likes = getContentGroupByLabel(commentSection, 'likes')
+        expect(getContent(likes, dao.members[0].account.accountName)).toBeTruthy();
+        expect(getContent(likes, dao.members[1].account.accountName)).toBeUndefined();
+
+        await environment.daoContract.contract.cmntlike({
+            user: dao.members[1].account.accountName,
+            comment_section_id: commentSection.id
+        }, getAccountPermission(dao.members[1].account));
+        commentSection = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'cmnt.section'
+        ));
+        likes = getContentGroupByLabel(commentSection, 'likes')
+        expect(getContent(likes, dao.members[0].account.accountName)).toBeTruthy();
+        expect(getContent(likes, dao.members[1].account.accountName)).toBeTruthy();
+
+        // unlike
+        await environment.daoContract.contract.cmntunlike({
+            user: dao.members[0].account.accountName,
+            comment_section_id: commentSection.id
+        }, getAccountPermission(dao.members[0].account));
+        commentSection = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'cmnt.section'
+        ));
+        likes = getContentGroupByLabel(commentSection, 'likes')
+        expect(getContent(likes, dao.members[0].account.accountName)).toBeUndefined();
+        expect(getContent(likes, dao.members[1].account.accountName)).toBeTruthy();
+
+        // add comment to a section
+        await environment.daoContract.contract.cmntadd({
+            author: dao.members[0].account.accountName,
+            content: 'This is sweet!',
+            comment_or_section_id: commentSection.id
+        }, getAccountPermission(dao.members[0].account));
+        let comment = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'comment'
+        ));
+        let commentContent = getContentGroupByLabel(comment, 'comment');
+        expect(getContent(commentContent, 'author').value[1]).toBe(dao.members[0].account.accountName);
+        expect(getContent(commentContent, 'content').value[1]).toBe('This is sweet!');
+        expect(getContent(commentContent, 'edited')).toBeUndefined();
+        expect(getContent(commentContent, 'deleted')).toBeUndefined();
+        daoExpect.toHaveEdge(commentSection, comment, 'comment');
+        daoExpect.toHaveEdge(comment, commentSection, 'commentof');
+
+        // update
+        await environment.daoContract.contract.cmntupd({
+            new_content: 'This is terrible!',
+            comment_id: comment.id
+        }, getAccountPermission(dao.members[0].account));
+        comment = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'comment'
+        ));
+        commentContent = getContentGroupByLabel(comment, 'comment');
+        expect(getContent(commentContent, 'author').value[1]).toBe(dao.members[0].account.accountName);
+        expect(getContent(commentContent, 'content').value[1]).toBe('This is terrible!');
+        expect(getContent(commentContent, 'edited').value[1]).toBeTruthy();
+        expect(getContent(commentContent, 'deleted')).toBeUndefined();
+        daoExpect.toHaveEdge(commentSection, comment, 'comment');
+        daoExpect.toHaveEdge(comment, commentSection, 'commentof');
+
+        // a different user updating will fail
+        await expect(environment.daoContract.contract.cmntupd({
+            new_content: 'This is terrible!',
+            comment_id: comment.id
+        }, getAccountPermission(dao.members[1].account))).rejects.toThrow();
+
+        // a different user removing will fail
+        await expect(environment.daoContract.contract.cmntrem({
+            comment_id: comment.id
+        }, getAccountPermission(dao.members[1].account))).rejects.toThrow();
+
+        // add sub comment
+        await environment.daoContract.contract.cmntadd({
+            author: dao.members[1].account.accountName,
+            content: 'agree!',
+            comment_or_section_id: comment.id
+        }, getAccountPermission(dao.members[1].account));
+        let subComment = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'comment'
+        ));
+        let subCommentContent = getContentGroupByLabel(subComment, 'comment');
+        expect(getContent(subCommentContent, 'author').value[1]).toBe(dao.members[1].account.accountName);
+        expect(getContent(subCommentContent, 'content').value[1]).toBe('agree!');
+        expect(getContent(subCommentContent, 'edited')).toBeUndefined();
+        expect(getContent(subCommentContent, 'deleted')).toBeUndefined();
+        daoExpect.toHaveEdge(comment, subComment, 'comment');
+        daoExpect.toHaveEdge(subComment, comment, 'commentof');
+
+        // remove main comment
+        await environment.daoContract.contract.cmntrem({
+            comment_id: comment.id
+        }, getAccountPermission(dao.members[0].account));
+        comment = getDocumentsByType(
+            environment.getDaoDocuments(),
+            'comment'
+        ).slice(-2, -1)[0];
+        commentContent = getContentGroupByLabel(comment, 'comment');
+        expect(getContent(commentContent, 'author').value[1]).toBe(dao.members[0].account.accountName);
+        expect(getContent(commentContent, 'content').value[1]).toBe('This is terrible!');
+        expect(getContent(commentContent, 'edited').value[1]).toBeTruthy();
+        expect(getContent(commentContent, 'deleted').value[1]).toBeTruthy();
+        daoExpect.toHaveEdge(commentSection, comment, 'comment');
+        daoExpect.toHaveEdge(comment, commentSection, 'commentof');
+
+        // deleting or removing again fails
+        await expect(environment.daoContract.contract.cmntupd({
+            new_content: 'new',
+            comment_id: comment.id
+        }, getAccountPermission(dao.members[0].account))).rejects.toThrow();
+
+        await expect(environment.daoContract.contract.cmntrem({
+            comment_id: comment.id
+        }, getAccountPermission(dao.members[0].account))).rejects.toThrow();
+
+        // Updating proposal doesn't affect comment section
+        await environment.daoContract.contract.proposeupd({
+            proposer: dao.members[0].account.accountName,
             proposal_id: proposal.id,
-            vote: 'pass',
-            notes: 'vote pass'
+            content_groups: getSampleRole('new-proposal').content_groups
         });
 
-        // Sets the time to the end of proposal
-        environment.setCurrentTime(whenVoteExpires);
-
-        // Now we can close the proposal
-        await environment.daoContract.contract.closedocprop({
-            proposal_id: proposal.id
-        }, dao.members[0].getPermissions());
-
-        // When passing, the proposal is updated
         proposal = last(getDocumentsByType(
             environment.getDaoDocuments(),
             'role'
         ));
 
-        daoExpect.toHaveEdge(dao.getRoot(), proposal, 'passedprops');*/
+        // still the same
+        expect(last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'cmnt.section'
+        )).id).toBe(commentSection.id)
+
+        // proposal <-----> comment section
+        daoExpect.toHaveEdge(proposal, commentSection, 'cmntsect');
+        daoExpect.toHaveEdge(commentSection, proposal, 'cmntsectof');
+
+        // delete the proposal will delete everything...
+        await environment.daoContract.contract.proposerem({
+            proposer: dao.members[0].account.accountName,
+            proposal_id: proposal.id
+        });
+
+        daoExpect.toNotHaveEdge(proposal, commentSection, 'cmntsect');
+        daoExpect.toNotHaveEdge(commentSection, proposal, 'cmntsectof');
+        expect(getDocumentsByType(environment.getDaoDocuments(), 'cmnt.section').length).toBe(0);
+        expect(getDocumentsByType(environment.getDaoDocuments(), 'comment').length).toBe(0);
     });
 
 });

@@ -250,19 +250,10 @@ namespace hypha
             "Only the proposer can remove the proposal"
         );
 
+        Section commentSection(m_dao, Edge::get(m_dao.get_self(), proposal.getID(), common::COMMENT_SECTION).getToNode());
+        commentSection.remove();
+
         m_dao.getGraph().eraseDocument(proposal.getID(), true);
-
-        name commentsContract = m_dhoSettings->getOrFail<eosio::name>(COMMENTS_CONTRACT);
-
-        eosio::action(
-            eosio::permission_level{this->m_dao.get_self(), name("active")},
-            commentsContract, name("delsection"),
-            std::make_tuple(
-                m_dao.get_self(),
-                m_daoSettings->getOrFail<name>(DAO_NAME),
-                proposal.getContentWrapper().getOrFail(SYSTEM, COMMENT_NAME, "Proposal has no comment section")->getAs<eosio::name>() // section
-            )
-        ).send();
     }
 
     void Proposal::update(const eosio::name &proposer, Document &proposal, ContentGroups &contentGroups)

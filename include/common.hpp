@@ -204,7 +204,6 @@ namespace common
 #define HYPHA_TOKEN_CONTRACT "hypha_token_contract"
 #define HYPHA_COSALE_CONTRACT "hypha_cosale_contract"
 #define GOVERNANCE_TOKEN_CONTRACT "governance_token_contract"
-#define COMMENTS_CONTRACT "comments_contract"
 
 #define UPDATED_DATE "updated_date"
 #define SEEDS_DEFERRAL_FACTOR_X100 "seeds_deferral_factor_x100"
