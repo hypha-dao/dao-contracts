@@ -142,6 +142,11 @@ namespace hypha
             "Only published proposals can be voted"
         );
 
+        EOS_CHECK(
+            Member::isMember(m_dao, m_daoID, voter), 
+            "Only members of this DAO can vote proposals: " + voter.to_string()
+        );
+
         Vote(m_dao, voter, vote, proposal, notes);
         
         VoteTally(m_dao, proposal, m_daoSettings);
@@ -366,7 +371,7 @@ namespace hypha
 
         asset total = votes_pass + votes_abstain + votes_fail;
         // pass / ( pass + fail ) > alignmentFactor
-        bool passesAlignment = votes_pass > (alignmentFactor * (votes_pass + votes_fail));
+        bool passesAlignment = votes_pass > adjustAsset(votes_pass + votes_fail, alignmentFactor);
         if (total >= quorum_threshold &&      // must meet quorum
             passesAlignment)
         {
