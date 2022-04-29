@@ -344,13 +344,6 @@ namespace hypha
 
       Assignment assignment(this, assignment_id);
 
-      EOS_CHECK(
-        assignment.getContentWrapper()
-                  .getOrFail(DETAILS, DEFERRED)
-                  ->getAs<int64_t>() == 100,
-        "Claiming is disabled for assignments with deferral less than 100%"
-      )
-
       eosio::name assignee = assignment.getAssignee().getAccount();
 
       // assignee must still be a DHO member
