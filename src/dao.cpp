@@ -65,11 +65,6 @@ namespace hypha
       TRACE_FUNCTION()
       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-      EOS_CHECK(
-        proposal_type != common::PAYOUT,
-        "Payout proposals are currently disabled"
-      )
-
       std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, proposal_type));
       proposal->propose(proposer, content_groups);
    }
@@ -230,13 +225,6 @@ namespace hypha
       );
 
       Assignment assignment(this, assignment_hash);
-
-      EOS_CHECK(
-        assignment.getContentWrapper()
-                  .getOrFail(DETAILS, DEFERRED)
-                  ->getAs<int64_t>() == 100,
-        "Claiming is disabled for assignments with deferral less than 100%"
-      )
 
       eosio::name assignee = assignment.getAssignee().getAccount();
 
