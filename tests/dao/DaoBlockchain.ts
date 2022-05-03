@@ -462,13 +462,13 @@ export class DaoBlockchain extends Blockchain {
 
     public getIssuedHvoice(dao: Dao): Asset {
         return Asset.fromString(
-            this.peerContracts.voice.getTableRowsScoped('stat')[dao.settings.tokens.voice.asset.symbol][0].supply
+            this.peerContracts.voice.getTableRowsScoped('stat.v2')[dao.settings.tokens.voice.asset.symbol][0].supply
         );
     }
 
     public getHvoiceForMember(dao: Dao, member: string): Asset {
         return Asset.fromString(
-            this.peerContracts.voice.getTableRowsScoped('accounts')[member].find(a => a.tenant === dao.name).balance
+            this.peerContracts.voice.getTableRowsScoped('accounts.v2')[member].find(a => a.tenant === dao.name).balance
         );
     }
 

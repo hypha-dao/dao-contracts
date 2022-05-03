@@ -80,7 +80,7 @@ namespace hypha
         asset voiceToken = daoSettings->getOrFail<asset>(common::VOICE_TOKEN);
 
         auto v_itr = account_index.find(
-            voice::account::build_key(
+            voice::accountv2::build_key(
                 daoSettings->getOrFail<name>(DAO_NAME),
                 voiceToken.symbol.code()
             )
