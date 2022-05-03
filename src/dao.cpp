@@ -126,6 +126,26 @@ namespace hypha
    }
    */
 
+  ACTION dao::remmebers(uint64_t dao_id, const std::vector<name>& member_names)
+  {
+    require_auth(get_self());
+    for (auto& member : member_names) {
+      auto memberID = getMemberID(member);
+      Edge::get(get_self(), dao_id, memberID, common::MEMBER).erase();
+      Edge::get(get_self(), memberID, dao_id, common::MEMBER_OF).erase();
+    }
+  }
+
+  ACTION dao::remapplic(uint64_t dao_id, const std::vector<name>& applicant_names)
+  {
+    require_auth(get_self());
+    for (auto& applicant : applicant_names) {
+      auto applicantID = getMemberID(applicant);
+      Edge::get(get_self(), dao_id, applicantID, common::APPLICANT).erase();
+      Edge::get(get_self(), applicantID, dao_id, common::APPLICANT_OF).erase();
+    }
+  }
+
    void dao::propose(uint64_t dao_id,
                      const name &proposer,
                      const name &proposal_type,
