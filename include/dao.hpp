@@ -207,6 +207,9 @@ namespace hypha
          return def;
       }
 
+      ACTION remmebers(uint64_t dao_id, const std::vector<name>& member_names);
+      ACTION remapplic(uint64_t dao_id, const std::vector<name>& applicant_names);
+
       ACTION adjustcmtmnt(name issuer, ContentGroups& adjust_info);
       ACTION adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferred_perc_x100);
 
