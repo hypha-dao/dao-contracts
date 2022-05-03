@@ -28,7 +28,6 @@ export interface DaoPeerContracts {
     bank: Account;
     hypha: Account;
     husd: Account;
-    comments: Account;
     token: Account;
 }
 
@@ -91,7 +90,6 @@ export class DaoBlockchain extends Blockchain {
             bank:  this.createContract('bank.hypha', 'treasury'),
             hypha: this.createContract('token.hypha', 'token'),
             husd: this.createContract('husd.hypha', 'token'),
-            comments: this.createContract('comments', 'comments'),
             token: this.createContract('token', 'token')
         };
     }
@@ -173,6 +171,9 @@ export class DaoBlockchain extends Blockchain {
                 if (p === 'contract') {
                     return new Proxy(account[p], {
                         get: (target: any, action: string | symbol) => {
+                            if (!target[String(action)]) {
+                                throw new Error(`Action ${action.toString()} does not exist on contract ${p}`);
+                            }
                             return new Proxy(target[String(action)], {
                                 apply: (target: any, thisArg: any, argArray: any[]) => {
                                     this.validateParams(account, String(action), argArray[0]);
@@ -419,11 +420,6 @@ export class DaoBlockchain extends Blockchain {
             actions:[
                 this.buildAction(this.daoContract, 'createroot', { notes: 'notes' }),
                 // governance token contract
-                this.buildAction(this.daoContract, 'setsetting', {
-                    key: 'comments_contract',
-                    value: [ 'name', this.peerContracts.comments.accountName ],
-                    group: null
-                }),
                 this.buildAction(this.daoContract, 'setsetting', {
                     key: 'governance_token_contract',
                     value: [ 'name', this.peerContracts.voice.accountName ],
