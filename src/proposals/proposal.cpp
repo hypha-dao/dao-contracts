@@ -415,7 +415,7 @@ namespace hypha
         auto daoName = m_daoSettings->getOrFail<name>(DAO_NAME);
 
         auto stat_itr = stats_index.find(
-            voice::currency_stats::build_key(
+            voice::currency_statsv2::build_key(
                 daoName,
                 voiceToken.symbol.code()
             )
