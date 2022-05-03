@@ -88,10 +88,9 @@ namespace hypha
 
         // update graph edges:
         //    member            ---- holdsbadge     ---->   badge
-        //    member            ---- badgeassign    ---->   badge_assignment
         //    badge             ---- heldby         ---->   member
+        //    member            ---- assignbadge    ---->   badge_assignment
         //    badge             ---- assignment     ---->   badge_assignment
-        //    badge_assignment  ---- badge          ---->   badge
         //    badge_assignment  ---- start          ---->   period
 
         // the assignee now HOLDS this badge, non-strict in case the member already has the badge
@@ -100,7 +99,6 @@ namespace hypha
         Edge::getOrNew(m_dao.get_self(), m_dao.get_self(), badge.getID (), assigneeDoc.getID(), common::HELD_BY);
         Edge::write(m_dao.get_self(), m_dao.get_self(), assigneeDoc.getID(), proposal.getID (), common::ASSIGN_BADGE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getID (), proposal.getID (), common::ASSIGNMENT);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), badge.getID (), common::BADGE_NAME);
 
         Document startPer(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>());
 
