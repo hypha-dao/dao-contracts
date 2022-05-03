@@ -17,6 +17,7 @@ namespace hypha {
         
         void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;
         void passImpl(Document &proposal) override;
+        void postProposeImpl(Document &proposal) override;
         string getBallotContent (ContentWrapper &contentWrapper) override;
         name getProposalType () override;
         bool isRecurring() override

@@ -70,6 +70,13 @@ namespace hypha
         }
     }
 
+    void BadgeAssignmentProposal::postProposeImpl(Document &proposal) 
+    {
+        //    badge_assignment  ---- badge          ---->   badge
+        Document badge(m_dao.get_self(), proposal.getContentWrapper().getOrFail(DETAILS, BADGE_STRING)->getAs<int64_t>());
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), badge.getID (), common::BADGE_NAME);
+    }
+
     void BadgeAssignmentProposal::passImpl(Document &proposal)
     {
         TRACE_FUNCTION()
