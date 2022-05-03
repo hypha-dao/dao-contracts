@@ -10,6 +10,7 @@ using std::string;
 
 namespace hypha
 {
+    class Section;
 
     class Proposal
     {
@@ -43,8 +44,7 @@ namespace hypha
         ContentGroup makeSystemGroup(const name &proposer,
                                        const name &proposal_type,
                                        const string &proposal_title,
-                                       const string &proposal_description,
-                                       const name &comment_section);
+                                       const string &proposal_description);
 
         ContentGroup makeBallotGroup();
         ContentGroup makeBallotOptionsGroup();
@@ -60,7 +60,7 @@ namespace hypha
     private:
         bool oldDidPass(const eosio::name &ballotId);
 
-        Document internalPropose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish, name commentSection);
+        Document internalPropose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish, Section* commentSection);
 
         virtual bool isRecurring() { return false; }
     protected:
