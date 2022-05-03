@@ -36,11 +36,6 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
-        EOS_CHECK(
-            publish,
-            "Staging proposals are not currently enabled"
-        )
-
         EOS_CHECK(Member::isMember(m_dao, m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
         return this->internalPropose(proposer, contentGroups, publish, nullptr);
     }
