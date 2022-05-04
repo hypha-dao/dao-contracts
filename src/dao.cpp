@@ -126,9 +126,12 @@ namespace hypha
    }
    */
 
-  ACTION dao::remmebers(uint64_t dao_id, const std::vector<name>& member_names)
+  ACTION dao::remmember(uint64_t dao_id, const std::vector<name>& member_names)
   {
-    require_auth(get_self());
+    if (!eosio::has_auth(get_self())) {
+      checkAdminsAuth(dao_id);
+    }
+
     for (auto& member : member_names) {
       auto memberID = getMemberID(member);
       Edge::get(get_self(), dao_id, memberID, common::MEMBER).erase();
@@ -136,9 +139,12 @@ namespace hypha
     }
   }
 
-  ACTION dao::remapplic(uint64_t dao_id, const std::vector<name>& applicant_names)
+  ACTION dao::remapplicant(uint64_t dao_id, const std::vector<name>& applicant_names)
   {
-    require_auth(get_self());
+    if (!eosio::has_auth(get_self())) {
+      checkAdminsAuth(dao_id);
+    }
+
     for (auto& applicant : applicant_names) {
       auto applicantID = getMemberID(applicant);
       Edge::get(get_self(), dao_id, applicantID, common::APPLICANT).erase();
