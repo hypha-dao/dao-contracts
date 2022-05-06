@@ -735,7 +735,7 @@ namespace hypha
       settings->setSetting(group.value_or(string{"settings"}), Content{key, value});
    }
 
-   void dao::setdaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group)
+   void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::FlexValue> kvs, std::optional<std::string> group)
    {
      TRACE_FUNCTION()
      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -749,7 +749,36 @@ namespace hypha
        "Only hypha dao is allowed to add this setting"
      )
 
-     settings->setSettings(group.value_or("settings"), kvs);
+     std::string groupName = group.value_or(std::string{"settings"});
+
+     //Fixed settings that cannot be changed
+     std::map<std::string, const std::vector<std::string>> fixedSettings = {
+       {
+         "settings",
+         {
+          common::REWARD_TOKEN,
+          common::VOICE_TOKEN,
+          common::PEG_TOKEN,
+          common::PERIOD_DURATION
+         }
+       }
+     };
+     
+     //If groupName doesn't exists in fixedSettings it will just create an empty array
+     for (auto& fs : fixedSettings[groupName]) {
+       EOS_CHECK(
+         kvs.count(fs) == 0,
+         util::to_str(fs, " setting cannot be modified in group: ", groupName)
+       )
+     }
+
+     //Special case when changing dao_name
+     if (kvs.count(DAO_NAME)) {
+       auto newName =  Content{DAO_NAME, kvs[DAO_NAME]};
+       changeDaoName(dao_id, newName.getAs<name>());
+     }
+
+     settings->setSettings(groupName, kvs);
    }
 
   //  void dao::adddaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group)
@@ -1573,6 +1602,32 @@ namespace hypha
         asset{-getTokenUnit(pegToken), pegToken.symbol}
       )
     ).send();
+  }
+
+  void dao::changeDaoName(uint64_t daoID, eosio::name newName)
+  {
+    //Check name is different
+    auto daoDoc = Document(get_self(), daoID);
+    auto cw = daoDoc.getContentWrapper();
+    auto currentName = cw.getOrFail(DETAILS, DAO_NAME)
+                         ->getAs<name>();
+
+    EOS_CHECK(
+      currentName != newName,
+      util::to_str(DAO_NAME, " has to be different to current value")
+    )
+
+    //Let's verify new name doesn't exits and create new entry
+    addNameID<dao_table>(newName, daoID);
+
+    //Remove current entry
+    remNameID<dao_table>(currentName);
+
+    //Update document data
+    cw.insertOrReplace(*cw.getGroupOrFail(DETAILS), {DAO_NAME, newName});
+    cw.insertOrReplace(*cw.getGroupOrFail(SYSTEM), {NODE_LABEL, newName});
+    
+    daoDoc.update();
   }
 
   void dao::on_husd(const name& from, const name& to, const asset& quantity, const string& memo) {
