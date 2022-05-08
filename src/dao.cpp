@@ -759,7 +759,10 @@ namespace hypha
           common::REWARD_TOKEN,
           common::VOICE_TOKEN,
           common::PEG_TOKEN,
-          common::PERIOD_DURATION
+          common::PERIOD_DURATION,
+          common::VOICE_TOKEN_DECAY_PERIOD,
+          common::VOICE_TOKEN_DECAY_PER_PERIOD,
+          DAO_NAME
          }
        }
      };
@@ -770,12 +773,6 @@ namespace hypha
          kvs.count(fs) == 0,
          util::to_str(fs, " setting cannot be modified in group: ", groupName)
        )
-     }
-
-     //Special case when changing dao_name
-     if (kvs.count(DAO_NAME)) {
-       auto newName =  Content{DAO_NAME, kvs[DAO_NAME]};
-       changeDaoName(dao_id, newName.getAs<name>());
      }
 
      settings->setSettings(groupName, kvs);
@@ -961,8 +958,8 @@ namespace hypha
       auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
 
       auto voiceToken = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN).second;
-      auto voiceTokenDecayPeriod = configCW.getOrFail(detailsIdx, "voice_token_decay_period").second;
-      auto voiceTokenDecayPerPeriodX10M = configCW.getOrFail(detailsIdx, "voice_token_decay_per_period_x10M").second;
+      auto voiceTokenDecayPeriod = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PERIOD).second;
+      auto voiceTokenDecayPerPeriodX10M = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PER_PERIOD).second;
 
       auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
 
@@ -1602,32 +1599,6 @@ namespace hypha
         asset{-getTokenUnit(pegToken), pegToken.symbol}
       )
     ).send();
-  }
-
-  void dao::changeDaoName(uint64_t daoID, eosio::name newName)
-  {
-    //Check name is different
-    auto daoDoc = Document(get_self(), daoID);
-    auto cw = daoDoc.getContentWrapper();
-    auto currentName = cw.getOrFail(DETAILS, DAO_NAME)
-                         ->getAs<name>();
-
-    EOS_CHECK(
-      currentName != newName,
-      util::to_str(DAO_NAME, " has to be different to current value")
-    )
-
-    //Let's verify new name doesn't exits and create new entry
-    addNameID<dao_table>(newName, daoID);
-
-    //Remove current entry
-    remNameID<dao_table>(currentName);
-
-    //Update document data
-    cw.insertOrReplace(*cw.getGroupOrFail(DETAILS), {DAO_NAME, newName});
-    cw.insertOrReplace(*cw.getGroupOrFail(SYSTEM), {NODE_LABEL, newName});
-    
-    daoDoc.update();
   }
 
   void dao::on_husd(const name& from, const name& to, const asset& quantity, const string& memo) {

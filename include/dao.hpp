@@ -281,8 +281,6 @@ namespace hypha
 
    private:
 
-      void changeDaoName(uint64_t daoID, eosio::name newName);
-
       void on_husd(const name& from, const name& to, const asset& quantity, const string& memo);
 
       template<class Table>

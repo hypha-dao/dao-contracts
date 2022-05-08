@@ -31,6 +31,8 @@ namespace common
     constexpr auto PERIOD_DURATION = "period_duration_sec";
     constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
     constexpr auto DAO_USES_SEEDS = "uses_seeds";
+    constexpr auto VOICE_TOKEN_DECAY_PERIOD = "voice_token_decay_period";
+    constexpr auto VOICE_TOKEN_DECAY_PER_PERIOD = "voice_token_decay_per_period_x10M";
 
     //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
 
