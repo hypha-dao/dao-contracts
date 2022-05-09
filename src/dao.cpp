@@ -1090,11 +1090,11 @@ namespace hypha
       for (auto& coreMem : coreMemNames) {
         std::unique_ptr<Member> member;
 
-        if (Member::exists(*this, onboarder)) {
-          member = std::make_unique<Member>(*this, getMemberID(onboarder));
+        if (Member::exists(*this, coreMem)) {
+          member = std::make_unique<Member>(*this, getMemberID(coreMem));
         }
         else {
-          member = std::make_unique<Member>(*this, onboarder, onboarder);
+          member = std::make_unique<Member>(*this, onboarder, coreMem);
         }
 
         member->apply(daoDoc.getID(), "DAO Core member");
