@@ -317,9 +317,7 @@ namespace hypha
                             const uint64_t& decayPeriod,
                             const uint64_t& decayPerPeriodx10M);
 
-      void createTokens(const eosio::name& daoName,
-                        const eosio::asset& rewardToken,
-                        const eosio::asset& pegToken);
+      void createToken(const std::string& contractType, name issuer, const asset& token);
 
       eosio::asset applyCoefficient(ContentWrapper & badge, const eosio::asset &base, const std::string &key);
       AssetBatch applyBadgeCoefficients(Period & period, const eosio::name &member, uint64_t dao, AssetBatch &ab);

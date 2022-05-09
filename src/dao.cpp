@@ -1033,8 +1033,31 @@ namespace hypha
           voiceTokenDecayPeriod->getAs<int64_t>(),
           voiceTokenDecayPerPeriodX10M->getAs<int64_t>()
       );
+      
+      auto dhoSettings = getSettingsDocument();
 
-      createTokens(dao, rewardToken->getAs<asset>(), pegToken->getAs<asset>());
+      //Check if we should skip creating reward & peg tokens
+      //this might be the case if the tokens already exists
+      
+      if (auto [idx, skipPegTokFlag] = configCW.get(DETAILS, common::SKIP_PEG_TOKEN_CREATION); 
+          skipPegTokFlag == nullptr || 
+          skipPegTokFlag->getAs<int64_t>() == 0) {
+        createToken(
+          PEG_TOKEN_CONTRACT, 
+          dhoSettings->getOrFail<eosio::name>(TREASURY_CONTRACT),
+          pegToken->getAs<eosio::asset>()
+        );
+      }
+
+      if (auto [idx, skipRewardTokFlag] = configCW.get(DETAILS, common::SKIP_REWARD_TOKEN_CREATION); 
+          skipRewardTokFlag == nullptr || 
+          skipRewardTokFlag->getAs<int64_t>() == 0) {
+        createToken(
+          REWARD_TOKEN_CONTRACT, 
+          get_self(),
+          pegToken->getAs<eosio::asset>()
+        );
+      }
 
       //Auto enroll
       std::unique_ptr<Member> member;
@@ -1567,36 +1590,19 @@ namespace hypha
         ).send();
   }
 
-  void dao::createTokens(const eosio::name& daoName,
-                         const eosio::asset& rewardToken,
-                         const eosio::asset& pegToken)
+  void dao::createToken(const std::string& contractType, name issuer, const asset& token)
   {
-
     auto dhoSettings = getSettingsDocument();
 
-    name rewardContract = dhoSettings->getOrFail<eosio::name>(REWARD_TOKEN_CONTRACT);
+    name contract = dhoSettings->getOrFail<eosio::name>(contractType);
 
     eosio::action(
-      eosio::permission_level{rewardContract, name("active")},
-      rewardContract,
+      eosio::permission_level{contract, name("active")},
+      contract,
       name("create"),
       std::make_tuple(
-        get_self(),
-        asset{-getTokenUnit(rewardToken), rewardToken.symbol}
-      )
-    ).send();
-
-    name pegContract = dhoSettings->getOrFail<eosio::name>(PEG_TOKEN_CONTRACT);
-
-    name treasuryContract = dhoSettings->getOrFail<eosio::name>(TREASURY_CONTRACT);
-
-    eosio::action(
-      eosio::permission_level{pegContract, name("active")},
-      pegContract,
-      name("create"),
-      std::make_tuple(
-        treasuryContract,
-        asset{-getTokenUnit(pegToken), pegToken.symbol}
+        issuer,
+        asset{-getTokenUnit(token), token.symbol}
       )
     ).send();
   }
