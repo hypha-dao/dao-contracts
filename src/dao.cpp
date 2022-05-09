@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include <set>
 
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/util.hpp>
@@ -1048,6 +1049,10 @@ namespace hypha
           pegToken->getAs<eosio::asset>()
         );
       }
+      else {
+        //Only dao.hypha should be able skip creating reward or peg token
+        eosio::require_auth(get_self());
+      }
 
       if (auto [idx, skipRewardTokFlag] = configCW.get(DETAILS, common::SKIP_REWARD_TOKEN_CREATION); 
           skipRewardTokFlag == nullptr || 
@@ -1055,27 +1060,50 @@ namespace hypha
         createToken(
           REWARD_TOKEN_CONTRACT, 
           get_self(),
-          pegToken->getAs<eosio::asset>()
+          rewardToken->getAs<eosio::asset>()
         );
       }
-
-      //Auto enroll
-      std::unique_ptr<Member> member;
-      
-      if (Member::exists(*this, onboarder)) {
-        member = std::make_unique<Member>(*this, getMemberID(onboarder));
-      }
       else {
-        member = std::make_unique<Member>(*this, onboarder, onboarder);
+        //Only dao.hypha should be able skip creating reward or peg token
+        eosio::require_auth(get_self());
       }
 
-      member->apply(daoDoc.getID(), "DAO Onboarder");
-      member->enroll(onboarder, daoDoc.getID(), "DAO Onboarder");
-      
-      //Create owner, admin and enroller edges
-      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ENROLLER);
-      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::OWNER);
-      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ADMIN);
+      std::set<eosio::name> coreMemNames = { onboarder };
+
+      if (auto coreMemsGroup = configCW.getGroupOrFail("core_members");
+          coreMemsGroup) {
+        EOS_CHECK(
+          coreMemsGroup->size() > 1 &&
+          coreMemsGroup->at(0).label == CONTENT_GROUP_LABEL,
+          util::to_str("Wrong format for core groups\n"
+                       "[min size: 2, got: ", coreMemsGroup->size(), "]\n",
+                       "[first item label: ", CONTENT_GROUP_LABEL, " got: ", coreMemsGroup->at(0).label)
+        );
+
+        //Skip content_group label (index 0)
+        std::transform(coreMemsGroup->begin() + 1, 
+                       coreMemsGroup->end(), 
+                       std::inserter(coreMemNames, coreMemNames.begin()),
+                       [](const Content& c){ return c.getAs<name>(); });
+      }
+
+      for (auto& coreMem : coreMemNames) {
+        std::unique_ptr<Member> member;
+
+        if (Member::exists(*this, onboarder)) {
+          member = std::make_unique<Member>(*this, getMemberID(onboarder));
+        }
+        else {
+          member = std::make_unique<Member>(*this, onboarder, onboarder);
+        }
+
+        member->apply(daoDoc.getID(), "DAO Core member");
+        member->enroll(onboarder, daoDoc.getID(), "DAO Core member");
+
+        //Create owner, admin and enroller edges
+        Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ENROLLER);
+        Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ADMIN);
+      }
 
       //Create start period
       Period newPeriod(this, eosio::current_time_point(), util::to_str(dao, " start period"));
