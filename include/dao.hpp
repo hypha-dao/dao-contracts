@@ -83,6 +83,7 @@ namespace hypha
       ACTION proposeupd(const name &proposer, uint64_t proposal_id, ContentGroups &content_groups);
 
       // comment related
+      ACTION cmntmigrate(const uint64_t &dao_id);
       ACTION cmntlike(const name &user, const uint64_t comment_section_id);
       ACTION cmntunlike(const name &user, const uint64_t comment_section_id);
       ACTION cmntadd(const name &author, const string content, const uint64_t comment_or_section_id);
