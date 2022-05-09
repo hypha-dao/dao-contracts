@@ -3,5 +3,5 @@ export const last = <T>(arr: Array<T>): T => {
         throw new Error('Empty array');
     }
 
-    return arr[arr.length - 1];
+    return arr[arr.length - 1 ];
 }
