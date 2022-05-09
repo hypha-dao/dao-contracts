@@ -85,7 +85,7 @@ namespace hypha
       ACTION setsetting(const string &key, const Content::FlexValue &value, std::optional<std::string> group);
       
       //Sets a dao level setting
-      ACTION setdaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
+      ACTION setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::FlexValue> kvs, std::optional<std::string> group);
       //ACTION adddaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 
       ACTION remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group);
@@ -256,6 +256,19 @@ namespace hypha
          });
       }
 
+      template<class Table>
+      void remNameID(const name& n){
+         Table t(get_self(), get_self().value);
+         
+         auto it = t.find(n.value);
+         EOS_CHECK(
+            it != t.end(),
+            util::to_str("Cannot remove entry since it doesn't exits: ", n)
+         )
+
+         t.erase(it);
+      }
+
       [[eosio::on_notify("husd.hypha::transfer")]]
       void onhusd(const name& from, const name& to, const asset& quantity, const string& memo) {
          if (get_first_receiver() == "husd.hypha"_n && 
@@ -267,7 +280,6 @@ namespace hypha
       }
 
    private:
-
 
       void on_husd(const name& from, const name& to, const asset& quantity, const string& memo);
 
@@ -305,9 +317,7 @@ namespace hypha
                             const uint64_t& decayPeriod,
                             const uint64_t& decayPerPeriodx10M);
 
-      void createTokens(const eosio::name& daoName,
-                        const eosio::asset& rewardToken,
-                        const eosio::asset& pegToken);
+      void createToken(const std::string& contractType, name issuer, const asset& token);
 
       eosio::asset applyCoefficient(ContentWrapper & badge, const eosio::asset &base, const std::string &key);
       AssetBatch applyBadgeCoefficients(Period & period, const eosio::name &member, uint64_t dao, AssetBatch &ab);

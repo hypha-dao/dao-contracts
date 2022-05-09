@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include <set>
 
 #include <document_graph/content_wrapper.hpp>
 #include <document_graph/util.hpp>
@@ -735,7 +736,7 @@ namespace hypha
       settings->setSetting(group.value_or(string{"settings"}), Content{key, value});
    }
 
-   void dao::setdaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group)
+   void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::FlexValue> kvs, std::optional<std::string> group)
    {
      TRACE_FUNCTION()
      EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -749,7 +750,33 @@ namespace hypha
        "Only hypha dao is allowed to add this setting"
      )
 
-     settings->setSettings(group.value_or("settings"), kvs);
+     std::string groupName = group.value_or(std::string{"settings"});
+
+     //Fixed settings that cannot be changed
+     std::map<std::string, const std::vector<std::string>> fixedSettings = {
+       {
+         "settings",
+         {
+          common::REWARD_TOKEN,
+          common::VOICE_TOKEN,
+          common::PEG_TOKEN,
+          common::PERIOD_DURATION,
+          common::VOICE_TOKEN_DECAY_PERIOD,
+          common::VOICE_TOKEN_DECAY_PER_PERIOD,
+          DAO_NAME
+         }
+       }
+     };
+     
+     //If groupName doesn't exists in fixedSettings it will just create an empty array
+     for (auto& fs : fixedSettings[groupName]) {
+       EOS_CHECK(
+         kvs.count(fs) == 0,
+         util::to_str(fs, " setting cannot be modified in group: ", groupName)
+       )
+     }
+
+     settings->setSettings(groupName, kvs);
    }
 
   //  void dao::adddaosetting(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group)
@@ -932,8 +959,8 @@ namespace hypha
       auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
 
       auto voiceToken = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN).second;
-      auto voiceTokenDecayPeriod = configCW.getOrFail(detailsIdx, "voice_token_decay_period").second;
-      auto voiceTokenDecayPerPeriodX10M = configCW.getOrFail(detailsIdx, "voice_token_decay_per_period_x10M").second;
+      auto voiceTokenDecayPeriod = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PERIOD).second;
+      auto voiceTokenDecayPerPeriodX10M = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PER_PERIOD).second;
 
       auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
 
@@ -1007,26 +1034,76 @@ namespace hypha
           voiceTokenDecayPeriod->getAs<int64_t>(),
           voiceTokenDecayPerPeriodX10M->getAs<int64_t>()
       );
-
-      createTokens(dao, rewardToken->getAs<asset>(), pegToken->getAs<asset>());
-
-      //Auto enroll
-      std::unique_ptr<Member> member;
       
-      if (Member::exists(*this, onboarder)) {
-        member = std::make_unique<Member>(*this, getMemberID(onboarder));
+      auto dhoSettings = getSettingsDocument();
+
+      //Check if we should skip creating reward & peg tokens
+      //this might be the case if the tokens already exists
+      
+      if (auto [idx, skipPegTokFlag] = configCW.get(DETAILS, common::SKIP_PEG_TOKEN_CREATION); 
+          skipPegTokFlag == nullptr || 
+          skipPegTokFlag->getAs<int64_t>() == 0) {
+        createToken(
+          PEG_TOKEN_CONTRACT, 
+          dhoSettings->getOrFail<eosio::name>(TREASURY_CONTRACT),
+          pegToken->getAs<eosio::asset>()
+        );
       }
       else {
-        member = std::make_unique<Member>(*this, onboarder, onboarder);
+        //Only dao.hypha should be able skip creating reward or peg token
+        eosio::require_auth(get_self());
       }
 
-      member->apply(daoDoc.getID(), "DAO Onboarder");
-      member->enroll(onboarder, daoDoc.getID(), "DAO Onboarder");
-      
-      //Create owner, admin and enroller edges
-      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ENROLLER);
-      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::OWNER);
-      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ADMIN);
+      if (auto [idx, skipRewardTokFlag] = configCW.get(DETAILS, common::SKIP_REWARD_TOKEN_CREATION); 
+          skipRewardTokFlag == nullptr || 
+          skipRewardTokFlag->getAs<int64_t>() == 0) {
+        createToken(
+          REWARD_TOKEN_CONTRACT, 
+          get_self(),
+          rewardToken->getAs<eosio::asset>()
+        );
+      }
+      else {
+        //Only dao.hypha should be able skip creating reward or peg token
+        eosio::require_auth(get_self());
+      }
+
+      std::set<eosio::name> coreMemNames = { onboarder };
+
+      if (auto coreMemsGroup = configCW.getGroupOrFail("core_members");
+          coreMemsGroup) {
+        EOS_CHECK(
+          coreMemsGroup->size() > 1 &&
+          coreMemsGroup->at(0).label == CONTENT_GROUP_LABEL,
+          util::to_str("Wrong format for core groups\n"
+                       "[min size: 2, got: ", coreMemsGroup->size(), "]\n",
+                       "[first item label: ", CONTENT_GROUP_LABEL, " got: ", coreMemsGroup->at(0).label)
+        );
+
+        //Skip content_group label (index 0)
+        std::transform(coreMemsGroup->begin() + 1, 
+                       coreMemsGroup->end(), 
+                       std::inserter(coreMemNames, coreMemNames.begin()),
+                       [](const Content& c){ return c.getAs<name>(); });
+      }
+
+      for (auto& coreMem : coreMemNames) {
+        std::unique_ptr<Member> member;
+
+        if (Member::exists(*this, coreMem)) {
+          member = std::make_unique<Member>(*this, getMemberID(coreMem));
+        }
+        else {
+          member = std::make_unique<Member>(*this, onboarder, coreMem);
+        }
+
+        member->apply(daoDoc.getID(), "DAO Core member");
+        member->enroll(onboarder, daoDoc.getID(), "DAO Core member");
+
+        //Create owner, admin and enroller edges
+        Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ENROLLER);
+        Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ADMIN);
+      }
 
       //Create start period
       Period newPeriod(this, eosio::current_time_point(), util::to_str(dao, " start period"));
@@ -1541,36 +1618,19 @@ namespace hypha
         ).send();
   }
 
-  void dao::createTokens(const eosio::name& daoName,
-                         const eosio::asset& rewardToken,
-                         const eosio::asset& pegToken)
+  void dao::createToken(const std::string& contractType, name issuer, const asset& token)
   {
-
     auto dhoSettings = getSettingsDocument();
 
-    name rewardContract = dhoSettings->getOrFail<eosio::name>(REWARD_TOKEN_CONTRACT);
+    name contract = dhoSettings->getOrFail<eosio::name>(contractType);
 
     eosio::action(
-      eosio::permission_level{rewardContract, name("active")},
-      rewardContract,
+      eosio::permission_level{contract, name("active")},
+      contract,
       name("create"),
       std::make_tuple(
-        get_self(),
-        asset{-getTokenUnit(rewardToken), rewardToken.symbol}
-      )
-    ).send();
-
-    name pegContract = dhoSettings->getOrFail<eosio::name>(PEG_TOKEN_CONTRACT);
-
-    name treasuryContract = dhoSettings->getOrFail<eosio::name>(TREASURY_CONTRACT);
-
-    eosio::action(
-      eosio::permission_level{pegContract, name("active")},
-      pegContract,
-      name("create"),
-      std::make_tuple(
-        treasuryContract,
-        asset{-getTokenUnit(pegToken), pegToken.symbol}
+        issuer,
+        asset{-getTokenUnit(token), token.symbol}
       )
     ).send();
   }
