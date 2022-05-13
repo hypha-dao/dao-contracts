@@ -13,7 +13,7 @@ import {
     getDocumentById,
     getDocumentsByType,
 } from '../utils/Dao';
-import {ContentGroupBuilder} from '../utils/DocumentBuilder';
+import {ContentGroupBuilder, DocumentBuilder} from '../utils/DocumentBuilder';
 import {getAccountPermission} from '../utils/Permissions';
 import {Dao, DaoSettings} from "./Dao";
 import {Period} from "../types/Periods";
@@ -568,6 +568,10 @@ export class DaoBlockchain extends Blockchain {
                         // Not used yet
                         .int64('voice_token_decay_period', dao.settings.tokens.voice.decayPeriod)
                         .int64('voice_token_decay_per_period_x10M', dao.settings.tokens.voice.decayPerPeriodx10M)
+                        .build(),
+                    ContentGroupBuilder.builder()
+                        .groupLabel('core_members')
+                        .name(this.daoContract.accountName, this.daoContract.accountName)
                         .build()
                 ]
             },
