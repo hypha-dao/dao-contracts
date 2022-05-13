@@ -7,7 +7,7 @@ namespace hypha
 {
     class Settings;
 
-    class VoteTally : public TypedDocument<hypha::document_types::VOTE_TALLY>
+    class VoteTally : public TypedDocument
     {
     public:
         VoteTally(dao& dao, uint64_t id);
@@ -19,5 +19,6 @@ namespace hypha
 
     protected:
         virtual const std::string buildNodeLabel(ContentGroups &content);
+        virtual eosio::name getType();
     };
 }

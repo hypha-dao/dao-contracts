@@ -133,4 +133,9 @@ namespace hypha
         this->erase();
     }
 
+    eosio::name Comment::getType()
+    {
+        return document_types::COMMENT;
+    }
+
 }

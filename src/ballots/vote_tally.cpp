@@ -74,4 +74,9 @@ namespace hypha
     {
         return "VoteTally";
     }
+
+    eosio::name VoteTally::getType()
+    {
+        return document_types::VOTE_TALLY;
+    }
 }

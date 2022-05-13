@@ -8,7 +8,7 @@ namespace hypha
 {
     class dao;
 
-    class Comment : public TypedDocument<hypha::document_types::COMMENT>
+    class Comment : public TypedDocument
     {
     public:
         Comment(dao& dao, uint64_t id);
@@ -33,6 +33,7 @@ namespace hypha
 
     protected:
         virtual const std::string buildNodeLabel(ContentGroups &content);
+        virtual eosio::name getType();
 
     private:
         void initComment(

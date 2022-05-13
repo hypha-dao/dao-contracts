@@ -158,4 +158,9 @@ namespace hypha
         return "Vote: " + vote;
     }
 
+    eosio::name Vote::getType()
+    {
+        return document_types::VOTE;
+    }
+
 }

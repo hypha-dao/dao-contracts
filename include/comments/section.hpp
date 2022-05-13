@@ -2,13 +2,14 @@
 #include <typed_document.hpp>
 #include <string>
 #include <eosio/name.hpp>
+#include <comments/likeable.hpp>
 
 namespace hypha
 {
 
     class dao;
 
-    class Section : public TypedDocument<document_types::COMMENT_SECTION>
+    class Section : public TypedDocument
     {
         public:
             Section(dao& dao, uint64_t id);
@@ -24,6 +25,8 @@ namespace hypha
             const void move(Document& proposal);
         protected:
             virtual const std::string buildNodeLabel(ContentGroups &content);
+            virtual eosio::name getType();
+
     };
 
 }

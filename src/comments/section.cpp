@@ -67,7 +67,7 @@ namespace hypha
         this->erase();
     }
 
-    const void Section::like(name user)
+    const void Section::like(eosio::name user)
     {
         TRACE_FUNCTION()
 
@@ -86,7 +86,7 @@ namespace hypha
         this->update();
     }
 
-    const void Section::unlike(name user)
+    const void Section::unlike(eosio::name user)
     {
         TRACE_FUNCTION()
 
@@ -105,4 +105,8 @@ namespace hypha
         this->update();
     }
 
+    eosio::name Section::getType()
+    {
+        return document_types::COMMENT_SECTION;
+    }
 }

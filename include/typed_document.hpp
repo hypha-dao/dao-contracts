@@ -1,11 +1,11 @@
 #pragma once
 #include <document_graph/document.hpp>
+#include <eosio/name.hpp>
 
 namespace hypha
 {
     class dao;
 
-    template<typename std::string& T>
     class TypedDocument
     {
         public:
@@ -22,6 +22,9 @@ namespace hypha
             virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
             void update();
             void erase();
+            friend class Likeable;
+
+            virtual eosio::name getType() = 0;
 
         private:
             dao& m_dao;
@@ -33,9 +36,9 @@ namespace hypha
 
     namespace document_types
     {
-        extern std::string VOTE;
-        extern std::string VOTE_TALLY;
-        extern std::string COMMENT;
-        extern std::string COMMENT_SECTION;
+        constexpr eosio::name VOTE = eosio::name("vote");
+        constexpr eosio::name VOTE_TALLY = eosio::name("vote.tally");
+        constexpr eosio::name COMMENT = eosio::name("comment");
+        constexpr eosio::name COMMENT_SECTION = eosio::name("cmnt.section");
     }
 }
