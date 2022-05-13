@@ -10,9 +10,6 @@ namespace hypha
 {
 
     const std::string GROUP_SECTION = "comment_section";
-    const std::string ENTRY_LIKES = "likes";
-
-    const std::string GROUP_LIKES = "likes";
 
     Section::Section(dao& dao, uint64_t id) : TypedDocument(dao, id, TYPED_DOCUMENT_TYPE)
     {
@@ -27,13 +24,13 @@ namespace hypha
         TRACE_FUNCTION()
         ContentGroups contentGroups{
             ContentGroup{
-                Content(CONTENT_GROUP_LABEL, GROUP_SECTION),
-                Content(ENTRY_LIKES, 0)
-            },
-            ContentGroup{
-                Content(CONTENT_GROUP_LABEL, GROUP_LIKES)
+                Content(CONTENT_GROUP_LABEL, GROUP_SECTION)
             }
         };
+
+        ContentWrapper wrapper = ContentWrapper(contentGroups);
+        likeable.updateContent(wrapper);
+
         initializeDocument(dao, contentGroups);
 
         Edge::getOrNew(dao.get_self(), dao.get_self(), proposal.getID(), getId(), common::COMMENT_SECTION);
@@ -71,39 +68,11 @@ namespace hypha
 
     const void Section::like(eosio::name user)
     {
-        TRACE_FUNCTION()
-
-        auto content_wrapper = this->getDocument().getContentWrapper();
-        auto like_group = content_wrapper.getGroup(GROUP_LIKES);
-
-        auto content_pair = content_wrapper.get(like_group.first, user.to_string());
-
-        eosio::check(content_pair.first == -1, "User already likes this comment section");
-        content_wrapper.insertOrReplace(like_group.first, Content(user.to_string(), true));
-
-        auto section_group = content_wrapper.getGroup(GROUP_SECTION);
-        auto likes = content_wrapper.getOrFail(section_group.first, ENTRY_LIKES).second;
-        content_wrapper.insertOrReplace(section_group.first, Content(ENTRY_LIKES, likes->getAs<int64_t>() + 1));
-
-        this->update();
+        this->likeable.like(*this, user);
     }
 
     const void Section::unlike(eosio::name user)
     {
-        TRACE_FUNCTION()
-
-        auto content_wrapper = this->getDocument().getContentWrapper();
-        auto like_group = content_wrapper.getGroup(GROUP_LIKES);
-
-        auto content_pair = content_wrapper.get(like_group.first, user.to_string());
-
-        eosio::check(content_pair.first != -1, "User does not like this comment section");
-        content_wrapper.removeContent(like_group.first, user.to_string());
-
-        auto section_group = content_wrapper.getGroup(GROUP_SECTION);
-        auto likes = content_wrapper.getOrFail(section_group.first, ENTRY_LIKES).second;
-        content_wrapper.insertOrReplace(section_group.first, Content(ENTRY_LIKES, likes->getAs<int64_t>() - 1));
-
-        this->update();
+        this->likeable.unlike(*this, user);
     }
 }

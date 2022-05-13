@@ -25,6 +25,8 @@ namespace hypha
             const void move(Document& proposal);
         protected:
             virtual const std::string buildNodeLabel(ContentGroups &content);
+       private:
+        Likeable likeable;
 
     };
 

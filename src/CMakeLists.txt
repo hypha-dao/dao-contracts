@@ -9,6 +9,7 @@ find_package(eosio.cdt)
 add_contract( dao dao
                 dao.cpp
                 typed_document.cpp
+                typed_document_factory.cpp
                 util.cpp
                 period.cpp
                 member.cpp
@@ -37,6 +38,7 @@ add_contract( dao dao
                 proposals/proposal_factory.cpp
                 ballots/vote.cpp
                 ballots/vote_tally.cpp
+                comments/likeable.cpp
                 comments/comment.cpp
                 comments/section.cpp
                 ../document-graph/src/document_graph/document_graph.cpp
