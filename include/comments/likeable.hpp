@@ -1,13 +1,15 @@
+#pragma once
 #include <typed_document.hpp>
 
 namespace hypha
 {
 
-    class Likeable
+    class Likeable: virtual public TypedDocument
     {
         public:
-            const void like(TypedDocument& typed_document, eosio::name user);
-            const void unlike(TypedDocument& typed_document, eosio::name user);
+            virtual ~Likeable();
+            const void like(eosio::name user);
+            const void unlike(eosio::name user);
             const void updateContent(ContentWrapper& wrapper);
     };
 }

@@ -25,6 +25,8 @@
 #include <comments/section.hpp>
 #include <comments/comment.hpp>
 
+#include <typed_document_factory.hpp>
+
 namespace hypha
 {
   /**Testenv only
@@ -244,7 +246,7 @@ namespace hypha
        TRACE_FUNCTION()
        EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
        require_auth(user);
-       Section(*this, comment_section_id).like(user);
+       TypedDocumentFactory::getLikeableDocument(*this, comment_section_id)->like(user);
    }
 
    ACTION dao::cmntunlike(const name &user, const uint64_t comment_section_id)
@@ -252,7 +254,7 @@ namespace hypha
        TRACE_FUNCTION()
        EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
        require_auth(user);
-       Section(*this, comment_section_id).unlike(user);
+       TypedDocumentFactory::getLikeableDocument(*this, comment_section_id)->unlike(user);
    }
 
    ACTION dao::cmntadd(const name &author, const string content, const uint64_t comment_or_section_id)

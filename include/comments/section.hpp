@@ -9,7 +9,7 @@ namespace hypha
 
     class dao;
 
-    class Section : public TypedDocument
+    class Section : virtual public TypedDocument, public Likeable
     {
         public:
             Section(dao& dao, uint64_t id);
@@ -19,14 +19,10 @@ namespace hypha
             );
 
             const void remove();
-            const void like(eosio::name user);
-            const void unlike(eosio::name user);
 
             const void move(Document& proposal);
         protected:
             virtual const std::string buildNodeLabel(ContentGroups &content);
-       private:
-        Likeable likeable;
 
     };
 

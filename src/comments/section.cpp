@@ -29,8 +29,6 @@ namespace hypha
         };
 
         ContentWrapper wrapper = ContentWrapper(contentGroups);
-        likeable.updateContent(wrapper);
-
         initializeDocument(dao, contentGroups);
 
         Edge::getOrNew(dao.get_self(), dao.get_self(), proposal.getID(), getId(), common::COMMENT_SECTION);
@@ -64,15 +62,5 @@ namespace hypha
 
         this->getDao().getGraph().removeEdges(getId());
         this->erase();
-    }
-
-    const void Section::like(eosio::name user)
-    {
-        this->likeable.like(*this, user);
-    }
-
-    const void Section::unlike(eosio::name user)
-    {
-        this->likeable.unlike(*this, user);
     }
 }

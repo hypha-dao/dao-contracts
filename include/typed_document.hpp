@@ -13,6 +13,7 @@ namespace hypha
             const std::string& getNodeLabel();
             Document& getDocument();
             uint64_t getId();
+            virtual ~TypedDocument();
 
         protected:
             TypedDocument(dao& dao, eosio::name type);
@@ -22,7 +23,7 @@ namespace hypha
             virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
             void update();
             void erase();
-            friend class Likeable;
+            virtual const void updateContent(ContentWrapper& wrapper);
 
             eosio::name getType();
 

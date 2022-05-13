@@ -18,6 +18,11 @@ namespace hypha
 
     }
 
+    TypedDocument::~TypedDocument()
+    {
+
+    }
+
     const std::string& TypedDocument::getNodeLabel()
     {
         TRACE_FUNCTION()
@@ -41,6 +46,8 @@ namespace hypha
     void TypedDocument::initializeDocument(dao& dao, ContentGroups &content)
     {
         TRACE_FUNCTION()
+        ContentWrapper wrapper(content);
+        this->updateContent(wrapper);
 
         document = Document(dao.get_self(), dao.get_self(), processContent(content));
     }
@@ -94,6 +101,10 @@ namespace hypha
     eosio::name TypedDocument::getType()
     {
         return this->type;
+    }
+
+    const void TypedDocument::updateContent(ContentWrapper& wrapper)
+    {
     }
 
 }

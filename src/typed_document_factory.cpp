@@ -7,7 +7,7 @@
 
 namespace hypha
 {
-    string names_to_string_csv(std::vector<eosio::name> names)
+    static string names_to_string_csv(std::vector<eosio::name> names)
     {
         auto begin = names.begin();
         auto end = names.end();
@@ -25,12 +25,9 @@ namespace hypha
         return csv;
     }
 
-
-    std::unique_ptr<TypedDocument> TypedDocumentFactory::getTypedDocument(dao& dao, uint64_t id, std::vector<eosio::name> expected_types)
+    static eosio::name check_types(Document& document, std::vector<eosio::name> expected_types)
     {
-        Document document(dao.get_self(), id);
         eosio::name type = document.getContentWrapper().getOrFail(SYSTEM, TYPE)->getAs<eosio::name>();
-
         if (expected_types.size() > 0)
         {
             eosio::check(
@@ -38,6 +35,13 @@ namespace hypha
                 "Requested Document of type (" + type.to_string() + ") not in the expected_types list" + names_to_string_csv(expected_types)
             );
         }
+        return type;
+    }
+
+    std::unique_ptr<TypedDocument> TypedDocumentFactory::getTypedDocument(dao& dao, uint64_t id, std::vector<eosio::name> expected_types)
+    {
+        Document document(dao.get_self(), id);
+        eosio::name type = check_types(document, expected_types);
 
         switch(type.value)
         {
@@ -56,8 +60,20 @@ namespace hypha
         return nullptr;
     }
 
-    /*TypedDocumentBase* TypedDocumentFactory::getTypedDocument(dao& dao, uint64_t id, std::string type)
+    std::unique_ptr<Likeable> TypedDocumentFactory::getLikeableDocument(dao& dao, uint64_t id)
     {
-        // return Section(dao, id);
-    }*/
+        Document document(dao.get_self(), id);
+        eosio::name type = check_types(document, { document_types::COMMENT, document_types::COMMENT_SECTION });
+
+        if (type == document_types::COMMENT) {
+            return std::unique_ptr<Comment>(new Comment(dao, id));
+        } else if (type == document_types::COMMENT_SECTION) {
+            return std::unique_ptr<Section>(new Section(dao, id));
+        }
+
+        eosio::check(false, "This is a bug - Likeable object not tagged correctly on factory");
+
+        return nullptr;
+    }
+
 }

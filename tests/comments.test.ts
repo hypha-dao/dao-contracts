@@ -1,11 +1,10 @@
 import { setupEnvironment } from "./setup";
 import { Document } from './types/Document';
 import { last } from './utils/Arrays';
-import {getContent, getContentGroupByLabel, getDocumentsByType, getSystemContentGroup} from './utils/Dao';
+import { getContent, getContentGroupByLabel, getDocumentsByType } from './utils/Dao';
 import { DocumentBuilder } from './utils/DocumentBuilder';
 import { getDaoExpect } from './utils/Expect';
-import { passProposal } from './utils/Proposal';
-import {getAccountPermission} from "./utils/Permissions";
+import { getAccountPermission } from "./utils/Permissions";
 
 describe('Proposal', () => {
     const getSampleRole = (title: string = 'Underwater Basketweaver'): Document => DocumentBuilder
@@ -23,6 +22,11 @@ describe('Proposal', () => {
       .int64('min_deferred_x100', 50)
     })
     .build();
+
+    const checkLikeCount = (likeable: Document, expectedLikes: number) => {
+        const likeDetails = getContentGroupByLabel(likeable, 'like-details');
+        expect(getContent(likeDetails, 'likes').value[1]).toBe(expectedLikes.toString());
+    }
 
     it('Proposals have a comment section', async() => {
         const environment = await setupEnvironment();
@@ -53,6 +57,8 @@ describe('Proposal', () => {
             'cmnt.section'
         ));
 
+        checkLikeCount(commentSection, 0);
+
         // proposal <-----> comment section
         daoExpect.toHaveEdge(proposal, commentSection, 'cmntsect');
         daoExpect.toHaveEdge(commentSection, proposal, 'cmntsectof');
@@ -66,6 +72,7 @@ describe('Proposal', () => {
             environment.getDaoDocuments(),
             'cmnt.section'
         ));
+        checkLikeCount(commentSection, 1);
         let likes = getContentGroupByLabel(commentSection, 'likes')
         expect(getContent(likes, dao.members[0].account.accountName)).toBeTruthy();
         expect(getContent(likes, dao.members[1].account.accountName)).toBeUndefined();
@@ -78,6 +85,8 @@ describe('Proposal', () => {
             environment.getDaoDocuments(),
             'cmnt.section'
         ));
+        checkLikeCount(commentSection, 2);
+
         likes = getContentGroupByLabel(commentSection, 'likes')
         expect(getContent(likes, dao.members[0].account.accountName)).toBeTruthy();
         expect(getContent(likes, dao.members[1].account.accountName)).toBeTruthy();
@@ -91,6 +100,7 @@ describe('Proposal', () => {
             environment.getDaoDocuments(),
             'cmnt.section'
         ));
+        checkLikeCount(commentSection, 1);
         likes = getContentGroupByLabel(commentSection, 'likes')
         expect(getContent(likes, dao.members[0].account.accountName)).toBeUndefined();
         expect(getContent(likes, dao.members[1].account.accountName)).toBeTruthy();
@@ -105,6 +115,7 @@ describe('Proposal', () => {
             environment.getDaoDocuments(),
             'comment'
         ));
+        checkLikeCount(comment, 0);
         let commentContent = getContentGroupByLabel(comment, 'comment');
         expect(getContent(commentContent, 'author').value[1]).toBe(dao.members[0].account.accountName);
         expect(getContent(commentContent, 'content').value[1]).toBe('This is sweet!');
@@ -112,6 +123,40 @@ describe('Proposal', () => {
         expect(getContent(commentContent, 'deleted')).toBeUndefined();
         daoExpect.toHaveEdge(commentSection, comment, 'comment');
         daoExpect.toHaveEdge(comment, commentSection, 'commentof');
+
+        // like comment acc0
+        await environment.daoContract.contract.cmntlike({
+            user: dao.members[0].account.accountName,
+            comment_section_id: comment.id
+        }, getAccountPermission(dao.members[0].account));
+        comment = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'comment'
+        ));
+        checkLikeCount(comment, 1);
+
+        // like comment acc1
+        await environment.daoContract.contract.cmntlike({
+            user: dao.members[1].account.accountName,
+            comment_section_id: comment.id
+        }, getAccountPermission(dao.members[1].account));
+        comment = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'comment'
+        ));
+        checkLikeCount(comment, 2);
+
+        // unlike comment acc1
+        await environment.daoContract.contract.cmntunlike({
+            user: dao.members[1].account.accountName,
+            comment_section_id: comment.id
+        }, getAccountPermission(dao.members[1].account));
+        comment = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'comment'
+        ));
+        checkLikeCount(comment, 1);
+
 
         // update
         await environment.daoContract.contract.cmntupd({

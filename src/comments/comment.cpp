@@ -13,6 +13,7 @@ namespace hypha
     const std::string ENTRY_CONTENT = "content";
     const std::string ENTRY_EDITED = "edited";
     const std::string ENTRY_DELETED = "deleted";
+    const std::string ENTRY_COMMENT_COUNT = "comment_count";
 
     Comment::Comment(dao& dao, uint64_t id) : TypedDocument(dao, id, TYPED_DOCUMENT_TYPE)
     {
@@ -80,7 +81,8 @@ namespace hypha
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, GROUP_COMMENT),
                 Content(ENTRY_AUTHOR, author),
-                Content(ENTRY_CONTENT, content)
+                Content(ENTRY_CONTENT, content),
+                Content(ENTRY_COMMENT_COUNT, 0)
             }
         };
         initializeDocument(dao, contentGroups);

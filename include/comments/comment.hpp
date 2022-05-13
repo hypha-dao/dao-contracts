@@ -3,12 +3,13 @@
 #include <string>
 #include <eosio/name.hpp>
 #include <comments/section.hpp>
+#include <comments/likeable.hpp>
 
 namespace hypha
 {
     class dao;
 
-    class Comment : public TypedDocument
+    class Comment : virtual public TypedDocument, public Likeable
     {
     public:
         Comment(dao& dao, uint64_t id);
