@@ -4,6 +4,8 @@
 #include <document_graph/edge.hpp>
 #include <dao.hpp>
 
+#define TYPED_DOCUMENT_TYPE document_types::COMMENT_SECTION
+
 namespace hypha
 {
 
@@ -12,7 +14,7 @@ namespace hypha
 
     const std::string GROUP_LIKES = "likes";
 
-    Section::Section(dao& dao, uint64_t id) : TypedDocument(dao, id)
+    Section::Section(dao& dao, uint64_t id) : TypedDocument(dao, id, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
     }
@@ -20,7 +22,7 @@ namespace hypha
     Section::Section(
         dao& dao,
         Document& proposal
-    ) : TypedDocument(dao)
+    ) : TypedDocument(dao, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
         ContentGroups contentGroups{
@@ -103,10 +105,5 @@ namespace hypha
         content_wrapper.insertOrReplace(section_group.first, Content(ENTRY_LIKES, likes->getAs<int64_t>() - 1));
 
         this->update();
-    }
-
-    eosio::name Section::getType()
-    {
-        return document_types::COMMENT_SECTION;
     }
 }

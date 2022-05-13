@@ -9,13 +9,13 @@ namespace hypha
     class TypedDocument
     {
         public:
-            TypedDocument(dao& dao, uint64_t id);
+            TypedDocument(dao& dao, uint64_t id, eosio::name type);
             const std::string& getNodeLabel();
             Document& getDocument();
             uint64_t getId();
 
         protected:
-            TypedDocument(dao& dao);
+            TypedDocument(dao& dao, eosio::name type);
             void initializeDocument(dao& dao, ContentGroups &content);
             dao& getDao() const;
             bool documentExists(dao& dao, const uint64_t& id);
@@ -24,13 +24,14 @@ namespace hypha
             void erase();
             friend class Likeable;
 
-            virtual eosio::name getType() = 0;
+            eosio::name getType();
 
         private:
             dao& m_dao;
             Document document;
             void validate();
             ContentGroups& processContent(ContentGroups& content);
+            eosio::name type;
 
     };
 

@@ -5,15 +5,15 @@
 namespace hypha
 {
 
-    TypedDocument::TypedDocument(dao& dao, uint64_t id)
-    : m_dao(dao), document(Document(dao.get_self(), id))
+    TypedDocument::TypedDocument(dao& dao, uint64_t id, eosio::name type)
+    : m_dao(dao), document(Document(dao.get_self(), id)), type(type)
     {
         TRACE_FUNCTION()
         validate();
     }
 
-    TypedDocument::TypedDocument(dao& dao)
-    : m_dao(dao)
+    TypedDocument::TypedDocument(dao& dao, eosio::name type)
+    : m_dao(dao), type(type)
     {
 
     }
@@ -89,6 +89,11 @@ namespace hypha
     void TypedDocument::erase()
     {
         this->m_dao.getGraph().eraseDocument(getId());
+    }
+
+    eosio::name TypedDocument::getType()
+    {
+        return this->type;
     }
 
 }

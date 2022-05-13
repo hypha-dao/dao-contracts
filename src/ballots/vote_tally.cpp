@@ -6,11 +6,13 @@
 #include <logger/logger.hpp>
 #include <settings.hpp>
 
+#define TYPED_DOCUMENT_TYPE document_types::VOTE_TALLY
+
 namespace hypha
 {
 
     VoteTally::VoteTally(dao& dao, uint64_t id)
-    : TypedDocument(dao, id)
+    : TypedDocument(dao, id, TYPED_DOCUMENT_TYPE)
     {
       TRACE_FUNCTION()
     }
@@ -20,7 +22,7 @@ namespace hypha
         Document& proposal,
         Settings* daoSettings
     )
-    : TypedDocument(dao)
+    : TypedDocument(dao, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
         auto [exists, oldTally] = Edge::getIfExists(dao.get_self(), proposal.getID(), common::VOTE_TALLY);
@@ -73,10 +75,5 @@ namespace hypha
     const std::string VoteTally::buildNodeLabel(ContentGroups &content)
     {
         return "VoteTally";
-    }
-
-    eosio::name VoteTally::getType()
-    {
-        return document_types::VOTE_TALLY;
     }
 }

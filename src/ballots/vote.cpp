@@ -11,10 +11,12 @@
 #define VOTE_DATE "date"
 #define VOTE_NOTE "notes"
 
+#define TYPED_DOCUMENT_TYPE document_types::VOTE
+
 namespace hypha
 {
     Vote::Vote(hypha::dao& dao, uint64_t id)
-    : TypedDocument(dao, id)
+    : TypedDocument(dao, id, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
     }
@@ -26,7 +28,7 @@ namespace hypha
         Document& proposal,
         std::optional<std::string> notes
     )
-    : TypedDocument(dao)
+    : TypedDocument(dao, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
         // Could be replaced by i.e. proposal.hasVote(vote) when proposal is no longer just a "Document"
@@ -156,11 +158,6 @@ namespace hypha
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
         )->template getAs<std::string>();
         return "Vote: " + vote;
-    }
-
-    eosio::name Vote::getType()
-    {
-        return document_types::VOTE;
     }
 
 }

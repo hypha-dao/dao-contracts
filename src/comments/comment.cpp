@@ -3,6 +3,8 @@
 #include <dao.hpp>
 #include <common.hpp>
 
+#define TYPED_DOCUMENT_TYPE document_types::COMMENT
+
 namespace hypha
 {
 
@@ -12,7 +14,7 @@ namespace hypha
     const std::string ENTRY_EDITED = "edited";
     const std::string ENTRY_DELETED = "deleted";
 
-    Comment::Comment(dao& dao, uint64_t id) : TypedDocument(dao, id)
+    Comment::Comment(dao& dao, uint64_t id) : TypedDocument(dao, id, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
     }
@@ -22,7 +24,7 @@ namespace hypha
         Section& section,
         const eosio::name author,
         const string& content
-    ) : TypedDocument(dao)
+    ) : TypedDocument(dao, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
         this->initComment(
@@ -38,7 +40,7 @@ namespace hypha
         Comment& comment,
         const eosio::name author,
         const string& content
-    ) : TypedDocument(dao)
+    ) : TypedDocument(dao, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
         this->initComment(
@@ -132,10 +134,4 @@ namespace hypha
         this->getDao().getGraph().removeEdges(getId());
         this->erase();
     }
-
-    eosio::name Comment::getType()
-    {
-        return document_types::COMMENT;
-    }
-
 }
