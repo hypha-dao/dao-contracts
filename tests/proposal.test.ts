@@ -188,6 +188,11 @@ describe('Proposal', () => {
             proposal_id: proposal.id
         });
 
+        proposal = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'role'
+        ));
+
         await passProposal(dao, proposal, 'role', environment);
 
         proposal = last(getDocumentsByType(environment.getDaoDocuments(), 'role'));
