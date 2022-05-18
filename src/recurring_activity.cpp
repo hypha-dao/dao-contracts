@@ -34,7 +34,14 @@ Period RecurringActivity::getLastPeriod()
 Member RecurringActivity::getAssignee()
 {
     TRACE_FUNCTION()
-    return Member(*m_dao, Edge::get(m_dao->get_self(), getID(), common::ASSIGNEE_NAME).getToNode());
+
+    if (auto [idx, assignee] = getContentWrapper().get(DETAILS, ASSIGNEE);
+        assignee) {
+        return Member(*m_dao, m_dao->getMemberID(assignee->getAs<name>()));
+    }
+    else {
+        return Member(*m_dao, Edge::get(m_dao->get_self(), getID(), common::ASSIGNEE_NAME).getToNode());
+    }
 }
 
 eosio::time_point RecurringActivity::getApprovedTime()

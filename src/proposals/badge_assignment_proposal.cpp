@@ -72,9 +72,15 @@ namespace hypha
 
     void BadgeAssignmentProposal::postProposeImpl(Document &proposal) 
     {
+        ContentWrapper contentWrapper = proposal.getContentWrapper();
+
         //    badge_assignment  ---- badge          ---->   badge
-        Document badge(m_dao.get_self(), proposal.getContentWrapper().getOrFail(DETAILS, BADGE_STRING)->getAs<int64_t>());
+        Document badge(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, BADGE_STRING)->getAs<int64_t>());
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), badge.getID (), common::BADGE_NAME);
+
+        //    badge_assignment  ---- start          ---->   period
+        Document startPer(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>());
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), startPer.getID(), common::START);
     }
 
     void BadgeAssignmentProposal::passImpl(Document &proposal)
@@ -91,7 +97,6 @@ namespace hypha
         //    badge             ---- heldby         ---->   member
         //    member            ---- assignbadge    ---->   badge_assignment
         //    badge             ---- assignment     ---->   badge_assignment
-        //    badge_assignment  ---- start          ---->   period
 
         // the assignee now HOLDS this badge, non-strict in case the member already has the badge
         //We use getOrNew since the user could have held this badge already
@@ -99,10 +104,6 @@ namespace hypha
         Edge::getOrNew(m_dao.get_self(), m_dao.get_self(), badge.getID (), assigneeDoc.getID(), common::HELD_BY);
         Edge::write(m_dao.get_self(), m_dao.get_self(), assigneeDoc.getID(), proposal.getID (), common::ASSIGN_BADGE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getID (), proposal.getID (), common::ASSIGNMENT);
-
-        Document startPer(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>());
-
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), startPer.getID(), common::START);
     }
 
     std::string BadgeAssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)
