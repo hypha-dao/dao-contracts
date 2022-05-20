@@ -241,6 +241,23 @@ namespace hypha
       proposal->update(proposer, docprop, content_groups);
    }
 
+   ACTION dao::cmntmigrate(const uint64_t &dao_id)
+   {
+       TRACE_FUNCTION()
+       EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+       std::vector<Edge> proposalEdges = this->getGraph().getEdgesFrom(dao_id, common::PROPOSAL);
+       for (Edge proposalEdge : proposalEdges)
+       {
+           std::pair<bool, Edge> commentSectionEdge = Edge::getIfExists(this->get_self(), proposalEdge.getToNode(), common::COMMENT_SECTION);
+           if (!commentSectionEdge.first)
+           {
+               Document proposal(this->get_self(), proposalEdge.getToNode());
+               Section(*this, proposal);
+           }
+       }
+
+   }
+
    ACTION dao::cmntlike(const name &user, const uint64_t comment_section_id)
    {
        TRACE_FUNCTION()
