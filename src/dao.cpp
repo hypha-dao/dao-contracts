@@ -171,6 +171,8 @@ namespace hypha
           Content{ ASSIGNMENT_STRING, static_cast<int64_t>(assignment_id) }
         );
 
+        timeShareDoc.update();
+
         //Check if there is a next edge - otherwise just finish
         std::tie(next, timeshare) = Edge::getIfExists(get_self(), timeShareDoc.getID(), common::NEXT_TIME_SHARE);
       }
