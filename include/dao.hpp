@@ -129,6 +129,8 @@ namespace hypha
          m_documentGraph.eraseDocument(doc_id, true);
       }
 
+      ACTION fixassig(uint64_t assignment_id);
+
       /**TODO: Remove */
       // ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name)
       // {
