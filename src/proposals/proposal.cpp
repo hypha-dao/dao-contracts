@@ -69,9 +69,6 @@ namespace hypha
                                                 title,
                                                 description));
 
-        contentGroups.push_back(makeBallotGroup());
-        contentGroups.push_back(makeBallotOptionsGroup());
-
         ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(DETAILS),
                                         Content { common::STATE,
                                                   publish ? common::STATE_PROPOSED : common::STATE_DRAFTED });
@@ -432,12 +429,16 @@ namespace hypha
         // the DHO also links to the document as a proposal, another graph EDGE
         Edge::write(m_dao.get_self(), proposer, rootID, proposal.getID (), common::PROPOSAL);
 
+        proposal.getContentGroups().push_back(makeBallotGroup());
+        proposal.getContentGroups().push_back(makeBallotOptionsGroup());
+
         // Sets an empty tally
         VoteTally(m_dao, proposal, m_daoSettings);
 
-        ContentWrapper::insertOrReplace(*proposal.getContentWrapper()
-                                                 .getGroupOrFail(DETAILS), 
-                                        Content { common::STATE, common::STATE_PROPOSED });
+        ContentWrapper::insertOrReplace(
+            *proposal.getContentWrapper().getGroupOrFail(DETAILS),
+            Content { common::STATE, common::STATE_PROPOSED }
+        );
 
         proposal.update();
 
