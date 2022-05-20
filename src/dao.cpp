@@ -127,6 +127,56 @@ namespace hypha
    }
    */
 
+  ACTION dao::fixassig(uint64_t assignment_id)
+  {
+    //Skip auth
+    Assignment assignment{this, assignment_id};
+
+    //Check for missing TimeShare object
+
+    auto [hasInit, timeshare] = Edge::getIfExists(get_self(), assignment_id, common::INIT_TIME_SHARE);
+
+    if (!hasInit) {
+      auto timeShare = assignment.getContentWrapper()
+                                  .getOrFail(DETAILS, TIME_SHARE);
+
+      auto initTimeShareDoc = TimeShare(get_self(), 
+                                        get_self(), 
+                                        timeShare->getAs<int64_t>(), 
+                                        assignment.getStartPeriod().getStartTime(),
+                                        assignment_id);
+
+      Edge::write(get_self(), get_self(), assignment_id, initTimeShareDoc.getID (), common::INIT_TIME_SHARE);
+      Edge::write(get_self(), get_self(), assignment_id, initTimeShareDoc.getID (), common::CURRENT_TIME_SHARE);
+      Edge::write(get_self(), get_self(), assignment_id, initTimeShareDoc.getID (), common::LAST_TIME_SHARE);
+      Edge::write(get_self(), get_self(), assignment_id, initTimeShareDoc.getID (), common::TIME_SHARE_LABEL);
+    }
+    else {
+      bool next = true;
+
+      while (next) {
+        Document timeShareDoc(get_self(), timeshare.getToNode());
+        //Create if it doesn't exits
+        Edge::getOrNew(
+          get_self(),
+          get_self(), 
+          assignment_id,
+          timeShareDoc.getID(),
+          common::TIME_SHARE_LABEL
+        );
+
+        auto cw = timeShareDoc.getContentWrapper();
+        cw.insertOrReplace(
+          cw.getGroup(DETAILS).first, 
+          Content{ ASSIGNMENT_STRING, static_cast<int64_t>(assignment_id) }
+        );
+
+        //Check if there is a next edge - otherwise just finish
+        std::tie(next, timeshare) = Edge::getIfExists(get_self(), timeShareDoc.getID(), common::NEXT_TIME_SHARE);
+      }
+    }
+  }
+
   ACTION dao::remmember(uint64_t dao_id, const std::vector<name>& member_names)
   {
     if (!eosio::has_auth(get_self())) {
