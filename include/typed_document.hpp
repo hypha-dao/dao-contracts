@@ -1,41 +1,46 @@
 #pragma once
 #include <document_graph/document.hpp>
+#include <eosio/name.hpp>
 
 namespace hypha
 {
     class dao;
 
-    template<typename std::string& T>
     class TypedDocument
     {
         public:
-            TypedDocument(dao& dao, uint64_t id);
+            TypedDocument(dao& dao, uint64_t id, eosio::name type);
             const std::string& getNodeLabel();
             Document& getDocument();
             uint64_t getId();
+            virtual ~TypedDocument();
 
         protected:
-            TypedDocument(dao& dao);
+            TypedDocument(dao& dao, eosio::name type);
             void initializeDocument(dao& dao, ContentGroups &content);
             dao& getDao() const;
             bool documentExists(dao& dao, const uint64_t& id);
             virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
             void update();
             void erase();
+            virtual const void updateContent(ContentWrapper& wrapper);
+
+            eosio::name getType();
 
         private:
             dao& m_dao;
             Document document;
             void validate();
             ContentGroups& processContent(ContentGroups& content);
+            eosio::name type;
 
     };
 
     namespace document_types
     {
-        extern std::string VOTE;
-        extern std::string VOTE_TALLY;
-        extern std::string COMMENT;
-        extern std::string COMMENT_SECTION;
+        constexpr eosio::name VOTE = eosio::name("vote");
+        constexpr eosio::name VOTE_TALLY = eosio::name("vote.tally");
+        constexpr eosio::name COMMENT = eosio::name("comment");
+        constexpr eosio::name COMMENT_SECTION = eosio::name("cmnt.section");
     }
 }
