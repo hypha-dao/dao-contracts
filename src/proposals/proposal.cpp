@@ -14,18 +14,17 @@
 #include <util.hpp>
 #include <logger/logger.hpp>
 #include <recurring_activity.hpp>
+#include <comments/section.hpp>
 
 using namespace eosio;
 
 namespace hypha
 {
     constexpr char COMMENT_NAME[] = "comment_name";
-    constexpr char NEXT_COMMENT_SECTION[] = "next_comment_section";
-    //constexpr name COMMENTS_CONTRACT("comments");
 
     constexpr name STAGING_PROPOSAL = name("stagingprop");
 
-    Proposal::Proposal(dao &contract, uint64_t daoID) 
+    Proposal::Proposal(dao &contract, uint64_t daoID)
     : m_dao{contract},
       m_daoSettings(contract.getSettingsDocument(daoID)),
       m_dhoSettings(contract.getSettingsDocument()),
@@ -37,32 +36,11 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
-        EOS_CHECK(
-            publish,
-            "Staging proposals are not currently enabled"
-        )
-
         EOS_CHECK(Member::isMember(m_dao, m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
-
-        // Init actions are called here - The propose should only be called once in the lifecycle of a proposal
-        const name commentSection = _newCommentSection();
-        name commentsContract = m_dhoSettings->getOrFail<eosio::name>(COMMENTS_CONTRACT);
-
-        eosio::action(
-            eosio::permission_level{m_dao.get_self(), name("active")},
-            commentsContract, name("addsection"),
-            std::make_tuple(
-                m_dao.get_self(),
-                m_daoSettings->getOrFail<name>(DAO_NAME), // scope.
-                commentSection, // section
-                proposer// author
-            )
-        ).send();
-
-        return this->internalPropose(proposer, contentGroups, publish, commentSection);
+        return this->internalPropose(proposer, contentGroups, publish, nullptr);
     }
 
-    Document Proposal::internalPropose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish, name commentSection)
+    Document Proposal::internalPropose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish, Section* commentSection)
     {
         ContentWrapper proposalContent(contentGroups);
         proposeImpl(proposer, proposalContent);
@@ -89,21 +67,25 @@ namespace hypha
         contentGroups.push_back(makeSystemGroup(proposer,
                                                 getProposalType(),
                                                 title,
-                                                description,
-                                                commentSection));
-        
-        contentGroups.push_back(makeBallotGroup());
-        contentGroups.push_back(makeBallotOptionsGroup());
+                                                description));
 
-        ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(DETAILS), 
-                                        Content { common::STATE, 
+        ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(DETAILS),
+                                        Content { common::STATE,
                                                   publish ? common::STATE_PROPOSED : common::STATE_DRAFTED });
 
-        ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(DETAILS), 
-                                        Content { common::DAO.to_string(), 
+        ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(DETAILS),
+                                        Content { common::DAO.to_string(),
                                                   static_cast<int64_t>(m_daoID) });
 
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
+
+        // Creates comment section
+        if (commentSection == nullptr) {
+            Section(m_dao, proposalNode);
+        } else {
+            commentSection->move(proposalNode);
+        }
+
 
         // creates the document, or the graph NODE
         auto memberID = m_dao.getMemberID(proposer);
@@ -271,54 +253,40 @@ namespace hypha
             "Only the proposer can remove the proposal"
         );
 
+        Section commentSection(m_dao, Edge::get(m_dao.get_self(), proposal.getID(), common::COMMENT_SECTION).getToNode());
+        commentSection.remove();
+
         m_dao.getGraph().eraseDocument(proposal.getID(), true);
-
-        name commentsContract = m_dhoSettings->getOrFail<eosio::name>(COMMENTS_CONTRACT);
-
-        eosio::action(
-            eosio::permission_level{this->m_dao.get_self(), name("active")},
-            commentsContract, name("delsection"),
-            std::make_tuple(
-                m_dao.get_self(),
-                m_daoSettings->getOrFail<name>(DAO_NAME),
-                proposal.getContentWrapper().getOrFail(SYSTEM, COMMENT_NAME, "Proposal has no comment section")->getAs<eosio::name>() // section
-            )
-        ).send();
     }
 
     void Proposal::update(const eosio::name &proposer, Document &proposal, ContentGroups &contentGroups)
     {
         TRACE_FUNCTION()
-        
+
         auto ownerID =  Edge::get(m_dao.get_self(), proposal.getID (), common::OWNED_BY).getToNode();
 
         Member memberDoc(m_dao, ownerID);
 
         EOS_CHECK(
-            Edge::exists(m_dao.get_self(), m_daoID, proposal.getID(), STAGING_PROPOSAL), 
+            Edge::exists(m_dao.get_self(), m_daoID, proposal.getID(), STAGING_PROPOSAL),
             "Only proposes in staging can be updated"
         );
 
         EOS_CHECK(
-            proposer == memberDoc.getAccount(), 
+            proposer == memberDoc.getAccount(),
             "Only the proposer can update the proposal"
         );
 
-        const eosio::name commentSection = proposal
-            .getContentWrapper()
-            .getOrFail(SYSTEM, COMMENT_NAME, "Comment section not found")
-            ->getAs<eosio::name>();
+        Section commentSection(m_dao, Edge::get(m_dao.get_self(), proposal.getID(), common::COMMENT_SECTION).getToNode());
 
+        this->internalPropose(proposer, contentGroups, false, &commentSection);
         m_dao.getGraph().eraseDocument(proposal.getID(), true);
-
-        this->internalPropose(proposer, contentGroups, false, commentSection);
     }
 
     ContentGroup Proposal::makeSystemGroup(const name &proposer,
                                            const name &proposal_type,
                                            const string &proposal_title,
-                                           const string &proposal_description,
-                                           const name &comment_name)
+                                           const string &proposal_description)
     {
         return ContentGroup{
             Content(CONTENT_GROUP_LABEL, SYSTEM),
@@ -326,8 +294,7 @@ namespace hypha
             Content(CONTRACT_VERSION, m_dhoSettings->getSettingOrDefault<std::string>(CONTRACT_VERSION, DEFAULT_VERSION)),
             Content(NODE_LABEL, proposal_title),
             Content(DESCRIPTION, proposal_description),
-            Content(TYPE, proposal_type),
-            Content(COMMENT_NAME, comment_name)};
+            Content(TYPE, proposal_type)};
     }
 
     ContentGroup Proposal::makeBallotGroup()
@@ -445,7 +412,7 @@ namespace hypha
         auto daoName = m_daoSettings->getOrFail<name>(DAO_NAME);
 
         auto stat_itr = stats_index.find(
-            voice::currency_stats::build_key(
+            voice::currency_statsv2::build_key(
                 daoName,
                 voiceToken.symbol.code()
             )
@@ -462,12 +429,16 @@ namespace hypha
         // the DHO also links to the document as a proposal, another graph EDGE
         Edge::write(m_dao.get_self(), proposer, rootID, proposal.getID (), common::PROPOSAL);
 
+        proposal.getContentGroups().push_back(makeBallotGroup());
+        proposal.getContentGroups().push_back(makeBallotOptionsGroup());
+
         // Sets an empty tally
         VoteTally(m_dao, proposal, m_daoSettings);
 
-        ContentWrapper::insertOrReplace(*proposal.getContentWrapper()
-                                                 .getGroupOrFail(DETAILS), 
-                                        Content { common::STATE, common::STATE_PROPOSED });
+        ContentWrapper::insertOrReplace(
+            *proposal.getContentWrapper().getGroupOrFail(DETAILS),
+            Content { common::STATE, common::STATE_PROPOSED }
+        );
 
         proposal.update();
 
@@ -490,12 +461,6 @@ namespace hypha
         trx.send(nextID, m_dao.get_self());
 
         m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
-    }
-
-    name Proposal::_newCommentSection() {
-        name next = name(m_daoSettings->getSettingOrDefault<name>(NEXT_COMMENT_SECTION, name()).value + 1);
-        m_daoSettings->setSetting(Content{ NEXT_COMMENT_SECTION, next });
-        return next;
     }
 
 } // namespace hypha

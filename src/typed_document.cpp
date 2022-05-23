@@ -5,78 +5,81 @@
 namespace hypha
 {
 
-    template<typename std::string& T>
-    TypedDocument<T>::TypedDocument(dao& dao, uint64_t id)
-    : m_dao(dao), document(Document(dao.get_self(), id))
+    TypedDocument::TypedDocument(dao& dao, uint64_t id, eosio::name type)
+    : m_dao(dao), document(Document(dao.get_self(), id)), type(type)
     {
         TRACE_FUNCTION()
         validate();
     }
 
-    template<typename std::string& T>
-    TypedDocument<T>::TypedDocument(dao& dao)
-    : m_dao(dao)
+    TypedDocument::TypedDocument(dao& dao, eosio::name type)
+    : m_dao(dao), type(type)
     {
 
     }
 
-    template<typename std::string& T>
-    const std::string& TypedDocument<T>::getNodeLabel()
+    TypedDocument::~TypedDocument()
+    {
+
+    }
+
+    const std::string& TypedDocument::getNodeLabel()
     {
         TRACE_FUNCTION()
         return document.getContentWrapper().getOrFail(
             SYSTEM,
             NODE_LABEL,
             "Typed document does not have a node label"
-        )->template getAs<std::string>();
+        )->getAs<std::string>();
     }
 
-    template<typename std::string& T>
-    Document& TypedDocument<T>::getDocument()
+    Document& TypedDocument::getDocument()
     {
         return document;
     }
 
-    template<typename std::string& T>
-    void TypedDocument<T>::initializeDocument(dao& dao, ContentGroups &content)
+    uint64_t TypedDocument::getId()
+    {
+        return document.getID();
+    }
+
+    void TypedDocument::initializeDocument(dao& dao, ContentGroups &content)
     {
         TRACE_FUNCTION()
+        ContentWrapper wrapper(content);
+        this->updateContent(wrapper);
 
         document = Document(dao.get_self(), dao.get_self(), processContent(content));
     }
 
-    template<typename std::string& T>
-    void TypedDocument<T>::validate()
+    void TypedDocument::validate()
     {
         auto [idx, docType] = document.getContentWrapper().get(SYSTEM, TYPE);
 
         EOS_CHECK(idx != -1, "Content item labeled 'type' is required for this document but not found.");
-        EOS_CHECK(docType->template getAs<eosio::name>() == eosio::name(T),
-                     "invalid document type. Expected: " + T +
-                         "; actual: " + docType->template getAs<eosio::name>().to_string());
+        EOS_CHECK(docType->template getAs<eosio::name>() == this->getType(),
+                     "invalid document type. Expected: " + this->getType().to_string() +
+                         "; actual: " + docType->getAs<eosio::name>().to_string());
 
         getNodeLabel();
     }
 
-    template<typename std::string& T>
-    ContentGroups& TypedDocument<T>::processContent(ContentGroups& content)
+    ContentGroups& TypedDocument::processContent(ContentGroups& content)
     {
         ContentWrapper wrapper(content);
         auto [systemIndex, contentGroup] = wrapper.getGroupOrCreate(SYSTEM);
-        wrapper.insertOrReplace(systemIndex, Content(TYPE, eosio::name(T)));
+        wrapper.insertOrReplace(systemIndex, Content(TYPE, this->getType()));
         wrapper.insertOrReplace(systemIndex, Content(NODE_LABEL, buildNodeLabel(content)));
 
         return wrapper.getContentGroups();
     }
 
-    template<typename std::string& T>
-    dao& TypedDocument<T>::getDao() const
+    dao& TypedDocument::getDao() const
     {
         return m_dao;
     }
 
-    template<typename std::string& T>
-    bool TypedDocument<T>::documentExists(dao& dao, const uint64_t& id)
+    bool TypedDocument::documentExists(dao& dao, const uint64_t& id)
     {
         bool exists = Document::exists(dao.get_self(), id);
         if (exists) {
@@ -85,18 +88,23 @@ namespace hypha
 
         return {};
     }
-
-    // Todo: All this could be replaced by macros to make it easier to:
-    // define, instantiate and extend
-    // Define the types in the .hpp file as well
-    namespace document_types
+    void TypedDocument::update()
     {
-        std::string VOTE = std::string("vote");
-        std::string VOTE_TALLY = std::string("vote.tally");
+        this->document.update();
     }
 
-    // Instantiate each template type
-    template class TypedDocument<document_types::VOTE>;
-    template class TypedDocument<document_types::VOTE_TALLY>;
+    void TypedDocument::erase()
+    {
+        this->m_dao.getGraph().eraseDocument(getId());
+    }
+
+    eosio::name TypedDocument::getType()
+    {
+        return this->type;
+    }
+
+    const void TypedDocument::updateContent(ContentWrapper& wrapper)
+    {
+    }
 
 }

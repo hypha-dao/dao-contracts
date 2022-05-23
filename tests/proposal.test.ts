@@ -188,6 +188,11 @@ describe('Proposal', () => {
             proposal_id: proposal.id
         });
 
+        proposal = last(getDocumentsByType(
+            environment.getDaoDocuments(),
+            'role'
+        ));
+
         await passProposal(dao, proposal, 'role', environment);
 
         proposal = last(getDocumentsByType(environment.getDaoDocuments(), 'role'));
@@ -242,9 +247,6 @@ describe('Proposal', () => {
             'role'
         ));
 
-        const commentSection = getContent(getSystemContentGroup(proposal), 'comment_name').value[1];
-        expect(commentSection).toBeTruthy();
-
         await expect(environment.daoContract.contract.proposeupd({
             proposer: dao.members[1].account.accountName,
             proposal_id: proposal.id,
@@ -262,8 +264,6 @@ describe('Proposal', () => {
             'role'
         ));
 
-        // The same comment section
-        expect(getContent(getSystemContentGroup(proposal), 'comment_name').value[1]).toEqual(commentSection);
         expect(getContent(getSystemContentGroup(proposal), 'node_label').value[1]).toEqual('new-title');
 
         daoExpect.toNotHaveEdge(environment.getRoot(), proposal, 'proposal');
