@@ -6,6 +6,7 @@
 #include <logger/logger.hpp>
 
 #include <cmath>
+#include <charconv>
 
 namespace hypha
 {
@@ -100,6 +101,35 @@ namespace hypha
 
         float seeds_price_usd = (float)1 / ((float)config_t.seeds_per_usd.amount / (float)10000);
         return (float)1 / ((float)config_t.seeds_per_usd.amount / (float)config_t.seeds_per_usd.symbol.precision());
+    }
+
+    vector<string_view> splitStringView(string_view str, char delimiter)
+    {
+        vector<string_view> strings;
+        size_t start = 0;
+        
+        for (size_t i = 0; i < str.size(); ++i) {
+            if (str[i] == delimiter) {
+                if (start != i) { //Avoid creating empty substrings
+                    strings.push_back(str.substr(start, i - start));
+                }
+                start = i + 1;
+            }
+        }
+        if (start != str.size()) { //Avoid creating empty substrings
+            strings.push_back(str.substr(start));
+        }
+        return strings;
+    }
+
+    int64_t stringViewToInt(string_view str)
+    {
+        int64_t val;
+        auto [ptr, err] = std::from_chars(str.data(), str.data() + str.size(), val);
+        EOS_CHECK(err != std::errc::invalid_argument && 
+                  err != std::errc::result_out_of_range,
+                  util::to_str("Cannot conver string to int: ", std::string(str)))
+        return val;
     }
 
     void issueToken(const eosio::name &token_contract,

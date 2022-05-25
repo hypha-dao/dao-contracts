@@ -4,6 +4,8 @@
 #include <utility>
 #include <cmath>
 #include <string>
+#include <string_view>
+#include <vector>
 #include <eosio/crypto.hpp>
 #include <eosio/name.hpp>
 #include <eosio/asset.hpp>
@@ -16,6 +18,9 @@
 
 namespace hypha
 {
+    using std::vector;
+    using std::string_view;
+
     struct AssetBatch
     {
       eosio::asset reward;
@@ -48,6 +53,10 @@ namespace hypha
     eosio::asset adjustAsset(const eosio::asset &originalAsset, const float &adjustment);
     float getSeedsPriceUsd(const eosio::time_point &price_time_point);
     float getSeedsPriceUsd();
+
+    vector<string_view> splitStringView(string_view str, char delimiter);
+
+    int64_t stringViewToInt(string_view str);
 
     void issueToken(const eosio::name &token_contract,
                     const eosio::name &issuer,
