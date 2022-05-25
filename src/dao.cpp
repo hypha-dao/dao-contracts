@@ -1341,7 +1341,7 @@ namespace hypha
     //Verify if id belongs to a DAO or DHO
     Document daoDoc(get_self(), root_id);
 
-    auto cw = daoDoc.getContentWrapper();
+    auto cw = ContentWrapper(alerts);
 
     auto type = cw.getOrFail(SYSTEM, TYPE)
                   ->getAs<name>();
