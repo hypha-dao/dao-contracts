@@ -1343,8 +1343,9 @@ namespace hypha
 
     auto cw = ContentWrapper(alerts);
 
-    auto type = cw.getOrFail(SYSTEM, TYPE)
-                  ->getAs<name>();
+    auto type = daoDoc.getContentWrapper()
+                      .getOrFail(SYSTEM, TYPE)
+                      ->getAs<name>();
 
     EOS_CHECK(
       type == common::DAO || type == common::DHO,
@@ -1445,6 +1446,8 @@ namespace hypha
           alertCW.insertOrReplace(*details, Content(LEVEL, level));
           alertCW.insertOrReplace(*details, Content(CONTENT, description));
           alertCW.insertOrReplace(*details, Content(ENABLED, enabled));
+
+          alert.update();
         }
       }
     }
