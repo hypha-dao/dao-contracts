@@ -123,8 +123,6 @@ namespace hypha
        * @param alerts  
        */
       ACTION modalerts(uint64_t root_id, ContentGroups& alerts);
-      ACTION setalert(const eosio::name &level, const std::string &content);
-      ACTION remalert(const std::string &notes);
 
       /**TODO: Remove */
       //ACTION adddocs(std::vector<Document>& docs);
