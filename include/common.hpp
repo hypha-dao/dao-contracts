@@ -125,6 +125,12 @@ namespace common
     constexpr name COMMENT_SECTION = name("cmntsect");
     constexpr name COMMENT_SECTION_OF = name("cmntsectof");
 
+    constexpr name REACTED = name("reacted");
+    constexpr name REACTED_TO = name("reactedto");
+    constexpr name REACTION = name("reaction");
+    constexpr name REACTION_OF = name("reactionof");
+
+
     // document types
     constexpr name ALERT = name ("alert");
     constexpr name NOTIFIES = name ("notifies");

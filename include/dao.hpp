@@ -84,11 +84,13 @@ namespace hypha
 
       // comment related
       ACTION cmntmigrate(const uint64_t &dao_id);
-      ACTION cmntlike(const name &user, const uint64_t comment_section_id);
-      ACTION cmntunlike(const name &user, const uint64_t comment_section_id);
       ACTION cmntadd(const name &author, const string content, const uint64_t comment_or_section_id);
       ACTION cmntupd(const string new_content, const uint64_t comment_id);
       ACTION cmntrem(const uint64_t comment_id);
+
+      // reaction related
+      ACTION reactadd(const name &user, const name &reaction, const uint64_t document_id);
+      ACTION reactrem(const name &user, const uint64_t document_id);
 
       //Sets a dho/contract level setting
       ACTION setsetting(const string &key, const Content::FlexValue &value, std::optional<std::string> group);
