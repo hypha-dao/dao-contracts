@@ -125,6 +125,7 @@ namespace common
 
     // document types
     constexpr name ALERT = name ("alert");
+    constexpr name NOTIFIES = name ("notifies");
 
     // graph edges hanging off of primary DHO node
     constexpr name BADGE_NAME = name("badge");
@@ -139,6 +140,20 @@ namespace common
     constexpr name BALLOT_TYPE_OPTIONS = name("options");
 
     constexpr name GROUP_TYPE_OPTION = name("option");
+
+    //ALERTS
+    constexpr auto ADD_GROUP = "add";
+    constexpr auto EDIT_GROUP = "edit";
+    constexpr auto DELETE_GROUP = "del";
+
+    namespace AlertInfo {
+      enum  {
+            kDESCRIPTION,
+            kLEVEL,
+            kENABLED,
+            kID
+      };
+    }    
 
     constexpr name LAST_TIME_SHARE = name("lastimeshare");
     constexpr name CURRENT_TIME_SHARE = name("curtimeshare");
@@ -176,6 +191,7 @@ namespace common
 #define CONTENT "content"
 #define ICON "icon"
 #define LEVEL "level"
+#define ENABLED "enabled"
 
 #define START_PERIOD "start_period"
 #define END_PERIOD "end_period"
