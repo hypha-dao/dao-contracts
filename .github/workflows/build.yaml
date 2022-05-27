@@ -8,7 +8,7 @@ jobs:
         with:
           submodules: recursive
       - name: "Build"
-        uses: docker://josejulio/hypha-builder:release_1.7.x
+        uses: docker://josejulio/hypha-builder:release_1.8.x
         with:
           args: " -j2 VERBOSE=1 "
         env:
