@@ -28,6 +28,7 @@ namespace common
     //Dao settings
     constexpr auto DAO_DESCRIPTION = "dao_description";
     constexpr auto DAO_TITLE = "dao_title";
+    constexpr auto DAO_URL = "dao_url";
     constexpr auto PERIOD_DURATION = "period_duration_sec";
     constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
     constexpr auto DAO_USES_SEEDS = "uses_seeds";
@@ -36,7 +37,8 @@ namespace common
     constexpr auto SKIP_PEG_TOKEN_CREATION = "skip_peg_token_create";
     constexpr auto SKIP_REWARD_TOKEN_CREATION = "skip_reward_token_create";
     //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
-
+    constexpr auto URLS_GROUP = "urls";
+    constexpr auto URL = "url";
     // 365.25 / 7.4
     //const float PHASES_PER_YEAR = 49.3581081081;
 

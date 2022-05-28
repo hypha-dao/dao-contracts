@@ -887,10 +887,12 @@ namespace hypha
 
     checkAdminsAuth(dao_id);
     auto settings = getSettingsDocument(dao_id);
+
+    auto daoName = settings->getOrFail<eosio::name>(DAO_NAME);
     //Only hypha dao should be able to use this flag
     EOS_CHECK(
       kvs.count("is_hypha") == 0 ||
-      settings->getOrFail<eosio::name>(DAO_NAME) == "hypha"_n,
+      daoName == "hypha"_n,
       "Only hypha dao is allowed to add this setting"
     );
 
@@ -918,6 +920,37 @@ namespace hypha
         kvs.count(fs) == 0,
         util::to_str(fs, " setting cannot be modified in group: ", groupName)
       );
+    }
+
+    //Verify if the URL is unique if we want to change it
+    if (kvs.count(common::DAO_URL)) {
+      auto newURL = Content{"", kvs[common::DAO_URL]}.getAs<std::string>();
+
+      auto globalSettings = getSettingsDocument();
+      
+      auto globalSetCW = globalSettings->getContentWrapper();
+
+      if (auto [_, urlsGroup] = globalSetCW.getGroup(common::URLS_GROUP); 
+          urlsGroup) {
+        for (auto& url : *urlsGroup) {
+          EOS_CHECK(
+            url.label == CONTENT_GROUP_LABEL ||
+            url.getAs<std::string>() != newURL,
+            util::to_str("URL is already being used, please use a different one", " ", url.label, " ", newURL)
+          );
+        }
+
+        globalSetCW.insertOrReplace(*urlsGroup, Content{util::to_str(common::URL, "_", daoName), newURL});
+      }
+      else {
+        globalSetCW.getContentGroups()
+                   .push_back({
+                     Content{CONTENT_GROUP_LABEL, common::URLS_GROUP},
+                     Content{util::to_str(common::URL, "_", daoName), newURL}
+                   });
+      }
+
+      globalSettings->update();
     }
 
     settings->setSettings(groupName, kvs);
@@ -1144,6 +1177,14 @@ namespace hypha
 
     require_auth(onboarder);
 
+    Content daoURL = Content{ common::DAO_URL, util::to_str(dao) };;
+
+    if (auto [_, url] = configCW.get(detailsIdx, common::DAO_URL);
+        url)
+    {
+      daoURL = *url;
+    }
+
     // Create the settings document as well and add an edge to it
     ContentGroups settingCgs{
         ContentGroup{
@@ -1151,6 +1192,7 @@ namespace hypha
             *daoName,
             *daoTitle,
             *daoDescription,
+            daoURL,
             *pegToken,
             *voiceToken,
             *rewardToken,
