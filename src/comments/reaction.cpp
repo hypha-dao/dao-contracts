@@ -36,7 +36,7 @@ namespace hypha
 
         uint64_t memberId = dao.getMemberID(who);
         EOS_CHECK(
-            !Edge::exists(dao.get_self(), memberId, likeable.getId(), common::REACTED),
+            !Edge::exists(dao.get_self(), memberId, likeable.getId(), common::REACTED_TO),
             "Member already reacted to this document"
         );
         EOS_CHECK(
@@ -53,8 +53,8 @@ namespace hypha
         };
 
         initializeDocument(dao, contentGroups);
-        Edge::getOrNew(dao.get_self(), who, memberId, likeable.getId(), common::REACTED);
-        Edge::getOrNew(dao.get_self(), who, likeable.getId(), memberId, common::REACTED_TO);
+        Edge::getOrNew(dao.get_self(), who, memberId, likeable.getId(), common::REACTED_TO);
+        Edge::getOrNew(dao.get_self(), who, likeable.getId(), memberId, common::REACTED_BY);
         Edge::getOrNew(dao.get_self(), who, likeable.getId(), this->getId(), common::REACTION);
         Edge::getOrNew(dao.get_self(), who, this->getId(), likeable.getId(), common::REACTION_OF);
 
@@ -69,12 +69,12 @@ namespace hypha
         )->getAs<eosio::name>();
 
         uint64_t memberId = getDao().getMemberID(who);
-        uint64_t likeableId = Edge::get(getDao().get_self(), memberId, common::REACTED).getToNode();
+        uint64_t likeableId = Edge::get(getDao().get_self(), memberId, common::REACTED_TO).getToNode();
 
-        std::vector<Edge> reactions = getDao().getGraph().getEdgesFrom(likeableId, common::REACTED);
+        std::vector<Edge> reactions = getDao().getGraph().getEdgesFrom(likeableId, common::REACTED_TO);
         for (auto reaction : reactions) {
             if (reaction.getCreator() == who) {
-                Edge::get(getDao().get_self(), reaction.getToNode(), reaction.getFromNode(), common::REACTED_TO).erase();
+                Edge::get(getDao().get_self(), reaction.getToNode(), reaction.getFromNode(), common::REACTED_BY).erase();
                 reaction.erase();
                 break;
             }

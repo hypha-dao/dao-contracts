@@ -87,8 +87,8 @@ describe('Proposal', () => {
         let firstReactionId = reaction.id;
 
         // likeable <-----> reaction
-        daoExpect.toHaveEdge(dao.members[0].doc, commentSection, 'reacted');
-        daoExpect.toHaveEdge(commentSection, dao.members[0].doc, 'reactedto');
+        daoExpect.toHaveEdge(dao.members[0].doc, commentSection, 'reactedto');
+        daoExpect.toHaveEdge(commentSection, dao.members[0].doc, 'reactedby');
 
         daoExpect.toHaveEdge(commentSection, reaction, 'reaction');
         daoExpect.toHaveEdge(reaction, commentSection, 'reactionof');
