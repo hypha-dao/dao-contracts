@@ -12,7 +12,6 @@ namespace hypha
 {
     static constexpr eosio::name REACTION_LIKE("liked");
 
-
     static bool is_reaction(eosio::name reaction)
     {
         return reaction == REACTION_LIKE;
@@ -27,18 +26,12 @@ namespace hypha
     Reaction::Reaction(
         dao&dao,
         Likeable& likeable,
-        const eosio::name who,
         const eosio::name reaction
     )
     : TypedDocument(dao, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
 
-        uint64_t memberId = dao.getMemberID(who);
-        EOS_CHECK(
-            !Edge::exists(dao.get_self(), memberId, likeable.getId(), common::REACTED_TO),
-            "Member already reacted to this document"
-        );
         EOS_CHECK(
             is_reaction(reaction),
             "Only like reaction currently supported"
@@ -48,16 +41,15 @@ namespace hypha
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, CONTENT_GROUP_LABEL_REACTION),
                 Content(CONTENT_REACTION_TYPE, reaction),
-                Content(CONTENT_REACTION_WHO, who),
             }
         };
 
         initializeDocument(dao, contentGroups);
-        Edge::getOrNew(dao.get_self(), who, memberId, likeable.getId(), common::REACTED_TO);
-        Edge::getOrNew(dao.get_self(), who, likeable.getId(), memberId, common::REACTED_BY);
-        Edge::getOrNew(dao.get_self(), who, likeable.getId(), this->getId(), common::REACTION);
-        Edge::getOrNew(dao.get_self(), who, this->getId(), likeable.getId(), common::REACTION_OF);
 
+        // Content has reaction
+        Edge::getOrNew(dao.get_self(), dao.get_self(), likeable.getId(), this->getId(), common::REACTION);
+        // Reaction was made to content
+        Edge::getOrNew(dao.get_self(), dao.get_self(), this->getId(), likeable.getId(), common::REACTION_OF);
     }
 
     void Reaction::remove()
@@ -84,12 +76,52 @@ namespace hypha
         this->erase();
     }
 
-    Reaction Reaction::getReaction(dao& dao, Likeable& likeable, const eosio::name who)
+    void Reaction::react(eosio::name who)
     {
-        std::vector<Edge> reactions = dao.getGraph().getEdgesFrom(likeable.getId(), common::REACTION);
-        for (auto reaction : reactions) {
-            if (reaction.getCreator() == who) {
-                return Reaction(dao, reaction.getToNode());
+        uint64_t memberId = getDao().getMemberID(who);
+        uint64_t likeableId = getLikeableId();
+        EOS_CHECK(
+            !Edge::exists(getDao().get_self(), memberId, likeableId, common::REACTED_TO),
+            "Member already reacted to this document"
+        );
+
+        // Member reacted to content
+        Edge::getOrNew(getDao().get_self(), who, memberId, likeableId, common::REACTED_TO);
+        // Content has been reacted by member
+        Edge::getOrNew(getDao().get_self(), who, likeableId, memberId, common::REACTED_BY);
+        // Member made reaction
+        Edge::getOrNew(getDao().get_self(), who, memberId, this->getId(), common::REACTION_LINK);
+        // Reaction was made by member
+        Edge::getOrNew(getDao().get_self(), who, this->getId(), memberId, common::REACTION_LINK_REVERSE);
+    }
+
+    void Reaction::unreact(eosio::name who)
+    {
+        uint64_t memberId = getDao().getMemberID(who);
+        uint64_t likeableId = getLikeableId();
+        EOS_CHECK(
+            Edge::exists(getDao().get_self(), memberId, likeableId, common::REACTED_TO),
+            "Member has not reacted to this document"
+        );
+
+        Edge::get(getDao().get_self(), memberId, likeableId, common::REACTED_TO).erase();
+        Edge::get(getDao().get_self(), likeableId, memberId, common::REACTED_BY).erase();
+        Edge::get(getDao().get_self(), memberId, this->getId(), common::REACTION_LINK).erase();
+        Edge::get(getDao().get_self(), this->getId(), memberId, common::REACTION_LINK_REVERSE).erase();
+    }
+
+
+    Reaction Reaction::getReactionByUser(dao& dao, Likeable& likeable, const eosio::name who)
+    {
+        uint64_t memberId = dao.getMemberID(who);
+        Edge::get(dao.get_self(), memberId, likeable.getId(), common::REACTED_TO);
+
+        std::vector<Edge> reactionEdges = dao.getGraph().getEdgesFromOrFail(likeable.getId(), common::REACTION);
+        for (auto reactionEdge : reactionEdges)
+        {
+            if (Edge::exists(dao.get_self(), memberId, reactionEdge.getToNode(), common::REACTION_LINK))
+            {
+                return Reaction(dao, reactionEdge.getToNode());
             }
         }
 
@@ -99,18 +131,17 @@ namespace hypha
 
     const std::string Reaction::buildNodeLabel(ContentGroups &content)
     {
-        eosio::name who = ContentWrapper(content).getOrFail(
-            CONTENT_GROUP_LABEL_REACTION,
-            CONTENT_REACTION_WHO,
-            "Could not find who had this reaction, this is a bug."
-        )->getAs<eosio::name>();
-
         eosio::name type = ContentWrapper(content).getOrFail(
             CONTENT_GROUP_LABEL_REACTION,
             CONTENT_REACTION_TYPE,
             "Could not find reaction_type, this is a bug."
         )->getAs<eosio::name>();
 
-        return who.to_string() + " " + type.to_string() + " this document.";
+        return "Reaction: " + type.to_string() + " for this document.";
+    }
+
+    uint64_t Reaction::getLikeableId()
+    {
+        return Edge::get(getDao().get_self(), this->getId(), common::REACTION_OF).getToNode();
     }
 }

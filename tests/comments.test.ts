@@ -25,7 +25,6 @@ describe('Proposal', () => {
 
     const checkReaction = (reaction: Document, who: string, what: string) => {
         const likeDetails = getContentGroupByLabel(reaction, 'reaction');
-        expect(getContent(likeDetails, 'who').value[1]).toBe(who);
         expect(getContent(likeDetails, 'type').value[1]).toBe(what);
     }
 
@@ -93,6 +92,9 @@ describe('Proposal', () => {
         daoExpect.toHaveEdge(commentSection, reaction, 'reaction');
         daoExpect.toHaveEdge(reaction, commentSection, 'reactionof');
 
+        daoExpect.toHaveEdge(dao.members[0].doc, reaction, 'reactionlnk');
+        daoExpect.toHaveEdge(reaction, dao.members[0].doc, 'reactionlnkr');
+
         checkReaction(reaction, dao.members[0].account.accountName, 'liked');
 
         await environment.daoContract.contract.reactadd({
@@ -122,7 +124,7 @@ describe('Proposal', () => {
 
         expect(getDocumentsByType(
             environment.getDaoDocuments(),
-            "reaction"
+            "reactionlnk"
         ).filter(d => d.id === firstReactionId).length).toBe(0);
 
         // add comment to a section

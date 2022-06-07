@@ -129,6 +129,8 @@ namespace common
     constexpr name REACTED_BY = name("reactedby");
     constexpr name REACTION = name("reaction");
     constexpr name REACTION_OF = name("reactionof");
+    constexpr name REACTION_LINK = name("reactionlnk");
+    constexpr name REACTION_LINK_REVERSE = name("reactionlnkr");
 
 
     // document types
