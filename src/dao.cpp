@@ -1175,27 +1175,32 @@ namespace hypha
       daoURL = *url;
     }
 
+    auto settingsGroup = 
+    ContentGroup {
+      Content(CONTENT_GROUP_LABEL, SETTINGS),
+      *daoName,
+      *daoTitle,
+      *daoDescription,
+      daoURL,
+      *pegToken,
+      *voiceToken,
+      *rewardToken,
+      *rewardToPegTokenRatio,
+      *periodDurationSeconds,
+      *votingDurationSeconds,
+      *onboarderAcc,
+      *votingQuorum,
+      *votingAllignment,
+      *voiceTokenDecayPeriod,
+      *voiceTokenDecayPerPeriodX10M,
+      Content{common::DAO_USES_SEEDS, useSeeds}
+    };
+
+    addDefaultSettings(settingsGroup, dao);
+
     // Create the settings document as well and add an edge to it
     ContentGroups settingCgs{
-        ContentGroup{
-            Content(CONTENT_GROUP_LABEL, SETTINGS),
-            *daoName,
-            *daoTitle,
-            *daoDescription,
-            daoURL,
-            *pegToken,
-            *voiceToken,
-            *rewardToken,
-            *rewardToPegTokenRatio,
-            *periodDurationSeconds,
-            *votingDurationSeconds,
-            *onboarderAcc,
-            *votingQuorum,
-            *votingAllignment,
-            *voiceTokenDecayPeriod,
-            *voiceTokenDecayPerPeriodX10M,
-            Content{common::DAO_USES_SEEDS, useSeeds}
-        },
+        settingsGroup,
         ContentGroup{
             Content(CONTENT_GROUP_LABEL, SYSTEM),
             Content(TYPE, common::SETTINGS_EDGE),
@@ -1991,6 +1996,7 @@ namespace hypha
   void dao::changeDecay(Settings* dhoSettings, Settings* daoSettings, uint64_t decayPeriod, uint64_t decayPerPeriod)
   {
     auto voiceContract = dhoSettings->getOrFail<name>(GOVERNANCE_TOKEN_CONTRACT);
+    
     eosio::action(
       eosio::permission_level{
         voiceContract, 
@@ -2005,5 +2011,46 @@ namespace hypha
         decayPerPeriod
       )
     ).send();
+  }
+
+  void dao::addDefaultSettings(ContentGroup& settingsGroup, const name& dao)
+  {
+    ContentGroups def;
+
+    def.push_back(std::move(settingsGroup));
+
+    auto& sg = def.back();
+
+    auto cw = ContentWrapper(def);
+
+    auto daoStr = dao.to_string();
+
+    cw.insertOrReplace(sg, { common::DAO_DOCUMENTATION_URL, "" });
+    cw.insertOrReplace(sg, { common::DAO_DISCORD_URL, "" });
+    cw.insertOrReplace(sg, { common::DAO_LOGO, "" });
+    cw.insertOrReplace(sg, { common::DAO_PATTERN, "" });
+    cw.insertOrReplace(sg, { common::DAO_EXTENDED_LOGO, "" });
+    cw.insertOrReplace(sg, { common::DAO_PRIMARY_COLOR, "#242f5d" });
+    cw.insertOrReplace(sg, { common::DAO_SECONDARY_COLOR, "#3F64EE" });
+    cw.insertOrReplace(sg, { common::DAO_TEXT_COLOR, "#ffffff" });
+    cw.insertOrReplace(sg, { common::DAO_PATTERN_COLOR, "#3E3B46" });
+    cw.insertOrReplace(sg, { common::DAO_PATTERN_OPACITY, 30 });
+    cw.insertOrReplace(sg, { common::DAO_SPLASH_BACKGROUND_IMAGE, "" });
+    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_BACKGROUND_IMAGE, "" });
+    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_TITLE, "Welcome to " + daoStr});
+    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_PARAGRAPH, "Hypha provides simple tools and a framework to set up your organization from the ground up, together with others, in an organic and participative way. Our fraud resistant & transparent online tools enable you to coordinate & motivate teams, manage finances & payroll, communicate, implement governance processes that meet your organizational style. " });
+    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_BACKGROUND_IMAGE, ""});
+    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_TITLE, "Every vote counts"});
+    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In the " + daoStr + " DAO we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
+    cw.insertOrReplace(sg, { common::DAO_MEMBERS_BACKGROUND_IMAGE, ""});
+    cw.insertOrReplace(sg, { common::DAO_MEMBERS_TITLE, "Find & get to know other " + daoStr + " members"});
+    cw.insertOrReplace(sg, { common::DAO_MEMBERS_PARAGRAPH, "Learn about what other members are working on, which badges they hold, which DAO's they are part of and much more."});
+    cw.insertOrReplace(sg, { common::DAO_ORGANISATION_BACKGROUND_IMAGE, ""});
+    cw.insertOrReplace(sg, { common::DAO_ORGANISATION_TITLE, "Learn everything about " + daoStr});
+    cw.insertOrReplace(sg, { common::DAO_ORGANISATION_PARAGRAPH, "Select from a multitude of tools to finetune how the organization works. From treasury and compensation to decision-making, from roles to badges, you have every lever at your fingertips." });
+
+    // cw.insertOrReplace(0, )
+
+    settingsGroup = std::move(sg);
   }
 } // namespace hypha

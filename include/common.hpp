@@ -29,6 +29,32 @@ namespace common
     constexpr auto DAO_DESCRIPTION = "dao_description";
     constexpr auto DAO_TITLE = "dao_title";
     constexpr auto DAO_URL = "dao_url";
+
+    constexpr auto DAO_DOCUMENTATION_URL = "documentation_url";
+    constexpr auto DAO_DISCORD_URL = "discord_url";
+    constexpr auto DAO_LOGO = "logo";
+    constexpr auto DAO_EXTENDED_LOGO = "extended_logo";
+    constexpr auto DAO_PATTERN = "pattern";
+    constexpr auto DAO_PRIMARY_COLOR = "primary_color";
+    constexpr auto DAO_SECONDARY_COLOR = "secondary_color";
+    constexpr auto DAO_TEXT_COLOR = "text_color";
+    constexpr auto DAO_PATTERN_COLOR = "pattern_color";
+    constexpr auto DAO_PATTERN_OPACITY = "pattern_opacity";
+    constexpr auto DAO_SPLASH_BACKGROUND_IMAGE = "splash_background_image";
+    
+    constexpr auto DAO_DASHBOARD_BACKGROUND_IMAGE = "dashboard_background_image";
+    constexpr auto DAO_DASHBOARD_TITLE = "dashboard_title";
+    constexpr auto DAO_DASHBOARD_PARAGRAPH = "dashboard_paragraph";
+    constexpr auto DAO_PROPOSALS_BACKGROUND_IMAGE = "proposals_background_image";
+    constexpr auto DAO_PROPOSALS_TITLE = "proposals_title";
+    constexpr auto DAO_PROPOSALS_PARAGRAPH = "proposals_paragraph";
+    constexpr auto DAO_MEMBERS_BACKGROUND_IMAGE = "members_background_image";
+    constexpr auto DAO_MEMBERS_TITLE = "members_title";
+    constexpr auto DAO_MEMBERS_PARAGRAPH = "members_paragraph";
+    constexpr auto DAO_ORGANISATION_BACKGROUND_IMAGE = "organisation_background_image";
+    constexpr auto DAO_ORGANISATION_TITLE = "organisation_title";
+    constexpr auto DAO_ORGANISATION_PARAGRAPH = "organisation_paragraph";
+
     constexpr auto PERIOD_DURATION = "period_duration_sec";
     constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
     constexpr auto DAO_USES_SEEDS = "uses_seeds";

@@ -303,6 +303,8 @@ namespace hypha
 
       void changeDecay(Settings* dhoSettings, Settings* daoSettings, uint64_t decayPeriod, uint64_t decayPerPeriod);
 
+      void addDefaultSettings(ContentGroup& settingsGroup, const name& dao);
+
       template<class Table>
       std::optional<uint64_t> getNameID(const name& n)
       {
