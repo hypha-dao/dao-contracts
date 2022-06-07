@@ -299,6 +299,10 @@ namespace hypha
 
       void on_husd(const name& from, const name& to, const asset& quantity, const string& memo);
 
+      void updateDaoURL(name dao, const Content::FlexValue& newURL);
+
+      void changeDecay(Settings* dhoSettings, Settings* daoSettings, uint64_t decayPeriod, uint64_t decayPerPeriod);
+
       template<class Table>
       std::optional<uint64_t> getNameID(const name& n)
       {

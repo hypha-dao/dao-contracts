@@ -887,6 +887,7 @@ namespace hypha
 
     checkAdminsAuth(dao_id);
     auto settings = getSettingsDocument(dao_id);
+    auto dhoSettings = getSettingsDocument();
 
     auto daoName = settings->getOrFail<eosio::name>(DAO_NAME);
     //Only hypha dao should be able to use this flag
@@ -907,8 +908,6 @@ namespace hypha
          common::VOICE_TOKEN,
          common::PEG_TOKEN,
          common::PERIOD_DURATION,
-         common::VOICE_TOKEN_DECAY_PERIOD,
-         common::VOICE_TOKEN_DECAY_PER_PERIOD,
          DAO_NAME
         }
       }
@@ -924,33 +923,24 @@ namespace hypha
 
     //Verify if the URL is unique if we want to change it
     if (kvs.count(common::DAO_URL)) {
-      auto newURL = Content{"", kvs[common::DAO_URL]}.getAs<std::string>();
-
-      auto globalSettings = getSettingsDocument();
-      
-      auto globalSetCW = globalSettings->getContentWrapper();
-
-      if (auto [_, urlsGroup] = globalSetCW.getGroup(common::URLS_GROUP); 
-          urlsGroup) {
-        for (auto& url : *urlsGroup) {
-          EOS_CHECK(
-            url.label == CONTENT_GROUP_LABEL ||
-            url.getAs<std::string>() != newURL,
-            util::to_str("URL is already being used, please use a different one", " ", url.label, " ", newURL)
-          );
+      updateDaoURL(daoName, kvs[common::DAO_URL]);
+    }
+    else if (kvs.count(common::VOICE_TOKEN_DECAY_PERIOD) || kvs.count(common::VOICE_TOKEN_DECAY_PER_PERIOD)) {
+      auto getOrDef = [&](const std::string& label) -> int64_t { 
+        if (kvs.count(label)) {
+          return Content{"",kvs[label]}.getAs<int64_t>();
         }
-
-        globalSetCW.insertOrReplace(*urlsGroup, Content{util::to_str(common::URL, "_", daoName), newURL});
-      }
-      else {
-        globalSetCW.getContentGroups()
-                   .push_back({
-                     Content{CONTENT_GROUP_LABEL, common::URLS_GROUP},
-                     Content{util::to_str(common::URL, "_", daoName), newURL}
-                   });
-      }
-
-      globalSettings->update();
+        else {
+          return settings->getOrFail<int64_t>(label);
+        }
+      };
+      
+      changeDecay(
+        dhoSettings,
+        settings,
+        static_cast<uint64_t>(getOrDef(common::VOICE_TOKEN_DECAY_PERIOD)),
+        static_cast<uint64_t>(getOrDef(common::VOICE_TOKEN_DECAY_PER_PERIOD))
+      );
     }
 
     settings->setSettings(groupName, kvs);
@@ -1202,6 +1192,8 @@ namespace hypha
             *onboarderAcc,
             *votingQuorum,
             *votingAllignment,
+            *voiceTokenDecayPeriod,
+            *voiceTokenDecayPerPeriodX10M,
             Content{common::DAO_USES_SEEDS, useSeeds}
         },
         ContentGroup{
@@ -1965,4 +1957,53 @@ namespace hypha
     payer->pay(from, hyphaAmount, string("Buy HYPHA for " + quantity.to_string()));
   }
 
+  void dao::updateDaoURL(name dao, const Content::FlexValue& newURL)
+  {
+    auto newUrlCon = Content{util::to_str(common::URL, "_", dao), newURL};
+
+    auto globalSettings = getSettingsDocument();
+    
+    auto globalSetCW = globalSettings->getContentWrapper();
+
+    if (auto [_, urlsGroup] = globalSetCW.getGroup(common::URLS_GROUP); 
+        urlsGroup) {
+      for (auto& url : *urlsGroup) {
+        EOS_CHECK(
+          url.label == CONTENT_GROUP_LABEL ||
+          url.value != newUrlCon.value,
+          util::to_str("URL is already being used, please use a different one", " ", url.label, " ", url.getAs<std::string>())
+        );
+      }
+
+      globalSetCW.insertOrReplace(*urlsGroup, std::move(newUrlCon));
+    }
+    else {
+      globalSetCW.getContentGroups()
+                  .push_back({
+                    Content{CONTENT_GROUP_LABEL, common::URLS_GROUP},
+                    std::move(newUrlCon)
+                  });
+    }
+
+    globalSettings->update();
+  }
+
+  void dao::changeDecay(Settings* dhoSettings, Settings* daoSettings, uint64_t decayPeriod, uint64_t decayPerPeriod)
+  {
+    auto voiceContract = dhoSettings->getOrFail<name>(GOVERNANCE_TOKEN_CONTRACT);
+    eosio::action(
+      eosio::permission_level{
+        voiceContract, 
+        eosio::name("active")
+      },
+      voiceContract, 
+      eosio::name("moddecay"),
+      std::make_tuple(
+        daoSettings->getOrFail<name>(DAO_NAME),
+        daoSettings->getOrFail<asset>(common::VOICE_TOKEN).symbol,
+        decayPeriod,
+        decayPerPeriod
+      )
+    ).send();
+  }
 } // namespace hypha
