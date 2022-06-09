@@ -110,6 +110,15 @@ namespace hypha
         Edge::get(getDao().get_self(), this->getId(), memberId, common::REACTION_LINK_REVERSE).erase();
     }
 
+    Reaction Reaction::getReaction(dao& dao, Likeable& likeable, const eosio::name reaction)
+    {
+        std::pair<bool, Edge> edgePair = Edge::getIfExists(dao.get_self(), likeable.getId(), common::REACTION);
+        if (edgePair.first) {
+            return Reaction(dao, edgePair.second.getToNode());
+        }
+
+        return Reaction(dao, likeable, reaction);
+    }
 
     Reaction Reaction::getReactionByUser(dao& dao, Likeable& likeable, const eosio::name who)
     {

@@ -1,7 +1,7 @@
 import { setupEnvironment } from "./setup";
 import { Document } from './types/Document';
 import { last } from './utils/Arrays';
-import { getContent, getContentGroupByLabel, getDocumentsByType } from './utils/Dao';
+import {getContent, getContentGroupByLabel, getDocumentsByType, getEdgesByFilter} from './utils/Dao';
 import { DocumentBuilder } from './utils/DocumentBuilder';
 import { getDaoExpect } from './utils/Expect';
 import { getAccountPermission } from "./utils/Permissions";
@@ -179,6 +179,10 @@ describe('Proposal', () => {
             "reaction"
         ));
         checkReaction(reaction, dao.members[1].account.accountName, 'liked');
+        expect(getEdgesByFilter(environment.getDaoEdges(), {
+            edge_name: 'reaction',
+            from_node: comment.id
+        })).toHaveLength(1);
 
         // unlike comment acc1
         await environment.daoContract.contract.reactrem({

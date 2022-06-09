@@ -11,7 +11,7 @@ namespace hypha
     const void Likeable::like(name user, name type)
     {
         TRACE_FUNCTION()
-        Reaction(this->getDao(), *this, type).react(user);
+        Reaction::getReaction(this->getDao(), *this, type).react(user);
     }
 
     const void Likeable::unlike(name user)
