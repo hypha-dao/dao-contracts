@@ -115,9 +115,14 @@ namespace hypha
 
       ACTION apply(const eosio::name &applicant, uint64_t dao_id, const std::string &content);
       ACTION enroll(const eosio::name &enroller, uint64_t dao_id, const eosio::name &applicant, const std::string &content);
-
-      ACTION setalert(const eosio::name &level, const std::string &content);
-      ACTION remalert(const std::string &notes);
+      
+      /**
+       * @brief Adds/Edits/Removes alerts from the specified root object
+       * 
+       * @param root_id DAO id for local alerts or DHO id for global alerts
+       * @param alerts  
+       */
+      ACTION modalerts(uint64_t root_id, ContentGroups& alerts);
 
       /**TODO: Remove */
       //ACTION adddocs(std::vector<Document>& docs);
@@ -293,6 +298,12 @@ namespace hypha
    private:
 
       void on_husd(const name& from, const name& to, const asset& quantity, const string& memo);
+
+      void updateDaoURL(name dao, const Content::FlexValue& newURL);
+
+      void changeDecay(Settings* dhoSettings, Settings* daoSettings, uint64_t decayPeriod, uint64_t decayPerPeriod);
+
+      void addDefaultSettings(ContentGroup& settingsGroup, const name& dao);
 
       template<class Table>
       std::optional<uint64_t> getNameID(const name& n)

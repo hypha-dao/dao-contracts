@@ -28,6 +28,33 @@ namespace common
     //Dao settings
     constexpr auto DAO_DESCRIPTION = "dao_description";
     constexpr auto DAO_TITLE = "dao_title";
+    constexpr auto DAO_URL = "dao_url";
+
+    constexpr auto DAO_DOCUMENTATION_URL = "documentation_url";
+    constexpr auto DAO_DISCORD_URL = "discord_url";
+    constexpr auto DAO_LOGO = "logo";
+    constexpr auto DAO_EXTENDED_LOGO = "extended_logo";
+    constexpr auto DAO_PATTERN = "pattern";
+    constexpr auto DAO_PRIMARY_COLOR = "primary_color";
+    constexpr auto DAO_SECONDARY_COLOR = "secondary_color";
+    constexpr auto DAO_TEXT_COLOR = "text_color";
+    constexpr auto DAO_PATTERN_COLOR = "pattern_color";
+    constexpr auto DAO_PATTERN_OPACITY = "pattern_opacity";
+    constexpr auto DAO_SPLASH_BACKGROUND_IMAGE = "splash_background_image";
+    
+    constexpr auto DAO_DASHBOARD_BACKGROUND_IMAGE = "dashboard_background_image";
+    constexpr auto DAO_DASHBOARD_TITLE = "dashboard_title";
+    constexpr auto DAO_DASHBOARD_PARAGRAPH = "dashboard_paragraph";
+    constexpr auto DAO_PROPOSALS_BACKGROUND_IMAGE = "proposals_background_image";
+    constexpr auto DAO_PROPOSALS_TITLE = "proposals_title";
+    constexpr auto DAO_PROPOSALS_PARAGRAPH = "proposals_paragraph";
+    constexpr auto DAO_MEMBERS_BACKGROUND_IMAGE = "members_background_image";
+    constexpr auto DAO_MEMBERS_TITLE = "members_title";
+    constexpr auto DAO_MEMBERS_PARAGRAPH = "members_paragraph";
+    constexpr auto DAO_ORGANISATION_BACKGROUND_IMAGE = "organisation_background_image";
+    constexpr auto DAO_ORGANISATION_TITLE = "organisation_title";
+    constexpr auto DAO_ORGANISATION_PARAGRAPH = "organisation_paragraph";
+
     constexpr auto PERIOD_DURATION = "period_duration_sec";
     constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
     constexpr auto DAO_USES_SEEDS = "uses_seeds";
@@ -36,7 +63,8 @@ namespace common
     constexpr auto SKIP_PEG_TOKEN_CREATION = "skip_peg_token_create";
     constexpr auto SKIP_REWARD_TOKEN_CREATION = "skip_reward_token_create";
     //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
-
+    constexpr auto URLS_GROUP = "urls";
+    constexpr auto URL = "url";
     // 365.25 / 7.4
     //const float PHASES_PER_YEAR = 49.3581081081;
 
@@ -125,6 +153,7 @@ namespace common
 
     // document types
     constexpr name ALERT = name ("alert");
+    constexpr name NOTIFIES = name ("notifies");
 
     // graph edges hanging off of primary DHO node
     constexpr name BADGE_NAME = name("badge");
@@ -139,6 +168,20 @@ namespace common
     constexpr name BALLOT_TYPE_OPTIONS = name("options");
 
     constexpr name GROUP_TYPE_OPTION = name("option");
+
+    //ALERTS
+    constexpr auto ADD_GROUP = "add";
+    constexpr auto EDIT_GROUP = "edit";
+    constexpr auto DELETE_GROUP = "del";
+
+    namespace AlertInfo {
+      enum  {
+            kDESCRIPTION,
+            kLEVEL,
+            kENABLED,
+            kID
+      };
+    }    
 
     constexpr name LAST_TIME_SHARE = name("lastimeshare");
     constexpr name CURRENT_TIME_SHARE = name("curtimeshare");
@@ -176,6 +219,7 @@ namespace common
 #define CONTENT "content"
 #define ICON "icon"
 #define LEVEL "level"
+#define ENABLED "enabled"
 
 #define START_PERIOD "start_period"
 #define END_PERIOD "end_period"
