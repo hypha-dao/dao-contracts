@@ -310,22 +310,6 @@ namespace hypha
 
   }
 
-  ACTION dao::cmntlike(const name& user, const uint64_t comment_section_id)
-  {
-    TRACE_FUNCTION();
-    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-    require_auth(user);
-    TypedDocumentFactory::getLikeableDocument(*this, comment_section_id)->like(user);
-  }
-
-  ACTION dao::cmntunlike(const name& user, const uint64_t comment_section_id)
-  {
-    TRACE_FUNCTION();
-    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-    require_auth(user);
-    TypedDocumentFactory::getLikeableDocument(*this, comment_section_id)->unlike(user);
-  }
-
   ACTION dao::cmntadd(const name& author, const string content, const uint64_t comment_or_section_id)
   {
     TRACE_FUNCTION();
@@ -377,6 +361,22 @@ namespace hypha
     require_auth(comment.getAuthor());
 
     comment.markAsDeleted();
+  }
+
+  ACTION dao::reactadd(const name &user, const name &reaction, const uint64_t document_id)
+  {
+    TRACE_FUNCTION()
+    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+    require_auth(user);
+    TypedDocumentFactory::getLikeableDocument(*this, document_id)->like(user, reaction);
+  }
+
+  ACTION dao::reactrem(const name &user, const uint64_t document_id)
+  {
+    TRACE_FUNCTION()
+    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+    require_auth(user);
+    TypedDocumentFactory::getLikeableDocument(*this, document_id)->unlike(user);
   }
 
   void dao::proposeextend(uint64_t assignment_id, const int64_t additional_periods)
