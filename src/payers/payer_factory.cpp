@@ -16,6 +16,10 @@ namespace hypha
         TRACE_FUNCTION()
 
         if (symbol.raw() == daoTokens.peg.symbol.raw()) {
+            EOS_CHECK(
+                daoSettings->getSettingOrDefault<int64_t>(common::CLAIM_ENABLED, 0) == 1,
+                "Cash payments are currently disabled"
+            )
             return new PegPayer(dao, daoSettings);
         }
         else if (symbol.raw() == daoTokens.reward.symbol.raw()) {
