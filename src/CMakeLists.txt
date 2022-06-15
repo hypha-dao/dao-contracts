@@ -41,6 +41,7 @@ add_contract( dao dao
                 comments/likeable.cpp
                 comments/comment.cpp
                 comments/section.cpp
+                comments/reaction.cpp
                 ../document-graph/src/document_graph/document_graph.cpp
                 ../document-graph/src/document_graph/document.cpp
                 ../document-graph/src/document_graph/content_wrapper.cpp
