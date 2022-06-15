@@ -151,6 +151,10 @@ namespace common
     constexpr name COMMENT_OF = name("commentof");
     constexpr name COMMENT_SECTION = name("cmntsect");
     constexpr name COMMENT_SECTION_OF = name("cmntsectof");
+    constexpr name CIRCLE = name("circle");
+    constexpr name CIRCLE_OF = name("circleof");
+    constexpr name CIRCLE_DAO = name("circledao");
+    constexpr name CIRCLE_DAO_OF = name("circledaoof");
 
     constexpr name REACTED_TO = name("reactedto");
     constexpr name REACTED_BY = name("reactedby");

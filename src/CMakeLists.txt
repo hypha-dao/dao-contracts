@@ -35,6 +35,7 @@ add_contract( dao dao
                 proposals/suspend_proposal.cpp
                 proposals/quest_start_proposal.cpp
                 proposals/quest_completion_proposal.cpp
+                proposals/circle_proposal.cpp
                 proposals/proposal_factory.cpp
                 ballots/vote.cpp
                 ballots/vote_tally.cpp
@@ -42,6 +43,7 @@ add_contract( dao dao
                 comments/comment.cpp
                 comments/section.cpp
                 comments/reaction.cpp
+                circles/circle.cpp
                 ../document-graph/src/document_graph/document_graph.cpp
                 ../document-graph/src/document_graph/document.cpp
                 ../document-graph/src/document_graph/content_wrapper.cpp

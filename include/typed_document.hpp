@@ -43,5 +43,6 @@ namespace hypha
         constexpr eosio::name COMMENT = eosio::name("comment");
         constexpr eosio::name COMMENT_SECTION = eosio::name("cmnt.section");
         constexpr eosio::name REACTION = eosio::name("reaction");
+        constexpr eosio::name CIRCLE = eosio::name("circle");
     }
 }

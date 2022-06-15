@@ -11,6 +11,7 @@
 #include <proposals/ass_extend_proposal.hpp>
 #include <proposals/quest_start_proposal.hpp>
 #include <proposals/quest_completion_proposal.hpp>
+#include <proposals/circle_proposal.hpp>
 #include <logger/logger.hpp>
 
 #include <common.hpp>
@@ -56,6 +57,9 @@ namespace hypha
         // TODO: should be expanded to work with Badge Assignments as well
         case common::EXTENSION.value:
             return new AssignmentExtensionProposal(dao, daoHash);
+
+        case common::CIRCLE.value:
+            return new CircleProposal(dao, daoHash);
         }
 
         EOS_CHECK(false, "Unknown proposal_type: " + proposal_type.to_string());
