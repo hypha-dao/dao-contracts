@@ -184,6 +184,22 @@ namespace hypha
     }
   }
 
+  ACTION dao::setclaimenbld(uint64_t dao_id, bool enabled)
+  {
+    checkAdminsAuth(dao_id);
+
+    auto settings = getSettingsDocument(dao_id);
+
+    auto currentState = settings->getSettingOrDefault<int64_t>(common::CLAIM_ENABLED, 0);
+
+    EOS_CHECK(
+      currentState != enabled,
+      util::to_str("Claiming is already ", currentState ? "enabled" : "disabled") 
+    )
+
+    settings->setSetting({ common::CLAIM_ENABLED, static_cast<int64_t>(enabled) });
+  }
+
   ACTION dao::remmember(uint64_t dao_id, const std::vector<name>& member_names)
   {
     if (!eosio::has_auth(get_self())) {
@@ -543,6 +559,14 @@ namespace hypha
     //EOS_CHECK(first_phase_ratio_calc <= 1, "fatal error: first_phase_ratio_calc is greater than 1: " + std::to_string(first_phase_ratio_calc));
 
     auto daoSettings = getSettingsDocument(daoID);
+
+    EOS_CHECK(
+      daoSettings->getSettingOrDefault<int64_t>(common::CLAIM_ENABLED, 0) == 1 ||
+      assignment.getContentWrapper()
+                .getOrFail(DETAILS, DEFERRED)
+                ->getAs<int64_t>() == 100,
+      "Claiming is disabled for assignments with deferral less than 100%"
+    )
 
     auto daoTokens = AssetBatch{
       .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
@@ -908,6 +932,7 @@ namespace hypha
          common::VOICE_TOKEN,
          common::PEG_TOKEN,
          common::PERIOD_DURATION,
+         common::CLAIM_ENABLED,
          DAO_NAME
         }
       }

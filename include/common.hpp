@@ -65,6 +65,7 @@ namespace common
     //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
     constexpr auto URLS_GROUP = "urls";
     constexpr auto URL = "url";
+    constexpr auto CLAIM_ENABLED = "claim_enabled";
     // 365.25 / 7.4
     //const float PHASES_PER_YEAR = 49.3581081081;
 
