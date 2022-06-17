@@ -239,6 +239,8 @@ namespace hypha
 
       ACTION archiverecur(uint64_t document_id);
 
+      ACTION modpayments(const std::vector<uint64_t>& payments, uint64_t dao_id);
+
       void setSetting(const string &key, const Content::FlexValue &value);
 
       asset getSeedsAmount(const eosio::asset &usd_amount,
