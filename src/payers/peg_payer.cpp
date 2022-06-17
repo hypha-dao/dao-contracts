@@ -24,7 +24,7 @@ namespace hypha
 
         return Document(m_dao.get_self(),
                         m_dao.get_self(),
-                        defaultReceipt(recipient, quantity, memo));
+                        defaultReceipt(recipient, quantity, memo, m_daoSettings->getRootID()));
     }
 
 } // namespace hypha

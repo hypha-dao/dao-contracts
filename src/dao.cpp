@@ -190,7 +190,7 @@ namespace hypha
 
     auto settings = getSettingsDocument(dao_id);
 
-    auto currentState = settings->getSettingOrDefault<int64_t>(common::CLAIM_ENABLED, 0);
+    auto currentState = settings->getSettingOrDefault<int64_t>(common::CLAIM_ENABLED, 1);
 
     EOS_CHECK(
       currentState != enabled,
@@ -561,7 +561,7 @@ namespace hypha
     auto daoSettings = getSettingsDocument(daoID);
 
     EOS_CHECK(
-      daoSettings->getSettingOrDefault<int64_t>(common::CLAIM_ENABLED, 0) == 1 ||
+      daoSettings->getSettingOrDefault<int64_t>(common::CLAIM_ENABLED, 1) == 1 ||
       assignment.getContentWrapper()
                 .getOrFail(DETAILS, DEFERRED)
                 ->getAs<int64_t>() == 100,
@@ -1218,7 +1218,8 @@ namespace hypha
       *votingAllignment,
       *voiceTokenDecayPeriod,
       *voiceTokenDecayPerPeriodX10M,
-      Content{common::DAO_USES_SEEDS, useSeeds}
+      Content{common::DAO_USES_SEEDS, useSeeds},
+      Content{common::CLAIM_ENABLED, int64_t(1)}
     };
 
     addDefaultSettings(settingsGroup, dao);
@@ -1398,6 +1399,37 @@ namespace hypha
     Edge::write(get_self(), get_self(), rootDoc.getID(), settingsDoc.getID(), common::SETTINGS_EDGE);
 
     addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
+  }
+
+  ACTION dao::modpayments(const std::vector<uint64_t>& payments, uint64_t dao_id)
+  {
+    //Verify the ID belongs to a DAO
+    getSettingsDocument(dao_id)->getOrFail<name>(DAO_NAME);
+    
+    for (auto id : payments) {
+
+      Document payment(get_self(), id);
+
+      //Check if it already contains the DAO_ID, if so skip this payment
+      auto cw = payment.getContentWrapper(); 
+
+      EOS_CHECK(
+        !cw.exists(DETAILS, common::DAO.to_string()),
+        util::to_str("Already has DAO id: ", id, " current dao: ", *cw.getOrFail(DETAILS, common::DAO.to_string()), " new dao: ", dao_id)
+      )
+
+      EOS_CHECK(
+        cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == common::PAYMENT,
+        util::to_str("Document is not of Payment type: ", id)
+      )
+
+      cw.insertOrReplace(
+        *cw.getGroupOrFail(DETAILS), 
+        { common::DAO.to_string(), static_cast<int64_t>(dao_id) }
+      );
+
+      payment.update();
+    }
   }
 
   ACTION dao::modalerts(uint64_t root_id, ContentGroups& alerts)

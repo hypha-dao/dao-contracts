@@ -112,7 +112,7 @@ namespace hypha
             memo
         );
 
-        Document paymentReceipt(getContract(), getContract(), Payer::defaultReceipt(getAccount(), genesis_voice, memo));
+        Document paymentReceipt(getContract(), getContract(), Payer::defaultReceipt(getAccount(), genesis_voice, memo, rootID));
 
         Edge::write(getContract(), getAccount(), getID(), paymentReceipt.getID(), common::PAYMENT);
 

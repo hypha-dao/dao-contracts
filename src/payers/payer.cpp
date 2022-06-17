@@ -39,13 +39,15 @@ namespace hypha
 
     ContentGroups Payer::defaultReceipt(const eosio::name &recipient,
                                         const eosio::asset &quantity,
-                                        const string &memo)
+                                        const string &memo,
+                                        uint64_t dao_id)
     {
         return ContentGroups{
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, DETAILS),
                 Content(RECIPIENT, recipient),
                 Content(AMOUNT, quantity),
+                Content(common::DAO.to_string(), static_cast<int64_t>(dao_id)),
                 Content(MEMO, memo)},
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, SYSTEM),
