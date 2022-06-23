@@ -13,8 +13,6 @@ namespace hypha
     void CircleSuspendProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     {
         TRACE_FUNCTION()
-
-        // Checks that the circle exists and is not suspended
         Circle circle(m_dao, contentWrapper.getOrFail(DETAILS, ENTRY_CIRCLE_ID)->getAs<int64_t>());
     }
 
