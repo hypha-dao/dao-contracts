@@ -23,7 +23,6 @@ namespace hypha
             virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
             void update();
             void erase();
-            virtual const void updateContent(ContentWrapper& wrapper);
 
             eosio::name getType();
 

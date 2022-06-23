@@ -36,6 +36,7 @@ add_contract( dao dao
                 proposals/quest_start_proposal.cpp
                 proposals/quest_completion_proposal.cpp
                 proposals/circle_proposal.cpp
+                proposals/circle_suspend_proposal.cpp
                 proposals/proposal_factory.cpp
                 ballots/vote.cpp
                 ballots/vote_tally.cpp

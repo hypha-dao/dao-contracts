@@ -41,7 +41,7 @@ namespace common
     constexpr auto DAO_PATTERN_COLOR = "pattern_color";
     constexpr auto DAO_PATTERN_OPACITY = "pattern_opacity";
     constexpr auto DAO_SPLASH_BACKGROUND_IMAGE = "splash_background_image";
-    
+
     constexpr auto DAO_DASHBOARD_BACKGROUND_IMAGE = "dashboard_background_image";
     constexpr auto DAO_DASHBOARD_TITLE = "dashboard_title";
     constexpr auto DAO_DASHBOARD_PARAGRAPH = "dashboard_paragraph";
@@ -152,9 +152,14 @@ namespace common
     constexpr name COMMENT_SECTION = name("cmntsect");
     constexpr name COMMENT_SECTION_OF = name("cmntsectof");
     constexpr name CIRCLE = name("circle");
+    constexpr name CIRCLE_SUSPEND = name("circlespnd");
+
     constexpr name CIRCLE_OF = name("circleof");
     constexpr name CIRCLE_DAO = name("circledao");
     constexpr name CIRCLE_DAO_OF = name("circledaoof");
+
+    constexpr name CIRCLE_MEMBER = name("circlemem");
+    constexpr name CIRCLE_MEMBER_OF = name("circlememof");
 
     constexpr name REACTED_TO = name("reactedto");
     constexpr name REACTED_BY = name("reactedby");

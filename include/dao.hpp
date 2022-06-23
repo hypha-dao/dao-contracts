@@ -92,6 +92,11 @@ namespace hypha
       ACTION reactadd(const name &user, const name &reaction, const uint64_t document_id);
       ACTION reactrem(const name &user, const uint64_t document_id);
 
+      // circle related
+      ACTION circlewith(const name &author, const uint64_t circle_id);
+      ACTION circlejoin(const name &member, const uint64_t circle_id);
+      ACTION circleexit(const name &author, const uint64_t circle_id);
+
       //Sets a dho/contract level setting
       ACTION setsetting(const string &key, const Content::FlexValue &value, std::optional<std::string> group);
 

@@ -9,6 +9,7 @@ namespace hypha
 
     using std::string;
     using eosio::asset;
+    using eosio::name;
 
     class Circle : public TypedDocument
     {
@@ -16,6 +17,7 @@ namespace hypha
         Circle(dao& dao, uint64_t id);
         Circle(
             dao& dao,
+            const name author,
             const string title,
             const string description,
             const uint64_t dao_id,
@@ -23,10 +25,15 @@ namespace hypha
             const asset budget
         );
 
-        void setBudget(asset new_budget);
-        void addMember(uint64_t member_id);
-        void addContribution(uint64_t contribution_id);
+        void remove();
 
+        name getAuthor();
+        void join(const name& member);
+        void exit(const name& member);
+
+        // ideas
+        void setBudget(asset new_budget);
+        void addContribution(uint64_t contribution_id);
         void votingPower(uint64_t member_id, uint64_t contribution_id);
 
    protected:

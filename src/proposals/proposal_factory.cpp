@@ -12,6 +12,7 @@
 #include <proposals/quest_start_proposal.hpp>
 #include <proposals/quest_completion_proposal.hpp>
 #include <proposals/circle_proposal.hpp>
+#include <proposals/circle_suspend_proposal.hpp>
 #include <logger/logger.hpp>
 
 #include <common.hpp>
@@ -60,6 +61,10 @@ namespace hypha
 
         case common::CIRCLE.value:
             return new CircleProposal(dao, daoHash);
+
+        case common::CIRCLE_SUSPEND.value:
+            return new CircleSuspendProposal(dao, daoHash);
+
         }
 
         EOS_CHECK(false, "Unknown proposal_type: " + proposal_type.to_string());

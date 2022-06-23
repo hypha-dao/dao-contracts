@@ -24,6 +24,7 @@
 #include <typed_document.hpp>
 #include <comments/section.hpp>
 #include <comments/comment.hpp>
+#include <circles/circle.hpp>
 
 #include <typed_document_factory.hpp>
 
@@ -393,6 +394,37 @@ namespace hypha
     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
     require_auth(user);
     TypedDocumentFactory::getLikeableDocument(*this, document_id)->unlike(user);
+  }
+
+  ACTION dao::circlewith(const name &author, const uint64_t circle_id)
+  {
+    TRACE_FUNCTION()
+    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+    require_auth(author);
+
+    Circle circle(*this, circle_id);
+    EOS_CHECK(circle.getAuthor() == author, "Only the author can withdraw a circle");
+    circle.remove();
+  }
+
+  ACTION dao::circlejoin(const name &author, const uint64_t circle_id)
+  {
+    TRACE_FUNCTION()
+    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+    require_auth(author);
+
+    Circle circle(*this, circle_id);
+    circle.join(author);
+  }
+
+  ACTION dao::circleexit(const name &author, const uint64_t circle_id)
+  {
+    TRACE_FUNCTION()
+    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+    require_auth(author);
+
+    Circle circle(*this, circle_id);
+    circle.exit(author);
   }
 
   void dao::proposeextend(uint64_t assignment_id, const int64_t additional_periods)
