@@ -8,8 +8,7 @@ namespace hypha
     {
         public:
             virtual ~Likeable();
-            const void like(eosio::name user);
+            const void like(eosio::name user, eosio::name reaction);
             const void unlike(eosio::name user);
-            const void updateContent(ContentWrapper& wrapper);
     };
 }

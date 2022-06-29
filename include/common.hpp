@@ -152,6 +152,14 @@ namespace common
     constexpr name COMMENT_SECTION = name("cmntsect");
     constexpr name COMMENT_SECTION_OF = name("cmntsectof");
 
+    constexpr name REACTED_TO = name("reactedto");
+    constexpr name REACTED_BY = name("reactedby");
+    constexpr name REACTION = name("reaction");
+    constexpr name REACTION_OF = name("reactionof");
+    constexpr name REACTION_LINK = name("reactionlnk");
+    constexpr name REACTION_LINK_REVERSE = name("reactionlnkr");
+
+
     // document types
     constexpr name ALERT = name ("alert");
     constexpr name NOTIFIES = name ("notifies");
@@ -182,7 +190,7 @@ namespace common
             kENABLED,
             kID
       };
-    }    
+    }
 
     constexpr name LAST_TIME_SHARE = name("lastimeshare");
     constexpr name CURRENT_TIME_SHARE = name("curtimeshare");

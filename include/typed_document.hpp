@@ -42,5 +42,6 @@ namespace hypha
         constexpr eosio::name VOTE_TALLY = eosio::name("vote.tally");
         constexpr eosio::name COMMENT = eosio::name("comment");
         constexpr eosio::name COMMENT_SECTION = eosio::name("cmnt.section");
+        constexpr eosio::name REACTION = eosio::name("reaction");
     }
 }

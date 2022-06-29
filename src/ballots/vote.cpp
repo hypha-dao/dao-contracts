@@ -126,7 +126,7 @@ namespace hypha
             CONTENT_GROUP_LABEL_VOTE,
             VOTE_LABEL,
             "Vote does not have " CONTENT_GROUP_LABEL_VOTE " content group"
-        )->template getAs<std::string>();
+        )->getAs<std::string>();
     }
 
     const eosio::asset& Vote::getPower()
