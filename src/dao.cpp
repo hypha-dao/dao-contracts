@@ -29,6 +29,17 @@
 
 namespace hypha
 {
+  ACTION
+  dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
+  {
+    require_auth(get_self());
+
+    //Auto enroll
+    auto mem = getOrCreateMember(member);
+
+    mem.apply(dao_id, "Auto enrolled member");
+    mem.enroll(enroller, dao_id, "Auto enrolled member");
+  }
   /**Testenv only
 
   // ACTION dao::adddocs(std::vector<Document>& docs)
@@ -106,20 +117,6 @@ namespace hypha
   //     });
   //   }
   // }
-
-  ACTION
-  dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
-  {
-    require_auth(get_self());
-
-    //Auto enroll
-    auto mem = getOrCreateMember(member);
-
-    mem.apply(dao_id, "Auto enrolled member");
-    mem.enroll(enroller, dao_id, "Auto enrolled member");
-  }
-
-
 
    ACTION dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
    {

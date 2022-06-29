@@ -160,8 +160,8 @@ namespace hypha
       /**TODO: Remove */
       //ACTION addedge(std::vector<InputEdge>& edges);
 
-      /**Testenv only
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
+      /**Testenv only
       ACTION deletetok(asset asset, name contract) {
 
         require_auth(get_self());

@@ -46,11 +46,11 @@ namespace hypha
 
         Document original;
 
+        //Valid for both Assignment and BadgeAssignment
         if (auto edges = m_dao.getGraph().getEdgesTo(originalDocID, common::ASSIGNMENT);
             !edges.empty()) 
         {
-            // the original document must be an assignment
-            Assignment assignment (&m_dao, originalDocID);
+            RecurringActivity assignment (&m_dao, originalDocID);
 
             int64_t currentPeriodCount = assignment.getPeriodCount();
             
@@ -79,7 +79,7 @@ namespace hypha
 
             EOS_CHECK(
               lastGracePeriodEndSecs > currentTimeSecs, 
-              "Assignment extension grace period (2 periods after expiration) is over, create a new one instead"
+              "Extension grace period (2 periods after expiration) is over, create a new one instead"
             );
             
             original = std::move(*static_cast<Document*>(&assignment));
