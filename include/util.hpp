@@ -54,9 +54,59 @@ namespace hypha
     float getSeedsPriceUsd(const eosio::time_point &price_time_point);
     float getSeedsPriceUsd();
 
+    int64_t stringViewToInt(string_view str);
+
     vector<string_view> splitStringView(string_view str, char delimiter);
 
-    int64_t stringViewToInt(string_view str);
+    template<typename T>
+    class ShowType;
+
+    template<class ... T>
+    std::tuple<T...> splitStringView(string_view str, char delimiter)
+    {
+      auto strs = splitStringView(str, delimiter);
+      
+      EOS_CHECK(
+        sizeof...(T) == strs.size(),
+        util::to_str("Mismatch of readed parameters, expected ", sizeof...(T), " but got ", strs.size())
+      )
+      
+      auto convert = [](auto& x, string_view str) {
+        using Type = std::remove_reference_t<decltype(x)>;
+        
+        if constexpr (std::is_same_v<Type, std::string>) {
+          x = std::string(str);
+        }
+        else if constexpr(std::is_same_v<Type, int64_t>) {
+          x = stringViewToInt(str);
+        }
+        else if constexpr(std::is_same_v<Type, eosio::asset>) {
+          auto parts = splitStringView(str, ' ');
+          EOS_CHECK(parts.size() == 2, "Unkown asset string " + std::string(str))
+          auto amount = parts[0];
+          auto amountParts = splitStringView(amount, '.');
+          auto prec = amountParts.size() == 2 ? amountParts[1].size() : size_t(0);
+          auto sym = parts[1];
+          x = eosio::asset(
+            std::stoi(
+              string{amountParts[0]} + string(amountParts.size() == 2 ? amountParts[1] : string_view{})
+            ), 
+            eosio::symbol(sym, prec)
+          );
+        }
+        else {
+          //Will fail to compile if the type is not valid
+          ShowType<Type> y;
+        }
+      };
+
+      std::tuple<T...> res;
+      std::apply([&, n = 0](auto&... args) mutable {
+        (convert(args, strs[n++]), ...);
+      }, res);
+
+      return res;
+    }
 
     void issueToken(const eosio::name &token_contract,
                     const eosio::name &issuer,

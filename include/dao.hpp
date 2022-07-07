@@ -126,6 +126,8 @@ namespace hypha
        */
       ACTION modalerts(uint64_t root_id, ContentGroups& alerts);
 
+      ACTION modsalaryband(uint64_t dao_id, ContentGroups& salary_bands);
+
       /**TODO: Remove */
       //ACTION adddocs(std::vector<Document>& docs);
 

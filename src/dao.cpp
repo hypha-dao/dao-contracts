@@ -1455,16 +1455,8 @@ namespace hypha
         if (newAlert.label != CONTENT_GROUP_LABEL) {
           //Input format [description;level;enabled]
           auto& alertData = newAlert.getAs<std::string>();
-          auto alertInfo = splitStringView(alertData, ';');
-          
-          EOS_CHECK(
-            alertInfo.size() == 3,
-            util::to_str("Wrong format for new alert, expected 3 items but got: ", alertInfo.size(), " ", alertData)
-          );
 
-          auto level = std::string(alertInfo[common::AlertInfo::kLEVEL]);
-          auto description = std::string(alertInfo[common::AlertInfo::kDESCRIPTION]);
-          auto enabled = stringViewToInt(alertInfo[common::AlertInfo::kENABLED]);
+          auto [level, description, enabled] = splitStringView<string, string, int64_t>(alertData, ';');
 
           EOS_CHECK(
             enabled == 0 || enabled == 1,
@@ -1502,17 +1494,8 @@ namespace hypha
         if (editedAlert.label != CONTENT_GROUP_LABEL) {
           //Input format [id;description;level;enabled]
           auto& alertData = editedAlert.getAs<std::string>();
-          auto alertInfo = splitStringView(alertData, ';');
-          
-          EOS_CHECK(
-            alertInfo.size() == 4,
-            util::to_str("Wrong format for new alert, expected 4 items but got: ", alertInfo.size(), "\n", alertData)
-          );
 
-          auto id = stringViewToInt(alertInfo[common::AlertInfo::kID]);
-          auto level = std::string(alertInfo[common::AlertInfo::kLEVEL]);
-          auto description = std::string(alertInfo[common::AlertInfo::kDESCRIPTION]);
-          auto enabled = stringViewToInt(alertInfo[common::AlertInfo::kENABLED]);
+          auto [id, level, description, enabled] = splitStringView<int64_t, string, string, int64_t>(alertData, ';');
 
           EOS_CHECK(
             enabled == 0 || enabled == 1,
@@ -1570,6 +1553,142 @@ namespace hypha
           );
 
           m_documentGraph.eraseDocument(alert.getID(), true);
+        }
+      }
+    }
+  }
+
+  ACTION dao::modsalaryband(uint64_t dao_id, ContentGroups& salary_bands)
+  {
+    //Verify if id belongs to a DAO or DHO
+    Document daoDoc(get_self(), dao_id);
+
+    auto type = daoDoc.getContentWrapper()
+                      .getOrFail(SYSTEM, TYPE)
+                      ->getAs<name>();
+
+    EOS_CHECK(
+      type == common::DAO,
+      "dao_id is not valid (not a Dao)"
+    );
+
+    checkAdminsAuth(dao_id);
+
+    auto cw = ContentWrapper(salary_bands);
+
+    auto checkParams = [](const string& name, const asset& amount, int64_t minDeferred) {
+      EOS_CHECK(
+        name.size() < 50,
+        "Salary band name is too long"
+      )
+
+      EOS_CHECK(
+        minDeferred >= 0 && minDeferred <= 100,
+        util::to_str("Invalid value for 'min_deferred_x100', expected value between 0 and 100 but got:", minDeferred)
+      );
+
+      EOS_CHECK(
+        amount.is_valid(),
+        "Invalid salary band annual usd amount"
+      );
+    };
+
+    auto checkSalaryBandDoc = [&](int64_t id) {
+      
+      Document salaryBand(get_self(), static_cast<uint64_t>(id));
+
+      auto bandCW = salaryBand.getContentWrapper();
+
+      EOS_CHECK(
+        bandCW.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::SALARY_BAND,
+        util::to_str("Specified id for salary band is not valid: ", id)
+      );
+
+      //Verify the salary band belongs to the specified DAO
+      EOS_CHECK(
+        Edge::exists(get_self(), salaryBand.getID(), dao_id, common::DAO),
+        "Salary doesn't belong to the specified dao_id"
+      );
+
+      return salaryBand;
+    };
+
+    //Check for new salary band
+    if (auto [_, addGroup] = cw.getGroup(common::ADD_GROUP);
+        addGroup)
+    {
+      for (auto& newBand : *addGroup) {
+        if (newBand.label != CONTENT_GROUP_LABEL) {
+          //Input format [description;level;enabled]
+          auto& bandData = newBand.getAs<std::string>();
+
+          auto [name, amount, minDeferred] = splitStringView<string, asset, int64_t>(bandData, ';');
+
+          checkParams(name, amount, minDeferred);
+
+          Document salaryBand(
+            get_self(), get_self(),
+            ContentGroups{
+              ContentGroup{
+                  Content(CONTENT_GROUP_LABEL, DETAILS),
+                  Content(common::SALARY_BAND_NAME, name),
+                  Content(ANNUAL_USD_SALARY, amount),
+                  Content(MIN_DEFERRED, minDeferred)
+              },
+              ContentGroup{
+                  Content(CONTENT_GROUP_LABEL, SYSTEM),
+                  Content(TYPE, common::SALARY_BAND),
+                  Content(NODE_LABEL, "Salary Band: " + name)
+              } 
+            }
+          );
+
+          Edge(get_self(), get_self(), dao_id, salaryBand.getID(), common::SALARY_BAND);
+          Edge(get_self(), get_self(), salaryBand.getID(), dao_id, common::DAO);
+        }
+      }
+    }
+
+    //Check for updates on existing salary bands
+    if (auto [_, editGroup] = cw.getGroup(common::EDIT_GROUP);
+        editGroup)
+    {
+      for (auto& editedBand : *editGroup) {
+        if (editedBand.label != CONTENT_GROUP_LABEL) {
+          //Input format [id;description;level;enabled]
+          auto& bandData = editedBand.getAs<std::string>();
+
+          auto [id, name, amount, minDeferred] = splitStringView<int64_t, string, asset, int64_t>(bandData, ';');
+
+          checkParams(name, amount, minDeferred);
+
+          auto salaryBand = checkSalaryBandDoc(id);
+
+          auto bandCW = salaryBand.getContentWrapper();
+
+          auto details = bandCW.getGroupOrFail(DETAILS);
+
+          bandCW.insertOrReplace(*details, Content(common::SALARY_BAND_NAME, name));
+          bandCW.insertOrReplace(*details, Content(ANNUAL_USD_SALARY, amount));
+          bandCW.insertOrReplace(*details, Content(MIN_DEFERRED, minDeferred));
+
+          salaryBand.update();
+        }
+      }
+    }
+
+    //Check removal of existing salary bands
+    if (auto [_, delGroup] = cw.getGroup(common::DELETE_GROUP);
+        delGroup)
+    {
+      for (auto& delBand : *delGroup) {
+        if (delBand.label != CONTENT_GROUP_LABEL) {
+          
+          auto id = delBand.getAs<int64_t>();
+
+          auto salaryBand = checkSalaryBandDoc(id);
+
+          m_documentGraph.eraseDocument(salaryBand.getID(), true);
         }
       }
     }
