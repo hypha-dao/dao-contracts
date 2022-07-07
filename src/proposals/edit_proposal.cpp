@@ -62,12 +62,17 @@ namespace hypha
                 eosio::print("current period count is: " + std::to_string(currentPeriodCount) + "\n");
                 eosio::print("new period count is: " + std::to_string(newPeriodCount) + "\n");
 
-                eosio::check (
+                EOS_CHECK (
                   newPeriodCount > currentPeriodCount, 
                   PERIOD_COUNT + 
                   string(" on the proposal must be greater than the period count on the existing assignment; original: ") + 
                   std::to_string(currentPeriodCount) + "; proposed: " + std::to_string(newPeriodCount)
-                );    
+                );
+
+                EOS_CHECK (
+                  (newPeriodCount - currentPeriodCount) <= 52,
+                  "The assignment cannot be extended for more than 52 periods."
+                );
             }
                            
             auto currentTimeSecs = eosio::current_time_point().sec_since_epoch();
