@@ -162,6 +162,7 @@ namespace common
 
     // document types
     constexpr name ALERT = name ("alert");
+    constexpr name SALARY_BAND = name ("salaryband");
     constexpr name NOTIFIES = name ("notifies");
 
     // graph edges hanging off of primary DHO node
@@ -177,6 +178,9 @@ namespace common
     constexpr name BALLOT_TYPE_OPTIONS = name("options");
 
     constexpr name GROUP_TYPE_OPTION = name("option");
+
+    //SALARY BANDS
+    constexpr auto SALARY_BAND_NAME = "name";
 
     //ALERTS
     constexpr auto ADD_GROUP = "add";
