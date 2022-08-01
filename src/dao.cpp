@@ -641,7 +641,7 @@ namespace hypha
       .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
     };
 
-    auto assignments = m_documentGraph.getEdgesFrom(getMemberID(account), "assignmet"_n);
+    auto assignments = m_documentGraph.getEdgesFrom(getMemberID(account), common::ASSIGNED);
 
     AssetBatch total {
       .peg = eosio::asset{ 0, daoTokens.peg.symbol },
@@ -651,6 +651,10 @@ namespace hypha
 
     for (auto& assignEdge : assignments) {
       Assignment assignment(this, assignEdge.getToNode());
+
+      //Filter by dao
+      if (assignment.getDaoID() != dao_id) continue;
+
       int64_t periods = assignment.getPeriodCount();
       int64_t claimedPeriods = m_documentGraph.getEdgesFrom(assignment.getID(), common::CLAIMED).size();
       if (claimedPeriods < periods) {
@@ -663,7 +667,7 @@ namespace hypha
 
     EOS_CHECK(
       false,
-      util::to_str("Total payout: {\npeg: ", total.peg, "\nreward:", total.reward, "\nvoice:", total.voice, "\n}")
+      util::to_str("{\n\"peg\":\"", total.peg, "\",\n\"reward\":\"", total.reward, "\",\n\"voice\":\"", total.voice, "\"\n}")
     )
   }
 
@@ -683,7 +687,7 @@ namespace hypha
 
     EOS_CHECK(
       false,
-      util::to_str("Total payout: {\npeg: ", pay.peg, "\nreward:", pay.reward, "\nvoice:", pay.voice, "\n}")
+      util::to_str("{\n\"peg\":\"", pay.peg, "\",\n\"reward\":\"", pay.reward, "\",\n\"voice\":\"", pay.voice, "\"\n}")
     )
   }
 
