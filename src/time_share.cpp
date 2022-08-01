@@ -17,7 +17,7 @@ TimeShare::TimeShare(name contract, uint64_t id)
   
 }
 
-std::optional<TimeShare> TimeShare::getNext(name contract)
+std::optional<TimeShare> TimeShare::getNext()
 {
   if (auto [exists, edge] = Edge::getIfExists(contract, getID(), common::NEXT_TIME_SHARE);
       exists) {
