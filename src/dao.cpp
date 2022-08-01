@@ -643,7 +643,11 @@ namespace hypha
 
     auto assignments = m_documentGraph.getEdgesFrom(getMemberID(account), "assignmet"_n);
 
-    AssetBatch total;
+    AssetBatch total {
+      .peg = eosio::asset{ 0, daoTokens.peg.symbol },
+      .voice = eosio::asset{ 0, daoTokens.voice.symbol },
+      .reward = eosio::asset{ 0, daoTokens.reward.symbol }
+    };
 
     for (auto& assignEdge : assignments) {
       Assignment assignment(this, assignEdge.getToNode());
@@ -663,7 +667,7 @@ namespace hypha
     )
   }
 
-  void dao::simclaim(uint64_t assignment_id, bool inline_act)
+  void dao::simclaim(uint64_t assignment_id)
   {
     auto daoID = Edge::get(get_self(), assignment_id, common::DAO).getToNode();
     auto daoSettings = getSettingsDocument(daoID);
@@ -693,7 +697,11 @@ namespace hypha
     int64_t periodStartSec = period.getStartTime().sec_since_epoch();
     int64_t periodEndSec = period.getEndTime().sec_since_epoch();
 
-    AssetBatch payout;
+    AssetBatch payout {
+      .peg = eosio::asset{ 0, daoTokens.peg.symbol },
+      .voice = eosio::asset{ 0, daoTokens.voice.symbol },
+      .reward = eosio::asset{ 0, daoTokens.reward.symbol }
+    };
             
     while (nextTimeShareOpt)
     {
@@ -739,6 +747,8 @@ namespace hypha
         remainingTimeSec = periodEndSec - baseDateSec;
       }
 
+      EOS_CHECK(remainingTimeSec >= 0, "Remaining time cannot be negative");
+
       const int64_t fullPeriodSec = periodEndSec - periodStartSec;
 
       //Time share could only represent a portion of the whole period
@@ -748,14 +758,9 @@ namespace hypha
 
       //Accumlate each of the currencies with the time share multiplier
 
-      payout.peg = (payout.peg.is_valid() ? payout.peg : eosio::asset{ 0, daoTokens.peg.symbol }) +
-                    adjustAsset(salary.peg, commitmentMultiplier);
-
-      payout.voice = (payout.voice.is_valid() ? payout.voice : eosio::asset{ 0, daoTokens.voice.symbol }) +
-                      adjustAsset(salary.voice, commitmentMultiplier);
-
-      payout.reward = (payout.reward.is_valid() ? payout.reward : eosio::asset{ 0, daoTokens.reward.symbol }) +
-                      adjustAsset(salary.reward, commitmentMultiplier);
+      payout.peg += adjustAsset(salary.peg, commitmentMultiplier);
+      payout.voice += adjustAsset(salary.voice, commitmentMultiplier);
+      payout.reward += adjustAsset(salary.reward, commitmentMultiplier);
     }
 
     return payout;
@@ -765,7 +770,11 @@ namespace hypha
   {
     Assignment assignment(this, assignmentID);
     
-    AssetBatch payAmount;
+    AssetBatch payAmount {
+      .peg = eosio::asset{ 0, daoTokens.peg.symbol },
+      .voice = eosio::asset{ 0, daoTokens.voice.symbol },
+      .reward = eosio::asset{ 0, daoTokens.reward.symbol }
+    };
 
     // Ensure that the claimed period is within the approved period count
     Period period = assignment.getStartPeriod();
@@ -803,9 +812,12 @@ namespace hypha
             !assignment.isClaimed(&period))         // and not yet claimed
         {
             auto payout = calculatePeriodPayout(period, salary, daoTokens, nextOpt, lastTimeShare, initTimeShare);
+
             payAmount.reward += payout.reward;
             payAmount.peg += payout.peg;
             payAmount.voice += payout.voice;
+
+            nextOpt = lastTimeShare;
         }
         period = period.next();
         counter++;

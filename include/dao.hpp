@@ -27,6 +27,7 @@ namespace hypha
    class Assignment;
    class RecurringActivity;
    class Member;
+   class TimeShare;
 
    CONTRACT dao : public eosio::contract
    {
@@ -114,7 +115,7 @@ namespace hypha
 
       ACTION claimnextper(uint64_t assignment_id);
       ACTION simclaimall(name account, uint64_t dao_id);
-      ACTION simclaim(uint64_t assignment_id, bool inline_act);
+      ACTION simclaim(uint64_t assignment_id);
       ACTION proposeextend (uint64_t assignment_id, const int64_t additional_periods);
 
       ACTION apply(const eosio::name &applicant, uint64_t dao_id, const std::string &content);
@@ -310,7 +311,7 @@ namespace hypha
       AssetBatch calculatePeriodPayout(Period& period,
                                        const AssetBatch& salary,
                                        const AssetBatch& daoTokens, 
-                                       std::optional<class TimeShare>& nextTimeShareOpt,
+                                       std::optional<TimeShare>& nextTimeShareOpt,
                                        std::optional<TimeShare>& lastUsedTimeShare,
                                        int64_t initTimeShare);
 
