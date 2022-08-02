@@ -26,7 +26,7 @@ public:
   */ 
   TimeShare(name contract, uint64_t id);
 
-  std::optional<TimeShare> getNext(name contract);
+  std::optional<TimeShare> getNext();
 
   time_point getStartDate();
 private:

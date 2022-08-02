@@ -575,103 +575,39 @@ namespace hypha
     const asset voiceSalary = assignment.getVoiceSalary();
     const asset rewardSalary = assignment.getRewardSalary();
 
-    asset deferredSeeds;
-    asset peg;
-    asset voice;
-    asset reward;
+    const int64_t initTimeShare = assignment.getInitialTimeShare()
+      .getContentWrapper()
+      .getOrFail(DETAILS, TIME_SHARE)
+      ->getAs<int64_t>();
 
+    TimeShare current = assignment.getCurrentTimeShare();
+
+    //Initialize nextOpt with current in order to have a valid initial timeShare
+    auto nextOpt = std::optional<TimeShare>{ current };
+
+    std::optional<TimeShare> lastUsedTimeShare = current;
+
+    auto ab = calculatePeriodPayout(
+        *periodToClaim, 
+        AssetBatch{ .peg = pegSalary, .voice = voiceSalary, .reward = rewardSalary }, 
+        daoTokens, 
+        nextOpt,
+        lastUsedTimeShare, 
+        initTimeShare
+    );
+
+    //If the last used time share is different from current time share
+    //let's update the edge
+    if (lastUsedTimeShare->getID() != current.getID())
     {
-      const int64_t initTimeShare = assignment.getInitialTimeShare()
-        .getContentWrapper()
-        .getOrFail(DETAILS, TIME_SHARE)
-        ->getAs<int64_t>();
-
-      TimeShare current = assignment.getCurrentTimeShare();
-
-      //Initialize nextOpt with current in order to have a valid initial timeShare
-      auto nextOpt = std::optional<TimeShare>{ current };
-
-      int64_t currentTimeSec = periodStartSec;
-
-      std::optional<TimeShare> lastUsedTimeShare;
-
-      while (nextOpt)
-      {
-
-        ContentWrapper nextWrapper = nextOpt->getContentWrapper();
-
-        const int64_t timeShare = nextWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-        const int64_t startDateSec = nextWrapper.getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>().sec_since_epoch();
-
-        //If the time share doesn't belong to the claim period we
-        //finish pro-rating
-        if (periodEndSec - startDateSec <= 0)
-        {
-          break;
-        }
-
-        int64_t remainingTimeSec;
-
-        lastUsedTimeShare = std::move(nextOpt.value());
-
-        //It's possible that time share was set on previous periods,
-        //if so we should use period start date as the base date
-        const int64_t baseDateSec = std::max(periodStartSec, startDateSec);
-
-        //Check if there is another timeshare
-        if ((nextOpt = lastUsedTimeShare->getNext(get_self())))
-        {
-          const time_point commingStartDate = nextOpt->getContentWrapper().getOrFail(DETAILS, TIME_SHARE_START_DATE)->getAs<time_point>();
-          const int64_t commingStartDateSec = commingStartDate.sec_since_epoch();
-          //Check if the time share belongs to the same peroid
-          if (commingStartDateSec >= periodEndSec)
-          {
-            remainingTimeSec = periodEndSec - baseDateSec;
-          }
-          else
-          {
-            remainingTimeSec = commingStartDateSec - baseDateSec;
-          }
-        }
-        else
-        {
-          remainingTimeSec = periodEndSec - baseDateSec;
-        }
-
-        const int64_t fullPeriodSec = periodEndSec - periodStartSec;
-
-        //Time share could only represent a portion of the whole period
-        float relativeDuration = static_cast<float>(remainingTimeSec) / static_cast<float>(fullPeriodSec);
-        float relativeCommitment = static_cast<float>(timeShare) / static_cast<float>(initTimeShare);
-        float commitmentMultiplier = relativeDuration * relativeCommitment;
-
-        //Accumlate each of the currencies with the time share multiplier
-        //  deferredSeeds = (deferredSeeds.is_valid() ? deferredSeeds : eosio::asset{0, common::S_SEEDS}) +
-        //  adjustAsset(assignment.getSalaryAmount(&common::S_SEEDS, &periodToClaim.value()), first_phase_ratio_calc * commitmentMultiplier);
-
-        peg = (peg.is_valid() ? peg : eosio::asset{ 0, daoTokens.peg.symbol }) +
-          adjustAsset(pegSalary, commitmentMultiplier);
-
-        voice = (voice.is_valid() ? voice : eosio::asset{ 0, daoTokens.voice.symbol }) +
-          adjustAsset(voiceSalary, commitmentMultiplier);
-
-        reward = (reward.is_valid() ? reward : eosio::asset{ 0, daoTokens.reward.symbol }) +
-          adjustAsset(rewardSalary, commitmentMultiplier);
-      }
-
-      //If the last used time share is different from current time share
-      //let's update the edge
-      if (lastUsedTimeShare->getID() != current.getID())
-      {
-        Edge::get(get_self(), assignment.getID(), common::CURRENT_TIME_SHARE).erase();
-        Edge::write(get_self(), get_self(), assignment.getID(), lastUsedTimeShare->getID(), common::CURRENT_TIME_SHARE);
-      }
+      Edge::get(get_self(), assignment.getID(), common::CURRENT_TIME_SHARE).erase();
+      Edge::write(get_self(), get_self(), assignment.getID(), lastUsedTimeShare->getID(), common::CURRENT_TIME_SHARE);
     }
 
     // EOS_CHECK(deferredSeeds.is_valid(), "fatal error: SEEDS has to be a valid asset");
-    EOS_CHECK(peg.is_valid(), "fatal error: PEG has to be a valid asset");
-    EOS_CHECK(voice.is_valid(), "fatal error: VOICE has to be a valid asset");
-    EOS_CHECK(reward.is_valid(), "fatal error: REWARD has to be a valid asset");
+    EOS_CHECK(ab.peg.is_valid(), "fatal error: PEG has to be a valid asset");
+    EOS_CHECK(ab.voice.is_valid(), "fatal error: VOICE has to be a valid asset");
+    EOS_CHECK(ab.reward.is_valid(), "fatal error: REWARD has to be a valid asset");
 
     string assignmentNodeLabel = "";
     if (auto [idx, assignmentLabel] = assignment.getContentWrapper().get(SYSTEM, NODE_LABEL); assignmentLabel)
@@ -687,17 +623,229 @@ namespace hypha
 
     string memo = assignmentNodeLabel + ", period: " + periodToClaim.value().getNodeLabel();
 
-    // creating a single struct improves performance for table queries here
-    AssetBatch ab{};
-    ab.reward = reward;
-    ab.voice = voice;
-    ab.peg = peg;
-
     ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoID, ab);
 
     makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.reward, memo, eosio::name{ 0 }, daoTokens);
     makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{ 0 }, daoTokens);
     makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.peg, memo, eosio::name{ 0 }, daoTokens);
+  }
+
+  void dao::simclaimall(name account, uint64_t dao_id, bool only_ids)
+  {
+    auto daoSettings = getSettingsDocument(dao_id);
+
+    //We might reuse if called from simclaimall
+    auto daoTokens = AssetBatch{
+      .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+      .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+      .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+    };
+
+    auto assignments = m_documentGraph.getEdgesFrom(getMemberID(account), common::ASSIGNED);
+
+    AssetBatch total {
+      .peg = eosio::asset{ 0, daoTokens.peg.symbol },
+      .voice = eosio::asset{ 0, daoTokens.voice.symbol },
+      .reward = eosio::asset{ 0, daoTokens.reward.symbol }
+    };
+
+    string ids = "[";
+    string sep = "";
+
+    for (auto& assignEdge : assignments) {
+      Assignment assignment(this, assignEdge.getToNode());
+
+      //Filter by dao
+      if (assignment.getDaoID() != dao_id) continue;
+
+      auto lastPeriod = assignment.getLastPeriod();
+
+      int64_t periods = assignment.getPeriodCount();
+      auto claimedPeriods = m_documentGraph.getEdgesFrom(assignment.getID(), common::CLAIMED);
+
+      //There are some assignments where the initial periods were not claimed,
+      //we should not count them
+      if (claimedPeriods.size() < periods &&
+          std::all_of(claimedPeriods.begin(), 
+                      claimedPeriods.end(), 
+                      [id = lastPeriod.getID()](const Edge& e){ return e.to_node != id; })) { 
+        
+        ids += sep + util::to_str(assignment.getID());
+        if (sep.empty()) sep = ",";
+
+        if (!only_ids) {
+          total += calculatePendingClaims(assignment.getID(), daoTokens);
+        }
+      }
+    }
+
+    ids.push_back(']');
+
+    EOS_CHECK(
+      false,
+      util::to_str(
+          "{\n", 
+            "\"peg\":\"", total.peg, "\",\n",
+            "\"reward\":\"", total.reward, "\",\n",
+            "\"voice\":\"", total.voice, "\",\n",
+            "\"ids\":", ids,
+          "}"
+      )
+    )
+  }
+
+  void dao::simclaim(uint64_t assignment_id)
+  {
+    auto daoID = Edge::get(get_self(), assignment_id, common::DAO).getToNode();
+    auto daoSettings = getSettingsDocument(daoID);
+
+    //We might reuse if called from simclaimall
+    auto daoTokens = AssetBatch{
+      .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+      .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+      .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+    };
+
+    auto pay = calculatePendingClaims(assignment_id, daoTokens);
+
+    EOS_CHECK(
+      false,
+      util::to_str("{\n\"peg\":\"", pay.peg, "\",\n\"reward\":\"", pay.reward, "\",\n\"voice\":\"", pay.voice, "\"\n}")
+    )
+  }
+
+  AssetBatch dao::calculatePeriodPayout(Period& period,
+                                        const AssetBatch& salary,
+                                        const AssetBatch& daoTokens,
+                                        std::optional<TimeShare>& nextTimeShareOpt,
+                                        std::optional<TimeShare>& lastUsedTimeShare,
+                                        int64_t initTimeShare)
+  {
+    int64_t periodStartSec = period.getStartTime().sec_since_epoch();
+    int64_t periodEndSec = period.getEndTime().sec_since_epoch();
+
+    AssetBatch payout {
+      .peg = eosio::asset{ 0, daoTokens.peg.symbol },
+      .voice = eosio::asset{ 0, daoTokens.voice.symbol },
+      .reward = eosio::asset{ 0, daoTokens.reward.symbol }
+    };
+            
+    while (nextTimeShareOpt)
+    {
+      ContentWrapper nextWrapper = nextTimeShareOpt->getContentWrapper();
+
+      const int64_t timeShare = nextWrapper.getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+      const int64_t startDateSec = nextTimeShareOpt->getStartDate().sec_since_epoch();
+
+      //If the time share doesn't belong to the claim period we
+      //finish pro-rating
+      if (periodEndSec - startDateSec <= 0)
+      {
+        break;
+      }
+
+      int64_t remainingTimeSec;
+
+      lastUsedTimeShare = std::move(nextTimeShareOpt.value());
+
+      //It's possible that time share was set on previous periods,
+      //if so we should use period start date as the base date
+      const int64_t baseDateSec = std::max(periodStartSec, startDateSec);
+
+      //Check if there is another timeshare
+      if ((nextTimeShareOpt = lastUsedTimeShare->getNext()))
+      {
+        const time_point commingStartDate = nextTimeShareOpt->getContentWrapper()
+                                                            .getOrFail(DETAILS, TIME_SHARE_START_DATE)
+                                                            ->getAs<time_point>();
+        const int64_t commingStartDateSec = commingStartDate.sec_since_epoch();
+        //Check if the time share belongs to the same peroid
+        if (commingStartDateSec >= periodEndSec)
+        {
+          remainingTimeSec = periodEndSec - baseDateSec;
+        }
+        else
+        {
+          remainingTimeSec = commingStartDateSec - baseDateSec;
+        }
+      }
+      else
+      {
+        remainingTimeSec = periodEndSec - baseDateSec;
+      }
+
+      EOS_CHECK(remainingTimeSec >= 0, "Remaining time cannot be negative");
+
+      const int64_t fullPeriodSec = periodEndSec - periodStartSec;
+
+      //Time share could only represent a portion of the whole period
+      float relativeDuration = static_cast<float>(remainingTimeSec) / static_cast<float>(fullPeriodSec);
+      float relativeCommitment = static_cast<float>(timeShare) / static_cast<float>(initTimeShare);
+      float commitmentMultiplier = relativeDuration * relativeCommitment;
+
+      //Accumlate each of the currencies with the time share multiplier
+
+      payout.peg += adjustAsset(salary.peg, commitmentMultiplier);
+      payout.voice += adjustAsset(salary.voice, commitmentMultiplier);
+      payout.reward += adjustAsset(salary.reward, commitmentMultiplier);
+    }
+
+    return payout;
+  }
+
+  AssetBatch dao::calculatePendingClaims(uint64_t assignmentID, const AssetBatch& daoTokens)
+  {
+    Assignment assignment(this, assignmentID);
+    
+    AssetBatch payAmount {
+      .peg = eosio::asset{ 0, daoTokens.peg.symbol },
+      .voice = eosio::asset{ 0, daoTokens.voice.symbol },
+      .reward = eosio::asset{ 0, daoTokens.reward.symbol }
+    };
+
+    // Ensure that the claimed period is within the approved period count
+    Period period = assignment.getStartPeriod();
+    int64_t periodCount = assignment.getPeriodCount();
+    int64_t counter = 0;
+
+    const asset pegSalary = assignment.getPegSalary();
+    const asset voiceSalary = assignment.getVoiceSalary();
+    const asset rewardSalary = assignment.getRewardSalary();
+
+    AssetBatch salary{
+      .peg = pegSalary,
+      .reward = rewardSalary,
+      .voice = voiceSalary
+    };
+
+    auto currentTime = eosio::current_time_point().sec_since_epoch();
+
+    const int64_t initTimeShare = assignment.getInitialTimeShare()
+                                            .getContentWrapper()
+                                            .getOrFail(DETAILS, TIME_SHARE)
+                                            ->getAs<int64_t>();
+
+    TimeShare current = assignment.getCurrentTimeShare();
+
+    //Initialize nextOpt with current in order to have a valid initial timeShare
+    auto nextOpt = std::optional<TimeShare>{ current };
+
+    std::optional<TimeShare> lastTimeShare;
+
+    while (counter < periodCount)
+    {
+        int64_t periodEndSec = period.getEndTime().sec_since_epoch();
+        if (periodEndSec <= currentTime &&   // if period has lapsed
+            !assignment.isClaimed(&period))         // and not yet claimed
+        {
+            payAmount += calculatePeriodPayout(period, salary, daoTokens, nextOpt, lastTimeShare, initTimeShare);
+            nextOpt = lastTimeShare;
+        }
+        period = period.next();
+        counter++;
+    }
+
+    return payAmount;
   }
 
   asset dao::getProRatedAsset(ContentWrapper* assignment, const symbol& symbol, const string& key, const float& proration)
