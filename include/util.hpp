@@ -28,6 +28,8 @@ namespace hypha
       eosio::asset voice;
     };
 
+    AssetBatch& operator+=(AssetBatch& self, const AssetBatch& other);
+
     struct SalaryConfig
     {
       // double annualSalary;

@@ -10,6 +10,14 @@
 
 namespace hypha
 {
+    AssetBatch& operator+=(AssetBatch& self, const AssetBatch& other)
+    {
+      self.peg += other.peg;
+      self.reward += other.reward;
+      self.voice += other.voice;
+      return self;  
+    }
+
     float getPhaseToYearRatio(Settings* daoSettings)
     {
         int64_t periodDurationSec = daoSettings->getOrFail<int64_t>(common::PERIOD_DURATION);
