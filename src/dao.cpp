@@ -630,7 +630,7 @@ namespace hypha
     makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.peg, memo, eosio::name{ 0 }, daoTokens);
   }
 
-  void dao::simclaimall(name account, uint64_t dao_id)
+  void dao::simclaimall(name account, uint64_t dao_id, bool only_ids)
   {
     auto daoSettings = getSettingsDocument(dao_id);
 
@@ -649,25 +649,48 @@ namespace hypha
       .reward = eosio::asset{ 0, daoTokens.reward.symbol }
     };
 
+    string ids = "[";
+    string sep = "";
+
     for (auto& assignEdge : assignments) {
       Assignment assignment(this, assignEdge.getToNode());
 
       //Filter by dao
       if (assignment.getDaoID() != dao_id) continue;
 
+      auto lastPeriod = assignment.getLastPeriod();
+
       int64_t periods = assignment.getPeriodCount();
-      int64_t claimedPeriods = m_documentGraph.getEdgesFrom(assignment.getID(), common::CLAIMED).size();
-      if (claimedPeriods < periods) {
-        auto pay = calculatePendingClaims(assignment.getID(), daoTokens);
-        total.peg += pay.peg;
-        total.voice += pay.voice;
-        total.reward += pay.reward;
+      auto claimedPeriods = m_documentGraph.getEdgesFrom(assignment.getID(), common::CLAIMED);
+
+      //There are some assignments where the initial periods were not claimed,
+      //we should not count them
+      if (claimedPeriods.size() < periods &&
+          std::all_of(claimedPeriods.begin(), 
+                      claimedPeriods.end(), 
+                      [id = lastPeriod.getID()](const Edge& e){ return e.to_node != id; })) { 
+        
+        ids += sep + util::to_str(assignment.getID());
+        if (sep.empty()) sep = ",";
+
+        if (!only_ids) {
+          total += calculatePendingClaims(assignment.getID(), daoTokens);
+        }
       }
     }
 
+    ids.push_back(']');
+
     EOS_CHECK(
       false,
-      util::to_str("{\n\"peg\":\"", total.peg, "\",\n\"reward\":\"", total.reward, "\",\n\"voice\":\"", total.voice, "\"\n}")
+      util::to_str(
+          "{\n", 
+            "\"peg\":\"", total.peg, "\",\n",
+            "\"reward\":\"", total.reward, "\",\n",
+            "\"voice\":\"", total.voice, "\",\n",
+            "\"ids\":", ids,
+          "}"
+      )
     )
   }
 
@@ -815,12 +838,7 @@ namespace hypha
         if (periodEndSec <= currentTime &&   // if period has lapsed
             !assignment.isClaimed(&period))         // and not yet claimed
         {
-            auto payout = calculatePeriodPayout(period, salary, daoTokens, nextOpt, lastTimeShare, initTimeShare);
-
-            payAmount.reward += payout.reward;
-            payAmount.peg += payout.peg;
-            payAmount.voice += payout.voice;
-
+            payAmount += calculatePeriodPayout(period, salary, daoTokens, nextOpt, lastTimeShare, initTimeShare);
             nextOpt = lastTimeShare;
         }
         period = period.next();

@@ -114,7 +114,7 @@ namespace hypha
       ACTION genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/);
 
       ACTION claimnextper(uint64_t assignment_id);
-      ACTION simclaimall(name account, uint64_t dao_id);
+      ACTION simclaimall(name account, uint64_t dao_id, bool only_ids);
       ACTION simclaim(uint64_t assignment_id);
       ACTION proposeextend (uint64_t assignment_id, const int64_t additional_periods);
 
