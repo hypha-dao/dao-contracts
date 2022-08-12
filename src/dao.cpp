@@ -530,6 +530,28 @@ namespace hypha
 
     eosio::name assignee = assignment.getAssignee().getAccount();
 
+    //Check the state of the assignment is valid
+    std::string state = assignment.getContentWrapper()
+                                  .getOrFail(DETAILS, common::STATE)
+                                  ->getAs<std::string>();
+
+    //Valid states where user can claim
+    std::vector<std::string> validStates = {
+      common::STATE_APPROVED, 
+      common::STATE_ARCHIVED,
+      common::STATE_SUSPENDED, //Even if suspended or withdrawed there could be periods that weren't claimed
+      common::STATE_WITHDRAWED
+    };
+  
+    EOS_CHECK(
+      std::any_of(
+        validStates.begin(), 
+        validStates.end(), 
+        [&state](const std::string& x){ return x == state; }
+      ),
+      util::to_str("Cannot claim assignment with ", state, " state")
+    )
+
     // assignee must still be a DHO member
     auto daoID = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
 

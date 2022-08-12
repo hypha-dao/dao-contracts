@@ -135,11 +135,11 @@ namespace hypha
       //ACTION adddocs(std::vector<Document>& docs);
 
       /**TODO: Remove */
-      ACTION remdoc(uint64_t doc_id)
-      {
-         eosio::require_auth(get_self());
-         m_documentGraph.eraseDocument(doc_id, true);
-      }
+      // ACTION remdoc(uint64_t doc_id)
+      // {
+      //    eosio::require_auth(get_self());
+      //    m_documentGraph.eraseDocument(doc_id, true);
+      // }
 
       ACTION fixassig(uint64_t assignment_id);
 
