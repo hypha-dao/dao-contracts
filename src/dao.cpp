@@ -1615,7 +1615,23 @@ namespace hypha
       "root_id is not valid"
     );
 
-    checkAdminsAuth(root_id);
+    //Special case when we want to edit Global Alerts
+    //we need to check Hypha DAO admin's permissions
+    if (root_id == getRootID()) {
+      
+      auto hyphaID = getDAOID("hypha"_n);
+
+      EOS_CHECK(
+        hyphaID.has_value(),
+        "Missing hypha DAO entry"
+      );
+
+      checkAdminsAuth(*hyphaID);
+    }
+    else {
+      checkAdminsAuth(root_id);
+    }
+    
 
     //Check for new alerts
     if (auto [_, addGroup] = cw.getGroup(common::ADD_GROUP);
