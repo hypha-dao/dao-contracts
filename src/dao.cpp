@@ -1310,8 +1310,10 @@ namespace hypha
 
     auto daoTitle = configCW.getOrFail(detailsIdx, common::DAO_TITLE).second;
 
+    auto& daoTitleStr = daoTitle->getAs<std::string>();
+
     EOS_CHECK(
-      daoTitle->getAs<std::string>().size() <= 48,
+      daoTitleStr.size() <= 48,
       "Dao title has be less than 48 characters"
     );
 
@@ -1389,7 +1391,7 @@ namespace hypha
       Content{common::CLAIM_ENABLED, int64_t(1)}
     };
 
-    addDefaultSettings(settingsGroup, dao);
+    addDefaultSettings(settingsGroup, daoTitleStr);
 
     // Create the settings document as well and add an edge to it
     ContentGroups settingCgs{
@@ -2372,7 +2374,7 @@ namespace hypha
     ).send();
   }
 
-  void dao::addDefaultSettings(ContentGroup& settingsGroup, const name& dao)
+  void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle)
   {
     ContentGroups def;
 
@@ -2381,8 +2383,6 @@ namespace hypha
     auto& sg = def.back();
 
     auto cw = ContentWrapper(def);
-
-    auto daoStr = dao.to_string();
 
     cw.insertOrReplace(sg, { common::DAO_DOCUMENTATION_URL, "" });
     cw.insertOrReplace(sg, { common::DAO_DISCORD_URL, "" });
@@ -2394,18 +2394,18 @@ namespace hypha
     cw.insertOrReplace(sg, { common::DAO_TEXT_COLOR, "#ffffff" });
     cw.insertOrReplace(sg, { common::DAO_PATTERN_COLOR, "#3E3B46" });
     cw.insertOrReplace(sg, { common::DAO_PATTERN_OPACITY, 30 });
-    cw.insertOrReplace(sg, { common::DAO_SPLASH_BACKGROUND_IMAGE, "" });
+    cw.insertOrReplace(sg, { common::DAO_SPLASH_BACKGROUND_IMAGE, "QmcGobT4p14tHkLjYJVBPMyQyWC1yh1dEZGzinxnzbVyc5:jpeg" });
     cw.insertOrReplace(sg, { common::DAO_DASHBOARD_BACKGROUND_IMAGE, "Qmf1MeZvaeqnCSs8tQWEAob8NvyxfT6vvyYvyvEaKRc6GQ:png" });
-    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_TITLE, "Welcome to " + daoStr});
-    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_PARAGRAPH, "Hypha provides simple tools and a framework to set up your organization from the ground up, together with others, in an organic and participative way. Our fraud resistant & transparent online tools enable you to coordinate & motivate teams, manage finances & payroll, communicate, implement governance processes that meet your organizational style. " });
+    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_TITLE, "Welcome to " + daoTitle });
+    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_PARAGRAPH, "Hypha provides simple tools and a framework to set up your organization from the ground up, together with others, in an organic and participative way. Our fraud resistant & transparent online tools enable you to coordinate & motivate teams, manage finances & payroll, communicate, implement governance processes that meet your organizational style." });
     cw.insertOrReplace(sg, { common::DAO_PROPOSALS_BACKGROUND_IMAGE, "QmYnPnMSm9PJd3Aw18i2Wwx3ZLANnHQsfTPhTbV2xXzCw7"});
     cw.insertOrReplace(sg, { common::DAO_PROPOSALS_TITLE, "Every vote counts"});
-    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In the " + daoStr + " DAO we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
+    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In the " + daoTitle + " DAO we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
     cw.insertOrReplace(sg, { common::DAO_MEMBERS_BACKGROUND_IMAGE, "QmcTW1yreT8iAGLpQgSTwHbwjmMpeyVCAf3SFXcfWdbEHA:png"});
-    cw.insertOrReplace(sg, { common::DAO_MEMBERS_TITLE, "Find & get to know other " + daoStr + " members"});
-    cw.insertOrReplace(sg, { common::DAO_MEMBERS_PARAGRAPH, "Learn about what other members are working on, which badges they hold, which DAO's they are part of and much more."});
-    cw.insertOrReplace(sg, { common::DAO_ORGANISATION_BACKGROUND_IMAGE, "QmWj8bEGqyUZZjSyf8HnFkJ6EceQtFA1J4nmXJUQiSC8AE:png"});
-    cw.insertOrReplace(sg, { common::DAO_ORGANISATION_TITLE, "Learn everything about " + daoStr});
+    cw.insertOrReplace(sg, { common::DAO_MEMBERS_TITLE, "Find & get to know other " + daoTitle + " members"});
+    cw.insertOrReplace(sg, { common::DAO_MEMBERS_PARAGRAPH, "Learn about what other members are working on, which badges they hold, which DAO's they are part of and much more." });
+    cw.insertOrReplace(sg, { common::DAO_ORGANISATION_BACKGROUND_IMAGE, ""});
+    cw.insertOrReplace(sg, { common::DAO_ORGANISATION_TITLE, "Learn everything about " + daoTitle });
     cw.insertOrReplace(sg, { common::DAO_ORGANISATION_PARAGRAPH, "Select from a multitude of tools to finetune how the organization works. From treasury and compensation to decision-making, from roles to badges, you have every lever at your fingertips." });
 
     // cw.insertOrReplace(0, )
