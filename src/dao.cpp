@@ -2400,7 +2400,7 @@ namespace hypha
     cw.insertOrReplace(sg, { common::DAO_DASHBOARD_PARAGRAPH, "Hypha provides simple tools and a framework to set up your organization from the ground up, together with others, in an organic and participative way. Our fraud resistant & transparent online tools enable you to coordinate & motivate teams, manage finances & payroll, communicate, implement governance processes that meet your organizational style." });
     cw.insertOrReplace(sg, { common::DAO_PROPOSALS_BACKGROUND_IMAGE, "QmYnPnMSm9PJd3Aw18i2Wwx3ZLANnHQsfTPhTbV2xXzCw7"});
     cw.insertOrReplace(sg, { common::DAO_PROPOSALS_TITLE, "Every vote counts"});
-    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In the " + daoTitle + " DAO we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
+    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In " + daoTitle + " we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
     cw.insertOrReplace(sg, { common::DAO_MEMBERS_BACKGROUND_IMAGE, "QmcTW1yreT8iAGLpQgSTwHbwjmMpeyVCAf3SFXcfWdbEHA:png"});
     cw.insertOrReplace(sg, { common::DAO_MEMBERS_TITLE, "Find & get to know other " + daoTitle + " members"});
     cw.insertOrReplace(sg, { common::DAO_MEMBERS_PARAGRAPH, "Learn about what other members are working on, which badges they hold, which DAO's they are part of and much more." });
