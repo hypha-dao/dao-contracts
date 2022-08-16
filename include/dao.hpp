@@ -129,6 +129,8 @@ namespace hypha
        */
       ACTION modalerts(uint64_t root_id, ContentGroups& alerts);
 
+      ACTION modsalaryband(uint64_t dao_id, ContentGroups& salary_bands);
+
       /**TODO: Remove */
       //ACTION adddocs(std::vector<Document>& docs);
 
@@ -321,7 +323,7 @@ namespace hypha
 
       void changeDecay(Settings* dhoSettings, Settings* daoSettings, uint64_t decayPeriod, uint64_t decayPerPeriod);
 
-      void addDefaultSettings(ContentGroup& settingsGroup, const name& dao);
+      void addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle);
 
       template<class Table>
       std::optional<uint64_t> getNameID(const name& n)

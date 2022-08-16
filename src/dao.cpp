@@ -1310,8 +1310,10 @@ namespace hypha
 
     auto daoTitle = configCW.getOrFail(detailsIdx, common::DAO_TITLE).second;
 
+    auto& daoTitleStr = daoTitle->getAs<std::string>();
+
     EOS_CHECK(
-      daoTitle->getAs<std::string>().size() <= 48,
+      daoTitleStr.size() <= 48,
       "Dao title has be less than 48 characters"
     );
 
@@ -1389,7 +1391,7 @@ namespace hypha
       Content{common::CLAIM_ENABLED, int64_t(1)}
     };
 
-    addDefaultSettings(settingsGroup, dao);
+    addDefaultSettings(settingsGroup, daoTitleStr);
 
     // Create the settings document as well and add an edge to it
     ContentGroups settingCgs{
@@ -1615,7 +1617,23 @@ namespace hypha
       "root_id is not valid"
     );
 
-    checkAdminsAuth(root_id);
+    //Special case when we want to edit Global Alerts
+    //we need to check Hypha DAO admin's permissions
+    if (root_id == getRootID()) {
+      
+      auto hyphaID = getDAOID("hypha"_n);
+
+      EOS_CHECK(
+        hyphaID.has_value(),
+        "Missing hypha DAO entry"
+      );
+
+      checkAdminsAuth(*hyphaID);
+    }
+    else {
+      checkAdminsAuth(root_id);
+    }
+    
 
     //Check for new alerts
     if (auto [_, addGroup] = cw.getGroup(common::ADD_GROUP);
@@ -1625,16 +1643,8 @@ namespace hypha
         if (newAlert.label != CONTENT_GROUP_LABEL) {
           //Input format [description;level;enabled]
           auto& alertData = newAlert.getAs<std::string>();
-          auto alertInfo = splitStringView(alertData, ';');
-          
-          EOS_CHECK(
-            alertInfo.size() == 3,
-            util::to_str("Wrong format for new alert, expected 3 items but got: ", alertInfo.size(), " ", alertData)
-          );
 
-          auto level = std::string(alertInfo[common::AlertInfo::kLEVEL]);
-          auto description = std::string(alertInfo[common::AlertInfo::kDESCRIPTION]);
-          auto enabled = stringViewToInt(alertInfo[common::AlertInfo::kENABLED]);
+          auto [level, description, enabled] = splitStringView<string, string, int64_t>(alertData, ';');
 
           EOS_CHECK(
             enabled == 0 || enabled == 1,
@@ -1672,17 +1682,8 @@ namespace hypha
         if (editedAlert.label != CONTENT_GROUP_LABEL) {
           //Input format [id;description;level;enabled]
           auto& alertData = editedAlert.getAs<std::string>();
-          auto alertInfo = splitStringView(alertData, ';');
-          
-          EOS_CHECK(
-            alertInfo.size() == 4,
-            util::to_str("Wrong format for new alert, expected 4 items but got: ", alertInfo.size(), "\n", alertData)
-          );
 
-          auto id = stringViewToInt(alertInfo[common::AlertInfo::kID]);
-          auto level = std::string(alertInfo[common::AlertInfo::kLEVEL]);
-          auto description = std::string(alertInfo[common::AlertInfo::kDESCRIPTION]);
-          auto enabled = stringViewToInt(alertInfo[common::AlertInfo::kENABLED]);
+          auto [id, level, description, enabled] = splitStringView<int64_t, string, string, int64_t>(alertData, ';');
 
           EOS_CHECK(
             enabled == 0 || enabled == 1,
@@ -1740,6 +1741,142 @@ namespace hypha
           );
 
           m_documentGraph.eraseDocument(alert.getID(), true);
+        }
+      }
+    }
+  }
+
+  ACTION dao::modsalaryband(uint64_t dao_id, ContentGroups& salary_bands)
+  {
+    //Verify if id belongs to a DAO or DHO
+    Document daoDoc(get_self(), dao_id);
+
+    auto type = daoDoc.getContentWrapper()
+                      .getOrFail(SYSTEM, TYPE)
+                      ->getAs<name>();
+
+    EOS_CHECK(
+      type == common::DAO,
+      "dao_id is not valid (not a Dao)"
+    );
+
+    checkAdminsAuth(dao_id);
+
+    auto cw = ContentWrapper(salary_bands);
+
+    auto checkParams = [](const string& name, const asset& amount, int64_t minDeferred) {
+      EOS_CHECK(
+        name.size() < 50,
+        "Salary band name is too long"
+      )
+
+      EOS_CHECK(
+        minDeferred >= 0 && minDeferred <= 100,
+        util::to_str("Invalid value for 'min_deferred_x100', expected value between 0 and 100 but got:", minDeferred)
+      );
+
+      EOS_CHECK(
+        amount.is_valid(),
+        "Invalid salary band annual usd amount"
+      );
+    };
+
+    auto checkSalaryBandDoc = [&](int64_t id) {
+      
+      Document salaryBand(get_self(), static_cast<uint64_t>(id));
+
+      auto bandCW = salaryBand.getContentWrapper();
+
+      EOS_CHECK(
+        bandCW.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::SALARY_BAND,
+        util::to_str("Specified id for salary band is not valid: ", id)
+      );
+
+      //Verify the salary band belongs to the specified DAO
+      EOS_CHECK(
+        Edge::exists(get_self(), salaryBand.getID(), dao_id, common::DAO),
+        "Salary doesn't belong to the specified dao_id"
+      );
+
+      return salaryBand;
+    };
+
+    //Check for new salary band
+    if (auto [_, addGroup] = cw.getGroup(common::ADD_GROUP);
+        addGroup)
+    {
+      for (auto& newBand : *addGroup) {
+        if (newBand.label != CONTENT_GROUP_LABEL) {
+          //Input format [description;level;enabled]
+          auto& bandData = newBand.getAs<std::string>();
+
+          auto [name, amount, minDeferred] = splitStringView<string, asset, int64_t>(bandData, ';');
+
+          checkParams(name, amount, minDeferred);
+
+          Document salaryBand(
+            get_self(), get_self(),
+            ContentGroups{
+              ContentGroup{
+                  Content(CONTENT_GROUP_LABEL, DETAILS),
+                  Content(common::SALARY_BAND_NAME, name),
+                  Content(ANNUAL_USD_SALARY, amount),
+                  Content(MIN_DEFERRED, minDeferred)
+              },
+              ContentGroup{
+                  Content(CONTENT_GROUP_LABEL, SYSTEM),
+                  Content(TYPE, common::SALARY_BAND),
+                  Content(NODE_LABEL, "Salary Band: " + name)
+              } 
+            }
+          );
+
+          Edge(get_self(), get_self(), dao_id, salaryBand.getID(), common::SALARY_BAND);
+          Edge(get_self(), get_self(), salaryBand.getID(), dao_id, common::DAO);
+        }
+      }
+    }
+
+    //Check for updates on existing salary bands
+    if (auto [_, editGroup] = cw.getGroup(common::EDIT_GROUP);
+        editGroup)
+    {
+      for (auto& editedBand : *editGroup) {
+        if (editedBand.label != CONTENT_GROUP_LABEL) {
+          //Input format [id;description;level;enabled]
+          auto& bandData = editedBand.getAs<std::string>();
+
+          auto [id, name, amount, minDeferred] = splitStringView<int64_t, string, asset, int64_t>(bandData, ';');
+
+          checkParams(name, amount, minDeferred);
+
+          auto salaryBand = checkSalaryBandDoc(id);
+
+          auto bandCW = salaryBand.getContentWrapper();
+
+          auto details = bandCW.getGroupOrFail(DETAILS);
+
+          bandCW.insertOrReplace(*details, Content(common::SALARY_BAND_NAME, name));
+          bandCW.insertOrReplace(*details, Content(ANNUAL_USD_SALARY, amount));
+          bandCW.insertOrReplace(*details, Content(MIN_DEFERRED, minDeferred));
+
+          salaryBand.update();
+        }
+      }
+    }
+
+    //Check removal of existing salary bands
+    if (auto [_, delGroup] = cw.getGroup(common::DELETE_GROUP);
+        delGroup)
+    {
+      for (auto& delBand : *delGroup) {
+        if (delBand.label != CONTENT_GROUP_LABEL) {
+          
+          auto id = delBand.getAs<int64_t>();
+
+          auto salaryBand = checkSalaryBandDoc(id);
+
+          m_documentGraph.eraseDocument(salaryBand.getID(), true);
         }
       }
     }
@@ -2237,7 +2374,7 @@ namespace hypha
     ).send();
   }
 
-  void dao::addDefaultSettings(ContentGroup& settingsGroup, const name& dao)
+  void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle)
   {
     ContentGroups def;
 
@@ -2246,8 +2383,6 @@ namespace hypha
     auto& sg = def.back();
 
     auto cw = ContentWrapper(def);
-
-    auto daoStr = dao.to_string();
 
     cw.insertOrReplace(sg, { common::DAO_DOCUMENTATION_URL, "" });
     cw.insertOrReplace(sg, { common::DAO_DISCORD_URL, "" });
@@ -2259,18 +2394,18 @@ namespace hypha
     cw.insertOrReplace(sg, { common::DAO_TEXT_COLOR, "#ffffff" });
     cw.insertOrReplace(sg, { common::DAO_PATTERN_COLOR, "#3E3B46" });
     cw.insertOrReplace(sg, { common::DAO_PATTERN_OPACITY, 30 });
-    cw.insertOrReplace(sg, { common::DAO_SPLASH_BACKGROUND_IMAGE, "" });
-    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_BACKGROUND_IMAGE, "" });
-    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_TITLE, "Welcome to " + daoStr});
-    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_PARAGRAPH, "Hypha provides simple tools and a framework to set up your organization from the ground up, together with others, in an organic and participative way. Our fraud resistant & transparent online tools enable you to coordinate & motivate teams, manage finances & payroll, communicate, implement governance processes that meet your organizational style. " });
-    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_BACKGROUND_IMAGE, ""});
+    cw.insertOrReplace(sg, { common::DAO_SPLASH_BACKGROUND_IMAGE, "QmcGobT4p14tHkLjYJVBPMyQyWC1yh1dEZGzinxnzbVyc5:jpeg" });
+    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_BACKGROUND_IMAGE, "Qmf1MeZvaeqnCSs8tQWEAob8NvyxfT6vvyYvyvEaKRc6GQ:png" });
+    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_TITLE, "Welcome to " + daoTitle });
+    cw.insertOrReplace(sg, { common::DAO_DASHBOARD_PARAGRAPH, "Hypha provides simple tools and a framework to set up your organization from the ground up, together with others, in an organic and participative way. Our fraud resistant & transparent online tools enable you to coordinate & motivate teams, manage finances & payroll, communicate, implement governance processes that meet your organizational style." });
+    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_BACKGROUND_IMAGE, "QmYnPnMSm9PJd3Aw18i2Wwx3ZLANnHQsfTPhTbV2xXzCw7"});
     cw.insertOrReplace(sg, { common::DAO_PROPOSALS_TITLE, "Every vote counts"});
-    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In the " + daoStr + " DAO we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
-    cw.insertOrReplace(sg, { common::DAO_MEMBERS_BACKGROUND_IMAGE, ""});
-    cw.insertOrReplace(sg, { common::DAO_MEMBERS_TITLE, "Find & get to know other " + daoStr + " members"});
-    cw.insertOrReplace(sg, { common::DAO_MEMBERS_PARAGRAPH, "Learn about what other members are working on, which badges they hold, which DAO's they are part of and much more."});
+    cw.insertOrReplace(sg, { common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In the " + daoTitle + " DAO we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
+    cw.insertOrReplace(sg, { common::DAO_MEMBERS_BACKGROUND_IMAGE, "QmcTW1yreT8iAGLpQgSTwHbwjmMpeyVCAf3SFXcfWdbEHA:png"});
+    cw.insertOrReplace(sg, { common::DAO_MEMBERS_TITLE, "Find & get to know other " + daoTitle + " members"});
+    cw.insertOrReplace(sg, { common::DAO_MEMBERS_PARAGRAPH, "Learn about what other members are working on, which badges they hold, which DAO's they are part of and much more." });
     cw.insertOrReplace(sg, { common::DAO_ORGANISATION_BACKGROUND_IMAGE, ""});
-    cw.insertOrReplace(sg, { common::DAO_ORGANISATION_TITLE, "Learn everything about " + daoStr});
+    cw.insertOrReplace(sg, { common::DAO_ORGANISATION_TITLE, "Learn everything about " + daoTitle });
     cw.insertOrReplace(sg, { common::DAO_ORGANISATION_PARAGRAPH, "Select from a multitude of tools to finetune how the organization works. From treasury and compensation to decision-making, from roles to badges, you have every lever at your fingertips." });
 
     // cw.insertOrReplace(0, )

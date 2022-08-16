@@ -102,8 +102,8 @@ namespace hypha
             EOS_CHECK(std::holds_alternative<int64_t>(periodCount->value),
                          "fatal error: expected to be an int64 type: " + periodCount->label);
 
-            EOS_CHECK(std::get<int64_t>(periodCount->value) < 26, PERIOD_COUNT + 
-                string(" must be less than 26. You submitted: ") + std::to_string(std::get<int64_t>(periodCount->value)));
+            EOS_CHECK(std::get<int64_t>(periodCount->value) <= 52, PERIOD_COUNT + 
+                string(" must be less or equal to 52. You submitted: ") + std::to_string(std::get<int64_t>(periodCount->value)));
 
         } else {
             // default PERIOD_COUNT to 13
