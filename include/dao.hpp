@@ -140,7 +140,7 @@ namespace hypha
          eosio::require_auth(get_self());
          Document doc(get_self(), doc_id);
          auto cw = doc.getContentWrapper();
-         if (cw.getOrFail(SETTINGS, TYPE)->getAs<name>() == common::DAO) {
+         if (cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == common::DAO) {
             remNameID<dao_table>(cw.getOrFail(DETAILS, DAO_NAME)->getAs<name>());
          }
          m_documentGraph.eraseDocument(doc_id, true);
