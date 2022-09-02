@@ -1077,10 +1077,18 @@ namespace hypha
     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
     checkAdminsAuth(dao_id);
+
     auto settings = getSettingsDocument(dao_id);
     auto dhoSettings = getSettingsDocument();
 
     auto daoName = settings->getOrFail<eosio::name>(DAO_NAME);
+
+    //Verify ID belongs to a valid DAO
+    EOS_CHECK(
+      getDAOID(daoName).has_value(),
+      util::to_str("The provided ID is not valid: ", dao_id)
+    );
+
     //Only hypha dao should be able to use this flag
     EOS_CHECK(
       kvs.count("is_hypha") == 0 ||
