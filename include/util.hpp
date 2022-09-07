@@ -21,6 +21,10 @@ namespace hypha
     using std::vector;
     using std::string_view;
 
+    namespace util {
+      //using property_map
+    }
+
     struct AssetBatch
     {
       eosio::asset reward;

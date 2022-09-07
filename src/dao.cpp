@@ -1563,17 +1563,7 @@ namespace hypha
     Document rootDoc(get_self(), get_self(), getRootContent(get_self()));
 
     // Create the settings document as well and add an edge to it
-    ContentGroups settingCgs{
-        ContentGroup{
-            Content(CONTENT_GROUP_LABEL, SETTINGS),
-            Content(ROOT_NODE, util::to_str(rootDoc.getID()))},
-        ContentGroup{
-            Content(CONTENT_GROUP_LABEL, SYSTEM),
-            Content(TYPE, common::SETTINGS_EDGE),
-            Content(NODE_LABEL, "Settings")} };
-
-    Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
-    Edge::write(get_self(), get_self(), rootDoc.getID(), settingsDoc.getID(), common::SETTINGS_EDGE);
+    Settings dhoSettings(*this, rootDoc.getID());
 
     addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
   }

@@ -26,7 +26,7 @@ namespace hypha
             virtual const void updateContent(ContentWrapper& wrapper);
 
             eosio::name getType();
-
+            ContentWrapper getContentWrapper() { return document.getContentWrapper(); }
         private:
             dao& m_dao;
             Document document;

@@ -17,6 +17,11 @@ add_contract( dao dao
                 recurring_activity.cpp
                 time_share.cpp
                 settings.cpp
+                treasury/attestation.cpp
+                treasury/balance.cpp
+                treasury/payment.cpp
+                treasury/redemption.cpp
+                treasury/treasury.cpp
                 payers/payer.cpp
                 payers/peg_payer.cpp
                 payers/voice_payer.cpp

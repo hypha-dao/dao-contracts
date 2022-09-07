@@ -17,6 +17,23 @@ Settings::Settings(dao& dao,
     //m_dirty(false)
   {}
 
+  Settings::Settings(dao& dao, 
+                     uint64_t rootID)
+  : Document(dao.get_self(), dao.get_self(), ContentGroups{
+    ContentGroup{
+        Content(CONTENT_GROUP_LABEL, SETTINGS),
+        Content(ROOT_NODE, util::to_str(rootID))
+    },
+    ContentGroup{
+        Content(CONTENT_GROUP_LABEL, SYSTEM),
+        Content(TYPE, common::SETTINGS_EDGE),
+        Content(NODE_LABEL, "Settings")
+    }
+  })
+  {
+    Edge::getOrNew(dao.get_self(), dao.get_self(), rootID, getID(), common::SETTINGS_EDGE);
+  }
+
   void Settings::setSetting(const std::string& group, const Content& setting)
   {
     TRACE_FUNCTION()
