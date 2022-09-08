@@ -2,6 +2,8 @@
 
 #include <typed_document.hpp>
 
+#include <macros.hpp>
+
 /**
  * @brief TrsyPayment document represntation. Every TrsyPayment is linked to a 'cash equivalent token'
  * redemption in the treasury. Every TrsyPayment document refeers to a single Redemption document,
@@ -17,9 +19,27 @@
 
 namespace hypha::treasury {
 
-class Payment : public TypedDocument {
+class TrsyPayment : public TypedDocument {
+
+    DECLARE_DOCUMENT(
+        Data,
+        PROPERTY(creator, eosio::name, Creator),
+        PROPERTY(amount_paid, eosio::asset, AmountPaid),
+        PROPERTY(confirmed_date, eosio::time_point, ConfirmedDate),
+        PROPERTY(is_confirmed, int64_t, IsConfirmed),
+        PROPERTY(notes, string, Notes)
+    )
 public:
-    Payment(dao& dao, uint64_t id);
+    TrsyPayment(dao& dao, uint64_t id);
+
+    TrsyPayment(dao& dao, uint64_t treasuryID, uint64_t redemptionID, Data data);
+
+    virtual const std::string buildNodeLabel(ContentGroups &content) override
+    {
+        return "Treasury Payment";
+    }
 };
+
+using TrsyPaymentData = TrsyPayment::Data;
 
 }

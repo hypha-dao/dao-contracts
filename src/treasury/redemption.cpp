@@ -11,4 +11,12 @@ Redemption::Redemption(dao& dao, uint64_t id)
     
 }
 
+Redemption::Redemption(dao& dao, uint64_t treasuryID, Data data) 
+    : TypedDocument(dao, types::REDEMPTION)
+{
+    auto cgs = convert(std::move(data));
+
+    initializeDocument(dao, cgs);
+}
+
 } // namespace treasury

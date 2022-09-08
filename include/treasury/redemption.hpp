@@ -1,6 +1,7 @@
 #pragma once
 
 #include <typed_document.hpp>
+#include <macros.hpp>
 
 /**
  * @brief Redemption document representation. A 'Redemption' document is used to create a 'cash equivalent token' 
@@ -16,8 +17,24 @@ namespace hypha::treasury {
 
 class Redemption : public TypedDocument
 {
+    DECLARE_DOCUMENT(
+        Data,
+        PROPERTY(requestor, eosio::name, Requestor),
+        PROPERTY(amount_requested, eosio::asset, AmountRequested),
+        PROPERTY(amount_paid, eosio::asset, AmountPaid)
+    )
+
 public:
     Redemption(dao& dao, uint64_t id);
+
+    Redemption(dao& dao, uint64_t treasuryID, Data data);
+
+    virtual const std::string buildNodeLabel(ContentGroups &content) override
+    {
+        return "Redemption";
+    }
 };
+
+using RedemptionData = Redemption::Data;
 
 }

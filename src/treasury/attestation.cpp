@@ -11,4 +11,13 @@ Attestation::Attestation(dao& dao, uint64_t id)
     
 }
 
+Attestation::Attestation(dao& dao, uint64_t paymentID, Data data)
+    : TypedDocument(dao, types::ATTESTATION)
+{
+    auto cgs = convert(data);
+
+    initializeDocument(dao, cgs);
+
+}
+
 } // namespace treasury

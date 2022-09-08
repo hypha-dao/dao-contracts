@@ -1,7 +1,7 @@
 #pragma once
 
 #include <typed_document.hpp>
-#include <util.hpp>
+#include <macros.hpp>
 
 namespace hypha::treasury {
 
@@ -21,18 +21,16 @@ namespace hypha::treasury {
 
 class Treasury : public TypedDocument
 {
-public:
     /**
     * @brief Data that we store in the document
     * @dgnodedata
     */
-    struct TreasuryData {
-        template<class T>
-        using TypedContent = hypha::util::TypedContent<T>;
+    DECLARE_DOCUMENT(
+        Data, 
+        PROPERTY(dao, int64_t, DaoID)
+    );
 
-        TypedContent<int64_t> dao; //Dao
-    };
-
+public:
     /**
      * @brief Construct a Treasury object from an existing treasury document
      * 
@@ -45,12 +43,16 @@ public:
      * @brief Construct a new Treasury document in the Document Graph
      * 
      * @param dao 
-     * @param daoID 
      * @param data 
      */
-    Treasury(dao& dao, uint64_t daoID, TreasuryData data);
+    Treasury(dao& dao, Data data);
 
-    uint64_t getDAO();
+    virtual const std::string buildNodeLabel(ContentGroups &content) override
+    {
+        return "Treasury";
+    }
 };
+
+using TreasuryData = Treasury::Data;
 
 }
