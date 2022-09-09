@@ -14,15 +14,14 @@ namespace hypha
             Document& getDocument();
             uint64_t getId();
             virtual ~TypedDocument();
-
+            void update();
+            void erase();
         protected:
             TypedDocument(dao& dao, eosio::name type);
             void initializeDocument(dao& dao, ContentGroups &content);
             dao& getDao() const;
             bool documentExists(dao& dao, const uint64_t& id);
             virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
-            void update();
-            void erase();
             virtual const void updateContent(ContentWrapper& wrapper);
 
             eosio::name getType();

@@ -1,6 +1,10 @@
 #include "treasury/payment.hpp"
 #include "treasury/common.hpp"
 
+#include <dao.hpp>
+#include <treasury/redemption.hpp>
+#include <document_graph/edge.hpp>
+
 namespace hypha::treasury {
 
 using namespace common;
@@ -15,6 +19,41 @@ TrsyPayment::TrsyPayment(dao& dao, uint64_t treasuryID, uint64_t redemptionID, D
     auto cgs = convert(std::move(data));
 
     initializeDocument(dao, cgs);
+
+    Edge(
+        dao.get_self(),
+        dao.get_self(),
+        treasuryID,
+        getId(),
+        links::PAYMENT
+    );
+
+    Edge(
+        dao.get_self(),
+        dao.get_self(),
+        redemptionID,
+        getId(),
+        links::PAID_BY
+    );
+
+    Edge(
+        dao.get_self(),
+        dao.get_self(),
+        getId(),
+        redemptionID,
+        links::PAYS
+    );
+}
+
+// TrsyPayment::~TrsyPayment() 
+// {
+
+// }
+
+Redemption TrsyPayment::getRedemption()
+{
+    auto redemptionEdge = Edge::get(getDao().get_self(), getId(), links::PAYS);
+    return Redemption(getDao(), redemptionEdge.getToNode());
 }
 
 } // namespace treasury

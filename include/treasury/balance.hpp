@@ -26,6 +26,10 @@ public:
 
     Balance(dao& dao, uint64_t owner, Data data);
 
+    void add(const asset& quantity);
+
+    void substract(const asset& quantity);
+
     static Balance getOrCreate(dao& dao, uint64_t daoID, uint64_t owner);
 
     virtual const std::string buildNodeLabel(ContentGroups &content) override

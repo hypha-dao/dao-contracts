@@ -129,4 +129,13 @@ namespace hypha
         return getContentWrapper().getOrFail(DETAILS, MEMBER_STRING)->getAs<eosio::name>();
     }
 
+    void Member::checkMembershipOrEnroll(uint64_t daoID) {
+        if (!isMember(m_dao, daoID, getAccount())) {
+            if (!Edge::exists(m_dao.get_self(), daoID, getID(), common::APPLICANT)) {
+                apply(daoID, "Auto enrolled member");
+            }
+            enroll(m_dao.get_self(), daoID, "Auto enrolled member");
+        }
+    }
+
 } // namespace hypha

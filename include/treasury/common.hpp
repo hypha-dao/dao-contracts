@@ -26,6 +26,7 @@ namespace hypha::treasury::common {
         inline constexpr auto PAID_BY = "paidby"_n;
         inline constexpr auto& REDEMPTION = types::REDEMPTION;
         inline constexpr auto REDEEM_BALANCE = "redeembal"_n;
+        inline constexpr auto BALANCE_OWNER = "owner"_n;
     }
 
     namespace fields {

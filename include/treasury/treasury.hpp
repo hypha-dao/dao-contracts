@@ -51,6 +51,14 @@ public:
     {
         return "Treasury";
     }
+
+    void removeTreasurer(uint64_t memberID);
+
+    void addTreasurer(uint64_t memberID);
+
+    void checkTreasurerAuth();
+
+    static Treasury getFromDaoID(dao& dao, uint64_t daoID);
 };
 
 using TreasuryData = Treasury::Data;

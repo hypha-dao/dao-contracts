@@ -63,10 +63,10 @@
 
 #define PROPERTY(name, type, getSet) name, type, getSet, unused
 
-#define DELCARE_DATA_MEMBER(name, type, _u, _v) type name;
+#define DECLARE_DATA_MEMBER(name, type, _u, _v) type name;
 #define DECLARE_DATA_STRUCT(structName, ...)\
 struct structName {\
-FOR_EACH(DELCARE_DATA_MEMBER, __VA_ARGS__)\
+FOR_EACH(DECLARE_DATA_MEMBER, __VA_ARGS__)\
 };
 
 #define DECLARE_GET_SET(name, type, getSet, _u)\
