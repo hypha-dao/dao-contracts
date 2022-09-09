@@ -45,11 +45,6 @@ TrsyPayment::TrsyPayment(dao& dao, uint64_t treasuryID, uint64_t redemptionID, D
     );
 }
 
-// TrsyPayment::~TrsyPayment() 
-// {
-
-// }
-
 Redemption TrsyPayment::getRedemption()
 {
     auto redemptionEdge = Edge::get(getDao().get_self(), getId(), links::PAYS);

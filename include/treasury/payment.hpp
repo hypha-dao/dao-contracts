@@ -29,7 +29,7 @@ class TrsyPayment : public TypedDocument {
         Data,
         PROPERTY(creator, eosio::name, Creator),
         PROPERTY(amount_paid, eosio::asset, AmountPaid),
-        //PROPERTY(confirmed_date, eosio::time_point, ConfirmedDate),
+        PROPERTY(confirmed_date, eosio::time_point, ConfirmedDate),
         PROPERTY(is_confirmed, int64_t, IsConfirmed),
         PROPERTY(notes, string, Notes)
     )
@@ -37,8 +37,6 @@ public:
     TrsyPayment(dao& dao, uint64_t id);
 
     TrsyPayment(dao& dao, uint64_t treasuryID, uint64_t redemptionID, Data data);
-
-    //~TrsyPayment();
 
     virtual const std::string buildNodeLabel(ContentGroups &content) override
     {

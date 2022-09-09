@@ -125,11 +125,11 @@ ACTION dao::newpayment(uint64_t dao_id, name treasurer, uint64_t redemption_id, 
   );
 
   TrsyPayment payment(*this, treasury.getId(), redemption_id, TrsyPaymentData {
+    .creator = treasurer,
     .amount_paid = amount,
-    //.confirmed_date = eosio::time_point(eosio::microseconds()),
+    .confirmed_date = eosio::time_point(),
     .is_confirmed = false,
-    .notes = notes,
-    .creator = treasurer
+    .notes = notes
   });
 
   //TODO: Should we notify the requestor?
