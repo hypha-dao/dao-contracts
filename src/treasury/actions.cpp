@@ -124,18 +124,18 @@ ACTION dao::redeem(uint64_t dao_id, name requestor, const asset& amount)
   });
 }
 
-ACTION dao::newpayment(uint64_t dao_id, name treasurer, uint64_t redemption_id, const asset& amount, string notes)
+ACTION dao::newpayment(name treasurer, uint64_t redemption_id, const asset& amount, string notes)
 {
   TRACE_FUNCTION();
   require_auth(treasurer);
 
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-  auto treasury = Treasury::getFromDaoID(*this, dao_id);
-  treasury.checkTreasurerAuth();
-
   //Verify the redemption id is valid by creating a Redemption object with it
   Redemption redemption(*this, redemption_id);
+
+  auto treasury = redemption.getTreasury();
+  treasury.checkTreasurerAuth();
 
   const auto& amountRequested = redemption.getAmountRequested();
 
@@ -168,7 +168,7 @@ ACTION dao::newpayment(uint64_t dao_id, name treasurer, uint64_t redemption_id, 
       amount <= amountDue,
       util::to_str("Accumulated amount of existing confirmed & unconfirmed payments is ", totalPayAmount,
                    ", redemption amount is ", amountRequested, 
-                   " new payments must amount must be less or equal to", amountDue)
+                   ", so new payments amount must be less or equal to ", amountDue, " but you submitted ", amount)
     )
   }
 

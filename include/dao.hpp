@@ -258,7 +258,7 @@ namespace hypha
       ACTION addtreasurer(uint64_t treasury_id, name treasurer);
       ACTION remtreasurer(uint64_t treasury_id, name treasurer);
       ACTION redeem(uint64_t dao_id, name requestor, const asset& amount);
-      ACTION newpayment(uint64_t dao_id, name treasurer, uint64_t redemption_id, const asset& amount, string notes);
+      ACTION newpayment(name treasurer, uint64_t redemption_id, const asset& amount, string notes);
       ACTION attestpay(name treasurer, uint64_t payment_id, const asset& amount, const std::optional<std::string>& notes);
       ACTION remattestpay(name treasurer, uint64_t payment_id);
       ACTION setpaynotes(uint64_t payment_id, string notes);

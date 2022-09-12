@@ -18,6 +18,7 @@
 namespace hypha::treasury {
 
 class TrsyPayment;
+class Treasury;
 
 class Redemption : public TypedDocument
 {
@@ -39,6 +40,8 @@ public:
     }
 
     std::vector<TrsyPayment> getPayments();
+
+    Treasury getTreasury();
 };
 
 using RedemptionData = Redemption::Data;

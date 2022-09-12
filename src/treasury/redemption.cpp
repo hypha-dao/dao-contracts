@@ -8,6 +8,7 @@
 #include <document_graph/edge.hpp>
 
 #include <treasury/payment.hpp>
+#include <treasury/treasury.hpp>
 
 namespace hypha::treasury {
 
@@ -53,6 +54,12 @@ std::vector<TrsyPayment> Redemption::getPayments()
                    });
 
     return payments;
+}
+
+Treasury Redemption::getTreasury()
+{
+    auto redemptionEdge = Edge::getTo(getDao().get_self(), getId(), links::REDEMPTION);
+    return Treasury(getDao(), redemptionEdge.getFromNode());
 }
 
 } // namespace treasury
