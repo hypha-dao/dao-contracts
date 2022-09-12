@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <typed_document.hpp>
 #include <macros.hpp>
 
@@ -14,6 +16,8 @@
  */
 
 namespace hypha::treasury {
+
+class TrsyPayment;
 
 class Redemption : public TypedDocument
 {
@@ -33,6 +37,8 @@ public:
     {
         return "Redemption";
     }
+
+    std::vector<TrsyPayment> getPayments();
 };
 
 using RedemptionData = Redemption::Data;

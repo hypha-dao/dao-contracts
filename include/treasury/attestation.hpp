@@ -30,6 +30,8 @@ public:
     {
         return "Attestation";
     }
+
+    void remove();
 };
 
 using AttestationData = Attestation::Data;

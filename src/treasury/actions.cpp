@@ -1,5 +1,8 @@
 #include <dao.hpp>
 
+#include <algorithm>
+#include <numeric>
+
 #include <member.hpp>
 #include <document_graph/edge.hpp>
 
@@ -20,7 +23,29 @@ using treasury::Balance;
 using treasury::TrsyPayment;
 using treasury::TrsyPaymentData;
 using treasury::Attestation;
+using treasury::AttestationData;
+
 namespace trsycommon = treasury::common;
+
+
+void verifyAttestations(
+  const std::vector<Attestation>& attestations,
+  Settings* treasurySettings,
+  TrsyPayment& payment,
+  Redemption& redemption
+) {
+
+  //Check if we can confirm the payment
+  if (attestations.size() >= treasurySettings->getOrFail<int64_t>(trsycommon::fields::THRESHOLD))
+  {
+    payment.setIsConfirmed(true);
+    payment.setConfirmedDate(eosio::current_time_point());
+    payment.update();
+    redemption.setAmountPaid(redemption.getAmountPaid() + payment.getAmountPaid());
+    redemption.update();
+    //TODO: Notify when payment is confirmed (?)
+  }
+}
 
 ACTION dao::addtreasurer(uint64_t treasury_id, name treasurer)
 {
@@ -99,7 +124,7 @@ ACTION dao::redeem(uint64_t dao_id, name requestor, const asset& amount)
   });
 }
 
-ACTION dao::newpayment(uint64_t dao_id, name treasurer, uint64_t redemption_id, const asset& amount, const string& notes)
+ACTION dao::newpayment(uint64_t dao_id, name treasurer, uint64_t redemption_id, const asset& amount, string notes)
 {
   TRACE_FUNCTION();
   require_auth(treasurer);
@@ -112,32 +137,183 @@ ACTION dao::newpayment(uint64_t dao_id, name treasurer, uint64_t redemption_id, 
   //Verify the redemption id is valid by creating a Redemption object with it
   Redemption redemption(*this, redemption_id);
 
-  auto amountDue = redemption.getAmountRequested() - redemption.getAmountPaid();
-  //Check the payment amount is less or equal to the requested amount
-  EOS_CHECK(
-    amount <= amountDue,
-    util::to_str(
-      "Redemption amount must be less than amount due. Original requested amount: ", redemption.getAmountRequested(),
-      "; Paid amount: ", redemption.getAmountPaid(),
-      ". The remaining amount due is: ", amountDue,
-      " and you attempted to create a new payment for: ", amount
+  const auto& amountRequested = redemption.getAmountRequested();
+
+  {
+    auto amountDue = amountRequested - redemption.getAmountPaid();
+    //Check the payment amount is less or equal to the requested amount
+    EOS_CHECK(
+      amount <= amountDue,
+      util::to_str(
+        "Redemption amount must be less than amount due. Original requested amount: ", amountRequested,
+        "; Paid amount: ", redemption.getAmountPaid(),
+        ". The remaining amount due is: ", amountDue,
+        " and you attempted to create a new payment for: ", amount
+      )
+    );
+  }
+
+  //Check if the current payments sum less than the required amount
+  {
+    auto payments = redemption.getPayments();
+    auto totalPayAmount = std::accumulate(payments.begin(), 
+                                          payments.end(), 
+                                          asset(0, amount.symbol), 
+                                          [](asset& prev, TrsyPayment& current){
+                                            return prev + current.getAmountPaid();
+                                          });
+
+    auto amountDue = amountRequested - totalPayAmount;
+    EOS_CHECK(
+      amount <= amountDue,
+      util::to_str("Accumulated amount of existing confirmed & unconfirmed payments is ", totalPayAmount,
+                   ", redemption amount is ", amountRequested, 
+                   " new payments must amount must be less or equal to", amountDue)
     )
-  );
+  }
 
   TrsyPayment payment(*this, treasury.getId(), redemption_id, TrsyPaymentData {
     .creator = treasurer,
     .amount_paid = amount,
     .confirmed_date = eosio::time_point(),
     .is_confirmed = false,
-    .notes = notes
+    .notes = std::move(notes)
   });
+
+  Attestation attestation(*this, payment.getId(), AttestationData {
+    .treasurer = treasurer
+  });
+ 
+  verifyAttestations(
+    { std::move(attestation) }, //Empty array since this is the first attestation
+    getSettingsDocument(treasury.getId()),
+    payment,
+    redemption
+  );
 
   //TODO: Should we notify the requestor?
 }
 
-ACTION dao::attestpaymnt(name treasurer, uint64_t payment_id, const asset& amount, const std::optional<std::string>& notes)
+ACTION dao::attestpay(name treasurer, uint64_t payment_id, const asset& amount, const std::optional<std::string>& notes)
 {
+  TRACE_FUNCTION();
+  require_auth(treasurer);
 
+  EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+  TrsyPayment payment(*this, payment_id);
+
+  auto treasury = payment.getTreasury();
+
+  treasury.checkTreasurerAuth();
+
+  EOS_CHECK(
+    !payment.getIsConfirmed(),
+    "Cannot attest to a payment that has already been confirmed"
+  );
+
+  //Verify that the redeption document is valid by fetching it
+  auto redemption = payment.getRedemption();
+
+  EOS_CHECK(
+    payment.getAmountPaid() == amount,
+    "amount does not match amount on payment you are attesting to."
+  )
+
+  auto attestations = payment.getAttestations();
+
+  EOS_CHECK(
+    std::none_of(attestations.begin(), attestations.end(), [&treasurer](Attestation& attest){
+      return attest.getTreasurer() == treasurer;
+    }),
+    util::to_str("Treasurer ", treasurer, " has already attested to this payment")
+  );
+
+  if (notes.has_value()) {
+    payment.setNotes(notes.value());
+    payment.update();
+  }
+
+  Attestation attestation(*this, payment.getId(), AttestationData {
+    .treasurer = treasurer
+  });
+
+  attestations.emplace_back(std::move(attestation));
+
+  verifyAttestations(
+    attestations,
+    getSettingsDocument(treasury.getId()),
+    payment,
+    redemption
+  );
+}
+
+ACTION dao::remattestpay(name treasurer, uint64_t payment_id)
+{
+  TRACE_FUNCTION();
+  require_auth(treasurer);
+
+  EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+  TrsyPayment payment(*this, payment_id);
+
+  auto treasury = payment.getTreasury();
+
+  treasury.checkTreasurerAuth();
+
+  EOS_CHECK(
+    !payment.getIsConfirmed(),
+    "Cannot remove attestation from a payment that has already been confirmed"
+  );
+
+  auto attestations = payment.getAttestations();
+
+  auto attestIt = std::find_if(attestations.begin(), attestations.end(), [&treasurer](Attestation& attest){
+    return attest.getTreasurer() == treasurer;
+  });
+
+  EOS_CHECK(
+    attestIt != attestations.end(),
+    util::to_str("Treasurer ", treasurer, " hasn't attested this payment")
+  );
+
+  attestIt->remove();
+
+  //Remove payment if this is the only attestation
+  if (attestations.size() == 1) {
+    getGraph().eraseDocument(payment.getId());
+  }
+}
+
+ACTION dao::setpaynotes(uint64_t payment_id, string notes)
+{
+  TRACE_FUNCTION();
+
+  EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+  TrsyPayment payment(*this, payment_id);
+
+  auto treasury = payment.getTreasury();
+
+  treasury.checkTreasurerAuth();
+
+  payment.setNotes(notes);
+  payment.update();
+}
+
+ACTION dao::setrsysttngs(uint64_t treasury_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group)
+{
+  TRACE_FUNCTION();
+
+  EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+  Treasury treasury(*this, treasury_id);
+
+  treasury.checkTreasurerAuth();
+
+  auto settings = getSettingsDocument(treasury_id);
+
+  settings->setSettings(group.value_or(SETTINGS), kvs);
 }
 
 void dao::onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <typed_document.hpp>
 
 #include <eosio/time.hpp>
@@ -22,6 +24,8 @@
 namespace hypha::treasury {
 
 class Redemption;
+class Treasury;
+class Attestation;
 
 class TrsyPayment : public TypedDocument {
 
@@ -44,6 +48,12 @@ public:
     }
 
     Redemption getRedemption();
+
+    Treasury getTreasury();
+
+    //int64_t getAttestationsCount();
+
+    std::vector<Attestation> getAttestations();
 };
 
 using TrsyPaymentData = TrsyPayment::Data;
