@@ -73,7 +73,7 @@ namespace common
     constexpr int64_t YEAR_DURATION_SEC = 31557600;
 
     constexpr size_t MAX_PROPOSAL_TITLE_CHARS = 50;
-    constexpr size_t MAX_PROPOSAL_DESC_CHARS = 2000;
+    constexpr size_t MAX_PROPOSAL_DESC_CHARS = 4000;
 
     // 49.36 phases per annum, so each phase is 2.026% of the total
     //const float PHASE_TO_YEAR_RATIO = 0.02026009582;
