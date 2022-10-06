@@ -252,6 +252,17 @@ namespace hypha
       ACTION archiverecur(uint64_t document_id);
 
       ACTION modpayments(const std::vector<uint64_t>& payments, uint64_t dao_id);
+      
+      //Treasury actions
+      ACTION createtrsy(uint64_t dao_id);
+      ACTION addtreasurer(uint64_t treasury_id, name treasurer);
+      ACTION remtreasurer(uint64_t treasury_id, name treasurer);
+      ACTION redeem(uint64_t dao_id, name requestor, const asset& amount);
+      ACTION newpayment(name treasurer, uint64_t redemption_id, const asset& amount, string notes);
+      ACTION attestpay(name treasurer, uint64_t payment_id, const asset& amount, const std::optional<std::string>& notes);
+      ACTION remattestpay(name treasurer, uint64_t payment_id);
+      ACTION setpaynotes(uint64_t payment_id, string notes);
+      ACTION setrsysttngs(uint64_t treasury_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 
       void setSetting(const string &key, const Content::FlexValue &value);
 
@@ -301,15 +312,38 @@ namespace hypha
          t.erase(it);
       }
 
-      [[eosio::on_notify("husd.hypha::transfer")]]
-      void onhusd(const name& from, const name& to, const asset& quantity, const string& memo) {
-         if (get_first_receiver() == "husd.hypha"_n && 
-            to == get_self() && 
-            quantity.symbol == common::S_HUSD) 
-         {
-            on_husd(from, to, quantity, memo);
-         }
+      [[eosio::on_notify("*::transfer")]]
+      void ontransfer(const name& from, const name& to, const asset& quantity, const string& memo) {
+
+         auto settings = getSettingsDocument();
+         auto pegContract = settings->getOrFail<name>(PEG_TOKEN_CONTRACT);
+
+         if (get_first_receiver() == pegContract &&
+             to == get_self() &&
+             from != get_self()) {
+            //Buying Hypha tokens with HUSD
+            if (memo == "buy") {  
+               
+               EOS_CHECK(
+                  quantity.symbol == common::S_HUSD,
+                  "Buying HYPHA is only available with HUSD tokens"
+               )
+
+               on_husd(from, to, quantity, memo);
+            }
+            else if (memo == "redeem") {
+               onCashTokenTransfer(from, to, quantity, memo);
+            }
+            else {
+               EOS_CHECK(
+                  false, 
+                  "No available actions, please specify in the memo string [buy|redeem]"
+               )
+            }
+         } 
       }
+
+      using transfer_action = eosio::action_wrapper<name("transfer"), &dao::ontransfer>;
 
    private:
 
@@ -323,6 +357,8 @@ namespace hypha
                                        int64_t initTimeShare);
 
       void on_husd(const name& from, const name& to, const asset& quantity, const string& memo);
+
+      void onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo);
 
       void updateDaoURL(name dao, const Content::FlexValue& newURL);
 

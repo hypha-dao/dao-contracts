@@ -21,6 +21,9 @@ public:
             uint64_t id, 
             uint64_t rootID);
 
+    Settings(dao& dao, 
+             uint64_t rootID);
+
     /** @brief Replaces the value of an existing setting, or creates it if it doesn't exist
     * 
     */
