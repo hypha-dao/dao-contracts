@@ -458,7 +458,7 @@ namespace hypha
 
         auto nextID = m_dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
 
-        trx.send(nextID, m_dao.get_self());
+        trx.send(util::hashCombine(nextID, proposal.getID()), m_dao.get_self());
 
         m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
     }
