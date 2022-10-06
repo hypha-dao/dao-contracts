@@ -1077,10 +1077,18 @@ namespace hypha
     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
     checkAdminsAuth(dao_id);
+
     auto settings = getSettingsDocument(dao_id);
     auto dhoSettings = getSettingsDocument();
 
     auto daoName = settings->getOrFail<eosio::name>(DAO_NAME);
+
+    //Verify ID belongs to a valid DAO
+    EOS_CHECK(
+      getDAOID(daoName).has_value(),
+      util::to_str("The provided ID is not valid: ", dao_id)
+    );
+
     //Only hypha dao should be able to use this flag
     EOS_CHECK(
       kvs.count("is_hypha") == 0 ||
@@ -1555,17 +1563,7 @@ namespace hypha
     Document rootDoc(get_self(), get_self(), getRootContent(get_self()));
 
     // Create the settings document as well and add an edge to it
-    ContentGroups settingCgs{
-        ContentGroup{
-            Content(CONTENT_GROUP_LABEL, SETTINGS),
-            Content(ROOT_NODE, util::to_str(rootDoc.getID()))},
-        ContentGroup{
-            Content(CONTENT_GROUP_LABEL, SYSTEM),
-            Content(TYPE, common::SETTINGS_EDGE),
-            Content(NODE_LABEL, "Settings")} };
-
-    Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
-    Edge::write(get_self(), get_self(), rootDoc.getID(), settingsDoc.getID(), common::SETTINGS_EDGE);
+    Settings dhoSettings(*this, rootDoc.getID());
 
     addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
   }

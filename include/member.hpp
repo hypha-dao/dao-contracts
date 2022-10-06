@@ -21,6 +21,13 @@ namespace hypha
         void apply (uint64_t applyTo, const std::string content);
         void enroll (const eosio::name &enroller, uint64_t appliedTo, const std::string &content);
 
+        /**
+         * @brief Verifies if the member is already a member of the give DAO
+         * and if not then it atomatically enrolls him
+         * 
+         * @param daoID 
+         */
+        void checkMembershipOrEnroll(uint64_t daoID);
     private: 
         static ContentGroups defaultContent (const eosio::name &member);
         dao& m_dao;

@@ -47,7 +47,7 @@ namespace hypha
     {
         TRACE_FUNCTION()
         ContentWrapper wrapper(content);
-        this->updateContent(wrapper);
+        updateContent(wrapper);
 
         document = Document(dao.get_self(), dao.get_self(), processContent(content));
     }
@@ -57,9 +57,10 @@ namespace hypha
         auto [idx, docType] = document.getContentWrapper().get(SYSTEM, TYPE);
 
         EOS_CHECK(idx != -1, "Content item labeled 'type' is required for this document but not found.");
-        EOS_CHECK(docType->template getAs<eosio::name>() == this->getType(),
-                     "invalid document type. Expected: " + this->getType().to_string() +
-                         "; actual: " + docType->getAs<eosio::name>().to_string());
+        EOS_CHECK(docType->getAs<eosio::name>() == getType(),
+                  util::to_str("invalid document type. Expected: ", getType(),
+                               "; actual: ", docType->getAs<eosio::name>(), " for document: ", getId())
+        )
 
         getNodeLabel();
     }
@@ -68,7 +69,7 @@ namespace hypha
     {
         ContentWrapper wrapper(content);
         auto [systemIndex, contentGroup] = wrapper.getGroupOrCreate(SYSTEM);
-        wrapper.insertOrReplace(systemIndex, Content(TYPE, this->getType()));
+        wrapper.insertOrReplace(systemIndex, Content(TYPE, getType()));
         wrapper.insertOrReplace(systemIndex, Content(NODE_LABEL, buildNodeLabel(content)));
 
         return wrapper.getContentGroups();
@@ -90,17 +91,17 @@ namespace hypha
     }
     void TypedDocument::update()
     {
-        this->document.update();
+        document.update();
     }
 
     void TypedDocument::erase()
     {
-        this->m_dao.getGraph().eraseDocument(getId());
+        m_dao.getGraph().eraseDocument(getId());
     }
 
     eosio::name TypedDocument::getType()
     {
-        return this->type;
+        return type;
     }
 
     const void TypedDocument::updateContent(ContentWrapper& wrapper)
