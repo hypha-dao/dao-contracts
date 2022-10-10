@@ -97,7 +97,7 @@ public:
         else {
             EOS_CHECK(
                 false, 
-                util::to_str("Setting value is not of expected type: ", key)
+                to_str("Setting value is not of expected type: ", key)
             )
             
             //Just to suprim warnings but it will never get called

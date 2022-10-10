@@ -51,7 +51,7 @@ eosio::time_point RecurringActivity::getApprovedTime()
 
     auto [detailsIdx, _] = cw.getGroup(DETAILS);
 
-    EOS_CHECK(detailsIdx != -1, util::to_str("Missing details group for assignment [", getID(), "]"));
+    EOS_CHECK(detailsIdx != -1, to_str("Missing details group for assignment [", getID(), "]"));
 
     if (auto [idx, legacyCreatedDate] = cw.get(SYSTEM, "legacy_object_created_date"); legacyCreatedDate)
     {

@@ -12,7 +12,7 @@ namespace hypha
             TypedDocument(dao& dao, uint64_t id, eosio::name type);
             const std::string& getNodeLabel();
             Document& getDocument();
-            uint64_t getId();
+            uint64_t getId() const;
             virtual ~TypedDocument();
             void update();
             void erase();

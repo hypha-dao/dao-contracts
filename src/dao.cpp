@@ -95,7 +95,7 @@ namespace hypha
 
   //     EOS_CHECK(
   //       e_t.find(edgeID) == e_t.end(),
-  //       util::to_str("Edge from: ", edge.from_node,
+  //       to_str("Edge from: ", edge.from_node,
   //                   " to: ", edge.to_node,
   //                   " with name: ", edge.edge_name, " already exists")
   //     );
@@ -129,58 +129,6 @@ namespace hypha
    }
    */
 
-  ACTION dao::fixassig(uint64_t assignment_id)
-  {
-    //Skip auth
-    Assignment assignment{ this, assignment_id };
-
-    //Check for missing TimeShare object
-
-    auto [hasInit, timeshare] = Edge::getIfExists(get_self(), assignment_id, common::INIT_TIME_SHARE);
-
-    if (!hasInit) {
-      auto timeShare = assignment.getContentWrapper()
-        .getOrFail(DETAILS, TIME_SHARE);
-
-      auto initTimeShareDoc = TimeShare(get_self(),
-        get_self(),
-        timeShare->getAs<int64_t>(),
-        assignment.getStartPeriod().getStartTime(),
-        assignment_id);
-
-      Edge::write(get_self(), get_self(), assignment_id, initTimeShareDoc.getID(), common::INIT_TIME_SHARE);
-      Edge::write(get_self(), get_self(), assignment_id, initTimeShareDoc.getID(), common::CURRENT_TIME_SHARE);
-      Edge::write(get_self(), get_self(), assignment_id, initTimeShareDoc.getID(), common::LAST_TIME_SHARE);
-      Edge::write(get_self(), get_self(), assignment_id, initTimeShareDoc.getID(), common::TIME_SHARE_LABEL);
-    }
-    else {
-      bool next = true;
-
-      while (next) {
-        Document timeShareDoc(get_self(), timeshare.getToNode());
-        //Create if it doesn't exits
-        Edge::getOrNew(
-          get_self(),
-          get_self(),
-          assignment_id,
-          timeShareDoc.getID(),
-          common::TIME_SHARE_LABEL
-        );
-
-        auto cw = timeShareDoc.getContentWrapper();
-        cw.insertOrReplace(
-          cw.getGroup(DETAILS).first,
-          Content{ ASSIGNMENT_STRING, static_cast<int64_t>(assignment_id) }
-        );
-
-        timeShareDoc.update();
-
-        //Check if there is a next edge - otherwise just finish
-        std::tie(next, timeshare) = Edge::getIfExists(get_self(), timeShareDoc.getID(), common::NEXT_TIME_SHARE);
-      }
-    }
-  }
-
   ACTION dao::setclaimenbld(uint64_t dao_id, bool enabled)
   {
     checkAdminsAuth(dao_id);
@@ -191,7 +139,7 @@ namespace hypha
 
     EOS_CHECK(
       currentState != enabled,
-      util::to_str("Claiming is already ", currentState ? "enabled" : "disabled") 
+      to_str("Claiming is already ", currentState ? "enabled" : "disabled") 
     )
 
     settings->setSetting({ common::CLAIM_ENABLED, static_cast<int64_t>(enabled) });
@@ -306,23 +254,6 @@ namespace hypha
     proposal->update(proposer, docprop, content_groups);
   }
 
-  ACTION dao::cmntmigrate(const uint64_t& dao_id)
-  {
-    TRACE_FUNCTION();
-    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-    std::vector<Edge> proposalEdges = this->getGraph().getEdgesFrom(dao_id, common::PROPOSAL);
-    for (Edge proposalEdge : proposalEdges)
-    {
-      std::pair<bool, Edge> commentSectionEdge = Edge::getIfExists(this->get_self(), proposalEdge.getToNode(), common::COMMENT_SECTION);
-      if (!commentSectionEdge.first)
-      {
-        Document proposal(this->get_self(), proposalEdge.getToNode());
-        Section(*this, proposal);
-      }
-    }
-
-  }
-
   ACTION dao::cmntadd(const name& author, const string content, const uint64_t comment_or_section_id)
   {
     TRACE_FUNCTION();
@@ -392,42 +323,6 @@ namespace hypha
     TypedDocumentFactory::getLikeableDocument(*this, document_id)->unlike(user);
   }
 
-  void dao::proposeextend(uint64_t assignment_id, const int64_t additional_periods)
-  {
-    TRACE_FUNCTION();
-    EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-    EOS_CHECK(false, "Use propose action with 'edit' type");
-
-    Assignment assignment(this, assignment_id);
-
-    // only the assignee can submit an extension proposal
-    eosio::name assignee = assignment.getAssignee().getAccount();
-    eosio::require_auth(assignee);
-
-    auto daoID = Edge::get(get_self(), assignment.getID(), common::DAO).getToNode();
-
-    //Get the DAO edge from the hash
-    EOS_CHECK(
-      Member::isMember(*this, daoID, assignee),
-      "assignee must be a current member to request an extension: " + assignee.to_string()
-    );
-
-    eosio::print("\nproposer is: " + assignee.to_string() + "\n");
-    // construct ContentGroups to call propose
-    auto contentGroups = ContentGroups{
-      ContentGroup{
-            Content(CONTENT_GROUP_LABEL, DETAILS),
-            Content(PERIOD_COUNT, assignment.getPeriodCount() + additional_periods),
-            Content(TITLE, std::string("Assignment Extension Proposal")),
-            Content(ORIGINAL_DOCUMENT, static_cast<int64_t>(assignment.getID()))
-      }
-    };
-
-    // propose the extension
-    std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, daoID, common::EXTENSION));
-    proposal->propose(assignee, contentGroups, false);
-  }
-
   void dao::withdraw(name owner, uint64_t document_id)
   {
     TRACE_FUNCTION();
@@ -439,7 +334,7 @@ namespace hypha
 
     EOS_CHECK(
       assignee == owner,
-      util::to_str("Only the member [", assignee.to_string(), "] can withdraw the assignment [", document_id, "]")
+      to_str("Only the member [", assignee.to_string(), "] can withdraw the assignment [", document_id, "]")
     );
 
     eosio::require_auth(owner);
@@ -450,7 +345,7 @@ namespace hypha
 
     EOS_CHECK(
       state == common::STATE_APPROVED,
-      util::to_str("Cannot withdraw ", state, " assignments")
+      to_str("Cannot withdraw ", state, " assignments")
     );
 
     auto originalPeriods = assignment.getPeriodCount();
@@ -473,7 +368,7 @@ namespace hypha
 
       EOS_CHECK(
         originalPeriods >= periodsToCurrent,
-        util::to_str("Withdrawal of expired assignment: ", document_id, " is not allowed")
+        to_str("Withdrawal of expired assignment: ", document_id, " is not allowed")
       );
 
       modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
@@ -501,7 +396,7 @@ namespace hypha
 
     EOS_CHECK(
       Member::isMember(*this, daoID, proposer),
-      util::to_str("Only members are allowed to propose suspensions")
+      to_str("Only members are allowed to propose suspensions")
     );
 
     eosio::require_auth(proposer);
@@ -549,7 +444,7 @@ namespace hypha
         validStates.end(), 
         [&state](const std::string& x){ return x == state; }
       ),
-      util::to_str("Cannot claim assignment with ", state, " state")
+      to_str("Cannot claim assignment with ", state, " state")
     )
 
     // assignee must still be a DHO member
@@ -561,7 +456,7 @@ namespace hypha
     );
 
     std::optional<Period> periodToClaim = assignment.getNextClaimablePeriod();
-    EOS_CHECK(periodToClaim != std::nullopt, util::to_str("All available periods for this assignment have been claimed: ", assignment_id));
+    EOS_CHECK(periodToClaim != std::nullopt, to_str("All available periods for this assignment have been claimed: ", assignment_id));
 
     // require_auth(assignee);
     EOS_CHECK(has_auth(assignee) || has_auth(get_self()), "only assignee or " + get_self().to_string() + " can claim pay");
@@ -640,7 +535,7 @@ namespace hypha
 
     //If node_label is not present for any reason fallback to the assignment hash
     if (assignmentNodeLabel.empty()) {
-      assignmentNodeLabel = util::to_str(assignment.getID());
+      assignmentNodeLabel = to_str(assignment.getID());
     }
 
     string memo = assignmentNodeLabel + ", period: " + periodToClaim.value().getNodeLabel();
@@ -692,7 +587,7 @@ namespace hypha
                       claimedPeriods.end(), 
                       [id = lastPeriod.getID()](const Edge& e){ return e.to_node != id; })) { 
         
-        ids += sep + util::to_str(assignment.getID());
+        ids += sep + to_str(assignment.getID());
         if (sep.empty()) sep = ",";
 
         if (!only_ids) {
@@ -705,7 +600,7 @@ namespace hypha
 
     EOS_CHECK(
       false,
-      util::to_str(
+      to_str(
           "{\n", 
             "\"peg\":\"", total.peg, "\",\n",
             "\"reward\":\"", total.reward, "\",\n",
@@ -732,7 +627,7 @@ namespace hypha
 
     EOS_CHECK(
       false,
-      util::to_str("{\n\"peg\":\"", pay.peg, "\",\n\"reward\":\"", pay.reward, "\",\n\"voice\":\"", pay.voice, "\"\n}")
+      to_str("{\n\"peg\":\"", pay.peg, "\",\n\"reward\":\"", pay.reward, "\",\n\"voice\":\"", pay.voice, "\"\n}")
     )
   }
 
@@ -898,7 +793,7 @@ namespace hypha
       //Verify badge still exists
       EOS_CHECK(
         Document::exists(get_self(), badge_edge.getToNode()),
-        util::to_str("Badge document doesn't exits for badge assignment:",
+        to_str("Badge document doesn't exits for badge assignment:",
           badgeAssignmentDoc.getID(),
           " badge:", badge_edge.getToNode())
       );
@@ -1086,7 +981,7 @@ namespace hypha
     //Verify ID belongs to a valid DAO
     EOS_CHECK(
       getDAOID(daoName).has_value(),
-      util::to_str("The provided ID is not valid: ", dao_id)
+      to_str("The provided ID is not valid: ", dao_id)
     );
 
     //Only hypha dao should be able to use this flag
@@ -1117,7 +1012,7 @@ namespace hypha
     for (auto& fs : fixedSettings[groupName]) {
       EOS_CHECK(
         kvs.count(fs) == 0,
-        util::to_str(fs, " setting cannot be modified in group: ", groupName)
+        to_str(fs, " setting cannot be modified in group: ", groupName)
       );
     }
 
@@ -1270,7 +1165,7 @@ namespace hypha
 
     EOS_CHECK(
       detailsIdx != -1,
-      util::to_str("Missing Details Group")
+      to_str("Missing Details Group")
     );
 
     auto daoName = configCW.getOrFail(detailsIdx, DAO_NAME).second;
@@ -1280,7 +1175,7 @@ namespace hypha
     //This is a reserved name for the root document
     EOS_CHECK(
       dao != common::DHO_ROOT_NAME,
-      util::to_str(dao, " is a reserved name and can't be used to create a DAO.")
+      to_str(dao, " is a reserved name and can't be used to create a DAO.")
     );
 
     Document daoDoc(get_self(), get_self(), getDAOContent(daoName->getAs<name>()));
@@ -1306,7 +1201,7 @@ namespace hypha
 
     EOS_CHECK(
       votingDurationSeconds->getAs<int64_t>() > 0,
-      util::to_str(VOTING_DURATION_SEC, " has to be a positive number")
+      to_str(VOTING_DURATION_SEC, " has to be a positive number")
     );
 
     auto daoDescription = configCW.getOrFail(detailsIdx, common::DAO_DESCRIPTION).second;
@@ -1344,7 +1239,7 @@ namespace hypha
 
     EOS_CHECK(
       periodDurationSeconds->getAs<int64_t>() > 0,
-      util::to_str(common::PERIOD_DURATION, " has to be a positive number")
+      to_str(common::PERIOD_DURATION, " has to be a positive number")
     );
 
     auto onboarderAcc = configCW.getOrFail(detailsIdx, common::ONBOARDER_ACCOUNT).second;
@@ -1369,7 +1264,7 @@ namespace hypha
 
     require_auth(onboarder);
 
-    Content daoURL = Content{ common::DAO_URL, util::to_str(dao) };;
+    Content daoURL = Content{ common::DAO_URL, to_str(dao) };;
 
     if (auto [_, url] = configCW.get(detailsIdx, common::DAO_URL);
         url)
@@ -1461,7 +1356,7 @@ namespace hypha
       EOS_CHECK(
         coreMemsGroup->size() > 1 &&
         coreMemsGroup->at(0).label == CONTENT_GROUP_LABEL,
-        util::to_str("Wrong format for core groups\n"
+        to_str("Wrong format for core groups\n"
           "[min size: 2, got: ", coreMemsGroup->size(), "]\n",
           "[first item label: ", CONTENT_GROUP_LABEL, " got: ", coreMemsGroup->at(0).label)
       );
@@ -1492,7 +1387,7 @@ namespace hypha
     }
 
     //Create start period
-    Period newPeriod(this, eosio::current_time_point(), util::to_str(dao, " start period"));
+    Period newPeriod(this, eosio::current_time_point(), to_str(dao, " start period"));
 
     //Create start & end edges
     Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::START);
@@ -1502,8 +1397,18 @@ namespace hypha
 
     // EOS_CHECK(
     //   inititialPeriods->getAs<int64_t>() - 1 <= 30,
-    //   util::to_str("The max number of initial periods is 30")
+    //   to_str("The max number of initial periods is 30")
     // );
+
+    //Create Treasury
+    eosio::action(
+      eosio::permission_level{ get_self(), name("active") },
+      get_self(),
+      name("createtrsy"),
+      std::make_tuple(
+        daoDoc.getID()
+      )
+    ).send();
   }
 
   void dao::archiverecur(uint64_t document_id)
@@ -1555,49 +1460,18 @@ namespace hypha
     }
   }
 
-  void dao::createroot(const std::string& notes)
-  {
-    TRACE_FUNCTION();
-    require_auth(get_self());
+  // void dao::createroot(const std::string& notes)
+  // {
+  //   TRACE_FUNCTION();
+  //   require_auth(get_self());
 
-    Document rootDoc(get_self(), get_self(), getRootContent(get_self()));
+  //   Document rootDoc(get_self(), get_self(), getRootContent(get_self()));
 
-    // Create the settings document as well and add an edge to it
-    Settings dhoSettings(*this, rootDoc.getID());
+  //   // Create the settings document as well and add an edge to it
+  //   Settings dhoSettings(*this, rootDoc.getID());
 
-    addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
-  }
-
-  ACTION dao::modpayments(const std::vector<uint64_t>& payments, uint64_t dao_id)
-  {
-    //Verify the ID belongs to a DAO
-    getSettingsDocument(dao_id)->getOrFail<name>(DAO_NAME);
-    
-    for (auto id : payments) {
-
-      Document payment(get_self(), id);
-
-      //Check if it already contains the DAO_ID, if so skip this payment
-      auto cw = payment.getContentWrapper(); 
-
-      EOS_CHECK(
-        !cw.exists(DETAILS, common::DAO.to_string()),
-        util::to_str("Already has DAO id: ", id, " current dao: ", *cw.getOrFail(DETAILS, common::DAO.to_string()), " new dao: ", dao_id)
-      )
-
-      EOS_CHECK(
-        cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == common::PAYMENT,
-        util::to_str("Document is not of Payment type: ", id)
-      )
-
-      cw.insertOrReplace(
-        *cw.getGroupOrFail(DETAILS), 
-        { common::DAO.to_string(), static_cast<int64_t>(dao_id) }
-      );
-
-      payment.update();
-    }
-  }
+  //   addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
+  // }
 
   ACTION dao::modalerts(uint64_t root_id, ContentGroups& alerts)
   {
@@ -1646,7 +1520,7 @@ namespace hypha
 
           EOS_CHECK(
             enabled == 0 || enabled == 1,
-            util::to_str("Invalid value for 'enabled', expected 0 or 1 but got:", enabled)
+            to_str("Invalid value for 'enabled', expected 0 or 1 but got:", enabled)
           );
 
           Document alert(
@@ -1685,7 +1559,7 @@ namespace hypha
 
           EOS_CHECK(
             enabled == 0 || enabled == 1,
-            util::to_str("Invalid value for 'enabled', expected 0 or 1 but got:", enabled)
+            to_str("Invalid value for 'enabled', expected 0 or 1 but got:", enabled)
           );
 
           Document alert(get_self(), static_cast<uint64_t>(id));
@@ -1694,7 +1568,7 @@ namespace hypha
 
           EOS_CHECK(
             alertCW.getOrFail(SYSTEM, TYPE)->getAs<name>() == common::ALERT,
-            util::to_str("Specified id for alert is not valid: ", id, "\n", alertData)
+            to_str("Specified id for alert is not valid: ", id, "\n", alertData)
           );
 
           //Verify the alert belongs to the specified DAO/DHO
@@ -1729,7 +1603,7 @@ namespace hypha
 
           EOS_CHECK(
             alertCW.getOrFail(SYSTEM, TYPE)->getAs<name>() == common::ALERT,
-            util::to_str("Specified id for alert is not valid: ", id)
+            to_str("Specified id for alert is not valid: ", id)
           );
 
           //Verify the alert belongs to the specified DAO/DHO
@@ -1770,7 +1644,7 @@ namespace hypha
 
       EOS_CHECK(
         minDeferred >= 0 && minDeferred <= 100,
-        util::to_str("Invalid value for 'min_deferred_x100', expected value between 0 and 100 but got:", minDeferred)
+        to_str("Invalid value for 'min_deferred_x100', expected value between 0 and 100 but got:", minDeferred)
       );
 
       EOS_CHECK(
@@ -1787,7 +1661,7 @@ namespace hypha
 
       EOS_CHECK(
         bandCW.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::SALARY_BAND,
-        util::to_str("Specified id for salary band is not valid: ", id)
+        to_str("Specified id for salary band is not valid: ", id)
       );
 
       //Verify the salary band belongs to the specified DAO
@@ -1946,14 +1820,14 @@ namespace hypha
 
         EOS_CHECK(
           assignmentExpirationTime.sec_since_epoch() > eosio::current_time_point().sec_since_epoch(),
-          util::to_str("Cannot adjust expired assignment: ", assignment.getID(), " last period: ", lastPeriod.getID())
+          to_str("Cannot adjust expired assignment: ", assignment.getID(), " last period: ", lastPeriod.getID())
         );
 
         auto state = assignmentCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
 
         EOS_CHECK(
           state == common::STATE_APPROVED,
-          util::to_str("Cannot adjust commitment for ", state, " assignments")
+          to_str("Cannot adjust commitment for ", state, " assignments")
         );
       }
 
@@ -1993,7 +1867,7 @@ namespace hypha
 
     EOS_CHECK(
       state == common::STATE_APPROVED,
-      util::to_str("Cannot change deferred percentage on", state, " assignments")
+      to_str("Cannot change deferred percentage on", state, " assignments")
     );
 
     auto approvedDeferredPerc = cw.getOrFail(detailsIdx, common::APPROVED_DEFERRED)
@@ -2001,14 +1875,14 @@ namespace hypha
 
     EOS_CHECK(
       new_deferred_perc_x100 >= approvedDeferredPerc,
-      util::to_str("New percentage has to be greater or equal to approved percentage: ", approvedDeferredPerc)
+      to_str("New percentage has to be greater or equal to approved percentage: ", approvedDeferredPerc)
     );
 
     const int64_t UPPER_LIMIT = 100;
 
     EOS_CHECK(
       approvedDeferredPerc <= new_deferred_perc_x100 && new_deferred_perc_x100 <= UPPER_LIMIT,
-      util::to_str("New percentage is out of valid range [",
+      to_str("New percentage is out of valid range [",
         approvedDeferredPerc, " - ", UPPER_LIMIT, "]:", new_deferred_perc_x100)
     );
 
@@ -2066,12 +1940,12 @@ namespace hypha
 
     EOS_CHECK(
       commitment >= minTimeShare,
-      util::to_str(NEW_TIME_SHARE, " must be greater than or equal to: ", minTimeShare, " You submitted: ", commitment)
+      to_str(NEW_TIME_SHARE, " must be greater than or equal to: ", minTimeShare, " You submitted: ", commitment)
     );
 
     EOS_CHECK(
       commitment <= originalTimeShare,
-      util::to_str(NEW_TIME_SHARE, " must be less than or equal to original (approved) time_share_x100: ", originalTimeShare, " You submitted: ", commitment)
+      to_str(NEW_TIME_SHARE, " must be less than or equal to original (approved) time_share_x100: ", originalTimeShare, " You submitted: ", commitment)
     );
 
     //Update lasttimeshare
@@ -2102,7 +1976,7 @@ namespace hypha
     {
       EOS_CHECK(
         lastTimeSharex100 != commitment,
-        util::to_str("New commitment: [", commitment, "] must be different than current commitment: [", lastTimeSharex100, "]")
+        to_str("New commitment: [", commitment, "] must be different than current commitment: [", lastTimeSharex100, "]")
       );
     }
 
@@ -2120,14 +1994,14 @@ namespace hypha
     Edge::write(get_self(), get_self(), assignment.getID(), newTimeShareDoc.getID(), common::TIME_SHARE_LABEL);
   }
 
-  uint64_t dao::getRootID()
+  uint64_t dao::getRootID() const
   {
     auto rootID = getDAOID(common::DHO_ROOT_NAME);
 
     //Verify root entry exists
     EOS_CHECK(
       rootID.has_value(),
-      util::to_str("Missing root document entry")
+      to_str("Missing root document entry")
     );
 
     return *rootID;
@@ -2143,7 +2017,7 @@ namespace hypha
     }
   }
 
-  std::optional<uint64_t> dao::getDAOID(const name& daoName)
+  std::optional<uint64_t> dao::getDAOID(const name& daoName) const
   {
     return getNameID<dao_table>(daoName);
   }
@@ -2154,7 +2028,7 @@ namespace hypha
 
     EOS_CHECK(
       id.has_value(),
-      util::to_str("There is no member with name:", memberName)
+      to_str("There is no member with name:", memberName)
     );
 
     return *id;
@@ -2168,7 +2042,7 @@ namespace hypha
 
     EOS_CHECK(
       Edge::exists(get_self(), dao_id, memberID, common::ENROLLER),
-      util::to_str("Only enrollers of the dao are allowed to perform this action")
+      to_str("Only enrollers of the dao are allowed to perform this action")
     );
   }
 
@@ -2188,7 +2062,7 @@ namespace hypha
         Member member(*this, adminEdge.to_node);
         return eosio::has_auth(member.getAccount());
       }),
-      util::to_str("Only admins of the dao are allowed to perform this action")
+      to_str("Only admins of the dao are allowed to perform this action")
     );
   }
 
@@ -2221,7 +2095,7 @@ namespace hypha
       Period nextPeriod(
         this,
         nextPeriodStart,
-        util::to_str(daoName, ":", nextPeriodStart.time_since_epoch().count())
+        to_str(daoName, ":", nextPeriodStart.time_since_epoch().count())
       );
 
       Edge(get_self(), get_self(), lastPeriodID, nextPeriod.getID(), common::NEXT);
@@ -2294,7 +2168,7 @@ namespace hypha
     asset hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
     EOS_CHECK(
       hyphaUsdVal.symbol.precision() == 4,
-      util::to_str("Expected hypha_usd_value precision to be 4, but got:", hyphaUsdVal.symbol.precision())
+      to_str("Expected hypha_usd_value precision to be 4, but got:", hyphaUsdVal.symbol.precision())
     );
     double factor = (hyphaUsdVal.amount / 10000.0);
 
@@ -2323,7 +2197,7 @@ namespace hypha
 
   void dao::updateDaoURL(name dao, const Content::FlexValue& newURL)
   {
-    auto newUrlCon = Content{util::to_str(common::URL, "_", dao), newURL};
+    auto newUrlCon = Content{to_str(common::URL, "_", dao), newURL};
 
     auto globalSettings = getSettingsDocument();
     
@@ -2335,7 +2209,7 @@ namespace hypha
         EOS_CHECK(
           url.label == CONTENT_GROUP_LABEL ||
           url.value != newUrlCon.value,
-          util::to_str("URL is already being used, please use a different one", " ", url.label, " ", url.getAs<std::string>())
+          to_str("URL is already being used, please use a different one", " ", url.label, " ", url.getAs<std::string>())
         );
       }
 

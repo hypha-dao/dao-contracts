@@ -57,7 +57,7 @@ namespace hypha
         
         EOS_CHECK(
             !Edge::exists(getContract(), applyTo, getID(), common::MEMBER),
-            util::to_str("You are a member of this DAO already")
+            to_str("You are a member of this DAO already")
         )
 
         Edge::write(getContract(), getAccount(), applyTo, getID(), common::APPLICANT);
@@ -99,7 +99,7 @@ namespace hypha
         auto voiceToken = daoSettings->getOrFail<asset>(common::VOICE_TOKEN);
 
         eosio::asset genesis_voice{getTokenUnit(voiceToken), voiceToken.symbol};
-        std::string memo = util::to_str("genesis voice issuance during enrollment to ", daoName);
+        std::string memo = to_str("genesis voice issuance during enrollment to ", daoName);
 
         name hyphaHvoice = m_dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 

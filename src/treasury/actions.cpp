@@ -144,7 +144,7 @@ ACTION dao::newpayment(name treasurer, uint64_t redemption_id, const asset& amou
     //Check the payment amount is less or equal to the requested amount
     EOS_CHECK(
       amount <= amountDue,
-      util::to_str(
+      to_str(
         "Redemption amount must be less than amount due. Original requested amount: ", amountRequested,
         "; Paid amount: ", redemption.getAmountPaid(),
         ". The remaining amount due is: ", amountDue,
@@ -166,7 +166,7 @@ ACTION dao::newpayment(name treasurer, uint64_t redemption_id, const asset& amou
     auto amountDue = amountRequested - totalPayAmount;
     EOS_CHECK(
       amount <= amountDue,
-      util::to_str("Accumulated amount of existing confirmed & unconfirmed payments is ", totalPayAmount,
+      to_str("Accumulated amount of existing confirmed & unconfirmed payments is ", totalPayAmount,
                    ", redemption amount is ", amountRequested, 
                    ", so new payments amount must be less or equal to ", amountDue, " but you submitted ", amount)
     )
@@ -226,7 +226,7 @@ ACTION dao::attestpay(name treasurer, uint64_t payment_id, const asset& amount, 
     std::none_of(attestations.begin(), attestations.end(), [&treasurer](Attestation& attest){
       return attest.getTreasurer() == treasurer;
     }),
-    util::to_str("Treasurer ", treasurer, " has already attested to this payment")
+    to_str("Treasurer ", treasurer, " has already attested to this payment")
   );
 
   if (notes.has_value()) {
@@ -274,7 +274,7 @@ ACTION dao::remattestpay(name treasurer, uint64_t payment_id)
 
   EOS_CHECK(
     attestIt != attestations.end(),
-    util::to_str("Treasurer ", treasurer, " hasn't attested this payment")
+    to_str("Treasurer ", treasurer, " hasn't attested this payment")
   );
 
   attestIt->remove();
@@ -331,7 +331,7 @@ void dao::onCashTokenTransfer(const name& from, const name& to, const asset& qua
     auto settings = getSettingsDocument();
     settings->setSetting(
       "errors", 
-      Content{ "cash_critital_error", util::to_str("Symbol raw value colapses with 'dao' edge name:", quantity) }
+      Content{ "cash_critital_error", to_str("Symbol raw value colapses with 'dao' edge name:", quantity) }
     );
     return;
   }

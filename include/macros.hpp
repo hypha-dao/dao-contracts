@@ -60,6 +60,18 @@
     action(a,b,c,d)\
     FOR_EACH_PACK28(action, __VA_ARGS__)
 
+#define FOR_EACH_PACK36(action,a,b,c,d,...)\
+    action(a,b,c,d)\
+    FOR_EACH_PACK32(action, __VA_ARGS__)
+
+#define FOR_EACH_PACK40(action,a,b,c,d,...)\
+    action(a,b,c,d)\
+    FOR_EACH_PACK36(action, __VA_ARGS__)
+
+#define FOR_EACH_PACK44(action,a,b,c,d,...)\
+    action(a,b,c,d)\
+    FOR_EACH_PACK40(action, __VA_ARGS__)
+
 
 #define PROPERTY(name, type, getSet) name, type, getSet, unused
 

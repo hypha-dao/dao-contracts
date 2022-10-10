@@ -42,6 +42,14 @@ namespace hypha
         name name;
         uint64_t primary_key() const { return name.value; }
         uint64_t by_id() const { return id; }
+
+        template<class Table>
+        static bool exists(const dao& dao, uint64_t id)
+        {
+           Table t(dao.get_self(), dao.get_self().value);
+           auto t_i = t.template get_index<"bydocid"_n>();
+           return t_i.find(id) != t_i.end();
+        }
       };
 
       typedef multi_index<name("daos"), NameToID,
@@ -84,7 +92,6 @@ namespace hypha
       ACTION proposeupd(const name &proposer, uint64_t proposal_id, ContentGroups &content_groups);
 
       // comment related
-      ACTION cmntmigrate(const uint64_t &dao_id);
       ACTION cmntadd(const name &author, const string content, const uint64_t comment_or_section_id);
       ACTION cmntupd(const string new_content, const uint64_t comment_id);
       ACTION cmntrem(const uint64_t comment_id);
@@ -116,7 +123,6 @@ namespace hypha
       ACTION claimnextper(uint64_t assignment_id);
       ACTION simclaimall(name account, uint64_t dao_id, bool only_ids);
       ACTION simclaim(uint64_t assignment_id);
-      ACTION proposeextend (uint64_t assignment_id, const int64_t additional_periods);
 
       ACTION apply(const eosio::name &applicant, uint64_t dao_id, const std::string &content);
       ACTION enroll(const eosio::name &enroller, uint64_t dao_id, const eosio::name &applicant, const std::string &content);
@@ -140,13 +146,11 @@ namespace hypha
          eosio::require_auth(get_self());
          Document doc(get_self(), doc_id);
          auto cw = doc.getContentWrapper();
-         if (cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == common::DAO) {
+         if (cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == hypha::common::DAO) {
             remNameID<dao_table>(cw.getOrFail(DETAILS, DAO_NAME)->getAs<name>());
          }
          m_documentGraph.eraseDocument(doc_id, true);
       }
-
-      ACTION fixassig(uint64_t assignment_id);
 
       ACTION setclaimenbld(uint64_t dao_id, bool enabled);
 
@@ -246,12 +250,10 @@ namespace hypha
       ACTION withdraw(name owner, uint64_t document_id);
       ACTION suspend(name proposer, uint64_t document_id, string reason);
 
-      ACTION createroot(const std::string &notes);
+      //ACTION createroot(const std::string &notes);
       ACTION createdao(ContentGroups &config);
 
       ACTION archiverecur(uint64_t document_id);
-
-      ACTION modpayments(const std::vector<uint64_t>& payments, uint64_t dao_id);
       
       //Treasury actions
       ACTION createtrsy(uint64_t dao_id);
@@ -264,12 +266,16 @@ namespace hypha
       ACTION setpaynotes(uint64_t payment_id, string notes);
       ACTION setrsysttngs(uint64_t treasury_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 
-      void setSetting(const string &key, const Content::FlexValue &value);
+      //Pricing System actions
+      ACTION activateplan(ContentGroups& plan_info);
+      ACTION addprcngplan(ContentGroups& pricing_plan_info, const std::vector<uint64_t>& offer_ids);
+      ACTION addpriceoffr(ContentGroups& price_offer_info, const std::vector<uint64_t>& pricing_plan_ids);
+      ACTION setdefprcpln(uint64_t price_plan_id);
+      ACTION modoffers(const std::vector<uint64_t>& pricing_plan_ids, const std::vector<uint64_t>& offer_ids, bool unlink);
+      //ACTION remprcngplan(ContentGroups& plan_info);
+      ACTION activatedao(eosio::name dao_name);
 
-      asset getSeedsAmount(const eosio::asset &usd_amount,
-                           const eosio::time_point &price_time_point,
-                           const float &time_share,
-                           const float &deferred_perc);
+      void setSetting(const string &key, const Content::FlexValue &value);
 
       void makePayment(Settings* daoSettings, uint64_t fromNode, const eosio::name &recipient,
                        const eosio::asset &quantity, const string &memo,
@@ -283,6 +289,10 @@ namespace hypha
 
       uint64_t getMemberID(const name& memberName);
 
+      uint64_t getRootID() const;
+
+      std::optional<uint64_t> getDAOID(const name& daoName) const;
+
       template<class Table>
       void addNameID(const name& n, uint64_t id)
       {
@@ -290,7 +300,7 @@ namespace hypha
 
          EOS_CHECK(
             t.find(n.value) == t.end(),
-            util::to_str(n, ": entry already existis in table")
+            to_str(n, ": entry already existis in table")
          )
 
          t.emplace(get_self(), [n, id](NameToID& entry) {
@@ -306,7 +316,7 @@ namespace hypha
          auto it = t.find(n.value);
          EOS_CHECK(
             it != t.end(),
-            util::to_str("Cannot remove entry since it doesn't exits: ", n)
+            to_str("Cannot remove entry since it doesn't exits: ", n)
          )
 
          t.erase(it);
@@ -317,15 +327,16 @@ namespace hypha
 
          auto settings = getSettingsDocument();
          auto pegContract = settings->getOrFail<name>(PEG_TOKEN_CONTRACT);
+         auto rewardContract = settings->getOrFail<name>(REWARD_TOKEN_CONTRACT);
 
          if (get_first_receiver() == pegContract &&
              to == get_self() &&
              from != get_self()) {
             //Buying Hypha tokens with HUSD
-            if (memo == "buy") {  
+            if (memo == "buy") {
                
                EOS_CHECK(
-                  quantity.symbol == common::S_HUSD,
+                  quantity.symbol == hypha::common::S_HUSD,
                   "Buying HYPHA is only available with HUSD tokens"
                )
 
@@ -340,7 +351,21 @@ namespace hypha
                   "No available actions, please specify in the memo string [buy|redeem]"
                )
             }
-         } 
+         }
+         //Adding credits to DAO
+         else if (get_first_receiver() == rewardContract &&
+                  to == get_self() &&
+                  from != get_self() &&
+                  quantity.symbol == hypha::common::S_HYPHA) {
+            auto [type, daoId] = splitStringView<std::string, int64_t>(string_view(memo.c_str(), memo.size()), ';');
+
+            EOS_CHECK(
+               type == "credit",
+               "Only credit transaction is currently available"
+            );
+
+            onCreditDao(static_cast<uint64_t>(daoId), quantity);
+         }
       }
 
       using transfer_action = eosio::action_wrapper<name("transfer"), &dao::ontransfer>;
@@ -360,6 +385,8 @@ namespace hypha
 
       void onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo);
 
+      void onCreditDao(uint64_t dao_id, const asset& amount);
+
       void updateDaoURL(name dao, const Content::FlexValue& newURL);
 
       void changeDecay(Settings* dhoSettings, Settings* daoSettings, uint64_t decayPeriod, uint64_t decayPerPeriod);
@@ -367,7 +394,7 @@ namespace hypha
       void addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle);
 
       template<class Table>
-      std::optional<uint64_t> getNameID(const name& n)
+      std::optional<uint64_t> getNameID(const name& n) const
       {
          Table t(get_self(), get_self().value);
 
@@ -377,10 +404,6 @@ namespace hypha
 
          return {};
       }
-
-      uint64_t getRootID();
-
-      std::optional<uint64_t> getDAOID(const name& daoName);
 
       Member getOrCreateMember(const name& member);
 

@@ -38,7 +38,7 @@ namespace hypha
         return document;
     }
 
-    uint64_t TypedDocument::getId()
+    uint64_t TypedDocument::getId() const
     {
         return document.getID();
     }
@@ -58,7 +58,7 @@ namespace hypha
 
         EOS_CHECK(idx != -1, "Content item labeled 'type' is required for this document but not found.");
         EOS_CHECK(docType->getAs<eosio::name>() == getType(),
-                  util::to_str("invalid document type. Expected: ", getType(),
+                  to_str("invalid document type. Expected: ", getType(),
                                "; actual: ", docType->getAs<eosio::name>(), " for document: ", getId())
         )
 

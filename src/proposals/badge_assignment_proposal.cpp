@@ -31,12 +31,12 @@ namespace hypha
 
         EOS_CHECK(
             m_daoID == Edge::get(m_dao.get_self(), badgeDocument.getID (), common::DAO).getToNode(),
-            util::to_str("Badge must belong to: ", m_daoID)
+            to_str("Badge must belong to: ", m_daoID)
         )
 
         EOS_CHECK(
             badge.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_APPROVED,
-            util::to_str("Badge must be approved before applying to it.")
+            to_str("Badge must be approved before applying to it.")
         )
 
         // START_PERIOD - number of periods the assignment is valid for
