@@ -22,7 +22,7 @@ namespace hypha
             dao& getDao() const;
             bool documentExists(dao& dao, const uint64_t& id);
             virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
-            virtual const void updateContent(ContentWrapper& wrapper);
+            void updateDocument(ContentGroups content);
 
             eosio::name getType();
             ContentWrapper getContentWrapper() { return document.getContentWrapper(); }

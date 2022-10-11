@@ -162,7 +162,7 @@ namespace hypha
       }
 
       /**TODO: Remove */
-      //ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
+      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
 
       /**TODO: Remove */
       struct InputEdge {
@@ -272,7 +272,10 @@ namespace hypha
       ACTION addpriceoffr(ContentGroups& price_offer_info, const std::vector<uint64_t>& pricing_plan_ids);
       ACTION setdefprcpln(uint64_t price_plan_id);
       ACTION modoffers(const std::vector<uint64_t>& pricing_plan_ids, const std::vector<uint64_t>& offer_ids, bool unlink);
+      //ACTION updateprcpln(uint64_t pricing_plan_id, ContentGroups& pricing_plan_info);
+      //ACTION updateprcoff(uint64_t price_offer_id, ContentGroups& price_offer_info);
       //ACTION remprcngplan(ContentGroups& plan_info);
+      ACTION updatecurbil(uint64_t dao_id);
       ACTION activatedao(eosio::name dao_name);
 
       void setSetting(const string &key, const Content::FlexValue &value);

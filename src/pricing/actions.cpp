@@ -89,6 +89,9 @@ ACTION dao::activateplan(ContentGroups& plan_info)
     //Verify Auth
     checkAdminsAuth(daoID);
 
+    //TODO: Verify if DAO is allowed to change it's current plan
+    //child DAO's aren't
+
     auto defPlan = getDefaultPlan(*this).getId();
 
     auto planID = cw.getOrFail(DETAILS, items::PLAN_ID)
@@ -114,53 +117,82 @@ ACTION dao::activateplan(ContentGroups& plan_info)
         "Offer is not valid for the requested Pricing plan"
     )
 
-    time_t t = eosio::current_time_point().sec_since_epoch();
+    auto now = eosio::current_time_point();
+    time_t t = now.sec_since_epoch();
      
-    // if (auto [_, startDate] = cw.get(DETAILS, items::START_DATE); 
-    //     startDate) {
-    //     auto date = startDate->getAs<eosio::time_point>();
-    //     // //We can bypass this if called by the contract account
-    //     EOS_CHECK(
-    //         date >= eosio::current_time_point() || eosio::has_auth(get_self()),
-    //         "Start Date cannot be in the past"
-    //     )
+    if (auto [_, startDate] = cw.get(DETAILS, items::START_DATE); 
+        startDate) {
+        auto date = startDate->getAs<eosio::time_point>();
+        // //We can bypass this if called by the contract account
+        EOS_CHECK(
+            /*date >= eosio::current_time_point() ||*/ eosio::has_auth(get_self()),
+            "Start Date cannot be in the past"
+        )
 
-    //     t = date.sec_since_epoch();
-    // }
+        t = date.sec_since_epoch();
+    }
 
     PlanManager planManager = PlanManager::getFromDaoID(*this, daoID);
 
     auto currentBill = planManager.getCurrentBill();
     auto currentPlan = currentBill.getPricingPlan();
 
-    if (currentPlan.getId() == defPlan || 
-        currentPlan.getId() != plan.getId()) {
-        //End current plan default plan
-        currentBill.setEndDate(eosio::time_point(eosio::seconds(t)));
-        currentBill.setExpirationDate(eosio::time_point(eosio::seconds(t)));
-        currentBill.setIsInfinite(false);
-        currentBill.update();
+    EOS_CHECK(
+        !currentBill.getIsInfinite() || !currentBill.getNextBill(),
+        "Update your current plan before activating a new one, contact an admin"
+    )
 
-        //Calculate credit of remaining periods since
-        //we are doing a plan switch
-        if (currentPlan.getId() != defPlan) {
-            planManager.addCredit(planManager.calculateCredit());
-            planManager.setLastBill(currentBill);
-            
-            //Remove upcoming bills
-            auto next = currentBill.getNextBill();
-            while (next) {
-                auto tmp = next->getNextBill();
-                next->erase();
-                next = std::move(tmp);
+    EOS_CHECK(
+        now < currentBill.getEndDate() || !currentBill.getNextBill(),
+        "Update your current plan before activating a new one, contact an admin"
+    )
+
+    EOS_CHECK(
+        planID != defPlan || currentPlan.getId() != defPlan,
+        "DAO is already in default plan"
+    );
+
+    //Check if the last plan is valid or if it expired
+    if (auto lastBill = planManager.getLastBill(); 
+        lastBill.getIsInfinite() || now <= lastBill.getExpirationDate()) {
+        
+        if (currentPlan.getId() != plan.getId()) {
+            //Calculate credit of remaining periods since
+            //we are doing a plan switch
+            if (currentPlan.getId() != defPlan) {
+                //NOW: Think about the case where we are chaning the plan
+                //but we are on the grace period endDate < now
+                planManager.addCredit(planManager.calculateCredit());
+                planManager.setLastBill(currentBill);
+                
+                //Remove upcoming bills
+                auto next = currentBill.getNextBill();
+                while (next) {
+                    auto tmp = next->getNextBill();
+                    next->erase();
+                    next = std::move(tmp);
+                }
             }
+
+            //End current plan default plan
+            if (currentBill.getIsInfinite() || now < currentBill.getEndDate()) {    
+                currentBill.setEndDate(eosio::time_point(eosio::seconds(t)));
+                currentBill.setExpirationDate(eosio::time_point(eosio::seconds(t)));
+                currentBill.setIsInfinite(false);
+                currentBill.update();
+            }
+        }
+        else {
+            //Same plan
+            t = planManager.getLastBill()
+                        .getEndDate()
+                        .sec_since_epoch();
         }
     }
     else {
-        //Same plan
-        t = planManager.getLastBill()
-                       .getEndDate()
-                       .sec_since_epoch();
+        //Case where Current Plan already expired but we didn't update to the Default Plan
+
+        //Nothing special to do for now
     }
 
     // EOS_CHECK(
@@ -177,11 +209,12 @@ ACTION dao::activateplan(ContentGroups& plan_info)
 
     float priceDisc = 1.0f - plan.getDiscountPercentage() / 10000.f;
 
-    auto payAmount = adjustAsset(plan.getPrice(), priceDisc * offerDisc) * periods;
+    auto payAmount = adjustAsset(plan.getPrice(), priceDisc * offerDisc * periods);
 
     planManager.removeCredit(payAmount);
 
     planManager.update();
+    
     auto [start,end,billingDay] = getStartAndEndDates(t, periods);
 
     BillingInfo bill(*this, planManager, plan, offer, BillingInfoData {
@@ -190,9 +223,11 @@ ACTION dao::activateplan(ContentGroups& plan_info)
         .end_date = end,
         .billing_day = billingDay,
         .period_count = periods,
+        .offer_discount_perc_x10000 = offer.getDiscountPercentage(),
         .discount_perc_x10000 = plan.getDiscountPercentage(),
         .plan_name = plan.getName(),
         .plan_price = plan.getPrice(),
+        .total_paid = payAmount,
         .is_infinite = false
     });
 
@@ -230,21 +265,15 @@ ACTION dao::addprcngplan(ContentGroups& pricing_plan_info, const std::vector<uin
 
     auto cw = ContentWrapper(pricing_plan_info);
 
-    auto& name = cw.getOrFail(DETAILS, "name")->getAs<std::string>();
-    auto& price = cw.getOrFail(DETAILS, "price")->getAs<eosio::asset>();
-    const auto& reactivationPeriod = cw.getOrFail(DETAILS, "reactivation_period_sec")->getAs<int64_t>();
-    const auto& maxMemberCount = cw.getOrFail(DETAILS, "max_member_count")->getAs<int64_t>();
-    const auto& discountPerc = cw.getOrFail(DETAILS, "discount_perc_x10000")->getAs<int64_t>();
-
     //TODO: Add data validators (create validators.hpp and make custom validators, also
     //allow chained validators i.e. MultiValidator(RangeValidator(1, 1000), NotEq([3, 10, 20])))
 
     PricingPlan pricingPlan(*this, PricingPlanData {
-        .name = std::move(name),
-        .price = std::move(price),
-        .reactivation_period_sec = reactivationPeriod,
-        .max_member_count = maxMemberCount,
-        .discount_perc_x10000 = discountPerc
+        .name = std::move(cw.getOrFail(DETAILS, items::NAME)->getAs<std::string>()),
+        .price = std::move(cw.getOrFail(DETAILS, items::PRICE)->getAs<eosio::asset>()),
+        .reactivation_period_sec = cw.getOrFail(DETAILS, items::REACTIVATION_PERIOD)->getAs<int64_t>(),
+        .max_member_count = cw.getOrFail(DETAILS, items::MAX_MEMBER_COUNT)->getAs<int64_t>(),
+        .discount_perc_x10000 = cw.getOrFail(DETAILS, items::DISCOUNT_PERCENTAGE)->getAs<int64_t>()
     });
 
     for (auto& offerID : offer_ids) {
@@ -354,6 +383,11 @@ ACTION dao::activatedao(eosio::name dao_name)
         "Default Plan must have only 1 linked offer"
     )
 
+    EOS_CHECK(
+        defPlan.getPrice().amount == 0,
+        "Default Plan must be free"
+    )
+
     PriceOffer& offer = offers.back();
 
     time_t t = eosio::current_time_point().sec_since_epoch();
@@ -370,15 +404,74 @@ ACTION dao::activatedao(eosio::name dao_name)
                             .end_date = eosio::time_point(),
                             .billing_day = billingDay,
                             .period_count = -1,
-                            .discount_perc_x10000 = offer.getDiscountPercentage(),
+                            .discount_perc_x10000 = defPlan.getDiscountPercentage(),
+                            .offer_discount_perc_x10000 = offer.getDiscountPercentage(),
                             .plan_name = defPlan.getName(),
                             .plan_price = defPlan.getPrice(),
+                            .total_paid = defPlan.getPrice(),
                             .is_infinite = true
                         });
 
     planManager.setCurrentBill(defBill);
     planManager.setLastBill(defBill);
     planManager.setStartBill(defBill);
+}
+
+// ACTION dao::updateprcpln(uint64_t pricing_plan_id, ContentGroups& pricing_plan_info)
+// {
+//     eosio::require_auth(get_self());
+
+//     auto cw = ContentWrapper(pricing_plan_info);
+
+//     PricingPlan plan(*this, pricing_plan_id);
+
+//     auto [nIdx, name] = cw.get(DETAILS, items::NAME);
+//     auto [pIdx, price] = cw.get(DETAILS, items::PRICE);
+//     auto [rIdx, reactivationPeriod] = cw.get(DETAILS, items::REACTIVATION_PERIOD);
+//     auto [dIdx, discount] = cw.get(DETAILS, items::DISCOUNT_PERCENTAGE);
+//     auto [mIdx, maxMembers] = cw.get(DETAILS, items::MAX_MEMBER_COUNT);
+
+//     plan.updateData(PricingPlanData {
+//         .name = name ? name->getAs<std::string>() : plan.getName(),
+//         .price = price ? price->getAs<eosio::asset>() : plan.getPrice(),
+//         .reactivation_period_sec = reactivationPeriod ? reactivationPeriod->getAs<int64_t>() : plan.getReactivationPeriod(),
+//         .discount_perc_x10000 = discount ? discount->getAs<int64_t>() : plan.getDiscountPercentage(),
+//         .max_member_count = maxMembers ? maxMembers->getAs<int64_t>() : plan.getMaxMemberCount()
+//     });
+// }
+
+// ACTION dao::updateprcoff(uint64_t price_offer_id, ContentGroups& price_offer_info)
+// {
+//     eosio::require_auth(get_self());
+
+//     auto cw = ContentWrapper(price_offer_info);
+
+//     PriceOffer offer(*this, price_offer_id);
+
+//     auto [tIdx, tag] = cw.get(DETAILS, items::TAG);
+//     auto [pIdx, periods] = cw.get(DETAILS, PERIOD_COUNT);
+//     auto [dIdx, discount] = cw.get(DETAILS, items::DISCOUNT_PERCENTAGE);
+
+//     offer.updateData(PriceOfferData{
+//         .period_count = periods ? periods->getAs<int64_t>() : offer.getPeriodCount(),
+//         .discount_perc_x10000 = discount ? discount->getAs<int64_t>() : offer.getDiscountPercentage(),
+//         .tag = tag ? tag->getAs<std::string>() : offer.getTag(),
+//     });
+// }
+
+ACTION dao::updatecurbil(uint64_t dao_id)
+{
+    //Prob it doens't require special perms
+    checkAdminsAuth(dao_id);
+
+    auto planManager = PlanManager::getFromDaoID(*this, dao_id);
+
+    auto currentBill = planManager.getCurrentBill();
+
+    //Doesn't need to do anything if it's infinite
+    if (!currentBill.getIsInfinite()) {
+
+    }
 }
 
 }

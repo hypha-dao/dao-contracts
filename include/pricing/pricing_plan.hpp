@@ -37,7 +37,12 @@ public:
     std::vector<PriceOffer> getOffers();
 
     bool hasOffer(uint64_t offerID);
+
+    void updateData(Data data);
+
 private:
+    void verifyData(const Data& data);
+    
     virtual const std::string buildNodeLabel(ContentGroups &content) override
     {
         return "Pricing Plan";

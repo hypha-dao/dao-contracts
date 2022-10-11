@@ -163,26 +163,26 @@ eosio::asset PlanManager::calculateCredit()
     auto now = eosio::current_time_point();
 
     EOS_CHECK(
-        now < next->getEndDate(),
+        now <= next->getEndDate(),
         "Current time must be less than current bill end date"
     )
 
     for (; next; next = next->getNextBill()) {
+        
         auto start = next->getStartDate();
         auto end = next->getEndDate();
 
-        auto total = end - start;
-        auto remaining = end - now;
+        auto total = (end - start).count();
+        auto remaining = std::min((end - now).count(), int64_t(0));
 
         auto amount = adjustAsset(
-            next->getPlanPrice() * next->getPeriodCount(),
-            (1.f - (next->getDiscountPercentage() / 10000.f)) * 
-            (1.f - (next->getPriceOffer().getDiscountPercentage() / 10000.f))
+            next->getTotalPaid(),
+            float(remaining) / float(total)
         );
 
         credit += amount;
 
-        now = end;
+        //now = end;
     }
 
     return credit;

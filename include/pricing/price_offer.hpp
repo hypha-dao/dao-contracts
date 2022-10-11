@@ -5,6 +5,11 @@
 
 namespace hypha::pricing {
 
+//TODO: Improve validation methods
+//IDEA: Add a validator to each PROPERTY()
+//which will be called on setX or convert Function
+//or manually by a verify function
+
 class PriceOffer : public TypedDocument 
 {
     DECLARE_DOCUMENT(
@@ -16,7 +21,10 @@ class PriceOffer : public TypedDocument
 public:
     PriceOffer(dao& dao, uint64_t id);
     PriceOffer(dao& dao, Data data);
+
+    void updateData(Data data);
 private:
+    void verifyData(const Data& data);
     virtual const std::string buildNodeLabel(ContentGroups &content) override
     {
         return "Price Offer";

@@ -72,6 +72,10 @@
     action(a,b,c,d)\
     FOR_EACH_PACK40(action, __VA_ARGS__)
 
+#define FOR_EACH_PACK48(action,a,b,c,d,...)\
+    action(a,b,c,d)\
+    FOR_EACH_PACK44(action, __VA_ARGS__)
+
 
 #define PROPERTY(name, type, getSet) name, type, getSet, unused
 
@@ -98,7 +102,7 @@ void set##getSet(type value) {\
 #define DECLARE_METHODS(...)\
 FOR_EACH(DECLARE_GET_SET, __VA_ARGS__)
 
-#define CONVERT_FIELD(name, _u, _v, _w) Content{#name, data.name},
+#define CONVERT_FIELD(name, _u, _v, _w) Content{#name, std::move(data.name)},
 #define DECLARE_CONVERT(structName, ...)\
 ContentGroups convert(structName data) {\
     return ContentGroups {\

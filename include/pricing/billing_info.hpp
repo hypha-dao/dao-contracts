@@ -21,8 +21,10 @@ class BillingInfo : public TypedDocument
         PROPERTY(billing_day, int64_t, BillingDay),
         PROPERTY(period_count, int64_t, PeriodCount),
         PROPERTY(discount_perc_x10000, int64_t, DiscountPercentage),
+        PROPERTY(offer_discount_perc_x10000, int64_t, OfferDiscountPercentage),
         PROPERTY(plan_name, std::string, PlanName),
         PROPERTY(plan_price, eosio::asset, PlanPrice),
+        PROPERTY(total_paid, eosio::asset, TotalPaid),
         PROPERTY(is_infinite, int64_t, IsInfinite)
     )
 public:

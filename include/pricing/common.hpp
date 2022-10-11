@@ -31,6 +31,12 @@ namespace hypha::pricing::common {
         inline constexpr auto PERIODS = "periods";
         inline constexpr auto END_DATE = "end_date";
         inline constexpr auto BILLING_DAY = "billing_day";
+        inline constexpr auto NAME = "name";
+        inline constexpr auto TAG = "tag";
+        inline constexpr auto PRICE = "price";
+        inline constexpr auto REACTIVATION_PERIOD = "reactivation_period_sec";
+        inline constexpr auto DISCOUNT_PERCENTAGE = "discount_perc_x10000";
+        inline constexpr auto MAX_MEMBER_COUNT = "max_member_count";
     } // namespace items
     
 }

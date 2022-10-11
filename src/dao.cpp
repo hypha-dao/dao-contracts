@@ -50,6 +50,20 @@ namespace hypha
 
     Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
   }
+
+  ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
+  {
+    require_auth(get_self());
+
+    Document doc(get_self(), doc_id);
+
+    auto cw = doc.getContentWrapper();
+
+    cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
+
+    doc.update();
+  }
+  
   /**Testenv only
 
   // ACTION dao::adddocs(std::vector<Document>& docs)
@@ -64,18 +78,7 @@ namespace hypha
   //   }
   // }
 
-  // ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
-  // {
-  //   require_auth(get_self());
-
-  //   Document doc(get_self(), doc_id);
-
-  //   auto cw = doc.getContentWrapper();
-
-  //   cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
-
-  //   doc.update();
-  // }
+  
 
   // ACTION dao::clean(int64_t docs, int64_t edges)
   // {

@@ -18,7 +18,7 @@ PricingPlan::PricingPlan(dao& dao, uint64_t id)
 PricingPlan::PricingPlan(dao& dao, Data pricingData)
     : TypedDocument(dao, types::PRICING_PLAN)
 {
-    //TODO: Verify data (?)
+    verifyData(pricingData);
     //TODO: Check special cases with links
 
     auto cgs = convert(std::move(pricingData));
@@ -38,7 +38,7 @@ void PricingPlan::addOffer(const PriceOffer& offer)
 {
     EOS_CHECK(
         !Edge::exists(getDao().get_self(), getId(), offer.getId(), links::PRICE_OFFER),
-        to_str("The offer with id: ", offer.getId(), " is already linked to the pricing plan.")
+        to_str("The offer with id: ", offer.getId(), " is already linked to the pricing plan: ", getId())
     )
 
     Edge(
@@ -68,6 +68,35 @@ void PricingPlan::removeOffer(const PriceOffer& offer)
 bool PricingPlan::hasOffer(uint64_t offerID)
 {
     return Edge::exists(getDao().get_self(), getId(), offerID, links::PRICE_OFFER);
+}
+
+void PricingPlan::verifyData(const Data& data)
+{
+    EOS_CHECK(
+        data.name.size() < 50, 
+        "Plan name must be less than 50 chars length"
+    )
+
+    EOS_CHECK(
+        data.price.is_valid() && data.price.symbol == hypha::common::S_HYPHA, 
+        "Plan price is not valid or has an invalid symbol"
+    )
+
+    EOS_CHECK(
+        data.max_member_count > 0,
+        "Plan max member count must be a positive number"
+    )
+
+    EOS_CHECK(
+        data.discount_perc_x10000 >= 0 && data.discount_perc_x10000 <= 10000,
+        "Plan discount percentage has to be in the range [0, 10000]"
+    )
+}
+
+void PricingPlan::updateData(Data data)
+{
+    verifyData(data);
+    updateDocument(convert(std::move(data)));
 }
 
 std::vector<PriceOffer> PricingPlan::getOffers()
