@@ -50,6 +50,47 @@ BillingInfo::BillingInfo(dao& dao, const PlanManager& planManager, const Pricing
     );
 }
 
+void BillingInfo::setNextBill(const BillingInfo& next)
+{
+    EOS_CHECK(
+        getDao().getGraph().getEdgesFrom(getId(), links::NEXT_BILL).empty(),
+        "BillingInfo has next bill already"
+    )
+
+    Edge(
+        getDao().get_self(),
+        getDao().get_self(),
+        getId(),
+        next.getId(),
+        links::NEXT_BILL
+    );
+}
+
+PricingPlan BillingInfo::getPricingPlan() {
+    return PricingPlan(getDao(), Edge::get(
+        getDao().get_self(),
+        getId(),
+        links::PRICING_PLAN
+    ).getToNode());
+}
+
+PriceOffer BillingInfo::getPriceOffer() {
+    return PriceOffer(getDao(), Edge::get(
+        getDao().get_self(),
+        getId(),
+        links::PRICE_OFFER
+    ).getToNode());
+}
+
+std::unique_ptr<BillingInfo> BillingInfo::getNextBill() {
+    if (auto [exists, nextEdge] = Edge::getIfExists(getDao().get_self(), getId(), links::NEXT_BILL);
+        exists) {
+        return std::make_unique<BillingInfo>(getDao(), nextEdge.getToNode());
+    }
+
+    return nullptr;
+}
+
 void BillingInfo::verifyData(const Data& data)
 {
     EOS_CHECK(

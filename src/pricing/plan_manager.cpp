@@ -2,6 +2,7 @@
 #include "pricing/common.hpp"
 
 #include "pricing/billing_info.hpp"
+#include "pricing/price_offer.hpp"
 
 #include <dao.hpp>
 
@@ -153,7 +154,38 @@ BillingInfo PlanManager::getLastBill()
 
 eosio::asset PlanManager::calculateCredit()
 {
-    return {};
+    auto current = Edge::get(getDao().get_self(), getId(), links::CURRENT_BILL);
+
+    eosio::asset credit = {0, hypha::common::S_HYPHA};
+
+    auto next = std::make_unique<BillingInfo>(getDao(), current.getToNode());
+
+    auto now = eosio::current_time_point();
+
+    EOS_CHECK(
+        now < next->getEndDate(),
+        "Current time must be less than current bill end date"
+    )
+
+    for (; next; next = next->getNextBill()) {
+        auto start = next->getStartDate();
+        auto end = next->getEndDate();
+
+        auto total = end - start;
+        auto remaining = end - now;
+
+        auto amount = adjustAsset(
+            next->getPlanPrice() * next->getPeriodCount(),
+            (1.f - (next->getDiscountPercentage() / 10000.f)) * 
+            (1.f - (next->getPriceOffer().getDiscountPercentage() / 10000.f))
+        );
+
+        credit += amount;
+
+        now = end;
+    }
+
+    return credit;
 }
 
 bool PlanManager::hasBills()

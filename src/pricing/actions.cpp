@@ -32,7 +32,9 @@ void dao::onCreditDao(uint64_t dao_id, const asset& amount)
     //Add funds to the Plan Manager of the specified DAO
     auto planManager = PlanManager::getFromDaoID(*this, dao_id);
 
-    planManager.addCredit(amount);   
+    planManager.addCredit(amount);
+
+    planManager.update();   
 }
 
 static auto getStartAndEndDates(time_t t, int64_t periods) 
@@ -71,6 +73,12 @@ static auto getStartAndEndDates(time_t t, int64_t periods)
     };
 };
 
+static PricingPlan getDefaultPlan(dao& dao) {
+    return PricingPlan(dao, Edge::get(dao.get_self(), 
+                                      dao.getRootID(), 
+                                      links::DEFAULT_PRICING_PLAN).getToNode());
+}
+
 ACTION dao::activateplan(ContentGroups& plan_info)
 {
     auto cw = ContentWrapper(plan_info);
@@ -81,6 +89,8 @@ ACTION dao::activateplan(ContentGroups& plan_info)
     //Verify Auth
     checkAdminsAuth(daoID);
 
+    auto defPlan = getDefaultPlan(*this).getId();
+
     auto planID = cw.getOrFail(DETAILS, items::PLAN_ID)
                         ->getAs<int64_t>();
 
@@ -90,37 +100,88 @@ ACTION dao::activateplan(ContentGroups& plan_info)
     auto periods = cw.getOrFail(DETAILS, items::PERIODS)
                             ->getAs<int64_t>();
 
+    EOS_CHECK(
+        defPlan != planID,
+        "Cannot change to default pricing plan"
+    );
+
     PricingPlan plan(*this, planID);
 
     PriceOffer offer(*this, offerID);
 
+    EOS_CHECK(
+        plan.hasOffer(offerID),
+        "Offer is not valid for the requested Pricing plan"
+    )
+
+    time_t t = eosio::current_time_point().sec_since_epoch();
+     
+    // if (auto [_, startDate] = cw.get(DETAILS, items::START_DATE); 
+    //     startDate) {
+    //     auto date = startDate->getAs<eosio::time_point>();
+    //     // //We can bypass this if called by the contract account
+    //     EOS_CHECK(
+    //         date >= eosio::current_time_point() || eosio::has_auth(get_self()),
+    //         "Start Date cannot be in the past"
+    //     )
+
+    //     t = date.sec_since_epoch();
+    // }
+
     PlanManager planManager = PlanManager::getFromDaoID(*this, daoID);
+
+    auto currentBill = planManager.getCurrentBill();
+    auto currentPlan = currentBill.getPricingPlan();
+
+    if (currentPlan.getId() == defPlan || 
+        currentPlan.getId() != plan.getId()) {
+        //End current plan default plan
+        currentBill.setEndDate(eosio::time_point(eosio::seconds(t)));
+        currentBill.setExpirationDate(eosio::time_point(eosio::seconds(t)));
+        currentBill.setIsInfinite(false);
+        currentBill.update();
+
+        //Calculate credit of remaining periods since
+        //we are doing a plan switch
+        if (currentPlan.getId() != defPlan) {
+            planManager.addCredit(planManager.calculateCredit());
+            planManager.setLastBill(currentBill);
+            
+            //Remove upcoming bills
+            auto next = currentBill.getNextBill();
+            while (next) {
+                auto tmp = next->getNextBill();
+                next->erase();
+                next = std::move(tmp);
+            }
+        }
+    }
+    else {
+        //Same plan
+        t = planManager.getLastBill()
+                       .getEndDate()
+                       .sec_since_epoch();
+    }
+
+    // EOS_CHECK(
+    //     currentBill.getExpirationDate() <= eosio::current_time_point(),
+    //     "Current Pricing Plan hasn't expired"
+    // )
 
     EOS_CHECK(
         periods >= offer.getPeriodCount(),
         to_str("Period amount must be greater or equal to ", offer.getPeriodCount())
     )
 
-    float offerDisc = offer.getDiscountPercentage() / 10000;
+    float offerDisc = 1.0f - offer.getDiscountPercentage() / 10000.f;
 
-    auto payAmount = adjustAsset(plan.getPrice(), offerDisc) * periods;
+    float priceDisc = 1.0f - plan.getDiscountPercentage() / 10000.f;
+
+    auto payAmount = adjustAsset(plan.getPrice(), priceDisc * offerDisc) * periods;
 
     planManager.removeCredit(payAmount);
 
-    time_t t = eosio::current_time_point().sec_since_epoch();
-     
-    if (auto [_, startDate] = cw.get(DETAILS, items::START_DATE); 
-        startDate) {
-        auto date = startDate->getAs<eosio::time_point>();
-        // //We can bypass this if called by the contract account
-        EOS_CHECK(
-            date >= eosio::current_time_point() || eosio::has_auth(get_self()),
-            "Start Date cannot be in the past"
-        )
-
-        t = date.sec_since_epoch();
-    }
-
+    planManager.update();
     auto [start,end,billingDay] = getStartAndEndDates(t, periods);
 
     BillingInfo bill(*this, planManager, plan, offer, BillingInfoData {
@@ -135,7 +196,12 @@ ACTION dao::activateplan(ContentGroups& plan_info)
         .is_infinite = false
     });
 
-    planManager.setCurrentBill(bill);
+    planManager.getLastBill().setNextBill(bill);
+    planManager.setLastBill(bill);
+
+    if (currentPlan.getId() != plan.getId()) {
+        planManager.setCurrentBill(bill);
+    }
 
     //TODO: Schedule action to terminate billing info
     // eosio::transaction trx;
@@ -277,12 +343,6 @@ ACTION dao::activatedao(eosio::name dao_name)
     });
 
     //Use default price plan
-
-    if (auto [exists, edge] = Edge::getIfExists(get_self(), getRootID(), links::DEFAULT_PRICING_PLAN); 
-        exists) {
-        edge.erase();
-    }
-
     PricingPlan defPlan(*this, Edge::get(get_self(), 
                                          getRootID(), 
                                          links::DEFAULT_PRICING_PLAN).getToNode());

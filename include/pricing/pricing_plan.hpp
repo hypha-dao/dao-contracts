@@ -35,6 +35,8 @@ public:
     void removeOffer(const PriceOffer& offer);
 
     std::vector<PriceOffer> getOffers();
+
+    bool hasOffer(uint64_t offerID);
 private:
     virtual const std::string buildNodeLabel(ContentGroups &content) override
     {

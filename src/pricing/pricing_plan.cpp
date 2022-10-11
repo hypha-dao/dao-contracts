@@ -65,6 +65,11 @@ void PricingPlan::removeOffer(const PriceOffer& offer)
     ).erase();
 }
 
+bool PricingPlan::hasOffer(uint64_t offerID)
+{
+    return Edge::exists(getDao().get_self(), getId(), offerID, links::PRICE_OFFER);
+}
+
 std::vector<PriceOffer> PricingPlan::getOffers()
 {
     std::vector<PriceOffer> offers;

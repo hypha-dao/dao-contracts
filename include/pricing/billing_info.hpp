@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <typed_document.hpp>
 #include <macros.hpp>
 
@@ -26,6 +28,14 @@ class BillingInfo : public TypedDocument
 public:
     BillingInfo(dao& dao, uint64_t id);
     BillingInfo(dao& dao, const PlanManager& planManager, const PricingPlan& pricingPlan, const PriceOffer& priceOffer, Data data);
+
+    void setNextBill(const BillingInfo& next);
+
+    std::unique_ptr<BillingInfo> getNextBill();
+
+    PricingPlan getPricingPlan();
+
+    PriceOffer getPriceOffer();
 private:
     void verifyData(const Data& data);
 

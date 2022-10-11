@@ -40,6 +40,16 @@ namespace hypha
     mem.apply(dao_id, "Auto enrolled member");
     mem.enroll(enroller, dao_id, "Auto enrolled member");
   }
+
+  ACTION dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
+  {
+    require_auth(get_self());
+
+    Document fromDoc(get_self(), from);
+    Document toDoc(get_self(), to);
+
+    Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
+  }
   /**Testenv only
 
   // ACTION dao::adddocs(std::vector<Document>& docs)
