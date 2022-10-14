@@ -32,13 +32,13 @@ namespace hypha
   ACTION
   dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
   {
-    require_auth(get_self());
+    //require_auth(get_self());
+    checkAdminsAuth(dao_id);
 
     //Auto enroll
     auto mem = getOrCreateMember(member);
 
-    mem.apply(dao_id, "Auto enrolled member");
-    mem.enroll(enroller, dao_id, "Auto enrolled member");
+    mem.checkMembershipOrEnroll(dao_id);
   }
 
   // ACTION dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
@@ -1104,12 +1104,9 @@ namespace hypha
 
     checkAdminsAuth(dao_id);
     auto mem = getOrCreateMember(enroller_account);
-    if (!Member::isMember(*this, dao_id, enroller_account)) {
-      if (!Edge::exists(get_self(), dao_id, mem.getID(), common::APPLICANT)) {
-        mem.apply(dao_id, "Auto enrolled member");
-      }
-      mem.enroll(get_self(), dao_id, "Auto enrolled member");
-    }
+    
+    mem.checkMembershipOrEnroll(dao_id);
+
     Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER);
   }
   void dao::addadmins(const uint64_t dao_id, const std::vector<name>& admin_accounts)
@@ -1128,12 +1125,9 @@ namespace hypha
 
     for (auto adminAccount : admin_accounts) {
       auto mem = getOrCreateMember(adminAccount);
-      if (!Member::isMember(*this, dao_id, adminAccount)) {
-        if (!Edge::exists(get_self(), dao_id, mem.getID(), common::APPLICANT)) {
-          mem.apply(dao_id, "Auto enrolled member");
-        }
-        mem.enroll(get_self(), dao_id, "Auto enrolled member");
-      }
+      
+      mem.checkMembershipOrEnroll(dao_id);
+
       Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(adminAccount), common::ADMIN);
     }
 

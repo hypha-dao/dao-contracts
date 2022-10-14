@@ -8,6 +8,7 @@
 namespace hypha::pricing {
 
 class BillingInfo;
+class PricingPlan;
 
 class PlanManager : public TypedDocument
 {
@@ -37,6 +38,8 @@ public:
     static std::optional<PlanManager> getFromDaoIfExists(dao& dao, uint64_t daoID);
 
     static PlanManager getFromDaoID(dao& dao, uint64_t daoID);
+
+    static PricingPlan getDefaultPlan(dao& dao);
 private:
     virtual const std::string buildNodeLabel(ContentGroups &content) override
     {

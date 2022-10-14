@@ -28,6 +28,7 @@ add_contract( dao dao
                 pricing/price_offer.cpp
                 pricing/plan_manager.cpp
                 pricing/billing_info.cpp
+                pricing/features.cpp
                 payers/payer.cpp
                 payers/peg_payer.cpp
                 payers/voice_payer.cpp

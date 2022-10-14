@@ -2,6 +2,7 @@
 #include "pricing/common.hpp"
 
 #include "pricing/billing_info.hpp"
+#include "pricing/pricing_plan.hpp"
 #include "pricing/price_offer.hpp"
 
 #include <dao.hpp>
@@ -27,12 +28,12 @@ PlanManager::PlanManager(dao& dao, name daoName, Data data)
 
     EOS_CHECK(
         daoId, 
-        to_str("Invalid DAO name: ", daoName)
+        to_str(_s("Invalid DAO name: "), daoName)
     )
 
     EOS_CHECK(
         getDao().getGraph().getEdgesFrom(*daoId, links::PLAN_MANAGER).empty(),
-        "DAOs can only have 1 Plan Manager linked"
+        _s("DAOs can only have 1 Plan Manager linked")
     )
 
     Edge(
@@ -48,7 +49,7 @@ void PlanManager::addCredit(const asset& amount)
 {
     EOS_CHECK(
         amount.amount >= 0,
-        "Amount to credit must be positive"
+        _s("Amount to credit must be positive")
     )
 
     auto newCredit = getCredit() + amount;
@@ -56,7 +57,7 @@ void PlanManager::addCredit(const asset& amount)
     //New credit must be greater than previous one
     EOS_CHECK(
         newCredit.is_valid() && newCredit > getCredit(),
-        "Credit amount has to be valid"
+        _s("Credit amount has to be valid")
     )
 
     setCredit(std::move(newCredit));
@@ -68,23 +69,23 @@ void PlanManager::removeCredit(const asset& amount)
 
     EOS_CHECK(
         amount.amount > 0,
-        "Amount to substract from credit must be positive"
+        _s("Amount to substract from credit must be positive")
     )
 
     EOS_CHECK(
         newCredit.amount >= 0,
-        "Insufficient funds in Plan Manager"
+        _s("Insufficient funds in Plan Manager")
     )
 
     EOS_CHECK(
         newCredit.is_valid() && newCredit < getCredit(),
-        "Credit amount has to be valid"
+        _s("Credit amount has to be valid")
     )
 
     setCredit(std::move(newCredit));
 }
 
-std::optional<PlanManager> getFromDaoIfExists(dao& dao, uint64_t daoID)
+std::optional<PlanManager> PlanManager::getFromDaoIfExists(dao& dao, uint64_t daoID)
 {
     if (auto [exists, edge] = Edge::getIfExists(
         dao.get_self(),
@@ -101,6 +102,13 @@ PlanManager PlanManager::getFromDaoID(dao& dao, uint64_t daoID)
 {
     auto planManagerEdge = Edge::get(dao.get_self(), daoID, links::PLAN_MANAGER);
     return PlanManager(dao, planManagerEdge.getToNode());
+}
+
+PricingPlan PlanManager::getDefaultPlan(dao& dao)
+{
+    return PricingPlan(dao, Edge::get(dao.get_self(), 
+                                      dao.getRootID(), 
+                                      links::DEFAULT_PRICING_PLAN).getToNode()); 
 }
 
 void PlanManager::setStartBill(const BillingInfo& bill)

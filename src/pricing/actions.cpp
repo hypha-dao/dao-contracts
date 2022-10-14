@@ -8,6 +8,7 @@
 #include "pricing/price_offer.hpp"
 #include "pricing/billing_info.hpp"
 #include "pricing/common.hpp"
+#include "pricing/features.hpp"
 
 #include <eosio/time.hpp>
 
@@ -73,10 +74,30 @@ static auto getStartAndEndDates(time_t t, int64_t periods)
     };
 };
 
-static PricingPlan getDefaultPlan(dao& dao) {
-    return PricingPlan(dao, Edge::get(dao.get_self(), 
-                                      dao.getRootID(), 
-                                      links::DEFAULT_PRICING_PLAN).getToNode());
+static void scheduleBillUpdate(const BillingInfo& bill, uint64_t daoID)
+{
+    //TODO: Schedule action to terminate plan/bill
+    //should happen twice, first after billing end date, and after billing expiration
+    //date unless we downgraded to def plan
+
+    // eosio::transaction trx;
+    // trx.actions.emplace_back(eosio::action(
+    //     permission_level(m_dao.get_self(), "active"_n),
+    //     m_dao.get_self(),
+    //     "closedocprop"_n,
+    //     std::make_tuple(proposal.getID())
+    // ));
+
+    // auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+
+    // constexpr auto aditionalDelaySec = 60;
+    // trx.delay_sec = (expiration.sec_since_epoch() - eosio::current_time_point().sec_since_epoch()) + aditionalDelaySec;
+
+    // auto nextID = m_dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
+
+    // trx.send(util::hashCombine(nextID, proposal.getID()), m_dao.get_self());
+
+    // m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
 }
 
 ACTION dao::activateplan(ContentGroups& plan_info)
@@ -92,7 +113,7 @@ ACTION dao::activateplan(ContentGroups& plan_info)
     //TODO: Verify if DAO is allowed to change it's current plan
     //child DAO's aren't
 
-    auto defPlan = getDefaultPlan(*this).getId();
+    auto defPlan = PlanManager::getDefaultPlan(*this).getId();
 
     auto planID = cw.getOrFail(DETAILS, items::PLAN_ID)
                         ->getAs<int64_t>();
@@ -157,12 +178,12 @@ ACTION dao::activateplan(ContentGroups& plan_info)
     bool needUpdateCurBill = false;
 
     //Check if the last plan is valid or if it expired
-    if (auto lastBill = planManager.getLastBill(); 
+    if (auto lastBill = planManager.getLastBill();
         lastBill.getIsInfinite() || now <= lastBill.getExpirationDate()) {
 
         EOS_CHECK(
             !downgradeToDef || 
-            (!lastBill.getIsInfinite() && now > lastBill.getEndDate()),
+            (!lastBill.getIsInfinite() && now > lastBill.getEndDate()), //When downgrading in grace period
             "Cannot change to default pricing plan"
         )
         
@@ -211,7 +232,7 @@ ACTION dao::activateplan(ContentGroups& plan_info)
     // )
 
     EOS_CHECK(
-        periods >= offer.getPeriodCount(),
+        periods >= offer.getPeriodCount() || downgradeToDef,
         to_str("Period amount must be greater or equal to ", offer.getPeriodCount())
     )
 
@@ -253,27 +274,15 @@ ACTION dao::activateplan(ContentGroups& plan_info)
 
     if (needUpdateCurBill) {
         planManager.setCurrentBill(bill);
+
+        if (lastBill.getPricingPlan().getId() != planID) {
+            onDaoPlanChange(*this, daoID, plan);
+        }
     }
 
-    //TODO: Schedule action to terminate billing info
-    // eosio::transaction trx;
-    // trx.actions.emplace_back(eosio::action(
-    //     permission_level(m_dao.get_self(), "active"_n),
-    //     m_dao.get_self(),
-    //     "closedocprop"_n,
-    //     std::make_tuple(proposal.getID())
-    // ));
-
-    // auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
-
-    // constexpr auto aditionalDelaySec = 60;
-    // trx.delay_sec = (expiration.sec_since_epoch() - eosio::current_time_point().sec_since_epoch()) + aditionalDelaySec;
-
-    // auto nextID = m_dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
-
-    // trx.send(util::hashCombine(nextID, proposal.getID()), m_dao.get_self());
-
-    // m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
+    if (!bill.getIsInfinite()) {
+        scheduleBillUpdate(bill, daoID);
+    }
 }
 
 ACTION dao::addprcngplan(ContentGroups& pricing_plan_info, const std::vector<uint64_t>& offer_ids)
@@ -318,8 +327,17 @@ ACTION dao::addpriceoffr(ContentGroups& price_offer_info, const std::vector<uint
        .tag = std::move(tag)
     });
 
+    auto defPricePlan = PlanManager::getDefaultPlan(*this);
+
     for (auto& pricingPlanID : pricing_plan_ids) {
         PricingPlan pricingPlan(*this, pricingPlanID);
+        
+        EOS_CHECK(
+            pricingPlanID != defPricePlan.getId() ||
+            defPricePlan.getOffers().empty(),
+            "Cannot add more than 1 offer to default price plan"
+        );
+
         pricingPlan.addOffer(offer);
     }
 }
@@ -488,6 +506,67 @@ ACTION dao::updatecurbil(uint64_t dao_id)
     //Doesn't need to do anything if it's infinite
     if (!currentBill.getIsInfinite()) {
 
+        auto now = eosio::current_time_point();
+
+        EOS_CHECK(
+            currentBill.getEndDate() <= currentBill.getExpirationDate(),
+            to_str("Wrong expiration date and end date values for bill: ", currentBill.getId())
+        )
+
+        //Let's check if we are already over the expiration date
+        if (currentBill.getEndDate() < now) {
+
+            bool resetToDefault = currentBill.getExpirationDate() < now;
+    
+            auto bill = currentBill.getNextBill();
+
+            while (bill) {
+                resetToDefault = true;
+                auto next = bill->getNextBill();
+                if (bill->getIsInfinite() ||
+                    now < bill->getEndDate() ||
+                    (now < bill->getExpirationDate() && !next)) {
+                    planManager.setCurrentBill(*bill);
+                    auto updatedPlan = bill->getPricingPlan();
+                    if (currentBill.getPricingPlan().getId() != updatedPlan.getId()) {
+                        onDaoPlanChange(*this, dao_id, updatedPlan);
+                    }
+                    return;
+                }
+                bill = std::move(next);
+            }
+
+            //Let's restore to default plan then
+            if (resetToDefault) {
+
+                auto defPlan = PlanManager::getDefaultPlan(*this);
+
+                auto defOffers = defPlan.getOffers();
+
+                EOS_CHECK(
+                    defOffers.size() == 1,
+                    to_str("Default Price has the wrong number of offers linked: ", defOffers.size())
+                )
+
+                eosio::action(
+                    eosio::permission_level(get_self(), "active"_n),
+                    get_self(),
+                    "activateplan"_n,
+                    std::make_tuple(
+                        ContentGroups {
+                            ContentGroup {
+                                Content{ CONTENT_GROUP_LABEL, DETAILS },
+                                Content{ items::DAO_ID, static_cast<int64_t>(dao_id) },
+                                Content{ items::PLAN_ID, static_cast<int64_t>(defPlan.getId()) },
+                                Content{ items::OFFER_ID, static_cast<int64_t>(defOffers.back().getId()) },
+                                Content{ items::PERIODS, -1 }
+                            }
+                        }
+                    )
+                ).send();
+            }
+            //Else do nothing and wait till the bill expires
+        }
     }
 }
 

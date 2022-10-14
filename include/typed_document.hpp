@@ -16,10 +16,10 @@ namespace hypha
             virtual ~TypedDocument();
             void update();
             void erase();
+            dao& getDao() const;
         protected:
             TypedDocument(dao& dao, eosio::name type);
             void initializeDocument(dao& dao, ContentGroups &content);
-            dao& getDao() const;
             bool documentExists(dao& dao, const uint64_t& id);
             virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
             void updateDocument(ContentGroups content);

@@ -14,6 +14,8 @@
 #include <payers/payer.hpp>
 #include <logger/logger.hpp>
 
+#include <pricing/features.hpp>
+
 namespace hypha
 {
     Member::Member(dao& dao, const eosio::name &creator, const eosio::name &member)
@@ -67,6 +69,8 @@ namespace hypha
     void Member::enroll(const eosio::name &enroller, uint64_t appliedTo, const std::string &content)
     {
         TRACE_FUNCTION()
+
+        pricing::checkDaoCanEnrrollMember(m_dao, appliedTo);
         
         uint64_t rootID = appliedTo;
 
@@ -136,6 +140,12 @@ namespace hypha
             }
             enroll(m_dao.get_self(), daoID, "Auto enrolled member");
         }
+    }
+
+    void Member::removeMembershipFromDao(uint64_t daoID)
+    {
+        Edge::get(m_dao.get_self(), daoID, getID(), common::MEMBER).erase();
+        Edge::get(m_dao.get_self(), getID(), daoID, common::MEMBER_OF).erase();
     }
 
 } // namespace hypha
