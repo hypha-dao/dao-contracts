@@ -1,3 +1,4 @@
+#pragma once
 #include <common.hpp>
 
 #define __NARG__(...)  __NARG_I_(__VA_ARGS__,__RSEQ_N())

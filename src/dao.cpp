@@ -41,15 +41,15 @@ namespace hypha
     mem.enroll(enroller, dao_id, "Auto enrolled member");
   }
 
-  ACTION dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
-  {
-    require_auth(get_self());
+  // ACTION dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
+  // {
+  //   require_auth(get_self());
 
-    Document fromDoc(get_self(), from);
-    Document toDoc(get_self(), to);
+  //   Document fromDoc(get_self(), from);
+  //   Document toDoc(get_self(), to);
 
-    Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
-  }
+  //   Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
+  // }
 
   ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
   {
@@ -560,89 +560,89 @@ namespace hypha
     makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.peg, memo, eosio::name{ 0 }, daoTokens);
   }
 
-  void dao::simclaimall(name account, uint64_t dao_id, bool only_ids)
-  {
-    auto daoSettings = getSettingsDocument(dao_id);
+  // void dao::simclaimall(name account, uint64_t dao_id, bool only_ids)
+  // {
+  //   auto daoSettings = getSettingsDocument(dao_id);
 
-    //We might reuse if called from simclaimall
-    auto daoTokens = AssetBatch{
-      .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-      .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
-      .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
-    };
+  //   //We might reuse if called from simclaimall
+  //   auto daoTokens = AssetBatch{
+  //     .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+  //     .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+  //     .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+  //   };
 
-    auto assignments = m_documentGraph.getEdgesFrom(getMemberID(account), common::ASSIGNED);
+  //   auto assignments = m_documentGraph.getEdgesFrom(getMemberID(account), common::ASSIGNED);
 
-    AssetBatch total {
-      .peg = eosio::asset{ 0, daoTokens.peg.symbol },
-      .voice = eosio::asset{ 0, daoTokens.voice.symbol },
-      .reward = eosio::asset{ 0, daoTokens.reward.symbol }
-    };
+  //   AssetBatch total {
+  //     .peg = eosio::asset{ 0, daoTokens.peg.symbol },
+  //     .voice = eosio::asset{ 0, daoTokens.voice.symbol },
+  //     .reward = eosio::asset{ 0, daoTokens.reward.symbol }
+  //   };
 
-    string ids = "[";
-    string sep = "";
+  //   string ids = "[";
+  //   string sep = "";
 
-    for (auto& assignEdge : assignments) {
-      Assignment assignment(this, assignEdge.getToNode());
+  //   for (auto& assignEdge : assignments) {
+  //     Assignment assignment(this, assignEdge.getToNode());
 
-      //Filter by dao
-      if (assignment.getDaoID() != dao_id) continue;
+  //     //Filter by dao
+  //     if (assignment.getDaoID() != dao_id) continue;
 
-      auto lastPeriod = assignment.getLastPeriod();
+  //     auto lastPeriod = assignment.getLastPeriod();
 
-      int64_t periods = assignment.getPeriodCount();
-      auto claimedPeriods = m_documentGraph.getEdgesFrom(assignment.getID(), common::CLAIMED);
+  //     int64_t periods = assignment.getPeriodCount();
+  //     auto claimedPeriods = m_documentGraph.getEdgesFrom(assignment.getID(), common::CLAIMED);
 
-      //There are some assignments where the initial periods were not claimed,
-      //we should not count them
-      if (claimedPeriods.size() < periods &&
-          std::all_of(claimedPeriods.begin(), 
-                      claimedPeriods.end(), 
-                      [id = lastPeriod.getID()](const Edge& e){ return e.to_node != id; })) { 
+  //     //There are some assignments where the initial periods were not claimed,
+  //     //we should not count them
+  //     if (claimedPeriods.size() < periods &&
+  //         std::all_of(claimedPeriods.begin(), 
+  //                     claimedPeriods.end(), 
+  //                     [id = lastPeriod.getID()](const Edge& e){ return e.to_node != id; })) { 
         
-        ids += sep + to_str(assignment.getID());
-        if (sep.empty()) sep = ",";
+  //       ids += sep + to_str(assignment.getID());
+  //       if (sep.empty()) sep = ",";
 
-        if (!only_ids) {
-          total += calculatePendingClaims(assignment.getID(), daoTokens);
-        }
-      }
-    }
+  //       if (!only_ids) {
+  //         total += calculatePendingClaims(assignment.getID(), daoTokens);
+  //       }
+  //     }
+  //   }
 
-    ids.push_back(']');
+  //   ids.push_back(']');
 
-    EOS_CHECK(
-      false,
-      to_str(
-          "{\n", 
-            "\"peg\":\"", total.peg, "\",\n",
-            "\"reward\":\"", total.reward, "\",\n",
-            "\"voice\":\"", total.voice, "\",\n",
-            "\"ids\":", ids,
-          "}"
-      )
-    )
-  }
+  //   EOS_CHECK(
+  //     false,
+  //     to_str(
+  //         "{\n", 
+  //           "\"peg\":\"", total.peg, "\",\n",
+  //           "\"reward\":\"", total.reward, "\",\n",
+  //           "\"voice\":\"", total.voice, "\",\n",
+  //           "\"ids\":", ids,
+  //         "}"
+  //     )
+  //   )
+  // }
 
-  void dao::simclaim(uint64_t assignment_id)
-  {
-    auto daoID = Edge::get(get_self(), assignment_id, common::DAO).getToNode();
-    auto daoSettings = getSettingsDocument(daoID);
+  // void dao::simclaim(uint64_t assignment_id)
+  // {
+  //   auto daoID = Edge::get(get_self(), assignment_id, common::DAO).getToNode();
+  //   auto daoSettings = getSettingsDocument(daoID);
 
-    //We might reuse if called from simclaimall
-    auto daoTokens = AssetBatch{
-      .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-      .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
-      .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
-    };
+  //   //We might reuse if called from simclaimall
+  //   auto daoTokens = AssetBatch{
+  //     .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+  //     .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+  //     .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+  //   };
 
-    auto pay = calculatePendingClaims(assignment_id, daoTokens);
+  //   auto pay = calculatePendingClaims(assignment_id, daoTokens);
 
-    EOS_CHECK(
-      false,
-      to_str("{\n\"peg\":\"", pay.peg, "\",\n\"reward\":\"", pay.reward, "\",\n\"voice\":\"", pay.voice, "\"\n}")
-    )
-  }
+  //   EOS_CHECK(
+  //     false,
+  //     to_str("{\n\"peg\":\"", pay.peg, "\",\n\"reward\":\"", pay.reward, "\",\n\"voice\":\"", pay.voice, "\"\n}")
+  //   )
+  // }
 
   AssetBatch dao::calculatePeriodPayout(Period& period,
                                         const AssetBatch& salary,
@@ -1009,13 +1009,14 @@ namespace hypha
     //Fixed settings that cannot be changed
     std::map<std::string, const std::vector<std::string>> fixedSettings = {
       {
-        "settings",
+        SETTINGS,
         {
          common::REWARD_TOKEN,
          common::VOICE_TOKEN,
          common::PEG_TOKEN,
          common::PERIOD_DURATION,
          common::CLAIM_ENABLED,
+         common::ADD_ADMINS_ENABLED,
          DAO_NAME
         }
       }
@@ -1111,20 +1112,33 @@ namespace hypha
     }
     Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER);
   }
-  void dao::addadmin(const uint64_t dao_id, name admin_account)
+  void dao::addadmins(const uint64_t dao_id, const std::vector<name>& admin_accounts)
   {
     TRACE_FUNCTION();
     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
+    auto daoSettings = getSettingsDocument(dao_id);
+
+    EOS_CHECK(
+      daoSettings->getOrFail<int64_t>(common::ADD_ADMINS_ENABLED) == 1,
+      to_str("Adding admins feature is not enabled")
+    )
+
     checkAdminsAuth(dao_id);
-    auto mem = getOrCreateMember(admin_account);
-    if (!Member::isMember(*this, dao_id, admin_account)) {
-      if (!Edge::exists(get_self(), dao_id, mem.getID(), common::APPLICANT)) {
-        mem.apply(dao_id, "Auto enrolled member");
+
+    for (auto adminAccount : admin_accounts) {
+      auto mem = getOrCreateMember(adminAccount);
+      if (!Member::isMember(*this, dao_id, adminAccount)) {
+        if (!Edge::exists(get_self(), dao_id, mem.getID(), common::APPLICANT)) {
+          mem.apply(dao_id, "Auto enrolled member");
+        }
+        mem.enroll(get_self(), dao_id, "Auto enrolled member");
       }
-      mem.enroll(get_self(), dao_id, "Auto enrolled member");
+      Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(adminAccount), common::ADMIN);
     }
-    Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(admin_account), common::ADMIN);
+
+    //Automatically disable the feature after using it
+    daoSettings->setSetting(Content{common::ADD_ADMINS_ENABLED, int64_t(0)});
   }
   void dao::remenroller(const uint64_t dao_id, name enroller_account)
   {
@@ -1144,7 +1158,8 @@ namespace hypha
   {
     TRACE_FUNCTION();
     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-    checkAdminsAuth(dao_id);
+    //checkAdminsAuth(dao_id);
+    eosio::require_auth(get_self());
 
     EOS_CHECK(
       m_documentGraph.getEdgesFrom(dao_id, common::ADMIN).size() > 1,
@@ -1166,6 +1181,40 @@ namespace hypha
     genPeriods(dao_id, period_count);
   }
 
+  static void initCoreMembers(dao& dao, uint64_t daoID, eosio::name onboarder, ContentWrapper config) 
+  {
+    std::set<eosio::name> coreMemNames = { onboarder };
+
+    if (auto coreMemsGroup = config.getGroupOrFail("core_members");
+      coreMemsGroup) {
+      EOS_CHECK(
+        coreMemsGroup->size() > 1 &&
+        coreMemsGroup->at(0).label == CONTENT_GROUP_LABEL,
+        to_str("Wrong format for core groups\n"
+          "[min size: 2, got: ", coreMemsGroup->size(), "]\n",
+          "[first item label: ", CONTENT_GROUP_LABEL, " got: ", coreMemsGroup->at(0).label)
+      );
+
+      //Skip content_group label (index 0)
+      std::transform(coreMemsGroup->begin() + 1,
+        coreMemsGroup->end(),
+        std::inserter(coreMemNames, coreMemNames.begin()),
+        [](const Content& c) { return c.getAs<name>(); });
+    }
+
+    for (auto& coreMem : coreMemNames) {
+
+      auto member = dao.getOrCreateMember(coreMem);
+
+      member.apply(daoID, "DAO Core member");
+      member.enroll(onboarder, daoID, "DAO Core member");
+
+      //Create owner, admin and enroller edges
+      Edge(dao.get_self(), dao.get_self(), daoID, member.getID(), common::ENROLLER);
+      Edge(dao.get_self(), dao.get_self(), daoID, member.getID(), common::ADMIN);
+    }
+  }
+
   void dao::createdao(ContentGroups& config)
   {
     TRACE_FUNCTION();
@@ -1180,6 +1229,12 @@ namespace hypha
       detailsIdx != -1,
       to_str("Missing Details Group")
     );
+
+    // struct Field {
+    //   const std::string& label;
+    //   bool optional;
+    //   std::optional<Content> defaultValue;
+    // };
 
     auto daoName = configCW.getOrFail(detailsIdx, DAO_NAME).second;
 
@@ -1199,16 +1254,6 @@ namespace hypha
     Document root = Document(get_self(), getRootID());
 
     Edge(get_self(), get_self(), root.getID(), daoDoc.getID(), common::DAO);
-
-    const std::map<std::string, std::vector<Content>> mandatoryFields = {
-      {
-        "details",
-        {
-          {"dao_name", Content::FlexValue{}},
-          {"dao_title", Content::FlexValue{}}
-        }
-      }
-    };
 
     auto votingDurationSeconds = configCW.getOrFail(detailsIdx, VOTING_DURATION_SEC).second;
 
@@ -1282,8 +1327,45 @@ namespace hypha
     if (auto [_, url] = configCW.get(detailsIdx, common::DAO_URL);
         url)
     {
-      daoURL = *url;
+      daoURL.value = std::move(url->value);
     }
+
+    EOS_CHECK(
+      daoURL.getAs<std::string>().size() <= 30,
+      "DAO URL must be less than 30 characters"
+    )
+
+    Content rewardTokenName = Content{  
+      common::REWARD_TOKEN_NAME,
+      to_str(rewardToken->getAs<eosio::asset>().symbol.code())
+    };
+
+    if (auto [_, rwrdTokName] = configCW.get(detailsIdx, common::REWARD_TOKEN_NAME);
+        rwrdTokName) 
+    {
+      rewardTokenName.value = std::move(rwrdTokName->value);
+    }
+
+    EOS_CHECK(
+      rewardTokenName.getAs<std::string>().size() <= 30,
+      "Utility token name must be less than 30 characters"
+    )
+
+    Content pegTokenName = Content{  
+      common::PEG_TOKEN_NAME,
+      to_str(rewardToken->getAs<eosio::asset>().symbol.code())
+    };
+
+    if (auto [_, pegTokName] = configCW.get(detailsIdx, common::PEG_TOKEN_NAME);
+        pegTokName) 
+    {
+      pegTokenName.value = std::move(pegTokName->value);
+    }
+
+    EOS_CHECK(
+      pegTokenName.getAs<std::string>().size() <= 30,
+      "Cash token name must be less than 30 characters"
+    )
 
     auto settingsGroup = 
     ContentGroup {
@@ -1304,7 +1386,6 @@ namespace hypha
       *voiceTokenDecayPeriod,
       *voiceTokenDecayPerPeriodX10M,
       Content{common::DAO_USES_SEEDS, useSeeds},
-      Content{common::CLAIM_ENABLED, int64_t(1)}
     };
 
     addDefaultSettings(settingsGroup, daoTitleStr);
@@ -1362,42 +1443,7 @@ namespace hypha
       eosio::require_auth(get_self());
     }
 
-    std::set<eosio::name> coreMemNames = { onboarder };
-
-    if (auto coreMemsGroup = configCW.getGroupOrFail("core_members");
-      coreMemsGroup) {
-      EOS_CHECK(
-        coreMemsGroup->size() > 1 &&
-        coreMemsGroup->at(0).label == CONTENT_GROUP_LABEL,
-        to_str("Wrong format for core groups\n"
-          "[min size: 2, got: ", coreMemsGroup->size(), "]\n",
-          "[first item label: ", CONTENT_GROUP_LABEL, " got: ", coreMemsGroup->at(0).label)
-      );
-
-      //Skip content_group label (index 0)
-      std::transform(coreMemsGroup->begin() + 1,
-        coreMemsGroup->end(),
-        std::inserter(coreMemNames, coreMemNames.begin()),
-        [](const Content& c) { return c.getAs<name>(); });
-    }
-
-    for (auto& coreMem : coreMemNames) {
-      std::unique_ptr<Member> member;
-
-      if (Member::exists(*this, coreMem)) {
-        member = std::make_unique<Member>(*this, getMemberID(coreMem));
-      }
-      else {
-        member = std::make_unique<Member>(*this, onboarder, coreMem);
-      }
-
-      member->apply(daoDoc.getID(), "DAO Core member");
-      member->enroll(onboarder, daoDoc.getID(), "DAO Core member");
-
-      //Create owner, admin and enroller edges
-      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ENROLLER);
-      Edge(get_self(), get_self(), daoDoc.getID(), member->getID(), common::ADMIN);
-    }
+    initCoreMembers(*this, daoDoc.getID(), onboarder, configCW);
 
     //Create start period
     Period newPeriod(this, eosio::current_time_point(), to_str(dao, " start period"));
@@ -1408,11 +1454,6 @@ namespace hypha
     Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::PERIOD);
     Edge(get_self(), get_self(), newPeriod.getID(), daoDoc.getID(), common::DAO);
 
-    // EOS_CHECK(
-    //   inititialPeriods->getAs<int64_t>() - 1 <= 30,
-    //   to_str("The max number of initial periods is 30")
-    // );
-
     //Create Treasury
     eosio::action(
       eosio::permission_level{ get_self(), name("active") },
@@ -1422,6 +1463,8 @@ namespace hypha
         daoDoc.getID()
       )
     ).send();
+
+    //TODO: Activate DAO Plan (?)
   }
 
   void dao::archiverecur(uint64_t document_id)
@@ -2026,7 +2069,7 @@ namespace hypha
       return Member(*this, getMemberID(member));
     }
     else {
-      return Member(*this, member, member);
+      return Member(*this, get_self(), member);
     }
   }
 
@@ -2292,6 +2335,8 @@ namespace hypha
     cw.insertOrReplace(sg, { common::DAO_ORGANISATION_BACKGROUND_IMAGE, ""});
     cw.insertOrReplace(sg, { common::DAO_ORGANISATION_TITLE, "Learn everything about " + daoTitle });
     cw.insertOrReplace(sg, { common::DAO_ORGANISATION_PARAGRAPH, "Select from a multitude of tools to finetune how the organization works. From treasury and compensation to decision-making, from roles to badges, you have every lever at your fingertips." });
+    cw.insertOrReplace(sg, { common::ADD_ADMINS_ENABLED, int64_t(1) });
+    cw.insertOrReplace(sg, { common::CLAIM_ENABLED, int64_t(1) });
 
     // cw.insertOrReplace(0, )
 

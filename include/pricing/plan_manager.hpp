@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <typed_document.hpp>
 #include <macros.hpp>
 
@@ -32,7 +34,9 @@ public:
 
     eosio::asset calculateCredit();
 
-    static PlanManager getFromDaoID(dao& dao, uint64_t dao_id);
+    static std::optional<PlanManager> getFromDaoIfExists(dao& dao, uint64_t daoID);
+
+    static PlanManager getFromDaoID(dao& dao, uint64_t daoID);
 private:
     virtual const std::string buildNodeLabel(ContentGroups &content) override
     {

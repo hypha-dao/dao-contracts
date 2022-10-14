@@ -30,6 +30,11 @@ namespace hypha::common
     inline constexpr auto DAO_TITLE = "dao_title";
     inline constexpr auto DAO_URL = "dao_url";
 
+    //
+    inline constexpr auto ADD_ADMINS_ENABLED = "add_admins_enabled";
+    inline constexpr auto REWARD_TOKEN_NAME = "reward_token_name";
+    inline constexpr auto PEG_TOKEN_NAME = "peg_token_name";
+
     inline constexpr auto DAO_DOCUMENTATION_URL = "documentation_url";
     inline constexpr auto DAO_DISCORD_URL = "discord_url";
     inline constexpr auto DAO_LOGO = "logo";

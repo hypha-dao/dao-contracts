@@ -47,7 +47,7 @@ PlanManager::PlanManager(dao& dao, name daoName, Data data)
 void PlanManager::addCredit(const asset& amount)
 {
     EOS_CHECK(
-        amount.amount > 0,
+        amount.amount >= 0,
         "Amount to credit must be positive"
     )
 
@@ -84,9 +84,22 @@ void PlanManager::removeCredit(const asset& amount)
     setCredit(std::move(newCredit));
 }
 
-PlanManager PlanManager::getFromDaoID(dao& dao, uint64_t dao_id)
+std::optional<PlanManager> getFromDaoIfExists(dao& dao, uint64_t daoID)
 {
-    auto planManagerEdge = Edge::get(dao.get_self(), dao_id, links::PLAN_MANAGER);
+    if (auto [exists, edge] = Edge::getIfExists(
+        dao.get_self(),
+        daoID,
+        links::PLAN_MANAGER
+    ); exists) {
+        return PlanManager(dao, edge.getToNode());
+    }
+
+    return std::nullopt;
+}
+
+PlanManager PlanManager::getFromDaoID(dao& dao, uint64_t daoID)
+{
+    auto planManagerEdge = Edge::get(dao.get_self(), daoID, links::PLAN_MANAGER);
     return PlanManager(dao, planManagerEdge.getToNode());
 }
 
@@ -173,12 +186,17 @@ eosio::asset PlanManager::calculateCredit()
         auto end = next->getEndDate();
 
         auto total = (end - start).count();
-        auto remaining = std::min((end - now).count(), int64_t(0));
+        auto remaining = std::max((end - now).count(), int64_t(0));
 
         auto amount = adjustAsset(
             next->getTotalPaid(),
             float(remaining) / float(total)
         );
+
+        EOS_CHECK(
+            amount.amount >= 0, 
+            to_str("Amount must be positive: ", amount, " Bill: ", next->getId(), " ", now)
+        )
 
         credit += amount;
 

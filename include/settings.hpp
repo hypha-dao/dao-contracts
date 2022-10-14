@@ -4,6 +4,7 @@
 
 #include <document_graph/document.hpp>
 #include <logger/logger.hpp>
+#include <document_graph/util.hpp>
 #include <eosio/eosio.hpp>
 
 namespace hypha {

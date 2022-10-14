@@ -111,7 +111,7 @@ namespace hypha
       ACTION remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
 
       ACTION addenroller(const uint64_t dao_id, name enroller_account);
-      ACTION addadmin(const uint64_t dao_id, name admin_account);
+      ACTION addadmins(const uint64_t dao_id, const std::vector<name>& admin_accounts);
       ACTION remenroller(const uint64_t dao_id, name enroller_account);
       ACTION remadmin(const uint64_t dao_id, name admin_account);
 
@@ -121,8 +121,8 @@ namespace hypha
       ACTION genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/);
 
       ACTION claimnextper(uint64_t assignment_id);
-      ACTION simclaimall(name account, uint64_t dao_id, bool only_ids);
-      ACTION simclaim(uint64_t assignment_id);
+      // ACTION simclaimall(name account, uint64_t dao_id, bool only_ids);
+      // ACTION simclaim(uint64_t assignment_id);
 
       ACTION apply(const eosio::name &applicant, uint64_t dao_id, const std::string &content);
       ACTION enroll(const eosio::name &enroller, uint64_t dao_id, const eosio::name &applicant, const std::string &content);
@@ -155,11 +155,11 @@ namespace hypha
       ACTION setclaimenbld(uint64_t dao_id, bool enabled);
 
       /**TODO: Remove */
-      ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name)
-      {
-         eosio::require_auth(get_self());
-         Edge::get(get_self(), from_node, to_node, edge_name).erase();
-      }
+      // ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name)
+      // {
+      //    eosio::require_auth(get_self());
+      //    Edge::get(get_self(), from_node, to_node, edge_name).erase();
+      // }
 
       /**TODO: Remove */
       ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
@@ -174,7 +174,7 @@ namespace hypha
       };
 
       /**TODO: Remove */
-      ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
+      //ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
 
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
       /**Testenv only
@@ -272,9 +272,9 @@ namespace hypha
       ACTION addpriceoffr(ContentGroups& price_offer_info, const std::vector<uint64_t>& pricing_plan_ids);
       ACTION setdefprcpln(uint64_t price_plan_id);
       ACTION modoffers(const std::vector<uint64_t>& pricing_plan_ids, const std::vector<uint64_t>& offer_ids, bool unlink);
-      //ACTION updateprcpln(uint64_t pricing_plan_id, ContentGroups& pricing_plan_info);
-      //ACTION updateprcoff(uint64_t price_offer_id, ContentGroups& price_offer_info);
-      //ACTION remprcngplan(ContentGroups& plan_info);
+      ACTION updateprcpln(uint64_t pricing_plan_id, ContentGroups& pricing_plan_info);
+      ACTION updateprcoff(uint64_t price_offer_id, ContentGroups& price_offer_info);
+      //ACTION remprcngplan(uint64_t plan_id, uint64_t replace_id);
       ACTION updatecurbil(uint64_t dao_id);
       ACTION activatedao(eosio::name dao_name);
 
@@ -373,6 +373,7 @@ namespace hypha
 
       using transfer_action = eosio::action_wrapper<name("transfer"), &dao::ontransfer>;
 
+      Member getOrCreateMember(const name& member);
    private:
 
       AssetBatch calculatePendingClaims(uint64_t assignmentID, const AssetBatch& daoTokens);
@@ -407,8 +408,6 @@ namespace hypha
 
          return {};
       }
-
-      Member getOrCreateMember(const name& member);
 
       void checkAdminsAuth(uint64_t dao_id);
 
