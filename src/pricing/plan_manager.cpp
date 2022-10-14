@@ -47,8 +47,10 @@ PlanManager::PlanManager(dao& dao, name daoName, Data data)
 
 void PlanManager::addCredit(const asset& amount)
 {
+    if (amount.amount == 0) return;
+
     EOS_CHECK(
-        amount.amount >= 0,
+        amount.amount > 0,
         _s("Amount to credit must be positive")
     )
 
@@ -65,6 +67,8 @@ void PlanManager::addCredit(const asset& amount)
 
 void PlanManager::removeCredit(const asset& amount)
 {
+    if (amount.amount == 0) return;
+
     auto newCredit = getCredit() - amount;
 
     EOS_CHECK(

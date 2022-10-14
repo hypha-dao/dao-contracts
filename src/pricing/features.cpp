@@ -62,25 +62,42 @@ void onDaoPlanChange(dao& dao, uint64_t daoID, PricingPlan& newPlan)
             return Edge::exists(dao.get_self(), daoID, a.to_node, common::ADMIN);
         };
 
-        std::sort(membersEdges.begin(), membersEdges.end(), 
-                  [&isAdmin](const Edge& a, const Edge& b) {
-                      return (isAdmin(a) && !isAdmin(b)) ||
-                             a.created_date < b.created_date;
-                  });
-        
-        //auto beg = member
+        auto end = std::partition(
+            membersEdges.begin(), 
+            membersEdges.end(), 
+            isAdmin
+        );
 
-        std::string str;
-        for (auto& m : membersEdges) {
-            str += to_str(m.to_node, "\n");
-        }
-        EOS_CHECK(false, str);
+        std::sort(membersEdges.begin(), end, 
+                  [&isAdmin](const Edge& a, const Edge& b) {
+                      return a.created_date < b.created_date;
+                  });
+
+        std::sort(end, membersEdges.end(),
+                  [&isAdmin](const Edge& a, const Edge& b) {
+                      return a.created_date < b.created_date;
+                  });
 
         auto memEdgeIt = membersEdges.begin() +  newPlan.getMaxMemberCount();
+        
         while (memEdgeIt != membersEdges.end()) {
             Member mem(dao, memEdgeIt->to_node);
+
+            //If it's admin or enroller let's remove those perms as well
+            if (Edge::exists(dao.get_self(), daoID, mem.getID(), common::ADMIN))
+            {
+                Edge::get(dao.get_self(), daoID, mem.getID(), common::ADMIN).erase();
+            }
+
+            if (Edge::exists(dao.get_self(), daoID, mem.getID(), common::ENROLLER))
+            {
+                Edge::get(dao.get_self(), daoID, mem.getID(), common::ENROLLER).erase();
+            }
+
             mem.removeMembershipFromDao(daoID);
             mem.apply(daoID, "Auto apply after being removed");
+
+            ++memEdgeIt;
         }
     }
 }
