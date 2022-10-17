@@ -187,8 +187,9 @@ eosio::asset PlanManager::calculateCredit()
 
     auto now = eosio::current_time_point();
 
+    //Shouldn't happen, but we can omit if it's the last bill
     EOS_CHECK(
-        now <= next->getEndDate(),
+        now <= next->getEndDate() || !next->getNextBill(),
         "Current time must be less than current bill end date"
     )
 
