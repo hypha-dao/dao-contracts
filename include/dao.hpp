@@ -19,6 +19,8 @@
 #include <period.hpp>
 #include <settings.hpp>
 
+#include <config/config.hpp>
+
 using eosio::multi_index;
 using eosio::name;
 
@@ -107,16 +109,16 @@ namespace hypha
       ACTION setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::FlexValue> kvs, std::optional<std::string> group);
       //ACTION adddaosetting(const uint64_t& dao_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 
-      ACTION remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group);
-      ACTION remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
+      // ACTION remdaosetting(const uint64_t& dao_id, const std::string &key, std::optional<std::string> group);
+      // ACTION remkvdaoset(const uint64_t& dao_id, const std::string &key, const Content::FlexValue &value, std::optional<std::string> group);
 
       ACTION addenroller(const uint64_t dao_id, name enroller_account);
       ACTION addadmins(const uint64_t dao_id, const std::vector<name>& admin_accounts);
-      ACTION remenroller(const uint64_t dao_id, name enroller_account);
-      ACTION remadmin(const uint64_t dao_id, name admin_account);
+      // ACTION remenroller(const uint64_t dao_id, name enroller_account);
+      // ACTION remadmin(const uint64_t dao_id, name admin_account);
 
       //Removes a dho/contract level setting
-      ACTION remsetting(const string &key);
+      //ACTION remsetting(const string &key);
 
       ACTION genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/);
 
@@ -137,34 +139,12 @@ namespace hypha
 
       ACTION modsalaryband(uint64_t dao_id, ContentGroups& salary_bands);
 
-      /**TODO: Remove */
-      //ACTION adddocs(std::vector<Document>& docs);
-
-      /**TODO: Remove */
-      ACTION remdoc(uint64_t doc_id)
-      {
-         eosio::require_auth(get_self());
-         Document doc(get_self(), doc_id);
-         auto cw = doc.getContentWrapper();
-         if (cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == hypha::common::DAO) {
-            remNameID<dao_table>(cw.getOrFail(DETAILS, DAO_NAME)->getAs<name>());
-         }
-         m_documentGraph.eraseDocument(doc_id, true);
-      }
-
       ACTION setclaimenbld(uint64_t dao_id, bool enabled);
+      
+      ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
 
-      /**TODO: Remove */
-      // ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name)
-      // {
-      //    eosio::require_auth(get_self());
-      //    Edge::get(get_self(), from_node, to_node, edge_name).erase();
-      // }
+#ifdef DEVELOP_BUILD
 
-      /**TODO: Remove */
-      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
-
-      /**TODO: Remove */
       struct InputEdge {
          eosio::name creator;
          eosio::time_point created_date;
@@ -172,11 +152,19 @@ namespace hypha
          uint64_t to_node;
          name edge_name;
       };
+      
+      ACTION adddocs(std::vector<Document>& docs);
 
-      /**TODO: Remove */
-      //ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
+      ACTION remdoc(uint64_t doc_id);
 
-      ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
+      ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name);
+
+      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
+
+      ACTION addedges(std::vector<InputEdge>& edges);
+
+      ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
+
       /**Testenv only
       ACTION deletetok(asset asset, name contract) {
 
@@ -189,7 +177,6 @@ namespace hypha
           std::make_tuple(asset)
         ).send();
       }
-
 
       ACTION approve(uint64_t doc_id)
       {
@@ -210,6 +197,7 @@ namespace hypha
          doc.update();
       }
       */
+#endif
 
       DocumentGraph &getGraph();
       Settings* getSettingsDocument();
