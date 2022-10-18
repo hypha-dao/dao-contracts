@@ -348,7 +348,7 @@ void dao::withdraw(name owner, uint64_t document_id)
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-  Assignment assignment(this, document_id);
+  RecurringActivity assignment(this, document_id);
 
   eosio::name assignee = assignment.getAssignee().getAccount();
 
@@ -391,7 +391,10 @@ void dao::withdraw(name owner, uint64_t document_id)
       to_str("Withdrawal of expired assignment: ", document_id, " is not allowed")
     );
 
-    modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
+    if (cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == common::ASSIGNMENT) 
+    {
+      modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
+    }
   }
 
   auto detailsGroup = cw.getGroupOrFail(DETAILS);
@@ -824,6 +827,13 @@ std::vector<Document> dao::getCurrentBadges(Period& period, const name& member, 
     }
 
     auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
+
+    auto state = badgeAssignment.getOrFail(DETAILS, common::STATE)
+                                ->getAs<std::string>();
+
+    if (state != common::STATE_APPROVED) {
+      continue;
+    }
 
     //Check if badge assignment is old (it contains end_period)
     if (badgeAssignment.exists(DETAILS, END_PERIOD)) {
