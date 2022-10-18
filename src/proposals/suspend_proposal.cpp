@@ -23,7 +23,7 @@ namespace hypha
 
       EOS_CHECK(
         Member::isMember(m_dao, m_daoID , proposer),
-        util::to_str("Only members of: ", m_daoID , " can suspend this proposal")
+        to_str("Only members of: ", m_daoID , " can suspend this proposal")
       )
 
       // original_document is a required hash
@@ -41,7 +41,7 @@ namespace hypha
           hasOpenSuspendProp) {
         EOS_CHECK(
           false,
-          util::to_str("There is an open suspension proposal already:", proposalID)  
+          to_str("There is an open suspension proposal already:", proposalID)  
         )
       }
 
@@ -51,7 +51,7 @@ namespace hypha
 
       EOS_CHECK(
         state == common::STATE_APPROVED,
-        util::to_str("Cannot open suspend proposals on ", state, " documents")
+        to_str("Cannot open suspend proposals on ", state, " documents")
       )
 
       auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
@@ -71,14 +71,14 @@ namespace hypha
 
         EOS_CHECK(
           currentTimeSecs < lastPeriodEndSecs,
-          util::to_str(type, " is already expired")
+          to_str(type, " is already expired")
         )
 
         auto votingDurSecs = m_daoSettings->getOrFail<int64_t>(VOTING_DURATION_SEC);
         
         EOS_CHECK(
           currentTimeSecs < (lastPeriodEndSecs - votingDurSecs),
-          util::to_str(type, " would expire before voting ends")
+          to_str(type, " would expire before voting ends")
         )
 
        } break;
@@ -90,7 +90,7 @@ namespace hypha
       default:
         EOS_CHECK(
           false,
-          util::to_str("Unexpected document type for suspension: ",
+          to_str("Unexpected document type for suspension: ",
                  type, ". Valid types [", common::ASSIGNMENT, ", ", common::ROLE_NAME ,"]")
         );
         break;
@@ -99,7 +99,7 @@ namespace hypha
       auto title = ocw.getOrFail(DETAILS, TITLE)->getAs<string>();
 
       ContentWrapper::insertOrReplace(*contentWrapper.getGroupOrFail(DETAILS), 
-                                      Content { TITLE, util::to_str("Suspension of ", type, ": ", title ) });
+                                      Content { TITLE, to_str("Suspension of ", type, ": ", title ) });
     }
 
     void SuspendProposal::postProposeImpl (Document &proposal) 
@@ -119,7 +119,7 @@ namespace hypha
 
       EOS_CHECK(
         edges.size() == 1, 
-        "Missing edge from suspension proposal: " + util::to_str(proposal.getID()) + " to document"
+        "Missing edge from suspension proposal: " + to_str(proposal.getID()) + " to document"
       );
 
       Document originalDoc(m_dao.get_self(), edges[0].getToNode());
@@ -176,7 +176,7 @@ namespace hypha
       default: {
         EOS_CHECK(
           false,
-          util::to_str("Unexpected document type for suspension: ",
+          to_str("Unexpected document type for suspension: ",
                  type, ". Valid types [", common::ASSIGNMENT ,"]")
         );
       } break;

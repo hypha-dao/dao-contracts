@@ -1,3 +1,4 @@
+#pragma once
 #include <common.hpp>
 
 #define __NARG__(...)  __NARG_I_(__VA_ARGS__,__RSEQ_N())
@@ -60,6 +61,22 @@
     action(a,b,c,d)\
     FOR_EACH_PACK28(action, __VA_ARGS__)
 
+#define FOR_EACH_PACK36(action,a,b,c,d,...)\
+    action(a,b,c,d)\
+    FOR_EACH_PACK32(action, __VA_ARGS__)
+
+#define FOR_EACH_PACK40(action,a,b,c,d,...)\
+    action(a,b,c,d)\
+    FOR_EACH_PACK36(action, __VA_ARGS__)
+
+#define FOR_EACH_PACK44(action,a,b,c,d,...)\
+    action(a,b,c,d)\
+    FOR_EACH_PACK40(action, __VA_ARGS__)
+
+#define FOR_EACH_PACK48(action,a,b,c,d,...)\
+    action(a,b,c,d)\
+    FOR_EACH_PACK44(action, __VA_ARGS__)
+
 
 #define PROPERTY(name, type, getSet) name, type, getSet, unused
 
@@ -86,7 +103,7 @@ void set##getSet(type value) {\
 #define DECLARE_METHODS(...)\
 FOR_EACH(DECLARE_GET_SET, __VA_ARGS__)
 
-#define CONVERT_FIELD(name, _u, _v, _w) Content{#name, data.name},
+#define CONVERT_FIELD(name, _u, _v, _w) Content{#name, std::move(data.name)},
 #define DECLARE_CONVERT(structName, ...)\
 ContentGroups convert(structName data) {\
     return ContentGroups {\

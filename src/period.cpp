@@ -115,7 +115,7 @@ namespace hypha
         Period period(dao, startEdge.getToNode());
 
         EOS_CHECK(period.getStartTime() <= moment,
-                  util::to_str("start_period is in the future. No period found. Start period: ", 
+                  to_str("start_period is in the future. No period found. Start period: ", 
                                period.getStartTime().sec_since_epoch(), 
                                " Moment: ", moment.sec_since_epoch()));
 
@@ -201,7 +201,7 @@ namespace hypha
 
       EOS_CHECK(
         moment >= next.getStartTime(),
-        util::to_str("Moment must happen after period start date, [moment secs]:", 
+        to_str("Moment must happen after period start date, [moment secs]:", 
                 moment.sec_since_epoch(), " [period]:", getID ())
       );
 

@@ -52,7 +52,7 @@ namespace hypha
             //Verify title length is less or equal than 50 chars.
             EOS_CHECK(
                 title.length() <= common::MAX_PROPOSAL_TITLE_CHARS,
-                util::to_str("Proposal title length has to be less or equal to ", common::MAX_PROPOSAL_TITLE_CHARS, " characters")
+                to_str("Proposal title length has to be less or equal to ", common::MAX_PROPOSAL_TITLE_CHARS, " characters")
             )
         }
 
@@ -61,7 +61,7 @@ namespace hypha
          //Verify description lenght is less or equal than 50 chars
         EOS_CHECK(
             description.length() <= common::MAX_PROPOSAL_DESC_CHARS,
-            util::to_str("Proposal description length has to be less or equal to ", common::MAX_PROPOSAL_DESC_CHARS, " characters")
+            to_str("Proposal description length has to be less or equal to ", common::MAX_PROPOSAL_DESC_CHARS, " characters")
         )
 
         contentGroups.push_back(makeSystemGroup(proposer,
@@ -358,7 +358,7 @@ namespace hypha
 
         EOS_CHECK(
           title != nullptr || ballotTitle != nullptr,
-          util::to_str("Proposal [details] group must contain at least one of the following items [", 
+          to_str("Proposal [details] group must contain at least one of the following items [", 
                   TITLE, ", ", common::BALLOT_TITLE, "]")
         );
 
@@ -376,7 +376,7 @@ namespace hypha
 
         EOS_CHECK(
           desc != nullptr || ballotDesc != nullptr,
-          util::to_str("Proposal [details] group must contain at least one of the following items [", 
+          to_str("Proposal [details] group must contain at least one of the following items [", 
                   DESCRIPTION, ", ", common::BALLOT_DESCRIPTION, "]")
         );
 
@@ -418,7 +418,7 @@ namespace hypha
             )
         );
 
-        EOS_CHECK(stat_itr != stats_index.end(), util::to_str("No VOICE found token: ", voiceToken, " DAO: ", daoName));
+        EOS_CHECK(stat_itr != stats_index.end(), to_str("No VOICE found token: ", voiceToken, " DAO: ", daoName));
 
         return stat_itr->supply;
     }

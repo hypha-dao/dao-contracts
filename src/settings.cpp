@@ -22,7 +22,7 @@ Settings::Settings(dao& dao,
   : Document(dao.get_self(), dao.get_self(), ContentGroups{
     ContentGroup{
         Content(CONTENT_GROUP_LABEL, SETTINGS),
-        Content(ROOT_NODE, util::to_str(rootID))
+        Content(ROOT_NODE, to_str(rootID))
     },
     ContentGroup{
         Content(CONTENT_GROUP_LABEL, SYSTEM),
@@ -150,10 +150,12 @@ Settings::Settings(dao& dao,
 
     EOS_CHECK(
       itemIt != contentGroup->end(),
-      util::to_str("Couldn't find setting: ", setting, " in group: ", group)
+      to_str("Couldn't find setting: ", setting, " in group: ", group)
     );
 
     contentGroup->erase(itemIt);
+
+    //cw.removeContent()
 
     auto updateDateContent = Content(UPDATED_DATE, eosio::current_time_point());
 

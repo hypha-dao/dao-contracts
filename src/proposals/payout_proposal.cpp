@@ -72,12 +72,12 @@ namespace hypha
                 
                 EOS_CHECK(
                     !hasPeg, 
-                    util::to_str("Multiple peg_amount items are not allowed")
+                    to_str("Multiple peg_amount items are not allowed")
                 )
 
                 EOS_CHECK(
                     item.getAs<asset>().symbol == tokens.peg.symbol,
-                    util::to_str(common::PEG_AMOUNT, 
+                    to_str(common::PEG_AMOUNT, 
                                  " unexpected token symbol. Expected: ",
                                  tokens.peg)
                 )
@@ -89,12 +89,12 @@ namespace hypha
                 
                 EOS_CHECK(
                     !hasVoice, 
-                    util::to_str("Multiple voice_amount items are not allowed")
+                    to_str("Multiple voice_amount items are not allowed")
                 )
 
                 EOS_CHECK(
                     item.getAs<asset>().symbol == tokens.voice.symbol,
-                    util::to_str(common::VOICE_AMOUNT, 
+                    to_str(common::VOICE_AMOUNT, 
                                  " unexpected token symbol. Expected: ",
                                  tokens.voice)
                 )
@@ -106,12 +106,12 @@ namespace hypha
                 
                 EOS_CHECK(
                     !hasReward, 
-                    util::to_str("Multiple reward_amount items are not allowed")
+                    to_str("Multiple reward_amount items are not allowed")
                 )
 
                 EOS_CHECK(
                     item.getAs<asset>().symbol == tokens.reward.symbol,
-                    util::to_str(common::REWARD_AMOUNT, 
+                    to_str(common::REWARD_AMOUNT, 
                                  " unexpected token symbol. Expected: ",
                                  tokens.reward)
                 )
@@ -149,7 +149,7 @@ namespace hypha
 
         Edge::write(m_dao.get_self(), m_dao.get_self(), recipientDoc.getID(), proposal.getID(), edgeName);
 
-        std::string memo{"one-time payment on proposal: " + util::to_str(proposal.getID())};
+        std::string memo{"one-time payment on proposal: " + to_str(proposal.getID())};
 
         auto tokens = AssetBatch {
             .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
