@@ -12,17 +12,17 @@ namespace hypha
             TypedDocument(dao& dao, uint64_t id, eosio::name type);
             const std::string& getNodeLabel();
             Document& getDocument();
-            uint64_t getId();
+            uint64_t getId() const;
             virtual ~TypedDocument();
             void update();
             void erase();
+            dao& getDao() const;
         protected:
             TypedDocument(dao& dao, eosio::name type);
             void initializeDocument(dao& dao, ContentGroups &content);
-            dao& getDao() const;
             bool documentExists(dao& dao, const uint64_t& id);
             virtual const std::string buildNodeLabel(ContentGroups &content) = 0;
-            virtual const void updateContent(ContentWrapper& wrapper);
+            void updateDocument(ContentGroups content);
 
             eosio::name getType();
             ContentWrapper getContentWrapper() { return document.getContentWrapper(); }

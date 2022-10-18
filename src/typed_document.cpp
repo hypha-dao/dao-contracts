@@ -38,7 +38,7 @@ namespace hypha
         return document;
     }
 
-    uint64_t TypedDocument::getId()
+    uint64_t TypedDocument::getId() const
     {
         return document.getID();
     }
@@ -46,10 +46,14 @@ namespace hypha
     void TypedDocument::initializeDocument(dao& dao, ContentGroups &content)
     {
         TRACE_FUNCTION()
-        ContentWrapper wrapper(content);
-        updateContent(wrapper);
+        document = Document(dao.get_self(), dao.get_self(), std::move(processContent(content)));
+    }
 
-        document = Document(dao.get_self(), dao.get_self(), processContent(content));
+
+    void TypedDocument::updateDocument(ContentGroups content)
+    {
+        document.getContentGroups() = std::move(processContent(content));
+        document.update();
     }
 
     void TypedDocument::validate()
@@ -58,7 +62,7 @@ namespace hypha
 
         EOS_CHECK(idx != -1, "Content item labeled 'type' is required for this document but not found.");
         EOS_CHECK(docType->getAs<eosio::name>() == getType(),
-                  util::to_str("invalid document type. Expected: ", getType(),
+                  to_str("invalid document type. Expected: ", getType(),
                                "; actual: ", docType->getAs<eosio::name>(), " for document: ", getId())
         )
 
@@ -102,10 +106,6 @@ namespace hypha
     eosio::name TypedDocument::getType()
     {
         return type;
-    }
-
-    const void TypedDocument::updateContent(ContentWrapper& wrapper)
-    {
     }
 
 }

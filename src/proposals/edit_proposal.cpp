@@ -18,7 +18,7 @@ namespace hypha
     { 
       EOS_CHECK(
         Member::isMember(m_dao, m_daoID, proposer),
-        util::to_str("Only members of: ", m_daoID, " can edit this proposal")
+        to_str("Only members of: ", m_daoID, " can edit this proposal")
       )
 
       auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>();
@@ -29,7 +29,7 @@ namespace hypha
           hasOpenEditProp) {
         EOS_CHECK(
           false,
-          util::to_str("There is an open edit proposal already:", proposalHash)  
+          to_str("There is an open edit proposal already:", proposalHash)  
         )
       }
     }
@@ -101,7 +101,7 @@ namespace hypha
         EOS_CHECK(
           state == common::STATE_APPROVED ||
           state == common::STATE_ARCHIVED, //We could still extend after the assignment expires
-          util::to_str("Cannot open edit proposals on ", state, " documents")
+          to_str("Cannot open edit proposals on ", state, " documents")
         )
 
         // connect the edit proposal to the original
@@ -149,7 +149,7 @@ namespace hypha
         
         EOS_CHECK(
           edges.size() == 1, 
-          "Missing edge from edit proposal: " + util::to_str(proposal.getID()) + " to original document"
+          "Missing edge from edit proposal: " + to_str(proposal.getID()) + " to original document"
         );
 
         Document original (m_dao.get_self(), edges[0].getToNode());
