@@ -99,7 +99,7 @@ void Treasury::checkTreasurerAuth()
         Member member(getDao(), edge.to_node);
         return eosio::has_auth(member.getAccount());
       }),
-      util::to_str("Only treasurers of the dao are allowed to perform this action")
+      to_str("Only treasurers of the dao are allowed to perform this action")
     );
 }
 

@@ -57,8 +57,6 @@ namespace hypha
     ContentGroups getRootContent(const eosio::name &contract);
     ContentGroups getDAOContent(const eosio::name &dao_name);
     eosio::asset adjustAsset(const eosio::asset &originalAsset, const float &adjustment);
-    float getSeedsPriceUsd(const eosio::time_point &price_time_point);
-    float getSeedsPriceUsd();
 
     int64_t stringViewToInt(string_view str);
 
@@ -67,17 +65,7 @@ namespace hypha
     template<typename T>
     class ShowType;
 
-    template<class ... T>
-    std::tuple<T...> splitStringView(string_view str, char delimiter)
-    {
-      auto strs = splitStringView(str, delimiter);
-      
-      EOS_CHECK(
-        sizeof...(T) == strs.size(),
-        util::to_str("Mismatch of readed parameters, expected ", sizeof...(T), " but got ", strs.size())
-      )
-      
-      auto convert = [](auto& x, string_view str) {
+    auto convert = [](auto& x, string_view str) {
         using Type = std::remove_reference_t<decltype(x)>;
         
         if constexpr (std::is_same_v<Type, std::string>) {
@@ -104,12 +92,30 @@ namespace hypha
           //Will fail to compile if the type is not valid
           ShowType<Type> y;
         }
-      };
+    };
 
-      std::tuple<T...> res;
-      std::apply([&, n = 0](auto&... args) mutable {
+    struct Overloaded {
+      std::vector<string_view>& strs;
+      Overloaded(std::vector<string_view>& strviews) : strs(strviews) {}
+      template<class... T>
+      void operator()(T&&... args) {
+        int n = 0;
         (convert(args, strs[n++]), ...);
-      }, res);
+      }
+    };
+
+    template<class ... T>
+    std::tuple<T...> splitStringView(string_view str, char delimiter)
+    {
+      auto strs = splitStringView(str, delimiter);
+      
+      EOS_CHECK(
+        sizeof...(T) == strs.size(),
+        to_str("Mismatch of readed parameters, expected ", sizeof...(T), " but got ", strs.size())
+      )
+      
+      std::tuple<T...> res;
+      std::apply(Overloaded(strs), res);
 
       return res;
     }

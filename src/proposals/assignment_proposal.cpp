@@ -39,12 +39,12 @@ namespace hypha
 
         EOS_CHECK(
             m_daoID == Edge::get(m_dao.get_self(), roleDocument.getID(), common::DAO).getToNode(),
-            util::to_str("Role must belong to: ", m_daoID)
+            to_str("Role must belong to: ", m_daoID)
         )
 
         EOS_CHECK(
             role.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_APPROVED,
-            util::to_str("Role must be approved before applying to it.")
+            to_str("Role must be approved before applying to it.")
         )
 
         // time_share_x100 is required and must be greater than zero and less than 100%
@@ -181,7 +181,7 @@ namespace hypha
       
         EOS_CHECK(
           !assignmentToRoleEdge.empty(),
-          util::to_str("Missing 'role' edge from assignment: ", proposal.getID ())
+          to_str("Missing 'role' edge from assignment: ", proposal.getID ())
         )
 
         Document role(m_dao.get_self(), assignmentToRoleEdge.at(0).getToNode());
@@ -199,7 +199,7 @@ namespace hypha
 
         EOS_CHECK(
             !startPeriodEdge.empty(),
-            util::to_str("Missing 'start' edge from assignment")
+            to_str("Missing 'start' edge from assignment")
         )
 
         Period startPeriod(&m_dao, startPeriodEdge.at(0).getToNode());

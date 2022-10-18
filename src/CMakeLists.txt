@@ -23,6 +23,12 @@ add_contract( dao dao
                 treasury/payment.cpp
                 treasury/redemption.cpp
                 treasury/treasury.cpp
+                pricing/actions.cpp
+                pricing/pricing_plan.cpp
+                pricing/price_offer.cpp
+                pricing/plan_manager.cpp
+                pricing/billing_info.cpp
+                pricing/features.cpp
                 payers/payer.cpp
                 payers/peg_payer.cpp
                 payers/voice_payer.cpp

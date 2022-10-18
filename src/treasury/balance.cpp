@@ -73,7 +73,7 @@ void Balance::substract(const asset& quantity)
 
     EOS_CHECK(
         newQuantity.amount >= 0,
-        util::to_str("Balance cannot be negative, overdrawn balance. Current balance: ", getQuantity())
+        to_str("Balance cannot be negative, overdrawn balance. Current balance: ", getQuantity())
     )
 
     setQuantity(std::move(newQuantity));

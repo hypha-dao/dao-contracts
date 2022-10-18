@@ -28,6 +28,8 @@ namespace hypha
          * @param daoID 
          */
         void checkMembershipOrEnroll(uint64_t daoID);
+
+        void removeMembershipFromDao(uint64_t daoID);
     private: 
         static ContentGroups defaultContent (const eosio::name &member);
         dao& m_dao;

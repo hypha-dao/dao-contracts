@@ -4,6 +4,7 @@
 
 #include <document_graph/document.hpp>
 #include <logger/logger.hpp>
+#include <document_graph/util.hpp>
 #include <eosio/eosio.hpp>
 
 namespace hypha {
@@ -97,7 +98,7 @@ public:
         else {
             EOS_CHECK(
                 false, 
-                util::to_str("Setting value is not of expected type: ", key)
+                to_str("Setting value is not of expected type: ", key)
             )
             
             //Just to suprim warnings but it will never get called
