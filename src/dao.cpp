@@ -1380,6 +1380,15 @@ void dao::createdao(ContentGroups& config)
     "Cash token name must be less than 30 characters"
   )
 
+  auto primaryColor =  configCW.getOrFail("style", common::DAO_PRIMARY_COLOR);
+  primaryColor->getAs<std::string>();
+
+  auto secondaryColor =  configCW.getOrFail("style", common::DAO_SECONDARY_COLOR);
+  secondaryColor->getAs<std::string>();
+
+  auto textColor = configCW.getOrFail("style", common::DAO_TEXT_COLOR);
+  textColor->getAs<std::string>();
+
   auto settingsGroup = 
   ContentGroup {
     Content(CONTENT_GROUP_LABEL, SETTINGS),
@@ -1399,6 +1408,9 @@ void dao::createdao(ContentGroups& config)
     *voiceTokenDecayPeriod,
     *voiceTokenDecayPerPeriodX10M,
     Content{common::DAO_USES_SEEDS, useSeeds},
+    *primaryColor,
+    *secondaryColor,
+    *textColor
   };
 
   addDefaultSettings(settingsGroup, daoTitleStr);
@@ -2330,9 +2342,6 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
   cw.insertOrReplace(sg, { common::DAO_LOGO, "" });
   cw.insertOrReplace(sg, { common::DAO_PATTERN, "" });
   cw.insertOrReplace(sg, { common::DAO_EXTENDED_LOGO, "" });
-  cw.insertOrReplace(sg, { common::DAO_PRIMARY_COLOR, "#242f5d" });
-  cw.insertOrReplace(sg, { common::DAO_SECONDARY_COLOR, "#3F64EE" });
-  cw.insertOrReplace(sg, { common::DAO_TEXT_COLOR, "#ffffff" });
   cw.insertOrReplace(sg, { common::DAO_PATTERN_COLOR, "#3E3B46" });
   cw.insertOrReplace(sg, { common::DAO_PATTERN_OPACITY, 30 });
   cw.insertOrReplace(sg, { common::DAO_SPLASH_BACKGROUND_IMAGE, "QmcGobT4p14tHkLjYJVBPMyQyWC1yh1dEZGzinxnzbVyc5:jpeg" });

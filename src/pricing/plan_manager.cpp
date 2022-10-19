@@ -203,7 +203,7 @@ eosio::asset PlanManager::calculateCredit()
 
         auto amount = adjustAsset(
             next->getTotalPaid(),
-            float(remaining) / float(total)
+            std::min(1.0f, float(remaining) / float(total))
         );
 
         EOS_CHECK(
