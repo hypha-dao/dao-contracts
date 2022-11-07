@@ -114,8 +114,8 @@ namespace hypha
 
       ACTION addenroller(const uint64_t dao_id, name enroller_account);
       ACTION addadmins(const uint64_t dao_id, const std::vector<name>& admin_accounts);
-      // ACTION remenroller(const uint64_t dao_id, name enroller_account);
-      // ACTION remadmin(const uint64_t dao_id, name admin_account);
+      ACTION remenroller(const uint64_t dao_id, name enroller_account);
+      ACTION remadmin(const uint64_t dao_id, name admin_account);
 
       //Removes a dho/contract level setting
       //ACTION remsetting(const string &key);
@@ -152,6 +152,8 @@ namespace hypha
          uint64_t to_node;
          name edge_name;
       };
+
+      //ACTION cleandao(uint64_t dao_id);
       
       ACTION adddocs(std::vector<Document>& docs);
 
@@ -165,18 +167,22 @@ namespace hypha
 
       ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
 
+      // ACTION deletetok(asset asset, name contract) {
+
+      //   require_auth(get_self());
+
+      //We need to add del action to contract
+      //as well as cleanup balances
+
+      //   eosio::action(
+      //     eosio::permission_level{contract, name("active")},
+      //     contract,
+      //     name("del"),
+      //     std::make_tuple(asset)
+      //   ).send();
+      // }
+
       /**Testenv only
-      ACTION deletetok(asset asset, name contract) {
-
-        require_auth(get_self());
-
-        eosio::action(
-          eosio::permission_level{contract, name("active")},
-          contract,
-          name("del"),
-          std::make_tuple(asset)
-        ).send();
-      }
 
       ACTION approve(uint64_t doc_id)
       {

@@ -85,23 +85,6 @@ ACTION dao::remdoc(uint64_t doc_id)
     m_documentGraph.eraseDocument(doc_id, true);
 }
 
-// ACTION dao::clean(int64_t docs, int64_t edges)
-// {
-//   require_auth(get_self());
-
-//   Document::document_table d_t(get_self(), get_self().value);
-
-//   for (auto it = d_t.begin(); it != d_t.end() && docs-- > 0; ) {
-//     it = d_t.erase(it);
-//   }
-
-//   Edge::edge_table e_t(get_self(), get_self().value);
-
-//   for (auto it = e_t.begin(); it != e_t.end() && edges-- > 0; ) {
-//     it = e_t.erase(it);
-//   }
-// }
-
 ACTION dao::addedges(std::vector<InputEdge>& edges)
 {
   require_auth(get_self());
@@ -1153,34 +1136,35 @@ void dao::addadmins(const uint64_t dao_id, const std::vector<name>& admin_accoun
   daoSettings->setSetting(Content{common::ADD_ADMINS_ENABLED, int64_t(0)});
 }
 
-// void dao::remenroller(const uint64_t dao_id, name enroller_account)
-// {
-//   TRACE_FUNCTION();
-//   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+void dao::remenroller(const uint64_t dao_id, name enroller_account)
+{
+  TRACE_FUNCTION();
+  EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-//   checkAdminsAuth(dao_id);
+  checkAdminsAuth(dao_id);
 
-//   EOS_CHECK(
-//     m_documentGraph.getEdgesFrom(dao_id, common::ENROLLER).size() > 1,
-//     "Cannot remove enroller, there has to be at least 1"
-//   );
+  EOS_CHECK(
+    m_documentGraph.getEdgesFrom(dao_id, common::ENROLLER).size() > 1,
+    "Cannot remove enroller, there has to be at least 1"
+  );
 
-//   Edge::get(get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER).erase();
-// }
-// void dao::remadmin(const uint64_t dao_id, name admin_account)
-// {
-//   TRACE_FUNCTION();
-//   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-//   //checkAdminsAuth(dao_id);
-//   eosio::require_auth(get_self());
+  Edge::get(get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER).erase();
+}
 
-//   EOS_CHECK(
-//     m_documentGraph.getEdgesFrom(dao_id, common::ADMIN).size() > 1,
-//     "Cannot remove admin, there has to be at least 1"
-//   );
+void dao::remadmin(const uint64_t dao_id, name admin_account)
+{
+  TRACE_FUNCTION();
+  EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+  //checkAdminsAuth(dao_id);
+  eosio::require_auth(get_self());
 
-//   Edge::get(get_self(), dao_id, getMemberID(admin_account), common::ADMIN).erase();
-// }
+  EOS_CHECK(
+    m_documentGraph.getEdgesFrom(dao_id, common::ADMIN).size() > 1,
+    "Cannot remove admin, there has to be at least 1"
+  );
+
+  Edge::get(get_self(), dao_id, getMemberID(admin_account), common::ADMIN).erase();
+}
 
 ACTION dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/)
 {
@@ -1199,9 +1183,9 @@ static void initCoreMembers(dao& dao, uint64_t daoID, eosio::name onboarder, Con
   std::set<eosio::name> coreMemNames = { onboarder };
 
   if (auto coreMemsGroup = config.getGroupOrFail("core_members");
-    coreMemsGroup) {
+      coreMemsGroup->size() > 1) {
+
     EOS_CHECK(
-      coreMemsGroup->size() > 1 &&
       coreMemsGroup->at(0).label == CONTENT_GROUP_LABEL,
       to_str("Wrong format for core groups\n"
         "[min size: 2, got: ", coreMemsGroup->size(), "]\n",
@@ -1389,6 +1373,9 @@ void dao::createdao(ContentGroups& config)
   auto textColor = configCW.getOrFail("style", common::DAO_TEXT_COLOR);
   textColor->getAs<std::string>();
 
+  auto logo = configCW.getOrFail("style", common::DAO_LOGO);
+  logo->getAs<std::string>();
+
   auto settingsGroup = 
   ContentGroup {
     Content(CONTENT_GROUP_LABEL, SETTINGS),
@@ -1410,7 +1397,8 @@ void dao::createdao(ContentGroups& config)
     Content{common::DAO_USES_SEEDS, useSeeds},
     *primaryColor,
     *secondaryColor,
-    *textColor
+    *textColor,
+    *logo
   };
 
   addDefaultSettings(settingsGroup, daoTitleStr);
@@ -2339,7 +2327,6 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
 
   cw.insertOrReplace(sg, { common::DAO_DOCUMENTATION_URL, "" });
   cw.insertOrReplace(sg, { common::DAO_DISCORD_URL, "" });
-  cw.insertOrReplace(sg, { common::DAO_LOGO, "" });
   cw.insertOrReplace(sg, { common::DAO_PATTERN, "" });
   cw.insertOrReplace(sg, { common::DAO_EXTENDED_LOGO, "" });
   cw.insertOrReplace(sg, { common::DAO_PATTERN_COLOR, "#3E3B46" });
