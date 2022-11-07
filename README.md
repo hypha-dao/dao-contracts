@@ -14,6 +14,7 @@ EOSIO contracts for managing a decentralized autonomous organization on EOSIO ch
 ```
 git clone https://github.com/hypha-dao/dao-contracts
 cd dao-contracts
+git submodule update
 mkdir build && cd build
 cmake ..
 make
