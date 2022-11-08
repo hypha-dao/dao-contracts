@@ -1262,8 +1262,8 @@ void dao::createdao(ContentGroups& config)
   auto daoDescription = configCW.getOrFail(detailsIdx, common::DAO_DESCRIPTION).second;
 
   EOS_CHECK(
-    daoDescription->getAs<std::string>().size() <= 768,
-    "Dao description has be less than 768 characters"
+    daoDescription->getAs<std::string>().size() <= 512,
+    "Dao description has be less than 512 characters"
   );
 
   auto daoTitle = configCW.getOrFail(detailsIdx, common::DAO_TITLE).second;
