@@ -22,7 +22,16 @@ cmake ..
 make
 ```
 
-## CLIs and Testing
+## Unit Tests
+
+Run unit tests with Hydra framework like this
+
+```
+yarn install
+yarn test
+```
+
+## CLIs and Testing (outdated)
 
 ### daoctl
 The repo at https://github.com/hypha-dao/daoctl features a CLI that can be used to interact with the contracts.
