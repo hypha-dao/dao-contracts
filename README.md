@@ -31,6 +31,37 @@ yarn install
 yarn test
 ```
 
+## Deployment
+
+Example deploys to "dao.hypha"
+
+```
+cd build
+cleos set contract dao.hypha dao dao.wasm dao.abi
+```
+
+### Deployment size issues
+
+Some EOSIO chains have size limite for uploading WASM files - seems around 512KB. The error messages when uploading larger WASM files are misleading and confusing. (http error...). 
+
+If there is an unexpected problem uploading, check the size of the WASM file. 
+
+It is possible to shrink the file prior to upload using wasm-opt
+
+```
+# Optimize for size.
+wasm-opt -Os -o output.wasm input.wasm
+
+# Optimize aggressively for size.
+wasm-opt -Oz -o output.wasm input.wasm
+
+# Optimize for speed.
+wasm-opt -O -o output.wasm input.wasm
+
+# Optimize aggressively for speed.
+wasm-opt -O3 -o output.wasm input.wasm
+```
+
 ## CLIs and Testing (outdated)
 
 ### daoctl
