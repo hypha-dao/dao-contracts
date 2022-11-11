@@ -19,7 +19,7 @@ class Attestation : public TypedDocument
 {
     DECLARE_DOCUMENT(
         Data,
-        PROPERTY(treasurer, eosio::name, Treasurer)
+        PROPERTY(treasurer, eosio::name, Treasurer, USE_GETSET)
     )
 public:
     Attestation(dao& dao, uint64_t id);

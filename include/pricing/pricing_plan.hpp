@@ -21,11 +21,11 @@ class PricingPlan : public TypedDocument
 {
     DECLARE_DOCUMENT(
         Data,
-        PROPERTY(name, std::string, Name),
-        PROPERTY(price, eosio::asset, Price),
-        PROPERTY(reactivation_period_sec, int64_t, ReactivationPeriod),
-        PROPERTY(max_member_count, int64_t, MaxMemberCount),
-        PROPERTY(discount_perc_x10000, int64_t, DiscountPercentage)
+        PROPERTY(name, std::string, Name, USE_GETSET),
+        PROPERTY(price, eosio::asset, Price, USE_GETSET),
+        PROPERTY(reactivation_period_sec, int64_t, ReactivationPeriod, USE_GETSET),
+        PROPERTY(max_member_count, int64_t, MaxMemberCount, USE_GETSET),
+        PROPERTY(discount_perc_x10000, int64_t, DiscountPercentage, USE_GETSET)
     )
 public:
     PricingPlan(dao& dao, uint64_t id);

@@ -14,8 +14,8 @@ class PlanManager : public TypedDocument
 {
     DECLARE_DOCUMENT(
         Data,
-        PROPERTY(credit, eosio::asset, Credit),
-        PROPERTY(type, std::string, Type)
+        PROPERTY(credit, eosio::asset, Credit, USE_GETSET),
+        PROPERTY(type, std::string, Type, NO_USE_GETSET)
     )
 public:
     PlanManager(dao& dao, uint64_t id);

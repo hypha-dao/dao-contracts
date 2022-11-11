@@ -18,8 +18,8 @@ class Balance : public TypedDocument
 {
     DECLARE_DOCUMENT(
         Data,
-        PROPERTY(quantity, eosio::asset, Quantity),
-        PROPERTY(dao, int64_t, DaoID)
+        PROPERTY(quantity, eosio::asset, Quantity, USE_GETSET),
+        PROPERTY(dao, int64_t, DaoID, USE_GETSET)
     )
 public:
     Balance(dao& dao, uint64_t id);

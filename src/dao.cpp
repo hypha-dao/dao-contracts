@@ -27,6 +27,8 @@
 
 #include <typed_document_factory.hpp>
 
+#include <pricing/common.hpp>
+
 namespace hypha {
 
 /**Testenv only */
@@ -1243,7 +1245,9 @@ void dao::createdao(ContentGroups& config)
     to_str(dao, " is a reserved name and can't be used to create a DAO.")
   );
 
-  Document daoDoc(get_self(), get_self(), getDAOContent(daoName->getAs<name>()));
+  //TODO: Check if we are being created as a child DAO of an Anchor DAO
+
+  Document daoDoc(get_self(), get_self(), getDAOContent(daoName->getAs<name>(), pricing::common::dao_types::INDIVIDUAL));
 
   addNameID<dao_table>(dao, daoDoc.getID());
 
@@ -1268,7 +1272,7 @@ void dao::createdao(ContentGroups& config)
 
   auto daoTitle = configCW.getOrFail(detailsIdx, common::DAO_TITLE).second;
 
-  auto& daoTitleStr = daoTitle->getAs<std::string>();
+  auto daoTitleStr = daoTitle->getAs<std::string>();
 
   EOS_CHECK(
     daoTitleStr.size() <= 48,
@@ -1327,6 +1331,9 @@ void dao::createdao(ContentGroups& config)
     daoURL.value = std::move(url->value);
   }
 
+  //Verify DAO URL is unique
+  updateDaoURL(dao, daoURL.value);
+
   EOS_CHECK(
     daoURL.getAs<std::string>().size() <= 30,
     "DAO URL must be less than 30 characters"
@@ -1379,26 +1386,26 @@ void dao::createdao(ContentGroups& config)
   auto settingsGroup = 
   ContentGroup {
     Content(CONTENT_GROUP_LABEL, SETTINGS),
-    *daoName,
-    *daoTitle,
-    *daoDescription,
-    daoURL,
+    std::move(*daoName),
+    std::move(*daoTitle),
+    std::move(*daoDescription),
+    std::move(daoURL),
     *pegToken,
     *voiceToken,
     *rewardToken,
-    *rewardToPegTokenRatio,
-    *periodDurationSeconds,
-    *votingDurationSeconds,
-    *onboarderAcc,
-    *votingQuorum,
-    *votingAllignment,
+    std::move(*rewardToPegTokenRatio),
+    std::move(*periodDurationSeconds),
+    std::move(*votingDurationSeconds),
+    std::move(*onboarderAcc),
+    std::move(*votingQuorum),
+    std::move(*votingAllignment),
     *voiceTokenDecayPeriod,
     *voiceTokenDecayPerPeriodX10M,
     Content{common::DAO_USES_SEEDS, useSeeds},
-    *primaryColor,
-    *secondaryColor,
-    *textColor,
-    *logo
+    std::move(*primaryColor),
+    std::move(*secondaryColor),
+    std::move(*textColor),
+    std::move(*logo)
   };
 
   addDefaultSettings(settingsGroup, daoTitleStr);
@@ -2317,39 +2324,30 @@ void dao::changeDecay(Settings* dhoSettings, Settings* daoSettings, uint64_t dec
 
 void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle)
 {
-  ContentGroups def;
+  auto& sg = settingsGroup;
 
-  def.push_back(std::move(settingsGroup));
+  sg.push_back({ common::DAO_DOCUMENTATION_URL, "" });
+  sg.push_back({ common::DAO_DISCORD_URL, "" });
+  sg.push_back({ common::DAO_PATTERN, "" });
+  sg.push_back({ common::DAO_EXTENDED_LOGO, "" });
+  sg.push_back({ common::DAO_PATTERN_COLOR, "#3E3B46" });
+  sg.push_back({ common::DAO_PATTERN_OPACITY, 30 });
+  sg.push_back({ common::DAO_SPLASH_BACKGROUND_IMAGE, "QmcGobT4p14tHkLjYJVBPMyQyWC1yh1dEZGzinxnzbVyc5:jpeg" });
+  sg.push_back({ common::DAO_DASHBOARD_BACKGROUND_IMAGE, "Qmf1MeZvaeqnCSs8tQWEAob8NvyxfT6vvyYvyvEaKRc6GQ:png" });
+  sg.push_back({ common::DAO_DASHBOARD_TITLE, "Welcome to " + daoTitle });
+  sg.push_back({ common::DAO_DASHBOARD_PARAGRAPH, "Hypha provides simple tools and a framework to set up your organization from the ground up, together with others, in an organic and participative way. Our fraud resistant & transparent online tools enable you to coordinate & motivate teams, manage finances & payroll, communicate, implement governance processes that meet your organizational style." });
+  sg.push_back({ common::DAO_PROPOSALS_BACKGROUND_IMAGE, "QmYnPnMSm9PJd3Aw18i2Wwx3ZLANnHQsfTPhTbV2xXzCw7"});
+  sg.push_back({ common::DAO_PROPOSALS_TITLE, "Every vote counts"});
+  sg.push_back({ common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In " + daoTitle + " we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
+  sg.push_back({ common::DAO_MEMBERS_BACKGROUND_IMAGE, "QmcTW1yreT8iAGLpQgSTwHbwjmMpeyVCAf3SFXcfWdbEHA:png"});
+  sg.push_back({ common::DAO_MEMBERS_TITLE, "Find & get to know other " + daoTitle + " members"});
+  sg.push_back({ common::DAO_MEMBERS_PARAGRAPH, "Learn about what other members are working on, which badges they hold, which DAO's they are part of and much more." });
+  sg.push_back({ common::DAO_ORGANISATION_BACKGROUND_IMAGE, ""});
+  sg.push_back({ common::DAO_ORGANISATION_TITLE, "Learn everything about " + daoTitle });
+  sg.push_back({ common::DAO_ORGANISATION_PARAGRAPH, "Select from a multitude of tools to finetune how the organization works. From treasury and compensation to decision-making, from roles to badges, you have every lever at your fingertips." });
+  sg.push_back({ common::ADD_ADMINS_ENABLED, int64_t(1) });
+  sg.push_back({ common::CLAIM_ENABLED, int64_t(1) });
 
-  auto& sg = def.back();
-
-  auto cw = ContentWrapper(def);
-
-  cw.insertOrReplace(sg, { common::DAO_DOCUMENTATION_URL, "" });
-  cw.insertOrReplace(sg, { common::DAO_DISCORD_URL, "" });
-  cw.insertOrReplace(sg, { common::DAO_PATTERN, "" });
-  cw.insertOrReplace(sg, { common::DAO_EXTENDED_LOGO, "" });
-  cw.insertOrReplace(sg, { common::DAO_PATTERN_COLOR, "#3E3B46" });
-  cw.insertOrReplace(sg, { common::DAO_PATTERN_OPACITY, 30 });
-  cw.insertOrReplace(sg, { common::DAO_SPLASH_BACKGROUND_IMAGE, "QmcGobT4p14tHkLjYJVBPMyQyWC1yh1dEZGzinxnzbVyc5:jpeg" });
-  cw.insertOrReplace(sg, { common::DAO_DASHBOARD_BACKGROUND_IMAGE, "Qmf1MeZvaeqnCSs8tQWEAob8NvyxfT6vvyYvyvEaKRc6GQ:png" });
-  cw.insertOrReplace(sg, { common::DAO_DASHBOARD_TITLE, "Welcome to " + daoTitle });
-  cw.insertOrReplace(sg, { common::DAO_DASHBOARD_PARAGRAPH, "Hypha provides simple tools and a framework to set up your organization from the ground up, together with others, in an organic and participative way. Our fraud resistant & transparent online tools enable you to coordinate & motivate teams, manage finances & payroll, communicate, implement governance processes that meet your organizational style." });
-  cw.insertOrReplace(sg, { common::DAO_PROPOSALS_BACKGROUND_IMAGE, "QmYnPnMSm9PJd3Aw18i2Wwx3ZLANnHQsfTPhTbV2xXzCw7"});
-  cw.insertOrReplace(sg, { common::DAO_PROPOSALS_TITLE, "Every vote counts"});
-  cw.insertOrReplace(sg, { common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In " + daoTitle + " we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
-  cw.insertOrReplace(sg, { common::DAO_MEMBERS_BACKGROUND_IMAGE, "QmcTW1yreT8iAGLpQgSTwHbwjmMpeyVCAf3SFXcfWdbEHA:png"});
-  cw.insertOrReplace(sg, { common::DAO_MEMBERS_TITLE, "Find & get to know other " + daoTitle + " members"});
-  cw.insertOrReplace(sg, { common::DAO_MEMBERS_PARAGRAPH, "Learn about what other members are working on, which badges they hold, which DAO's they are part of and much more." });
-  cw.insertOrReplace(sg, { common::DAO_ORGANISATION_BACKGROUND_IMAGE, ""});
-  cw.insertOrReplace(sg, { common::DAO_ORGANISATION_TITLE, "Learn everything about " + daoTitle });
-  cw.insertOrReplace(sg, { common::DAO_ORGANISATION_PARAGRAPH, "Select from a multitude of tools to finetune how the organization works. From treasury and compensation to decision-making, from roles to badges, you have every lever at your fingertips." });
-  cw.insertOrReplace(sg, { common::ADD_ADMINS_ENABLED, int64_t(1) });
-  cw.insertOrReplace(sg, { common::CLAIM_ENABLED, int64_t(1) });
-
-  // cw.insertOrReplace(0, )
-
-  settingsGroup = std::move(sg);
 }
 
 } // namespace hypha

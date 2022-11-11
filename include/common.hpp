@@ -26,6 +26,8 @@ namespace hypha::common
     inline constexpr symbol S_HYPHA("HYPHA", 2);
 
     //Dao settings
+    inline constexpr auto DAO_TYPE = "dao_type";
+
     inline constexpr auto DAO_DESCRIPTION = "dao_description";
     inline constexpr auto DAO_TITLE = "dao_title";
     inline constexpr auto DAO_URL = "dao_url";

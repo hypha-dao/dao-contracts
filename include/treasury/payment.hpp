@@ -31,11 +31,11 @@ class TrsyPayment : public TypedDocument {
 
     DECLARE_DOCUMENT(
         Data,
-        PROPERTY(creator, eosio::name, Creator),
-        PROPERTY(amount_paid, eosio::asset, AmountPaid),
-        PROPERTY(confirmed_date, eosio::time_point, ConfirmedDate),
-        PROPERTY(is_confirmed, int64_t, IsConfirmed),
-        PROPERTY(notes, string, Notes)
+        PROPERTY(creator, eosio::name, Creator, NO_USE_GETSET),
+        PROPERTY(amount_paid, eosio::asset, AmountPaid, USE_GETSET),
+        PROPERTY(confirmed_date, eosio::time_point, ConfirmedDate, USE_GETSET),
+        PROPERTY(is_confirmed, int64_t, IsConfirmed, USE_GETSET),
+        PROPERTY(notes, string, Notes, USE_GETSET)
     )
 public:
     TrsyPayment(dao& dao, uint64_t id);

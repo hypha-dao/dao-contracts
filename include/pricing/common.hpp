@@ -10,6 +10,12 @@ namespace hypha::pricing::common {
         inline constexpr auto BILLING_INFO = "billing.info"_n;
     } //namespace types
 
+    namespace dao_types {
+        inline constexpr auto ANCHOR = "anchor";
+        inline constexpr auto INDIVIDUAL = "individual";
+        inline constexpr auto ANCHOR_CHILD = "anchor-child";
+    }
+
     namespace links {
         inline constexpr auto PRICING_PLAN = "pricingplan"_n;
         inline constexpr auto DEFAULT_PRICING_PLAN = "defpriceplan"_n;

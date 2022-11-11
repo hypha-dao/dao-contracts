@@ -15,17 +15,17 @@ class BillingInfo : public TypedDocument
 {
     DECLARE_DOCUMENT(
         Data,
-        PROPERTY(start_date, eosio::time_point, StartDate),
-        PROPERTY(expiration_date, eosio::time_point, ExpirationDate),
-        PROPERTY(end_date, eosio::time_point, EndDate),
-        PROPERTY(billing_day, int64_t, BillingDay),
-        PROPERTY(period_count, int64_t, PeriodCount),
-        PROPERTY(discount_perc_x10000, int64_t, DiscountPercentage),
-        PROPERTY(offer_discount_perc_x10000, int64_t, OfferDiscountPercentage),
-        PROPERTY(plan_name, std::string, PlanName),
-        PROPERTY(plan_price, eosio::asset, PlanPrice),
-        PROPERTY(total_paid, eosio::asset, TotalPaid),
-        PROPERTY(is_infinite, int64_t, IsInfinite)
+        PROPERTY(start_date, eosio::time_point, StartDate, USE_GETSET),
+        PROPERTY(expiration_date, eosio::time_point, ExpirationDate, USE_GETSET),
+        PROPERTY(end_date, eosio::time_point, EndDate, USE_GETSET),
+        PROPERTY(billing_day, int64_t, BillingDay, NO_USE_GETSET),
+        PROPERTY(period_count, int64_t, PeriodCount, NO_USE_GETSET),
+        PROPERTY(discount_perc_x10000, int64_t, DiscountPercentage, NO_USE_GETSET),
+        PROPERTY(offer_discount_perc_x10000, int64_t, OfferDiscountPercentage, NO_USE_GETSET),
+        PROPERTY(plan_name, std::string, PlanName, NO_USE_GETSET),
+        PROPERTY(plan_price, eosio::asset, PlanPrice, NO_USE_GETSET),
+        PROPERTY(total_paid, eosio::asset, TotalPaid, USE_GETSET),
+        PROPERTY(is_infinite, int64_t, IsInfinite, USE_GETSET)
     )
 public:
     BillingInfo(dao& dao, uint64_t id);
