@@ -10,7 +10,6 @@
 #include <treasury/redemption.hpp>
 #include <treasury/balance.hpp>
 #include <treasury/payment.hpp>
-#include <treasury/attestation.hpp>
 #include <treasury/common.hpp>
 
 namespace hypha {
@@ -22,30 +21,8 @@ using treasury::RedemptionData;
 using treasury::Balance;
 using treasury::TrsyPayment;
 using treasury::TrsyPaymentData;
-using treasury::Attestation;
-using treasury::AttestationData;
 
 namespace trsycommon = treasury::common;
-
-
-void verifyAttestations(
-  const std::vector<Attestation>& attestations,
-  Settings* treasurySettings,
-  TrsyPayment& payment,
-  Redemption& redemption
-) {
-
-  //Check if we can confirm the payment
-  if (attestations.size() >= treasurySettings->getOrFail<int64_t>(trsycommon::fields::THRESHOLD))
-  {
-    payment.setIsConfirmed(true);
-    payment.setConfirmedDate(eosio::current_time_point());
-    payment.update();
-    redemption.setAmountPaid(redemption.getAmountPaid() + payment.getAmountPaid());
-    redemption.update();
-    //TODO: Notify when payment is confirmed (?)
-  }
-}
 
 ACTION dao::addtreasurer(uint64_t treasury_id, name treasurer)
 {
@@ -131,6 +108,11 @@ ACTION dao::newpayment(name treasurer, uint64_t redemption_id, const asset& amou
 
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
+  EOS_CHECK(
+    amount.amount > 0,
+    "Amount must be greater to 0"
+  )
+
   //Verify the redemption id is valid by creating a Redemption object with it
   Redemption redemption(*this, redemption_id);
 
@@ -141,7 +123,7 @@ ACTION dao::newpayment(name treasurer, uint64_t redemption_id, const asset& amou
 
   {
     auto amountDue = amountRequested - redemption.getAmountPaid();
-    //Check the payment amount is less or equal to the requested amount
+    //Check the payment amount is less or equal to the amount due
     EOS_CHECK(
       amount <= amountDue,
       to_str(
@@ -153,136 +135,17 @@ ACTION dao::newpayment(name treasurer, uint64_t redemption_id, const asset& amou
     );
   }
 
-  //Check if the current payments sum less than the required amount
-  {
-    auto payments = redemption.getPayments();
-    auto totalPayAmount = std::accumulate(payments.begin(), 
-                                          payments.end(), 
-                                          asset(0, amount.symbol), 
-                                          [](asset& prev, TrsyPayment& current){
-                                            return prev + current.getAmountPaid();
-                                          });
-
-    auto amountDue = amountRequested - totalPayAmount;
-    EOS_CHECK(
-      amount <= amountDue,
-      to_str("Accumulated amount of existing confirmed & unconfirmed payments is ", totalPayAmount,
-                   ", redemption amount is ", amountRequested, 
-                   ", so new payments amount must be less or equal to ", amountDue, " but you submitted ", amount)
-    )
-  }
-
+  //Update amount paid
+  redemption.setAmountPaid(redemption.getAmountPaid() + amount);
+  redemption.update();
+  
   TrsyPayment payment(*this, treasury.getId(), redemption_id, TrsyPaymentData {
     .creator = treasurer,
     .amount_paid = amount,
-    .confirmed_date = eosio::time_point(),
-    .is_confirmed = false,
     .notes = std::move(notes)
   });
 
-  Attestation attestation(*this, payment.getId(), AttestationData {
-    .treasurer = treasurer
-  });
- 
-  verifyAttestations(
-    { std::move(attestation) }, //Empty array since this is the first attestation
-    getSettingsDocument(treasury.getId()),
-    payment,
-    redemption
-  );
-
   //TODO: Should we notify the requestor?
-}
-
-ACTION dao::attestpay(name treasurer, uint64_t payment_id, const asset& amount, const std::optional<std::string>& notes)
-{
-  TRACE_FUNCTION();
-  require_auth(treasurer);
-
-  EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-
-  TrsyPayment payment(*this, payment_id);
-
-  auto treasury = payment.getTreasury();
-
-  treasury.checkTreasurerAuth();
-
-  EOS_CHECK(
-    !payment.getIsConfirmed(),
-    "Cannot attest to a payment that has already been confirmed"
-  );
-
-  //Verify that the redeption document is valid by fetching it
-  auto redemption = payment.getRedemption();
-
-  EOS_CHECK(
-    payment.getAmountPaid() == amount,
-    "amount does not match amount on payment you are attesting to."
-  )
-
-  auto attestations = payment.getAttestations();
-
-  EOS_CHECK(
-    std::none_of(attestations.begin(), attestations.end(), [&treasurer](Attestation& attest){
-      return attest.getTreasurer() == treasurer;
-    }),
-    to_str("Treasurer ", treasurer, " has already attested to this payment")
-  );
-
-  if (notes.has_value()) {
-    payment.setNotes(notes.value());
-    payment.update();
-  }
-
-  Attestation attestation(*this, payment.getId(), AttestationData {
-    .treasurer = treasurer
-  });
-
-  attestations.emplace_back(std::move(attestation));
-
-  verifyAttestations(
-    attestations,
-    getSettingsDocument(treasury.getId()),
-    payment,
-    redemption
-  );
-}
-
-ACTION dao::remattestpay(name treasurer, uint64_t payment_id)
-{
-  TRACE_FUNCTION();
-  require_auth(treasurer);
-
-  EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
-
-  TrsyPayment payment(*this, payment_id);
-
-  auto treasury = payment.getTreasury();
-
-  treasury.checkTreasurerAuth();
-
-  EOS_CHECK(
-    !payment.getIsConfirmed(),
-    "Cannot remove attestation from a payment that has already been confirmed"
-  );
-
-  auto attestations = payment.getAttestations();
-
-  auto attestIt = std::find_if(attestations.begin(), attestations.end(), [&treasurer](Attestation& attest){
-    return attest.getTreasurer() == treasurer;
-  });
-
-  EOS_CHECK(
-    attestIt != attestations.end(),
-    to_str("Treasurer ", treasurer, " hasn't attested this payment")
-  );
-
-  attestIt->remove();
-
-  //Remove payment if this is the only attestation
-  if (attestations.size() == 1) {
-    getGraph().eraseDocument(payment.getId());
-  }
 }
 
 ACTION dao::setpaynotes(uint64_t payment_id, string notes)
