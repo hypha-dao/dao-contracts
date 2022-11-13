@@ -191,11 +191,16 @@ void dao::onCashTokenTransfer(const name& from, const name& to, const asset& qua
   //This would be a very weird scenario where the symbol raw value
   //equals the edge name 'dao' which would cause unexpected behaviour
   if (lookupEdgeName == common::DAO) {
-    auto settings = getSettingsDocument();
-    settings->setSetting(
-      "errors", 
-      Content{ "cash_critital_error", to_str("Symbol raw value colapses with 'dao' edge name:", quantity) }
-    );
+    // auto settings = getSettingsDocument();
+    // settings->setSetting(
+    //   "errors", 
+    //   Content{ "cash_critital_error", to_str("Symbol raw value colapses with 'dao' edge name:", quantity) }
+    // );
+    EOS_CHECK(
+      false, 
+      to_str("Symbol raw value colapses with 'dao' edge name:", quantity)
+    )
+
     return;
   }
 
