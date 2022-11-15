@@ -21,3 +21,4 @@ main1.go
 /dao-go/**/*.json
 dao-contracts
 migration.sh
+setup/.env

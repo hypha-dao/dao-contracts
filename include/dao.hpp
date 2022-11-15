@@ -244,7 +244,7 @@ namespace hypha
       ACTION withdraw(name owner, uint64_t document_id);
       ACTION suspend(name proposer, uint64_t document_id, string reason);
 
-      //ACTION createroot(const std::string &notes);
+      ACTION createroot(const std::string &notes);
       ACTION createdao(ContentGroups &config);
 
       ACTION archiverecur(uint64_t document_id);

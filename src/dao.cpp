@@ -1529,18 +1529,18 @@ void dao::archiverecur(uint64_t document_id)
   }
 }
 
-// void dao::createroot(const std::string& notes)
-// {
-//   TRACE_FUNCTION();
-//   require_auth(get_self());
+void dao::createroot(const std::string& notes)
+{
+  TRACE_FUNCTION();
+  require_auth(get_self());
 
-//   Document rootDoc(get_self(), get_self(), getRootContent(get_self()));
+  Document rootDoc(get_self(), get_self(), getRootContent(get_self()));
 
-//   // Create the settings document as well and add an edge to it
-//   Settings dhoSettings(*this, rootDoc.getID());
+  // Create the settings document as well and add an edge to it
+  Settings dhoSettings(*this, rootDoc.getID());
 
-//   addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
-// }
+  addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
+}
 
 ACTION dao::modalerts(uint64_t root_id, ContentGroups& alerts)
 {

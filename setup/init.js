@@ -45,7 +45,7 @@ const eosEndpoint = EOS_ENDPOINT;
 
 const signatureProvider = new JsSignatureProvider([
   EOS_PK_1,
-  EOS_PK_2
+  // EOS_PK_2
 ]);
 
 const rpc = new JsonRpc(
@@ -257,7 +257,7 @@ const deleteToken = (asset, contract) => {
 }
 
 const createRoot = () => {
-  return runAction('createroot', { notes: 'Test root' });
+  return runAction('createroot', { notes: 'root' });
 }
 
 const createDAO = ({
@@ -589,7 +589,7 @@ const createAcc = async (account, pub_key) => {
 }
 
 const setSetting = async (setting, value) => {
-  return runAction('setsetting', { key: setting, value });
+  return runAction('setsetting', { key: setting, value, group: "settings" });
 }
 
 const sleepFor = async (ms) => {
@@ -801,19 +801,19 @@ const initializeDHO = async () => {
 
     await sleepFor(5000);
 
-    result = await setSetting('governance_token_contract', [Types.Name, 'mtvoicehypha']);
+    result = await setSetting('governance_token_contract', [Types.Name, 'voice.hypha']);
     
     console.log('Set DHO setting result:', result);
 
-    result = await setSetting('reward_token_contract', [Types.Name, 'mtrwardhypha']);
+    result = await setSetting('reward_token_contract', [Types.Name, 'hypha.hypha']);
     
     console.log('Set DHO setting result:', result);
 
-    result = await setSetting('peg_token_contract', [Types.Name, 'mtpegtkhypha']);
+    result = await setSetting('peg_token_contract', [Types.Name, 'husd.hypha']);
     
     console.log('Set DHO setting result:', result);
 
-    result = await setSetting('treasury_contract', [Types.Name, 'mttrsryhypha']);
+    result = await setSetting('treasury_contract', [Types.Name, 'bank.hypha']);
     
     console.log('Set setting result:', result);
 
