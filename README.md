@@ -63,7 +63,7 @@ wasm-opt -O3 -o output.wasm input.wasm
 ```
 
 ## Permissions
-dao.hypha@eosio.code permission must be added to both active and owner
+```dao.hypha@eosio.code``` permission must be added to both active and owner
 
 ## CLIs and Testing (outdated)
 
