@@ -1120,7 +1120,7 @@ void dao::addadmins(const uint64_t dao_id, const std::vector<name>& admin_accoun
   auto daoSettings = getSettingsDocument(dao_id);
 
   EOS_CHECK(
-    daoSettings->getOrFail<int64_t>(common::ADD_ADMINS_ENABLED) == 1,
+    daoSettings->getSettingOrDefault<int64_t>(common::ADD_ADMINS_ENABLED, 1) == 1,
     to_str("Adding admins feature is not enabled")
   )
 
@@ -1265,8 +1265,10 @@ void dao::createdao(ContentGroups& config)
 
   auto daoDescription = configCW.getOrFail(detailsIdx, common::DAO_DESCRIPTION).second;
 
+  auto daoDescStr = daoDescription->getAs<std::string>();
+
   EOS_CHECK(
-    daoDescription->getAs<std::string>().size() <= 512,
+    daoDescStr.size() <= 512,
     "Dao description has be less than 512 characters"
   );
 
@@ -1304,6 +1306,13 @@ void dao::createdao(ContentGroups& config)
   auto onboarderAcc = configCW.getOrFail(detailsIdx, common::ONBOARDER_ACCOUNT).second;
 
   const name onboarder = onboarderAcc->getAs<name>();
+
+  auto hyphaId = getDAOID("hypha"_n);
+
+  EOS_CHECK(
+    hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
+    "You are not allowed to call this action"
+  );
 
   auto votingQuorum = configCW.getOrFail(detailsIdx, VOTING_QUORUM_FACTOR_X100).second;
 
@@ -1408,7 +1417,7 @@ void dao::createdao(ContentGroups& config)
     std::move(*logo)
   };
 
-  addDefaultSettings(settingsGroup, daoTitleStr);
+  addDefaultSettings(settingsGroup, daoTitleStr, daoDescStr);
 
   // Create the settings document as well and add an edge to it
   ContentGroups settingCgs{
@@ -2322,7 +2331,7 @@ void dao::changeDecay(Settings* dhoSettings, Settings* daoSettings, uint64_t dec
   ).send();
 }
 
-void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle)
+void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle, const string& daoDescStr)
 {
   auto& sg = settingsGroup;
 
@@ -2332,14 +2341,14 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
   sg.push_back({ common::DAO_EXTENDED_LOGO, "" });
   sg.push_back({ common::DAO_PATTERN_COLOR, "#3E3B46" });
   sg.push_back({ common::DAO_PATTERN_OPACITY, 30 });
-  sg.push_back({ common::DAO_SPLASH_BACKGROUND_IMAGE, "QmcGobT4p14tHkLjYJVBPMyQyWC1yh1dEZGzinxnzbVyc5:jpeg" });
-  sg.push_back({ common::DAO_DASHBOARD_BACKGROUND_IMAGE, "Qmf1MeZvaeqnCSs8tQWEAob8NvyxfT6vvyYvyvEaKRc6GQ:png" });
+  sg.push_back({ common::DAO_SPLASH_BACKGROUND_IMAGE, "" });
+  sg.push_back({ common::DAO_DASHBOARD_BACKGROUND_IMAGE, "" });
   sg.push_back({ common::DAO_DASHBOARD_TITLE, "Welcome to " + daoTitle });
-  sg.push_back({ common::DAO_DASHBOARD_PARAGRAPH, "Hypha provides simple tools and a framework to set up your organization from the ground up, together with others, in an organic and participative way. Our fraud resistant & transparent online tools enable you to coordinate & motivate teams, manage finances & payroll, communicate, implement governance processes that meet your organizational style." });
-  sg.push_back({ common::DAO_PROPOSALS_BACKGROUND_IMAGE, "QmYnPnMSm9PJd3Aw18i2Wwx3ZLANnHQsfTPhTbV2xXzCw7"});
+  sg.push_back({ common::DAO_DASHBOARD_PARAGRAPH, daoDescStr });
+  sg.push_back({ common::DAO_PROPOSALS_BACKGROUND_IMAGE, ""});
   sg.push_back({ common::DAO_PROPOSALS_TITLE, "Every vote counts"});
   sg.push_back({ common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In " + daoTitle + " we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
-  sg.push_back({ common::DAO_MEMBERS_BACKGROUND_IMAGE, "QmcTW1yreT8iAGLpQgSTwHbwjmMpeyVCAf3SFXcfWdbEHA:png"});
+  sg.push_back({ common::DAO_MEMBERS_BACKGROUND_IMAGE, ""});
   sg.push_back({ common::DAO_MEMBERS_TITLE, "Find & get to know other " + daoTitle + " members"});
   sg.push_back({ common::DAO_MEMBERS_PARAGRAPH, "Learn about what other members are working on, which badges they hold, which DAO's they are part of and much more." });
   sg.push_back({ common::DAO_ORGANISATION_BACKGROUND_IMAGE, ""});
