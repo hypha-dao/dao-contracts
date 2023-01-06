@@ -1,0 +1,31 @@
+Blockchain Architect (DHO)
+I am extending my DHO role in order to see through the implementation of the ENF grant to deploy Hypha on the EOS blockchain. My main responsibility will be to make sure the team successfully fulfills all the remaining milestones on time and to spec.
+This is a new proposal because I am changing deferred from 75% to 70%, as our ENF budget is for this purpose. 
+This is an extension of my DHO role with the same parameters (except changing deferred from 75 to 70): https://dao.hypha.earth/hypha/proposals/29167
+Circle requesting: DHO Circle
+1st - What have you been doing?
+Contributions see https://github.com/n13?tab=overview&from=2022-06-08&to=2022-11-01
+2nd - What are you wanting to do?
+Technical lead for DHO development, build the team, build team processes for more productive working. Treasurer running payouts.
+Accountabilities:
+- Overall architecture
+- Onboarding new people on the team
+- Add development processes to improve quality 
+- Code reviews and team support
+- Ship features on time
+O1. Tech team is productive and focused
+KR1. Join all DHO dev standups
+KR2. Review tickets
+KR3. Help with implementation
+O2. Expand product usability and functionality
+KR1. Implement at least 1 feature
+KR2. Ensure full unit test coverage
+KR3. DHO product is bug free
+3rd - Why did you choose what you did?
+Why did you pick that Archetype?
+I want to make Hypha the best DAO platform in the market. I like building things.
+Complexity band?
+Based on technical complexity of blockchain development
+Commitment percentage?
+I am applying for 2 other roles, a Hypha Wallet Role at 40% and the Anchor Circle member role at 10% for 100% total.
+

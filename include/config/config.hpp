@@ -1,2 +1,2 @@
 #pragma once
-#define DEVELOP_BUILD
+#define PRODUCTION_BUILD
