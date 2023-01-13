@@ -115,6 +115,13 @@ PricingPlan PlanManager::getDefaultPlan(dao& dao)
                                       links::DEFAULT_PRICING_PLAN).getToNode()); 
 }
 
+PricingPlan PlanManager::getEcosystemPlan(dao& dao)
+{
+    return PricingPlan(dao, Edge::get(dao.get_self(), 
+                                      dao.getRootID(), 
+                                      links::ECOSYSTEM_PRICING_PLAN).getToNode()); 
+}
+
 void PlanManager::setStartBill(const BillingInfo& bill)
 {
     EOS_CHECK(

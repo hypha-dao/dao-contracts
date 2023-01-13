@@ -3,11 +3,18 @@
 #include <eosio/name.hpp>
 
 namespace hypha::pricing::common {
+
+    namespace groups {
+        inline constexpr auto ECOSYSTEM = "ecosystem";
+    }
+
     namespace types {
         inline constexpr auto PRICING_PLAN = "pricing.plan"_n;
         inline constexpr auto PRICE_OFFER = "price.offer"_n;
         inline constexpr auto PLAN_MANAGER = "plan.manager"_n;
         inline constexpr auto BILLING_INFO = "billing.info"_n;
+        inline constexpr auto PREPAID = "prepaid";
+        inline constexpr auto UNLIMITED = "unlimited";
     } //namespace types
 
     namespace dao_types {
@@ -19,6 +26,7 @@ namespace hypha::pricing::common {
     namespace links {
         inline constexpr auto PRICING_PLAN = "pricingplan"_n;
         inline constexpr auto DEFAULT_PRICING_PLAN = "defpriceplan"_n;
+        inline constexpr auto ECOSYSTEM_PRICING_PLAN = "ecopriceplan"_n;
         inline constexpr auto BILL = "bill"_n;
         inline constexpr auto START_BILL = "startbill"_n;
         inline constexpr auto LAST_BILL = "lastbill"_n;
@@ -43,6 +51,7 @@ namespace hypha::pricing::common {
         inline constexpr auto REACTIVATION_PERIOD = "reactivation_period_sec";
         inline constexpr auto DISCOUNT_PERCENTAGE = "discount_perc_x10000";
         inline constexpr auto MAX_MEMBER_COUNT = "max_member_count";
+        inline constexpr auto IS_WAITING_ECOSYSTEM = "is_waiting_ecosystem";
     } // namespace items
     
 }

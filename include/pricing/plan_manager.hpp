@@ -15,7 +15,7 @@ class PlanManager : public TypedDocument
     DECLARE_DOCUMENT(
         Data,
         PROPERTY(credit, eosio::asset, Credit, USE_GETSET),
-        PROPERTY(type, std::string, Type, NO_USE_GETSET)
+        PROPERTY(type, std::string, Type, USE_GETSET)
     )
 public:
     PlanManager(dao& dao, uint64_t id);
@@ -40,6 +40,8 @@ public:
     static PlanManager getFromDaoID(dao& dao, uint64_t daoID);
 
     static PricingPlan getDefaultPlan(dao& dao);
+
+    static PricingPlan getEcosystemPlan(dao& dao);
 private:
     virtual const std::string buildNodeLabel(ContentGroups &content) override
     {

@@ -259,7 +259,13 @@ namespace hypha
       ACTION setrsysttngs(uint64_t treasury_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 
       //Pricing System actions
+      /*
+      * @brief Marks a DAO as waiting for Ecosystem activation
+      */
+      ACTION markasecosys(uint64_t dao_id);
+      ACTION setdaotype(uint64_t dao_id, const string& dao_type);
       ACTION activateplan(ContentGroups& plan_info);
+      ACTION activateecos(ContentGroups& ecosystem_info);
       ACTION addprcngplan(ContentGroups& pricing_plan_info, const std::vector<uint64_t>& offer_ids);
       ACTION addpriceoffr(ContentGroups& price_offer_info, const std::vector<uint64_t>& pricing_plan_ids);
       ACTION setdefprcpln(uint64_t price_plan_id);
@@ -400,6 +406,8 @@ namespace hypha
 
          return {};
       }
+
+      void verifyDaoType(uint64_t dao_id);
 
       void checkAdminsAuth(uint64_t dao_id);
 

@@ -27,6 +27,7 @@ namespace trsycommon = treasury::common;
 ACTION dao::addtreasurer(uint64_t treasury_id, name treasurer)
 {
     TRACE_FUNCTION();
+    
     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
     Treasury treasury(*this, treasury_id);
@@ -45,6 +46,7 @@ ACTION dao::addtreasurer(uint64_t treasury_id, name treasurer)
 ACTION dao::remtreasurer(uint64_t treasury_id, name treasurer)
 {
     TRACE_FUNCTION();
+
     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
     Treasury treasury(*this, treasury_id);
@@ -59,7 +61,10 @@ ACTION dao::remtreasurer(uint64_t treasury_id, name treasurer)
 ACTION dao::createtrsy(uint64_t dao_id)
 {
     TRACE_FUNCTION();
+
     EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+    verifyDaoType(dao_id);
 
     checkAdminsAuth(dao_id);
 
@@ -72,9 +77,11 @@ ACTION dao::redeem(uint64_t dao_id, name requestor, const asset& amount)
 {
   TRACE_FUNCTION();
 
-  require_auth(requestor);
-
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+  verifyDaoType(dao_id);
+
+  require_auth(requestor);
 
   auto treasury = Treasury::getFromDaoID(*this, dao_id);
 

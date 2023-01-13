@@ -126,6 +126,8 @@ ACTION dao::addedges(std::vector<InputEdge>& edges)
 ACTION  dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
 {
   //require_auth(get_self());
+  verifyDaoType(dao_id);
+
   checkAdminsAuth(dao_id);
 
   //Auto enroll
@@ -136,6 +138,8 @@ ACTION  dao::autoenroll(uint64_t dao_id, const name& enroller, const name& membe
 
 ACTION dao::setclaimenbld(uint64_t dao_id, bool enabled)
 {
+  verifyDaoType(dao_id);
+
   checkAdminsAuth(dao_id);
 
   auto settings = getSettingsDocument(dao_id);
@@ -152,6 +156,8 @@ ACTION dao::setclaimenbld(uint64_t dao_id, bool enabled)
 
 ACTION dao::remmember(uint64_t dao_id, const std::vector<name>& member_names)
 {
+  verifyDaoType(dao_id);
+
   if (!eosio::has_auth(get_self())) {
     checkAdminsAuth(dao_id);
   }
@@ -165,6 +171,8 @@ ACTION dao::remmember(uint64_t dao_id, const std::vector<name>& member_names)
 
 ACTION dao::remapplicant(uint64_t dao_id, const std::vector<name>& applicant_names)
 {
+  verifyDaoType(dao_id);
+
   if (!eosio::has_auth(get_self())) {
     checkAdminsAuth(dao_id);
   }
@@ -184,6 +192,8 @@ void dao::propose(uint64_t dao_id,
 {
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+  verifyDaoType(dao_id);
 
   std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, dao_id, proposal_type));
   proposal->propose(proposer, content_groups, publish);
@@ -916,8 +926,11 @@ void dao::makePayment(Settings* daoSettings,
 void dao::apply(const eosio::name& applicant, uint64_t dao_id, const std::string& content)
 {
   TRACE_FUNCTION();
-  require_auth(applicant);
 
+  verifyDaoType(dao_id);
+
+  require_auth(applicant);
+  
   auto member = getOrCreateMember(applicant);
 
   member.apply(dao_id, content);
@@ -926,6 +939,8 @@ void dao::apply(const eosio::name& applicant, uint64_t dao_id, const std::string
 void dao::enroll(const eosio::name& enroller, uint64_t dao_id, const eosio::name& applicant, const std::string& content)
 {
   TRACE_FUNCTION();
+
+  verifyDaoType(dao_id);
 
   require_auth(enroller);
 
@@ -943,7 +958,7 @@ bool dao::isPaused() {
 
 Settings* dao::getSettingsDocument(uint64_t daoID)
 {
-  TRACE_FUNCTION();;
+  TRACE_FUNCTION();
 
   //Check if it'S already loaded in cache
   for (auto& settingsDoc : m_settingsDocs) {
@@ -1009,7 +1024,13 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
   std::string groupName = group.value_or(std::string{ "settings" });
 
   //Fixed settings that cannot be changed
-  std::map<std::string, const std::vector<std::string>> fixedSettings = {
+  using FixedSettingsMap = std::map<std::string, const std::vector<std::string>>;
+
+  //If the action was authorized with contract permission, let's allow changing any 
+  //setting
+  FixedSettingsMap fixedSettings = eosio::has_auth(get_self()) ? 
+  FixedSettingsMap{} : 
+  FixedSettingsMap {
     {
       SETTINGS,
       {
@@ -1104,6 +1125,8 @@ void  dao::addenroller(const uint64_t dao_id, name enroller_account)
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
+  verifyDaoType(dao_id);
+
   checkAdminsAuth(dao_id);
   auto mem = getOrCreateMember(enroller_account);
   
@@ -1116,6 +1139,8 @@ void dao::addadmins(const uint64_t dao_id, const std::vector<name>& admin_accoun
 {
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+  verifyDaoType(dao_id);
 
   auto daoSettings = getSettingsDocument(dao_id);
 
@@ -1143,6 +1168,8 @@ void dao::remenroller(const uint64_t dao_id, name enroller_account)
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
+  verifyDaoType(dao_id);
+
   checkAdminsAuth(dao_id);
 
   EOS_CHECK(
@@ -1157,6 +1184,9 @@ void dao::remadmin(const uint64_t dao_id, name admin_account)
 {
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+  verifyDaoType(dao_id);
+
   //checkAdminsAuth(dao_id);
   eosio::require_auth(get_self());
 
@@ -1172,6 +1202,8 @@ ACTION dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_d
 {
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+  verifyDaoType(dao_id);
 
   if (!eosio::has_auth(get_self())) {
     checkAdminsAuth(dao_id);
@@ -1705,17 +1737,7 @@ ACTION dao::modalerts(uint64_t root_id, ContentGroups& alerts)
 
 ACTION dao::modsalaryband(uint64_t dao_id, ContentGroups& salary_bands)
 {
-  //Verify if id belongs to a DAO or DHO
-  Document daoDoc(get_self(), dao_id);
-
-  auto type = daoDoc.getContentWrapper()
-                    .getOrFail(SYSTEM, TYPE)
-                    ->getAs<name>();
-
-  EOS_CHECK(
-    type == common::DAO,
-    "dao_id is not valid (not a Dao)"
-  );
+  verifyDaoType(dao_id);
 
   checkAdminsAuth(dao_id);
 
@@ -2117,6 +2139,21 @@ uint64_t dao::getMemberID(const name& memberName)
   );
 
   return *id;
+}
+
+void dao::verifyDaoType(uint64_t dao_id) 
+{
+  //Verify dao_id belongs to a DAO
+  Document daoDoc(get_self(), dao_id);
+  
+  auto type = daoDoc.getContentWrapper()
+                    .getOrFail(SYSTEM, TYPE)
+                    ->getAs<eosio::name>();
+
+  EOS_CHECK(
+    type == common::DAO,
+    "You can only apply to valid DAO's" 
+  );
 }
 
 void dao::checkEnrollerAuth(uint64_t dao_id, const name& account)
