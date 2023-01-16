@@ -31,10 +31,10 @@ namespace hypha::pricing::common {
         inline constexpr auto START_BILL = "startbill"_n;
         inline constexpr auto LAST_BILL = "lastbill"_n;
         inline constexpr auto CURRENT_BILL = "currentbill"_n;
+        inline constexpr auto PREV_START_BILL = "prevstartbil"_n;
         inline constexpr auto NEXT_BILL = "nextbill"_n;
         inline constexpr auto PLAN_MANAGER = "planmanager"_n;
         inline constexpr auto PRICE_OFFER = "priceoffer"_n;
-
     } // namespace links
     
     namespace items {
@@ -48,6 +48,10 @@ namespace hypha::pricing::common {
         inline constexpr auto NAME = "name";
         inline constexpr auto TAG = "tag";
         inline constexpr auto PRICE = "price";
+        inline constexpr auto& ECOSYSTEM_PRICE = PRICE;
+        inline constexpr auto ECOSYSTEM_PRICE_STAKED = "price_staked";
+        inline constexpr auto ECOSYSTEM_CHILD_PRICE = "child_price";
+        inline constexpr auto ECOSYSTEM_CHILD_PRICE_STAKED = "child_price_staked";
         inline constexpr auto REACTIVATION_PERIOD = "reactivation_period_sec";
         inline constexpr auto DISCOUNT_PERCENTAGE = "discount_perc_x10000";
         inline constexpr auto MAX_MEMBER_COUNT = "max_member_count";

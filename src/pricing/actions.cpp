@@ -79,9 +79,9 @@ static auto getStartAndEndDates(time_t t, int64_t periods)
     };
 };
 
-static void setEcosystemPlan(dao& dao, PlanManager& planManager)
+void dao::setEcosystemPlan(PlanManager& planManager)
 {
-    PricingPlan ecosystemPlan = PlanManager::getEcosystemPlan(dao);
+    PricingPlan ecosystemPlan = PlanManager::getEcosystemPlan(*this);
 
     auto offers = ecosystemPlan.getOffers();
 
@@ -96,7 +96,7 @@ static void setEcosystemPlan(dao& dao, PlanManager& planManager)
 
     auto [start,end,billingDay] = getStartAndEndDates(t, 0);
 
-    BillingInfo defBill(dao, 
+    BillingInfo defBill(*this, 
                         planManager, 
                         ecosystemPlan, 
                         offer, 
@@ -143,6 +143,50 @@ static void scheduleBillUpdate(const BillingInfo& bill, uint64_t daoID)
     // trx.send(util::hashCombine(nextID, proposal.getID()), m_dao.get_self());
 
     // m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
+}
+
+void dao::verifyEcosystemPayment(PlanManager& planManager, const string& priceItem, const string& priceStakedItem, const std::string& stakingMemo, const name& beneficiary)
+{
+  auto settings = getSettingsDocument();
+
+  auto price = settings->getOrFail<asset>(groups::ECOSYSTEM, priceItem);
+  
+  auto priceStaked = settings->getOrFail<asset>(groups::ECOSYSTEM, priceStakedItem);
+
+  //Verify the current credit >= price + stakedPrice
+  planManager.removeCredit(price + priceStaked);
+
+  planManager.update();
+
+  //TODO: Burn tokens equivalent to price
+  
+  auto stakingContract = settings->getOrFail<name>(HYPHA_COSALE_CONTRACT);
+
+  //Create lock for beneficiary account
+  eosio::action(
+      eosio::permission_level{get_self(), eosio::name("active")},
+      settings->getOrFail<name>(REWARD_TOKEN_CONTRACT), 
+      eosio::name("transfer"),
+      std::make_tuple(
+          get_self(), 
+          stakingContract, 
+          priceStaked, 
+          ""
+      )
+  ).send();
+
+  eosio::action(
+      eosio::permission_level{get_self(), name("active")},
+      stakingContract, 
+      name("createlock"),
+      std::make_tuple(
+          get_self(),
+          beneficiary,
+          priceStaked,
+          stakingMemo,
+          eosio::time_point(eosio::current_time_point().time_since_epoch() + STAKING_EXPIRY_MICROSECONDS)
+      )
+  ).send();
 }
 
 ACTION dao::markasecosys(uint64_t dao_id)
@@ -268,55 +312,31 @@ ACTION dao::activateecos(ContentGroups& ecosystem_info)
     isWaiting = 0;
 
     daoDoc.update();
-       
-    //TODO: Verify payment
+    
     auto planManager = PlanManager::getFromDaoID(*this, daoID);
 
-    auto settings = getSettingsDocument();
+    auto beneficiary = cw.getOrFail(DETAILS, hypha::common::BENEFICIARY_ACCOUNT)->getAs<name>();
 
-    auto ecosystemPrice = settings->getOrFail<asset>(groups::ECOSYSTEM, items::PRICE);
-    
-    auto ecosystemStakedPrice = settings->getOrFail<asset>(groups::ECOSYSTEM, items::PRICE);
+    verifyEcosystemPayment(
+        planManager,
+        items::ECOSYSTEM_PRICE,
+        items::ECOSYSTEM_PRICE_STAKED,
+        to_str("Staking HYPHA on DAO Ecosystem activation:", daoID),
+        beneficiary
+    );
 
-    //Verify the current credit >= price + stakedPrice
-    planManager.removeCredit(ecosystemPrice + ecosystemStakedPrice);
-
-    planManager.update();
-
-    //TODO: Burn tokens equivalent to price
-    
-    //TODO: Create lock for who (?)
-    auto stakingContract = settings->getOrFail<name>(HYPHA_COSALE_CONTRACT);
-
-    /*
-    eosio::action(
-        eosio::permission_level{issuer, eosio::name("active")},
-        settings->getOrFail<name>(REWARD_TOKEN_CONTRACT), 
-        eosio::name("transfer"),
-        std::make_tuple(
-            get_self(), 
-            stakingContract, 
-            ecosystemStakedPrice, 
-            ""
-        )
-    ).send();
-
-    eosio::action(
-        eosio::permission_level{m_dao.get_self(), name("active")},
-        stakingContract, 
-        name("createlock"),
-        std::make_tuple(
-            get_self(),
-            <Beneficiary>,
-            ecosystemStakedPrice,
-            to_str("Staking HYPHA on DAO Ecosystem activation:", daoID),
-            eosio::time_point(eosio::current_time_point().time_since_epoch() + STAKING_EXPIRY_MICROSECONDS)
-        )
-    ).send();
-    */
+    //Save the start bill in a new edge as it will be overrided
+    //by the Thrive plan
+    Edge(
+        get_self(), 
+        get_self(), 
+        planManager.getId(), 
+        planManager.getStartBill().getId(),
+        links::PREV_START_BILL
+    );
 
     //Use default price plan
-    setEcosystemPlan(*this, planManager);
+    setEcosystemPlan(planManager);
 }
 
 ACTION dao::activateplan(ContentGroups& plan_info)

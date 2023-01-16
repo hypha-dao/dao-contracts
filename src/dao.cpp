@@ -27,6 +27,7 @@
 
 #include <typed_document_factory.hpp>
 
+#include <pricing/plan_manager.hpp>
 #include <pricing/common.hpp>
 
 namespace hypha {
@@ -1008,9 +1009,18 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
 
   auto daoName = settings->getOrFail<eosio::name>(DAO_NAME);
 
+  auto daoDoc = Document(get_self(), dao_id);
+
+  auto daoCW = daoDoc.getContentWrapper();
+
+  auto type = daoCW.getOrFail(SYSTEM, TYPE)->getAs<name>();
+
+  auto isDraft = type == common::DAO_DRAFT;
+
   //Verify ID belongs to a valid DAO
   EOS_CHECK(
-    getDAOID(daoName).has_value(),
+    isDraft ||
+    getDAOID(daoName).value_or(0) == dao_id,
     to_str("The provided ID is not valid: ", dao_id)
   );
 
@@ -1028,7 +1038,7 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
 
   //If the action was authorized with contract permission, let's allow changing any 
   //setting
-  FixedSettingsMap fixedSettings = eosio::has_auth(get_self()) ? 
+  FixedSettingsMap fixedSettings = eosio::has_auth(get_self()) || isDraft ? 
   FixedSettingsMap{} : 
   FixedSettingsMap {
     {
@@ -1053,26 +1063,29 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
     );
   }
 
-  //Verify if the URL is unique if we want to change it
-  if (kvs.count(common::DAO_URL)) {
-    updateDaoURL(daoName, kvs[common::DAO_URL]);
-  }
-  else if (kvs.count(common::VOICE_TOKEN_DECAY_PERIOD) || kvs.count(common::VOICE_TOKEN_DECAY_PER_PERIOD)) {
-    auto getOrDef = [&](const std::string& label) -> int64_t { 
-      if (kvs.count(label)) {
-        return Content{"",kvs[label]}.getAs<int64_t>();
-      }
-      else {
-        return settings->getOrFail<int64_t>(label);
-      }
-    };
-    
-    changeDecay(
-      dhoSettings,
-      settings,
-      static_cast<uint64_t>(getOrDef(common::VOICE_TOKEN_DECAY_PERIOD)),
-      static_cast<uint64_t>(getOrDef(common::VOICE_TOKEN_DECAY_PER_PERIOD))
-    );
+  if (!isDraft) {
+    //Verify if the URL is unique if we want to change it
+    if (kvs.count(common::DAO_URL)) {
+      updateDaoURL(daoName, kvs[common::DAO_URL]);
+    }
+    else if (kvs.count(common::VOICE_TOKEN_DECAY_PERIOD) || 
+            kvs.count(common::VOICE_TOKEN_DECAY_PER_PERIOD)) {
+      auto getOrDef = [&](const std::string& label) -> int64_t { 
+        if (kvs.count(label)) {
+          return Content{"",kvs[label]}.getAs<int64_t>();
+        }
+        else {
+          return settings->getOrFail<int64_t>(label);
+        }
+      };
+      
+      changeDecay(
+        dhoSettings,
+        settings,
+        static_cast<uint64_t>(getOrDef(common::VOICE_TOKEN_DECAY_PERIOD)),
+        static_cast<uint64_t>(getOrDef(common::VOICE_TOKEN_DECAY_PER_PERIOD))
+      );
+    }
   }
 
   settings->setSettings(groupName, kvs);
@@ -1246,7 +1259,161 @@ static void initCoreMembers(dao& dao, uint64_t daoID, eosio::name onboarder, Con
   }
 }
 
+static void checkEcosystemDao(dao& dao, uint64_t daoID)
+{
+  auto ecosystemDoc = TypedDocument::withType(dao, daoID, common::DAO);
+  auto cw = ecosystemDoc.getContentWrapper();
+  auto daoType =  cw.getOrFail(DETAILS, common::DAO_TYPE)
+                    ->getAs<string>();
+  EOS_CHECK(
+    daoType == pricing::common::dao_types::ANCHOR,
+    "Provided parent ID is not an ecosystem"
+  );
+
+  auto isWaitingEcosystem = cw.getOrFail(DETAILS, pricing::common::items::IS_WAITING_ECOSYSTEM)
+                               ->getAs<int64_t>();
+
+  EOS_CHECK(
+    isWaitingEcosystem == 0,
+    "Parent ecosystem hasn't been activated yet"
+  );
+}
+
 void dao::createdao(ContentGroups& config)
+{
+  TRACE_FUNCTION();
+  EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+
+  auto configCW = ContentWrapper(config);
+
+  auto daoName = configCW.getOrFail(DETAILS, DAO_NAME);
+
+  const name dao = daoName->getAs<name>();
+
+  auto createDao = [&](uint64_t* parentID){
+    
+    Document daoDoc(
+      get_self(), 
+      get_self(), 
+      getDAOContent(
+        daoName->getAs<name>(), 
+        parentID ? pricing::common::dao_types::ANCHOR_CHILD :
+                   pricing::common::dao_types::INDIVIDUAL
+      )
+    );
+      
+    //This will check if the requested DAO name already exists, otherwise will add it
+    //to the daoName-id table
+    //NOTE: May need to rethink this mechanism as it wouldn't allow repeated names
+    //between different Ecosystems
+    addNameID<dao_table>(dao, daoDoc.getID());
+
+    //Extract mandatory configurations from DraftDao if present, or use the
+    //configCW items if not
+    if (auto draftDao = configCW.get(DETAILS, common::DAO_DRAFT_ID).second) {
+      
+      auto draftDaoID = static_cast<uint64_t>(draftDao->getAs<int64_t>());
+
+      EOS_CHECK(
+        parentID && //For now only allow Draft DAO's for child DAO's
+        Edge::get(
+          get_self(), 
+          draftDaoID, 
+          common::PARENT_DAO
+        ).getToNode() == *parentID
+        ,
+        "Draft Dao doesn't belong to the Ecosystem"
+      );
+
+      TypedDocument::withType(
+        *this, 
+        draftDaoID, 
+        common::DAO_DRAFT
+      );
+
+      readDaoSettings(daoDoc.getID(), dao, getSettingsDocument(draftDaoID)->getContentWrapper(), false);
+
+      //Delete DraftDao after
+      eosio::action(
+        eosio::permission_level{ get_self(), name("active") },
+        get_self(),
+        name("deletedaodft"),
+        std::make_tuple(
+          draftDaoID
+        )
+      ).send();
+    }
+    else {
+      readDaoSettings(daoDoc.getID(), dao, configCW, false);
+    }
+    
+    //Create start period
+    Period newPeriod(this, eosio::current_time_point(), to_str(dao, " start period"));
+
+    //Create start & end edges
+    Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::START);
+    Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::END);
+    Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::PERIOD);
+    Edge(get_self(), get_self(), newPeriod.getID(), daoDoc.getID(), common::DAO);
+
+    //Create Treasury
+    eosio::action(
+      eosio::permission_level{ get_self(), name("active") },
+      get_self(),
+      name("createtrsy"),
+      std::make_tuple(
+        daoDoc.getID()
+      )
+    ).send();
+
+    return daoDoc;
+  };
+
+  auto daoParent = configCW.get(DETAILS, common::DAO_PARENT_ID).second;
+
+  if (daoParent) {
+    auto daoParentID = static_cast<uint64_t>(daoParent->getAs<int64_t>());
+    //Only admins of parent DAO are allowed to create children DAO's
+    checkAdminsAuth(daoParentID);
+    checkEcosystemDao(*this, daoParentID);
+
+    auto parentPlanManager = pricing::PlanManager::getFromDaoID(*this, daoParentID);
+
+    auto beneficiary = configCW.getOrFail(DETAILS, common::BENEFICIARY_ACCOUNT)->getAs<name>();
+
+    //Check Parent DAO (a.k.a. Ecosystem) has enough funds to activate this DAO
+    verifyEcosystemPayment(
+      parentPlanManager, 
+      pricing::common::items::ECOSYSTEM_CHILD_PRICE,
+      pricing::common::items::ECOSYSTEM_CHILD_PRICE_STAKED,
+      to_str("Staking HYPHA on Ecosystem Child DAO creation:", dao),
+      beneficiary
+    );
+
+    auto daoDoc = createDao(&daoParentID);
+
+    Edge(get_self(), get_self(), daoParentID, daoDoc.getID(), common::CHILD_DAO);
+    Edge(get_self(), get_self(), daoDoc.getID(), daoParentID, common::PARENT_DAO);
+  
+    //Let's assign a PlanManager and set it's pricing plan to the best one
+    pricing::PlanManager planManager(*this, dao, pricing::PlanManagerData {
+        .credit = eosio::asset{ 0, hypha::common::S_HYPHA },
+        .type = pricing::common::types::UNLIMITED
+    });
+
+    setEcosystemPlan(planManager);
+  }
+  else {
+    auto daoDoc = createDao(nullptr);
+    //Verify Root exists
+    Document root = Document(get_self(), getRootID());    
+    Edge(get_self(), get_self(), root.getID(), daoDoc.getID(), common::DAO);
+  }
+
+  //TODO: Activate DAO Plan (?)
+}
+
+void dao::createdaodft(ContentGroups &config)
 {
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -1254,278 +1421,64 @@ void dao::createdao(ContentGroups& config)
   //Extract mandatory configurations
   auto configCW = ContentWrapper(config);
 
-  auto [detailsIdx, _] = configCW.getGroup(DETAILS);
-
-  EOS_CHECK(
-    detailsIdx != -1,
-    to_str("Missing Details Group")
-  );
-
-  // struct Field {
-  //   const std::string& label;
-  //   bool optional;
-  //   std::optional<Content> defaultValue;
-  // };
-
-  auto daoName = configCW.getOrFail(detailsIdx, DAO_NAME).second;
+  auto daoName = configCW.getOrFail(DETAILS, DAO_NAME);
 
   const name dao = daoName->getAs<name>();
 
-  //This is a reserved name for the root document
+  //Check if the requested DAO name already exists, we don't want to
+  //add it to the daoName-id table as it's just a draft and could
+  //prevent others from creating a real DAO with the same name
   EOS_CHECK(
-    dao != common::DHO_ROOT_NAME,
+    !getDAOID(dao),
     to_str(dao, " is a reserved name and can't be used to create a DAO.")
   );
+  
+  //We must have provided a parent ID as this action
+  //is only available for Ecosystem children DAOs
+  auto daoParent = configCW.getOrFail(DETAILS, common::DAO_PARENT_ID);
+  auto daoParentID = static_cast<uint64_t>(daoParent->getAs<int64_t>());
+  checkEcosystemDao(*this, daoParentID);
 
-  //TODO: Check if we are being created as a child DAO of an Anchor DAO
-
-  Document daoDoc(get_self(), get_self(), getDAOContent(daoName->getAs<name>(), pricing::common::dao_types::INDIVIDUAL));
-
-  addNameID<dao_table>(dao, daoDoc.getID());
-
-  //Verify Root exists
-  Document root = Document(get_self(), getRootID());
-
-  Edge(get_self(), get_self(), root.getID(), daoDoc.getID(), common::DAO);
-
-  auto votingDurationSeconds = configCW.getOrFail(detailsIdx, VOTING_DURATION_SEC).second;
-
-  EOS_CHECK(
-    votingDurationSeconds->getAs<int64_t>() > 0,
-    to_str(VOTING_DURATION_SEC, " has to be a positive number")
-  );
-
-  auto daoDescription = configCW.getOrFail(detailsIdx, common::DAO_DESCRIPTION).second;
-
-  auto daoDescStr = daoDescription->getAs<std::string>();
-
-  EOS_CHECK(
-    daoDescStr.size() <= 512,
-    "Dao description has be less than 512 characters"
-  );
-
-  auto daoTitle = configCW.getOrFail(detailsIdx, common::DAO_TITLE).second;
-
-  auto daoTitleStr = daoTitle->getAs<std::string>();
-
-  EOS_CHECK(
-    daoTitleStr.size() <= 48,
-    "Dao title has be less than 48 characters"
-  );
-
-  auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
-
-  auto voiceToken = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN).second;
-  auto voiceTokenDecayPeriod = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PERIOD).second;
-  auto voiceTokenDecayPerPeriodX10M = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PER_PERIOD).second;
-
-  auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
-
-  auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
-
-  rewardToPegTokenRatio->getAs<asset>();
-
-  //Generate periods
-  //auto inititialPeriods = configCW.getOrFail(detailsIdx, PERIOD_COUNT);
-
-  auto periodDurationSeconds = configCW.getOrFail(detailsIdx, common::PERIOD_DURATION).second;
-
-  EOS_CHECK(
-    periodDurationSeconds->getAs<int64_t>() > 0,
-    to_str(common::PERIOD_DURATION, " has to be a positive number")
-  );
-
-  auto onboarderAcc = configCW.getOrFail(detailsIdx, common::ONBOARDER_ACCOUNT).second;
-
-  const name onboarder = onboarderAcc->getAs<name>();
-
-  auto hyphaId = getDAOID("hypha"_n);
-
-  EOS_CHECK(
-    hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
-    "You are not allowed to call this action"
-  );
-
-  auto votingQuorum = configCW.getOrFail(detailsIdx, VOTING_QUORUM_FACTOR_X100).second;
-
-  votingQuorum->getAs<int64_t>();
-
-  auto votingAllignment = configCW.getOrFail(detailsIdx, VOTING_ALIGNMENT_FACTOR_X100).second;
-
-  votingAllignment->getAs<int64_t>();
-
-  int64_t useSeeds = 0;
-
-  if (auto [_, daoUsesSeeds] = configCW.get(detailsIdx, common::DAO_USES_SEEDS);
-    daoUsesSeeds)
-  {
-    useSeeds = daoUsesSeeds->getAs<int64_t>();
-  }
-
-  require_auth(onboarder);
-
-  Content daoURL = Content{ common::DAO_URL, to_str(dao) };;
-
-  if (auto [_, url] = configCW.get(detailsIdx, common::DAO_URL);
-      url)
-  {
-    daoURL.value = std::move(url->value);
-  }
-
-  //Verify DAO URL is unique
-  updateDaoURL(dao, daoURL.value);
-
-  EOS_CHECK(
-    daoURL.getAs<std::string>().size() <= 30,
-    "DAO URL must be less than 30 characters"
-  )
-
-  Content rewardTokenName = Content{  
-    common::REWARD_TOKEN_NAME,
-    to_str(rewardToken->getAs<eosio::asset>().symbol.code())
-  };
-
-  if (auto [_, rwrdTokName] = configCW.get(detailsIdx, common::REWARD_TOKEN_NAME);
-      rwrdTokName) 
-  {
-    rewardTokenName.value = std::move(rwrdTokName->value);
-  }
-
-  EOS_CHECK(
-    rewardTokenName.getAs<std::string>().size() <= 30,
-    "Utility token name must be less than 30 characters"
-  )
-
-  Content pegTokenName = Content{  
-    common::PEG_TOKEN_NAME,
-    to_str(rewardToken->getAs<eosio::asset>().symbol.code())
-  };
-
-  if (auto [_, pegTokName] = configCW.get(detailsIdx, common::PEG_TOKEN_NAME);
-      pegTokName) 
-  {
-    pegTokenName.value = std::move(pegTokName->value);
-  }
-
-  EOS_CHECK(
-    pegTokenName.getAs<std::string>().size() <= 30,
-    "Cash token name must be less than 30 characters"
-  )
-
-  auto primaryColor =  configCW.getOrFail("style", common::DAO_PRIMARY_COLOR);
-  primaryColor->getAs<std::string>();
-
-  auto secondaryColor =  configCW.getOrFail("style", common::DAO_SECONDARY_COLOR);
-  secondaryColor->getAs<std::string>();
-
-  auto textColor = configCW.getOrFail("style", common::DAO_TEXT_COLOR);
-  textColor->getAs<std::string>();
-
-  auto logo = configCW.getOrFail("style", common::DAO_LOGO);
-  logo->getAs<std::string>();
-
-  auto settingsGroup = 
-  ContentGroup {
-    Content(CONTENT_GROUP_LABEL, SETTINGS),
-    std::move(*daoName),
-    std::move(*daoTitle),
-    std::move(*daoDescription),
-    std::move(daoURL),
-    *pegToken,
-    *voiceToken,
-    *rewardToken,
-    std::move(*rewardToPegTokenRatio),
-    std::move(*periodDurationSeconds),
-    std::move(*votingDurationSeconds),
-    std::move(*onboarderAcc),
-    std::move(*votingQuorum),
-    std::move(*votingAllignment),
-    *voiceTokenDecayPeriod,
-    *voiceTokenDecayPerPeriodX10M,
-    Content{common::DAO_USES_SEEDS, useSeeds},
-    std::move(*primaryColor),
-    std::move(*secondaryColor),
-    std::move(*textColor),
-    std::move(*logo)
-  };
-
-  addDefaultSettings(settingsGroup, daoTitleStr, daoDescStr);
-
-  // Create the settings document as well and add an edge to it
-  ContentGroups settingCgs{
-      settingsGroup,
-      ContentGroup{
-          Content(CONTENT_GROUP_LABEL, SYSTEM),
-          Content(TYPE, common::SETTINGS_EDGE),
-          Content(NODE_LABEL, "Settings")
+  Document draftDoc(
+    get_self(), 
+    get_self(), 
+    ContentGroups {
+      ContentGroup {
+          Content(CONTENT_GROUP_LABEL, DETAILS), 
+          Content(DAO_NAME, dao),
+      },
+      ContentGroup {
+          Content(CONTENT_GROUP_LABEL, SYSTEM), 
+          Content(TYPE, common::DAO_DRAFT), 
       }
-  };
-
-  Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
-  Edge::write(get_self(), get_self(), daoDoc.getID(), settingsDoc.getID(), common::SETTINGS_EDGE);
-
-  createVoiceToken(
-    dao,
-    voiceToken->getAs<asset>(),
-    voiceTokenDecayPeriod->getAs<int64_t>(),
-    voiceTokenDecayPerPeriodX10M->getAs<int64_t>()
+    }
   );
 
-  auto dhoSettings = getSettingsDocument();
+  Edge(get_self(), get_self(), daoParentID, draftDoc.getID(), common::CHILD_DAO_DRAFT);
+  Edge(get_self(), get_self(), draftDoc.getID(), daoParentID, common::PARENT_DAO);
 
-  //Check if we should skip creating reward & peg tokens
-  //this might be the case if the tokens already exists
+  //Extract mandatory configurations
+  readDaoSettings(draftDoc.getID(), dao, configCW, true);
+}
 
-  if (auto [idx, skipPegTokFlag] = configCW.get(DETAILS, common::SKIP_PEG_TOKEN_CREATION);
-    skipPegTokFlag == nullptr ||
-    skipPegTokFlag->getAs<int64_t>() == 0) {
-    createToken(
-      PEG_TOKEN_CONTRACT,
-      dhoSettings->getOrFail<eosio::name>(TREASURY_CONTRACT),
-      pegToken->getAs<eosio::asset>()
-    );
-  }
-  else {
-    //Only dao.hypha should be able skip creating reward or peg token
-    eosio::require_auth(get_self());
-  }
+void dao::deletedaodft(uint64_t dao_draft_id)
+{
+  TRACE_FUNCTION();
 
-  if (auto [idx, skipRewardTokFlag] = configCW.get(DETAILS, common::SKIP_REWARD_TOKEN_CREATION);
-    skipRewardTokFlag == nullptr ||
-    skipRewardTokFlag->getAs<int64_t>() == 0) {
-    createToken(
-      REWARD_TOKEN_CONTRACT,
-      get_self(),
-      rewardToken->getAs<eosio::asset>()
-    );
-  }
-  else {
-    //Only dao.hypha should be able skip creating reward or peg token
-    eosio::require_auth(get_self());
-  }
+  auto draftDoc = TypedDocument::withType(
+    *this, 
+    dao_draft_id, 
+    common::DAO_DRAFT
+  );
 
-  initCoreMembers(*this, daoDoc.getID(), onboarder, configCW);
+  auto draftSettings = getSettingsDocument(dao_draft_id);
 
-  //Create start period
-  Period newPeriod(this, eosio::current_time_point(), to_str(dao, " start period"));
+  checkAdminsAuth(
+    Edge::get(get_self(), draftDoc.getID(), common::PARENT_DAO).getToNode()
+  );
 
-  //Create start & end edges
-  Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::START);
-  Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::END);
-  Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::PERIOD);
-  Edge(get_self(), get_self(), newPeriod.getID(), daoDoc.getID(), common::DAO);
-
-  //Create Treasury
-  eosio::action(
-    eosio::permission_level{ get_self(), name("active") },
-    get_self(),
-    name("createtrsy"),
-    std::make_tuple(
-      daoDoc.getID()
-    )
-  ).send();
-
-  //TODO: Activate DAO Plan (?)
+  getGraph().eraseDocument(draftDoc.getID());
+  getGraph().eraseDocument(draftSettings->getID());
 }
 
 void dao::archiverecur(uint64_t document_id)
@@ -2394,6 +2347,243 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
   sg.push_back({ common::ADD_ADMINS_ENABLED, int64_t(1) });
   sg.push_back({ common::CLAIM_ENABLED, int64_t(1) });
 
+}
+
+/*
+* @brief Generates settings document for the given DAO
+*/
+void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper configCW, bool isDraft) 
+{
+  auto [detailsIdx, _] = configCW.getGroup(DETAILS);
+
+  EOS_CHECK(
+    detailsIdx != -1,
+    to_str("Missing Details Group")
+  );
+
+  auto votingDurationSeconds = configCW.getOrFail(detailsIdx, VOTING_DURATION_SEC).second;
+
+  EOS_CHECK(
+    votingDurationSeconds->getAs<int64_t>() > 0,
+    to_str(VOTING_DURATION_SEC, " has to be a positive number")
+  );
+
+  auto daoDescription = configCW.getOrFail(detailsIdx, common::DAO_DESCRIPTION).second;
+
+  auto daoDescStr = daoDescription->getAs<std::string>();
+
+  EOS_CHECK(
+    daoDescStr.size() <= 512,
+    "Dao description has be less than 512 characters"
+  );
+
+  auto daoTitle = configCW.getOrFail(detailsIdx, common::DAO_TITLE).second;
+
+  auto daoTitleStr = daoTitle->getAs<std::string>();
+
+  EOS_CHECK(
+    daoTitleStr.size() <= 48,
+    "Dao title has be less than 48 characters"
+  );
+
+  auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
+
+  auto voiceToken = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN).second;
+  auto voiceTokenDecayPeriod = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PERIOD).second;
+  auto voiceTokenDecayPerPeriodX10M = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PER_PERIOD).second;
+
+  auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
+
+  auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
+
+  rewardToPegTokenRatio->getAs<asset>();
+
+  //Generate periods
+  //auto inititialPeriods = configCW.getOrFail(detailsIdx, PERIOD_COUNT);
+
+  auto periodDurationSeconds = configCW.getOrFail(detailsIdx, common::PERIOD_DURATION).second;
+
+  EOS_CHECK(
+    periodDurationSeconds->getAs<int64_t>() > 0,
+    to_str(common::PERIOD_DURATION, " has to be a positive number")
+  );
+
+  auto onboarderAcc = configCW.getOrFail(detailsIdx, common::ONBOARDER_ACCOUNT).second;
+
+  const name onboarder = onboarderAcc->getAs<name>();
+
+  //TODO: Remove to enable anyone to create DAOs
+  auto hyphaId = getDAOID("hypha"_n);
+
+  EOS_CHECK(
+    hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
+    "You are not allowed to call this action"
+  );
+
+  auto votingQuorum = configCW.getOrFail(detailsIdx, VOTING_QUORUM_FACTOR_X100).second;
+
+  votingQuorum->getAs<int64_t>();
+
+  auto votingAllignment = configCW.getOrFail(detailsIdx, VOTING_ALIGNMENT_FACTOR_X100).second;
+
+  votingAllignment->getAs<int64_t>();
+
+  int64_t useSeeds = 0;
+
+  if (auto [_, daoUsesSeeds] = configCW.get(detailsIdx, common::DAO_USES_SEEDS);
+    daoUsesSeeds)
+  {
+    useSeeds = daoUsesSeeds->getAs<int64_t>();
+  }
+
+  require_auth(onboarder);
+
+  Content daoURL = Content{ common::DAO_URL, to_str(dao) };;
+
+  if (auto [_, url] = configCW.get(detailsIdx, common::DAO_URL);
+      url)
+  {
+    daoURL.value = std::move(url->value);
+  }
+
+  //Verify DAO URL is unique, only if we are actually creating the DAO
+  if (!isDraft) {
+    updateDaoURL(dao, daoURL.value);
+  }
+
+  EOS_CHECK(
+    daoURL.getAs<std::string>().size() <= 30,
+    "DAO URL must be less than 30 characters"
+  )
+
+  Content rewardTokenName = Content{  
+    common::REWARD_TOKEN_NAME,
+    to_str(rewardToken->getAs<eosio::asset>().symbol.code())
+  };
+
+  if (auto [_, rwrdTokName] = configCW.get(detailsIdx, common::REWARD_TOKEN_NAME);
+      rwrdTokName) 
+  {
+    rewardTokenName.value = std::move(rwrdTokName->value);
+  }
+
+  EOS_CHECK(
+    rewardTokenName.getAs<std::string>().size() <= 30,
+    "Utility token name must be less than 30 characters"
+  )
+
+  Content pegTokenName = Content{  
+    common::PEG_TOKEN_NAME,
+    to_str(rewardToken->getAs<eosio::asset>().symbol.code())
+  };
+
+  if (auto [_, pegTokName] = configCW.get(detailsIdx, common::PEG_TOKEN_NAME);
+      pegTokName) 
+  {
+    pegTokenName.value = std::move(pegTokName->value);
+  }
+
+  EOS_CHECK(
+    pegTokenName.getAs<std::string>().size() <= 30,
+    "Cash token name must be less than 30 characters"
+  )
+
+  auto primaryColor =  configCW.getOrFail("style", common::DAO_PRIMARY_COLOR);
+  primaryColor->getAs<std::string>();
+
+  auto secondaryColor =  configCW.getOrFail("style", common::DAO_SECONDARY_COLOR);
+  secondaryColor->getAs<std::string>();
+
+  auto textColor = configCW.getOrFail("style", common::DAO_TEXT_COLOR);
+  textColor->getAs<std::string>();
+
+  auto logo = configCW.getOrFail("style", common::DAO_LOGO);
+  logo->getAs<std::string>();
+
+  auto settingsGroup = 
+  ContentGroup {
+    Content(CONTENT_GROUP_LABEL, SETTINGS),
+    Content{DAO_NAME, dao},
+    std::move(*daoTitle),
+    std::move(*daoDescription),
+    std::move(daoURL),
+    *pegToken,
+    *voiceToken,
+    *rewardToken,
+    std::move(*rewardToPegTokenRatio),
+    std::move(*periodDurationSeconds),
+    std::move(*votingDurationSeconds),
+    std::move(*onboarderAcc),
+    std::move(*votingQuorum),
+    std::move(*votingAllignment),
+    *voiceTokenDecayPeriod,
+    *voiceTokenDecayPerPeriodX10M,
+    Content{common::DAO_USES_SEEDS, useSeeds},
+    std::move(*primaryColor),
+    std::move(*secondaryColor),
+    std::move(*textColor),
+    std::move(*logo)
+  };
+
+  addDefaultSettings(settingsGroup, daoTitleStr, daoDescStr);
+
+  // Create the settings document as well and add an edge to it
+  ContentGroups settingCgs{
+      settingsGroup,
+      ContentGroup{
+          Content(CONTENT_GROUP_LABEL, SYSTEM),
+          Content(TYPE, common::SETTINGS_EDGE),
+          Content(NODE_LABEL, "Settings")
+      }
+  };
+
+  Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
+  Edge::write(get_self(), get_self(), daoID, settingsDoc.getID(), common::SETTINGS_EDGE);
+
+  //If this is a draft we don't need to do any of the following
+  if (isDraft) return;
+
+  createVoiceToken(
+    dao,
+    voiceToken->getAs<asset>(),
+    voiceTokenDecayPeriod->getAs<int64_t>(),
+    voiceTokenDecayPerPeriodX10M->getAs<int64_t>()
+  );
+
+
+  auto dhoSettings = getSettingsDocument();
+  
+  //Check if we should skip creating reward & peg tokens
+  //this might be the case if the tokens already exists
+  if (auto [idx, skipPegTokFlag] = configCW.get(DETAILS, common::SKIP_PEG_TOKEN_CREATION);
+    skipPegTokFlag == nullptr ||
+    skipPegTokFlag->getAs<int64_t>() == 0) {
+    createToken(
+      PEG_TOKEN_CONTRACT,
+      dhoSettings->getOrFail<eosio::name>(TREASURY_CONTRACT),
+      pegToken->getAs<eosio::asset>()
+    );
+  }
+  else {
+    //Only dao.hypha should be able skip creating reward or peg token
+    eosio::require_auth(get_self());
+  }
+
+  if (auto [idx, skipRewardTokFlag] = configCW.get(DETAILS, common::SKIP_REWARD_TOKEN_CREATION);
+    skipRewardTokFlag == nullptr ||
+    skipRewardTokFlag->getAs<int64_t>() == 0) {
+    createToken(
+      REWARD_TOKEN_CONTRACT,
+      get_self(),
+      rewardToken->getAs<eosio::asset>()
+    );
+  }
+  else {
+    //Only dao.hypha should be able skip creating reward or peg token
+    eosio::require_auth(get_self());
+  }
+
+  initCoreMembers(*this, daoID, onboarder, configCW);
 }
 
 } // namespace hypha

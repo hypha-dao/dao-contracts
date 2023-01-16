@@ -29,8 +29,12 @@ namespace hypha::common
     inline constexpr auto DAO_TYPE = "dao_type";
 
     inline constexpr auto DAO_DESCRIPTION = "dao_description";
+    inline constexpr auto DAO_DRAFT_ID = "dao_draft";
+    inline constexpr auto DAO_PARENT_ID = "dao_parent";
     inline constexpr auto DAO_TITLE = "dao_title";
     inline constexpr auto DAO_URL = "dao_url";
+
+    inline constexpr auto BENEFICIARY_ACCOUNT = "beneficiary";
 
     //
     inline constexpr auto ADD_ADMINS_ENABLED = "add_admins_enabled";
@@ -181,6 +185,10 @@ namespace hypha::common
     inline constexpr name MEMBER = name("member");
     inline constexpr name DHO = name ("dho");
     inline constexpr name DAO = name ("dao");
+    inline constexpr name DAO_DRAFT = name ("dao.draft");
+    inline constexpr name CHILD_DAO_DRAFT = name("childdraft");
+    inline constexpr name CHILD_DAO = name("anchorchild");
+    inline constexpr name PARENT_DAO = name("anchorparent");
 
     inline constexpr name BALLOT_TYPE_OPTIONS = name("options");
 

@@ -168,6 +168,14 @@ void PlanManager::setLastBill(const BillingInfo& bill)
     );
 }
 
+BillingInfo PlanManager::getStartBill()
+{
+    return BillingInfo(getDao(), 
+                       Edge::get(getDao().get_self(), 
+                                 getId(), 
+                                 links::START_BILL).getToNode());
+}
+
 BillingInfo PlanManager::getCurrentBill() 
 {
     return BillingInfo(getDao(), 

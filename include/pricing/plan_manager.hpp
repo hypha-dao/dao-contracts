@@ -28,6 +28,7 @@ public:
     void addCredit(const asset& amount);
     void removeCredit(const asset& amount);
 
+    BillingInfo getStartBill();
     BillingInfo getCurrentBill();
     BillingInfo getLastBill();
 
