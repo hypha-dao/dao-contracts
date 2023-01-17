@@ -27,7 +27,7 @@ class Treasury : public TypedDocument
     */
     DECLARE_DOCUMENT(
         Data, 
-        PROPERTY(dao, int64_t, DaoID)
+        PROPERTY(dao, int64_t, DaoID, USE_GETSET)
     );
 
 public:

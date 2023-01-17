@@ -17,8 +17,13 @@ namespace hypha {
 using namespace pricing;
 using namespace pricing::common;
 
+// 3 year expiry
+#define STAKING_EXPIRY_MICROSECONDS eosio::days(3 * 365)
+
 void dao::onCreditDao(uint64_t dao_id, const asset& amount)
 {
+    verifyDaoType(dao_id);
+
     EOS_CHECK(
         amount.amount > 0,
         "Credit amount must be positive"
@@ -38,7 +43,7 @@ void dao::onCreditDao(uint64_t dao_id, const asset& amount)
     planManager.update();   
 }
 
-static auto getStartAndEndDates(time_t t, int64_t periods) 
+static auto getStartAndEndDates(time_t t, int64_t periods)
 {
     tm* tmd = nullptr;
 
@@ -74,6 +79,46 @@ static auto getStartAndEndDates(time_t t, int64_t periods)
     };
 };
 
+void dao::setEcosystemPlan(PlanManager& planManager)
+{
+    PricingPlan ecosystemPlan = PlanManager::getEcosystemPlan(*this);
+
+    auto offers = ecosystemPlan.getOffers();
+
+    EOS_CHECK(
+        !offers.empty(),
+        "Ecosystem Plan must have 1 offer at least"
+    );
+    
+    PriceOffer& offer = offers.back();
+
+    time_t t = eosio::current_time_point().sec_since_epoch();
+
+    auto [start,end,billingDay] = getStartAndEndDates(t, 0);
+
+    BillingInfo defBill(*this, 
+                        planManager, 
+                        ecosystemPlan, 
+                        offer, 
+                        BillingInfoData {
+                            .start_date = start,
+                            .expiration_date = eosio::time_point(),
+                            .end_date = eosio::time_point(),
+                            .billing_day = billingDay,
+                            .period_count = -1,
+                            .discount_perc_x10000 = ecosystemPlan.getDiscountPercentage(),
+                            .offer_discount_perc_x10000 = offer.getDiscountPercentage(),
+                            .plan_name = ecosystemPlan.getName(),
+                            .plan_price = ecosystemPlan.getPrice(),
+                            .total_paid = ecosystemPlan.getPrice(),
+                            .is_infinite = true
+                        });
+
+    planManager.setCurrentBill(defBill);
+    planManager.setLastBill(defBill);
+    planManager.setStartBill(defBill);
+}
+
 static void scheduleBillUpdate(const BillingInfo& bill, uint64_t daoID)
 {
     //TODO: Schedule action to terminate plan/bill
@@ -100,6 +145,200 @@ static void scheduleBillUpdate(const BillingInfo& bill, uint64_t daoID)
     // m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
 }
 
+void dao::verifyEcosystemPayment(PlanManager& planManager, const string& priceItem, const string& priceStakedItem, const std::string& stakingMemo, const name& beneficiary)
+{
+  auto settings = getSettingsDocument();
+
+  auto price = settings->getOrFail<asset>(groups::ECOSYSTEM, priceItem);
+  
+  auto priceStaked = settings->getOrFail<asset>(groups::ECOSYSTEM, priceStakedItem);
+
+  //Verify the current credit >= price + stakedPrice
+  planManager.removeCredit(price + priceStaked);
+
+  planManager.update();
+
+  //TODO: Burn tokens equivalent to price
+  
+  auto stakingContract = settings->getOrFail<name>(HYPHA_COSALE_CONTRACT);
+
+  //Create lock for beneficiary account
+  eosio::action(
+      eosio::permission_level{get_self(), eosio::name("active")},
+      settings->getOrFail<name>(REWARD_TOKEN_CONTRACT), 
+      eosio::name("transfer"),
+      std::make_tuple(
+          get_self(), 
+          stakingContract, 
+          priceStaked, 
+          ""
+      )
+  ).send();
+
+  eosio::action(
+      eosio::permission_level{get_self(), name("active")},
+      stakingContract, 
+      name("createlock"),
+      std::make_tuple(
+          get_self(),
+          beneficiary,
+          priceStaked,
+          stakingMemo,
+          eosio::time_point(eosio::current_time_point().time_since_epoch() + STAKING_EXPIRY_MICROSECONDS)
+      )
+  ).send();
+}
+
+ACTION dao::markasecosys(uint64_t dao_id)
+{
+    verifyDaoType(dao_id);
+
+    eosio::require_auth(get_self());
+
+    auto daoDoc = Document(get_self(), dao_id);
+
+    auto daoCW = daoDoc.getContentWrapper();
+
+    auto& daoType = daoCW.getOrFail(DETAILS, hypha::common::DAO_TYPE)
+                         ->getAs<string>();
+
+    EOS_CHECK(
+        daoType == dao_types::INDIVIDUAL,
+        "Only Individual DAO's can get upgraded to Ecosystem"
+    );
+
+    daoType = dao_types::ANCHOR;
+
+    auto detailsGroup = daoDoc.getContentWrapper()
+                              .getGroupOrFail(DETAILS);
+
+    ContentWrapper::insertOrReplace(
+        *detailsGroup, 
+        Content{ items::IS_WAITING_ECOSYSTEM, 1 }
+    );
+
+    daoDoc.update();
+    
+    //Assign a PlanManager if it doesn't have one
+    if (!Edge::getIfExists(get_self(),
+                          dao_id,
+                          links::PLAN_MANAGER).first) {
+        activatedao(
+            daoCW.getOrFail(DETAILS, DAO_NAME)
+                 ->getAs<eosio::name>()
+        );
+    }
+
+    auto planManager = PlanManager::getFromDaoID(*this, dao_id);
+
+    //Verify the current pricing plan is the default one
+    EOS_CHECK(
+        planManager.getCurrentBill()
+                   .getPricingPlan()
+                   .getId() ==
+        PlanManager::getDefaultPlan(*this).getId(),
+        "Current Pricing plan must be the default one"
+    );
+
+    planManager.setType(types::UNLIMITED);
+
+    planManager.update();
+}
+
+ACTION dao::setdaotype(uint64_t dao_id, const string& dao_type)
+{
+    verifyDaoType(dao_id);
+
+    eosio::require_auth(get_self());
+
+    auto daoDoc = Document(get_self(), dao_id);
+
+    auto& daoType = daoDoc.getContentWrapper()
+                          .getOrFail(DETAILS, hypha::common::DAO_TYPE)
+                          ->getAs<string>();
+
+    EOS_CHECK(
+        dao_type == dao_types::ANCHOR || 
+        dao_type == dao_types::INDIVIDUAL,
+        "Unknown DAO type"
+    );
+
+    EOS_CHECK(
+        daoType != dao_type,
+        to_str("DAO it's already of type: ", dao_type)
+    );
+
+    daoType = dao_type;
+
+    daoDoc.update();
+}
+
+ACTION dao::activateecos(ContentGroups& ecosystem_info)
+{
+    EOS_CHECK(false, "This action is not enabled");
+    
+    auto cw = ContentWrapper(ecosystem_info);
+
+    auto daoID = cw.getOrFail(DETAILS, items::DAO_ID)
+                    ->getAs<int64_t>();
+
+    //Verify Auth
+    checkAdminsAuth(daoID);
+
+    auto daoDoc = Document(get_self(), daoID);
+
+    auto daoCW = daoDoc.getContentWrapper();
+
+    auto [detailsIdx, detailsGroup] = daoCW.getGroup(DETAILS);
+
+    EOS_CHECK(
+        detailsIdx >= 0,
+        "Missing details group from DAO doc"
+    );
+
+    auto& daoType = daoCW.getOrFail(detailsIdx, hypha::common::DAO_TYPE)
+                        .second->getAs<string>();
+
+    auto& isWaiting = daoCW.getOrFail(detailsIdx, items::IS_WAITING_ECOSYSTEM)
+                          .second->getAs<int64_t>();
+
+    //Check if it's actually waiting for ecosystem activation
+    EOS_CHECK(
+        daoType == dao_types::ANCHOR &&
+        isWaiting == 1,
+        "This DAO cannot be upgraded to Ecosystem"
+    );
+
+    isWaiting = 0;
+
+    daoDoc.update();
+    
+    auto planManager = PlanManager::getFromDaoID(*this, daoID);
+
+    auto beneficiary = cw.getOrFail(DETAILS, hypha::common::BENEFICIARY_ACCOUNT)->getAs<name>();
+
+    verifyEcosystemPayment(
+        planManager,
+        items::ECOSYSTEM_PRICE,
+        items::ECOSYSTEM_PRICE_STAKED,
+        to_str("Staking HYPHA on DAO Ecosystem activation:", daoID),
+        beneficiary
+    );
+
+    //Save the start bill in a new edge as it will be overrided
+    //by the Thrive plan
+    Edge(
+        get_self(), 
+        get_self(), 
+        planManager.getId(), 
+        planManager.getStartBill().getId(),
+        links::PREV_START_BILL
+    );
+
+    //Use default price plan
+    setEcosystemPlan(planManager);
+}
+
 ACTION dao::activateplan(ContentGroups& plan_info)
 {
     auto cw = ContentWrapper(plan_info);
@@ -110,8 +349,16 @@ ACTION dao::activateplan(ContentGroups& plan_info)
     //Verify Auth
     checkAdminsAuth(daoID);
 
-    //TODO: Verify if DAO is allowed to change it's current plan
-    //child DAO's aren't
+    auto daoType = Document(get_self(), daoID).getContentWrapper()
+                                               .getOrFail(DETAILS, hypha::common::DAO_TYPE)
+                                               ->getAs<string>();
+
+    //Verify if DAO is allowed to change it's current plan
+    //i.e. child & anchor DAOs aren't
+    EOS_CHECK(
+        daoType == dao_types::INDIVIDUAL,
+        "This type of DAO cannot have a single plan"
+    );
 
     auto defPlan = PlanManager::getDefaultPlan(*this).getId();
 
@@ -123,11 +370,6 @@ ACTION dao::activateplan(ContentGroups& plan_info)
 
     auto periods = cw.getOrFail(DETAILS, items::PERIODS)
                             ->getAs<int64_t>();
-
-    // EOS_CHECK(
-    //     defPlan != planID,
-    //     "Cannot change to default pricing plan"
-    // );
 
     PricingPlan plan(*this, planID);
 
@@ -403,7 +645,7 @@ ACTION dao::activatedao(eosio::name dao_name)
 
     PlanManager planManager(*this, dao_name, PlanManagerData {
         .credit = eosio::asset{ 0, hypha::common::S_HYPHA },
-        .type = "prepaid"
+        .type = types::PREPAID
     });
 
     //Use default price plan
@@ -496,6 +738,8 @@ ACTION dao::updateprcoff(uint64_t price_offer_id, ContentGroups& price_offer_inf
 
 ACTION dao::updatecurbil(uint64_t dao_id)
 {
+    verifyDaoType(dao_id);
+
     //Prob it doens't require special perms
     checkAdminsAuth(dao_id);
 

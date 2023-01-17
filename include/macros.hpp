@@ -78,7 +78,7 @@
     FOR_EACH_PACK44(action, __VA_ARGS__)
 
 
-#define PROPERTY(name, type, getSet) name, type, getSet, unused
+#define PROPERTY(name, type, getSet, useGetSet) name, type, getSet, useGetSet
 
 #define DECLARE_DATA_MEMBER(name, type, _u, _v) type name;
 #define DECLARE_DATA_STRUCT(structName, ...)\
@@ -86,7 +86,12 @@ struct structName {\
 FOR_EACH(DECLARE_DATA_MEMBER, __VA_ARGS__)\
 };
 
-#define DECLARE_GET_SET(name, type, getSet, _u)\
+#define USE_GETSET USE
+#define NO_USE_GETSET NO_USE
+
+#define NO_USE_GET_SET_DEC(name, type, getSet)
+
+#define USE_GET_SET_DEC(name, type, getSet)\
 const type& get##getSet() {\
     return getContentWrapper()\
           .getOrFail(DETAILS, #name)\
@@ -99,6 +104,8 @@ void set##getSet(type value) {\
         Content{ #name, std::move(value) }\
     );\
 }
+
+#define DECLARE_GET_SET(name, type, getSet, useGetSet) CONCATENATE(useGetSet, _GET_SET_DEC)(name,type,getSet)
 
 #define DECLARE_METHODS(...)\
 FOR_EACH(DECLARE_GET_SET, __VA_ARGS__)

@@ -63,16 +63,19 @@ namespace hypha
         return std::move(cgs);
     }
 
-    ContentGroups getDAOContent(const eosio::name &dao_name)
+    ContentGroups getDAOContent(const eosio::name &dao_name, string daoType)
     {
         ContentGroups cgs ({
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, DETAILS), 
-                Content(DAO_NAME, dao_name)}, 
+                Content(DAO_NAME, dao_name),
+                //All DAO's are Individual type by default
+                Content{common::DAO_TYPE, std::move(daoType)}
+            },
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, SYSTEM), 
                 Content(TYPE, common::DAO), 
-                Content(NODE_LABEL, dao_name)}});
+                Content(NODE_LABEL, dao_name.to_string())}});
 
         return std::move(cgs);
     }

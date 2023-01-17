@@ -84,6 +84,19 @@ namespace hypha
         return m_dao;
     }
 
+    Document TypedDocument::withType(dao& dao, uint64_t id, eosio::name type)
+    {
+        //Define a dummy class to instanciate the TypedDocument
+        class DummyDocument : public TypedDocument {
+            using TypedDocument::TypedDocument;
+            const std::string buildNodeLabel(ContentGroups &content) override { return ""; }
+        };
+
+        //Use constructor to validate type
+        Document doc = DummyDocument(dao, id, type).getDocument();
+        return doc;
+    }
+
     bool TypedDocument::documentExists(dao& dao, const uint64_t& id)
     {
         bool exists = Document::exists(dao.get_self(), id);

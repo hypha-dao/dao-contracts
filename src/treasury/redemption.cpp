@@ -23,6 +23,11 @@ Redemption::Redemption(dao& dao, uint64_t id)
 Redemption::Redemption(dao& dao, uint64_t treasuryID, Data data) 
     : TypedDocument(dao, types::REDEMPTION)
 {
+    EOS_CHECK(
+        data.amount_requested.amount > 0,
+        "Amount requested must be greater than 0"
+    )
+
     auto cgs = convert(std::move(data));
 
     initializeDocument(dao, cgs);

@@ -4,7 +4,6 @@
 #include <dao.hpp>
 #include <treasury/redemption.hpp>
 #include <treasury/treasury.hpp>
-#include <treasury/attestation.hpp>
 #include <document_graph/edge.hpp>
 
 namespace hypha::treasury {
@@ -57,21 +56,6 @@ Treasury TrsyPayment::getTreasury()
 {
     auto payEdge = Edge::getTo(getDao().get_self(), getId(), links::PAYMENT);
     return Treasury(getDao(), payEdge.getFromNode());
-}
-
-std::vector<Attestation> TrsyPayment::getAttestations()
-{
-    auto attestationEdges = getDao()
-                            .getGraph()
-                            .getEdgesFrom(getId(), links::ATTESTATION);
-
-    vector<Attestation> attestations;
-
-    for (auto& attEdge : attestationEdges) {
-        attestations.emplace_back(getDao(), attEdge.getToNode());
-    }
-
-    return attestations;
 }
 
 } // namespace treasury

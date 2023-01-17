@@ -31,6 +31,10 @@ namespace hypha
    class Member;
    class TimeShare;
 
+namespace pricing {
+   class PlanManager;
+}
+
    CONTRACT dao : public eosio::contract
    {
    public:
@@ -246,7 +250,8 @@ namespace hypha
 
       //ACTION createroot(const std::string &notes);
       ACTION createdao(ContentGroups &config);
-
+      ACTION createdaodft(ContentGroups &config);
+      ACTION deletedaodft(uint64_t dao_draft_id);
       ACTION archiverecur(uint64_t document_id);
       
       //Treasury actions
@@ -255,13 +260,17 @@ namespace hypha
       ACTION remtreasurer(uint64_t treasury_id, name treasurer);
       ACTION redeem(uint64_t dao_id, name requestor, const asset& amount);
       ACTION newpayment(name treasurer, uint64_t redemption_id, const asset& amount, string notes);
-      ACTION attestpay(name treasurer, uint64_t payment_id, const asset& amount, const std::optional<std::string>& notes);
-      ACTION remattestpay(name treasurer, uint64_t payment_id);
       ACTION setpaynotes(uint64_t payment_id, string notes);
       ACTION setrsysttngs(uint64_t treasury_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 
       //Pricing System actions
+      /*
+      * @brief Marks a DAO as waiting for Ecosystem activation
+      */
+      ACTION markasecosys(uint64_t dao_id);
+      ACTION setdaotype(uint64_t dao_id, const string& dao_type);
       ACTION activateplan(ContentGroups& plan_info);
+      ACTION activateecos(ContentGroups& ecosystem_info);
       ACTION addprcngplan(ContentGroups& pricing_plan_info, const std::vector<uint64_t>& offer_ids);
       ACTION addpriceoffr(ContentGroups& price_offer_info, const std::vector<uint64_t>& pricing_plan_ids);
       ACTION setdefprcpln(uint64_t price_plan_id);
@@ -271,6 +280,7 @@ namespace hypha
       //ACTION remprcngplan(uint64_t plan_id, uint64_t replace_id);
       ACTION updatecurbil(uint64_t dao_id);
       ACTION activatedao(eosio::name dao_name);
+      ACTION addtype(uint64_t dao_id, const std::string& dao_type);
 
       void setSetting(const string &key, const Content::FlexValue &value);
 
@@ -389,7 +399,7 @@ namespace hypha
 
       void changeDecay(Settings* dhoSettings, Settings* daoSettings, uint64_t decayPeriod, uint64_t decayPerPeriod);
 
-      void addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle);
+      void addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle, const string& daoDescStr);
 
       template<class Table>
       std::optional<uint64_t> getNameID(const name& n) const
@@ -403,15 +413,24 @@ namespace hypha
          return {};
       }
 
-      void checkAdminsAuth(uint64_t dao_id);
+      void setEcosystemPlan(pricing::PlanManager& planManager);
 
-      void checkEnrollerAuth(uint64_t dao_id, const name& account);
+      void verifyDaoType(uint64_t daoID);
+
+      //TODO: Add parameter to specify staking account(s)
+      void verifyEcosystemPayment(pricing::PlanManager& planManager, const string& priceItem, const string& priceStakedItem, const std::string& stakingMemo, const name& beneficiary);
+
+      void checkAdminsAuth(uint64_t daoID);
+
+      void readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper configCW, bool isDraft);
+
+      void checkEnrollerAuth(uint64_t daoID, const name& account);
 
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
-      void genPeriods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/);
+      void genPeriods(uint64_t daoID, int64_t period_count/*, int64_t period_duration_sec*/);
 
-      asset getProRatedAsset(ContentWrapper * assignment, const symbol &symbol,
+      asset getProRatedAsset(ContentWrapper *assignment, const symbol &symbol,
                              const string &key, const float &proration);
 
       void createVoiceToken(const eosio::name& daoName,
@@ -421,9 +440,9 @@ namespace hypha
 
       void createToken(const std::string& contractType, name issuer, const asset& token);
 
-      eosio::asset applyCoefficient(ContentWrapper & badge, const eosio::asset &base, const std::string &key);
-      AssetBatch applyBadgeCoefficients(Period & period, const eosio::name &member, uint64_t dao, AssetBatch &ab);
-      std::vector<Document> getCurrentBadges(Period & period, const eosio::name &member, uint64_t dao);
+      eosio::asset applyCoefficient(ContentWrapper& badge, const eosio::asset &base, const std::string &key);
+      AssetBatch applyBadgeCoefficients(Period& period, const eosio::name &member, uint64_t dao, AssetBatch &ab);
+      std::vector<Document> getCurrentBadges(Period& period, const eosio::name &member, uint64_t dao);
 
       bool isPaused();
 

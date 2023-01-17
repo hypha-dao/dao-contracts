@@ -55,7 +55,7 @@ namespace hypha
     AssetBatch calculateSalaries(const SalaryConfig& salaryConf, const AssetBatch& tokens);
 
     ContentGroups getRootContent(const eosio::name &contract);
-    ContentGroups getDAOContent(const eosio::name &dao_name);
+    ContentGroups getDAOContent(const eosio::name &dao_name, string daoType);
     eosio::asset adjustAsset(const eosio::asset &originalAsset, const float &adjustment);
 
     int64_t stringViewToInt(string_view str);
