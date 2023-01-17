@@ -1988,6 +1988,27 @@ ACTION dao::adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferr
   assignment.update();
 }
 
+void dao::addtype(uint64_t dao_id, const std::string& dao_type)
+{
+  auto daoDoc = TypedDocument::withType(*this, dao_id, common::DAO);
+
+  EOS_CHECK(
+    dao_type == pricing::common::dao_types::ANCHOR ||
+    dao_type == pricing::common::dao_types::ANCHOR_CHILD ||
+    dao_type == pricing::common::dao_types::INDIVIDUAL,
+    "Invalid DAO type"
+  );
+
+  auto daoCW = daoDoc.getContentWrapper();
+
+  daoCW.insertOrReplace(
+    *daoCW.getGroupOrFail(DETAILS),
+    Content{ common::DAO_TYPE, dao_type }
+  );
+        
+  daoDoc.update();
+}
+
 void dao::modifyCommitment(RecurringActivity& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
 {
   TRACE_FUNCTION();

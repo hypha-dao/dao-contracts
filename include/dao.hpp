@@ -280,6 +280,7 @@ namespace pricing {
       //ACTION remprcngplan(uint64_t plan_id, uint64_t replace_id);
       ACTION updatecurbil(uint64_t dao_id);
       ACTION activatedao(eosio::name dao_name);
+      ACTION addtype(uint64_t dao_id, const std::string& dao_type);
 
       void setSetting(const string &key, const Content::FlexValue &value);
 
