@@ -75,7 +75,7 @@ namespace hypha
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, SYSTEM), 
                 Content(TYPE, common::DAO), 
-                Content(NODE_LABEL, dao_name)}});
+                Content(NODE_LABEL, dao_name.to_string())}});
 
         return std::move(cgs);
     }
