@@ -25,17 +25,14 @@ namespace hypha::treasury {
 
 class Redemption;
 class Treasury;
-class Attestation;
 
 class TrsyPayment : public TypedDocument {
 
     DECLARE_DOCUMENT(
         Data,
-        PROPERTY(creator, eosio::name, Creator),
-        PROPERTY(amount_paid, eosio::asset, AmountPaid),
-        PROPERTY(confirmed_date, eosio::time_point, ConfirmedDate),
-        PROPERTY(is_confirmed, int64_t, IsConfirmed),
-        PROPERTY(notes, string, Notes)
+        PROPERTY(creator, eosio::name, Creator, NO_USE_GETSET),
+        PROPERTY(amount_paid, eosio::asset, AmountPaid, USE_GETSET),
+        PROPERTY(notes, string, Notes, USE_GETSET)
     )
 public:
     TrsyPayment(dao& dao, uint64_t id);
@@ -50,10 +47,6 @@ public:
     Redemption getRedemption();
 
     Treasury getTreasury();
-
-    //int64_t getAttestationsCount();
-
-    std::vector<Attestation> getAttestations();
 };
 
 using TrsyPaymentData = TrsyPayment::Data;

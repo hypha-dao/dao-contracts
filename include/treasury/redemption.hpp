@@ -24,9 +24,9 @@ class Redemption : public TypedDocument
 {
     DECLARE_DOCUMENT(
         Data,
-        PROPERTY(requestor, eosio::name, Requestor),
-        PROPERTY(amount_requested, eosio::asset, AmountRequested),
-        PROPERTY(amount_paid, eosio::asset, AmountPaid)
+        PROPERTY(requestor, eosio::name, Requestor, NO_USE_GETSET),
+        PROPERTY(amount_requested, eosio::asset, AmountRequested, USE_GETSET),
+        PROPERTY(amount_paid, eosio::asset, AmountPaid, USE_GETSET)
     )
 
 public:

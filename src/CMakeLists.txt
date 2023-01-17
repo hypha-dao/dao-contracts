@@ -18,7 +18,6 @@ add_contract( dao dao
                 time_share.cpp
                 settings.cpp
                 treasury/actions.cpp
-                treasury/attestation.cpp
                 treasury/balance.cpp
                 treasury/payment.cpp
                 treasury/redemption.cpp
