@@ -11,6 +11,8 @@
 #include <period.hpp>
 #include <logger/logger.hpp>
 
+#include <badges/badges.hpp>
+
 namespace hypha
 {
 
@@ -158,8 +160,31 @@ namespace hypha
         toMerge.content_groups = std::move(proposalCpy);
         // update all edges to point to the new document
         Document merged = Document::merge(std::move(original), toMerge);
-        merged.update();
 
+        //Re-schedule archive if activity period count was changed
+        if (RecurringActivity::isRecurringActivity(merged) &&
+            proposalContent.exists(DETAILS, PERIOD_COUNT)) {
+          RecurringActivity recAct(&m_dao, merged.getID());
+          
+          recAct.scheduleArchive();
+
+          auto& state = recAct.getContentWrapper()
+                             .getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+          //We have to re-activate if state is archived and expirationDate > now
+          if (state == common::STATE_ARCHIVED &&
+              eosio::current_time_point() < recAct.getLastPeriod().getEndTime()) {
+            state = common::STATE_APPROVED;
+
+            //Also if the Original Document is of BadgeAssignment type, let's reactivate it
+            if (recAct.getContentWrapper()
+                      .getOrFail(SYSTEM, TYPE)->getAs<name>() == common::ASSIGN_BADGE) {
+              badges::onBadgeActivated(m_dao, recAct);
+            }
+          }
+        }
+
+        merged.update();
         // replace the original node with the new one in the edges table
         // m_dao.getGraph().replaceNode(original.getID(), merged.getID());
 

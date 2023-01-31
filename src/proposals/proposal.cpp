@@ -15,6 +15,7 @@
 #include <logger/logger.hpp>
 #include <recurring_activity.hpp>
 #include <comments/section.hpp>
+#include <badges/badges.hpp>
 
 using namespace eosio;
 
@@ -156,8 +157,14 @@ namespace hypha
 
         bool proposalDidPass;
 
+        auto vetoByEdges = m_dao.getGraph()
+                                .getEdgesFrom(proposal.getID(), common::VETO_BY);
+        
         auto ballotID = voteTallyEdge.getToNode();
-        proposalDidPass = didPass(ballotID);
+        
+        //Currently if 2 North Start badge holders veto the proposal
+        //it should not pass
+        proposalDidPass = (vetoByEdges.size() < 2) && didPass(ballotID);
 
         auto details = proposal.getContentWrapper().getGroupOrFail(DETAILS);
 
@@ -330,6 +337,8 @@ namespace hypha
 
         VoteTally tally(m_dao, tallyID);
 
+        //TODO: Check for North Badge veto
+
         // Currently get pass/fail
         // Todo: Abstract this part into VoteTally class
         asset votes_pass = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_PASS.to_string(), VOTE_POWER)->getAs<eosio::asset>();
@@ -439,6 +448,8 @@ namespace hypha
             *proposal.getContentWrapper().getGroupOrFail(DETAILS),
             Content { common::STATE, common::STATE_PROPOSED }
         );
+
+        publishImpl(proposal);
 
         proposal.update();
 

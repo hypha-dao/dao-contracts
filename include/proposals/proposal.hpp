@@ -37,6 +37,8 @@ namespace hypha
 
         virtual void passImpl(Document &proposal) = 0;
 
+        virtual void publishImpl(Document& proposal) {}
+
         virtual string getBallotContent(ContentWrapper &contentWrapper) = 0;
 
         virtual name getProposalType() = 0;

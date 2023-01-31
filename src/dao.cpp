@@ -25,6 +25,8 @@
 #include <comments/section.hpp>
 #include <comments/comment.hpp>
 
+#include <badges/badges.hpp>
+
 #include <typed_document_factory.hpp>
 
 #include <pricing/plan_manager.hpp>
@@ -34,19 +36,7 @@ namespace hypha {
 
 /**Testenv only */
 
-#ifdef DEVELOP_BUILD
-
-ACTION dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
-{
-  require_auth(get_self());
-
-  Document fromDoc(get_self(), from);
-  Document toDoc(get_self(), to);
-
-  Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
-}
-
-ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
+void dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
 {
   require_auth(get_self());
 
@@ -59,13 +49,48 @@ ACTION dao::editdoc(uint64_t doc_id, const std::string& group, const std::string
   doc.update();
 }
 
-ACTION dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
+void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
+{
+  require_auth(get_self());
+
+  Document fromDoc(get_self(), from);
+  Document toDoc(get_self(), to);
+
+  Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
+}
+
+#ifdef DEVELOP_BUILD
+
+void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
+{
+  require_auth(get_self());
+
+  Document fromDoc(get_self(), from);
+  Document toDoc(get_self(), to);
+
+  Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
+}
+
+void dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
+{
+  require_auth(get_self());
+
+  Document doc(get_self(), doc_id);
+
+  auto cw = doc.getContentWrapper();
+
+  cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
+
+  doc.update();
+}
+
+void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
 {
     eosio::require_auth(get_self());
     Edge::get(get_self(), from_node, to_node, edge_name).erase();
 }
 
-ACTION dao::adddocs(std::vector<Document>& docs)
+void dao::adddocs(std::vector<Document>& docs)
 {
   require_auth(get_self());
   Document::document_table d_t(get_self(), get_self().value);
@@ -77,7 +102,7 @@ ACTION dao::adddocs(std::vector<Document>& docs)
   }
 }
 
-ACTION dao::remdoc(uint64_t doc_id)
+void dao::remdoc(uint64_t doc_id)
 {
     eosio::require_auth(get_self());
     Document doc(get_self(), doc_id);
@@ -88,7 +113,7 @@ ACTION dao::remdoc(uint64_t doc_id)
     m_documentGraph.eraseDocument(doc_id, true);
 }
 
-ACTION dao::addedges(std::vector<InputEdge>& edges)
+void dao::addedges(std::vector<InputEdge>& edges)
 {
   require_auth(get_self());
 
@@ -122,9 +147,66 @@ ACTION dao::addedges(std::vector<InputEdge>& edges)
   }
 }
 
+void dao::copybadge(uint64_t source_badge_id, uint64_t destination_dao_id, name proposer)
+{
+  //TODO: For system badges we should instead just share them among all existing DAO's
+
+  if (!eosio::has_auth(proposer)) {
+    eosio::require_auth(get_self());
+  }
+  else {
+    checkAdminsAuth(destination_dao_id);
+  }
+
+  //Verify Badge type
+  auto badgeDoc = TypedDocument::withType(*this, source_badge_id, common::BADGE_NAME);
+
+  verifyDaoType(destination_dao_id);
+
+  Document copy(get_self(), get_self(), badgeDoc.getContentGroups());
+
+  auto badgeInfo = badges::getBadgeInfo(badgeDoc);
+
+  EOS_CHECK(
+    Member::isMember(*this, destination_dao_id, proposer),
+    "Proposer must be a member of the destination DAO"
+  );
+
+  auto copyCW = copy.getContentWrapper();
+
+  auto& cpyDaoID = copyCW.getOrFail(DETAILS, common::DAO.to_string())->getAs<int64_t>();
+
+  EOS_CHECK(
+    cpyDaoID != destination_dao_id,
+    "You can only copy Badges from a different DAO"
+  );
+
+  EOS_CHECK(
+    copyCW.getOrFail(DETAILS, common::STATE)
+          ->getAs<string>() == common::STATE_APPROVED &&
+    Edge::exists(get_self(), cpyDaoID, badgeDoc.getID(), common::PASSED_PROPS),
+    "Only approved badges can be copied"
+  );
+
+  cpyDaoID = destination_dao_id;
+
+  copy.update();
+
+  auto memberID = getMemberID(proposer);
+
+  Edge::write(get_self(), get_self(), copy.getID(), badgeDoc.getID(), name("copyof"));
+
+  Edge::write(get_self(), get_self(), memberID, copy.getID(), common::OWNS);
+  Edge::write(get_self(), get_self(), copy.getID(), memberID, common::OWNED_BY);
+  Edge::write(get_self(), get_self(), cpyDaoID, copy.getID(), common::BADGE_NAME);
+  Edge::write(get_self(), get_self(), cpyDaoID, copy.getID (), common::PASSED_PROPS);
+  Edge::write(get_self(), get_self(), cpyDaoID, copy.getID(), common::VOTABLE);
+  Edge::write(get_self(), get_self(), copy.getID(), cpyDaoID, common::DAO);
+}
+
 #endif
 
-ACTION  dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
+void dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
 {
   //require_auth(get_self());
   verifyDaoType(dao_id);
@@ -137,7 +219,7 @@ ACTION  dao::autoenroll(uint64_t dao_id, const name& enroller, const name& membe
   mem.checkMembershipOrEnroll(dao_id);
 }
 
-ACTION dao::setclaimenbld(uint64_t dao_id, bool enabled)
+void dao::setclaimenbld(uint64_t dao_id, bool enabled)
 {
   verifyDaoType(dao_id);
 
@@ -155,7 +237,7 @@ ACTION dao::setclaimenbld(uint64_t dao_id, bool enabled)
   settings->setSetting({ common::CLAIM_ENABLED, static_cast<int64_t>(enabled) });
 }
 
-ACTION dao::remmember(uint64_t dao_id, const std::vector<name>& member_names)
+void dao::remmember(uint64_t dao_id, const std::vector<name>& member_names)
 {
   verifyDaoType(dao_id);
 
@@ -170,7 +252,7 @@ ACTION dao::remmember(uint64_t dao_id, const std::vector<name>& member_names)
   }
 }
 
-ACTION dao::remapplicant(uint64_t dao_id, const std::vector<name>& applicant_names)
+void dao::remapplicant(uint64_t dao_id, const std::vector<name>& applicant_names)
 {
   verifyDaoType(dao_id);
 
@@ -270,7 +352,7 @@ void dao::proposeupd(const name& proposer, uint64_t proposal_id, ContentGroups& 
   proposal->update(proposer, docprop, content_groups);
 }
 
-ACTION dao::cmntadd(const name& author, const string content, const uint64_t comment_or_section_id)
+void dao::cmntadd(const name& author, const string content, const uint64_t comment_or_section_id)
 {
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -301,7 +383,7 @@ ACTION dao::cmntadd(const name& author, const string content, const uint64_t com
   }
 }
 
-ACTION dao::cmntupd(const string new_content, const uint64_t comment_id)
+void dao::cmntupd(const string new_content, const uint64_t comment_id)
 {
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -312,7 +394,7 @@ ACTION dao::cmntupd(const string new_content, const uint64_t comment_id)
   comment.edit(new_content);
 }
 
-ACTION dao::cmntrem(const uint64_t comment_id)
+void dao::cmntrem(const uint64_t comment_id)
 {
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -323,7 +405,7 @@ ACTION dao::cmntrem(const uint64_t comment_id)
   comment.markAsDeleted();
 }
 
-ACTION dao::reactadd(const name &user, const name &reaction, const uint64_t document_id)
+void dao::reactadd(const name &user, const name &reaction, const uint64_t document_id)
 {
   TRACE_FUNCTION()
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -331,7 +413,7 @@ ACTION dao::reactadd(const name &user, const name &reaction, const uint64_t docu
   TypedDocumentFactory::getLikeableDocument(*this, document_id)->like(user, reaction);
 }
 
-ACTION dao::reactrem(const name &user, const uint64_t document_id)
+void dao::reactrem(const name &user, const uint64_t document_id)
 {
   TRACE_FUNCTION()
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -1211,7 +1293,7 @@ void dao::remadmin(const uint64_t dao_id, name admin_account)
   Edge::get(get_self(), dao_id, getMemberID(admin_account), common::ADMIN).erase();
 }
 
-ACTION dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/)
+void dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/)
 {
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -1229,8 +1311,8 @@ static void initCoreMembers(dao& dao, uint64_t daoID, eosio::name onboarder, Con
 {
   std::set<eosio::name> coreMemNames = { onboarder };
 
-  if (auto coreMemsGroup = config.getGroupOrFail("core_members");
-      coreMemsGroup->size() > 1) {
+  if (auto coreMemsGroup = config.getGroup("core_members").second;
+      coreMemsGroup && coreMemsGroup->size() > 1) {
 
     EOS_CHECK(
       coreMemsGroup->at(0).label == CONTENT_GROUP_LABEL,
@@ -1331,7 +1413,7 @@ void dao::createdao(ContentGroups& config)
         common::DAO_DRAFT
       );
 
-      readDaoSettings(daoDoc.getID(), dao, getSettingsDocument(draftDaoID)->getContentWrapper(), false);
+      readDaoSettings(daoDoc.getID(), dao, getSettingsDocument(draftDaoID)->getContentWrapper(), false, SETTINGS);
 
       //Delete DraftDao after
       eosio::action(
@@ -1346,6 +1428,10 @@ void dao::createdao(ContentGroups& config)
     else {
       readDaoSettings(daoDoc.getID(), dao, configCW, false);
     }
+
+    auto onboarder = getSettingsDocument(daoDoc.getID())->getOrFail<name>(common::ONBOARDER_ACCOUNT);
+
+    initCoreMembers(*this, daoDoc.getID(), onboarder, configCW);
     
     //Create start period
     Period newPeriod(this, eosio::current_time_point(), to_str(dao, " start period"));
@@ -1439,6 +1525,8 @@ void dao::createdaodft(ContentGroups &config)
   auto daoParentID = static_cast<uint64_t>(daoParent->getAs<int64_t>());
   checkEcosystemDao(*this, daoParentID);
 
+  checkAdminsAuth(daoParentID);
+
   Document draftDoc(
     get_self(), 
     get_self(), 
@@ -1503,23 +1591,23 @@ void dao::archiverecur(uint64_t document_id)
 
   auto cw = recurAct.getContentWrapper();
 
-  auto state = cw.getOrFail(DETAILS, common::STATE)
-    ->getAs<std::string>();
+  auto& state = cw.getOrFail(DETAILS, common::STATE)
+                  ->getAs<std::string>();
 
   if (state == common::STATE_APPROVED) {
     if (expirationDate < eosio::current_time_point()) {
 
       auto details = cw.getGroupOrFail(DETAILS);
 
-      cw.insertOrReplace(
-        *details,
-        Content{
-          common::STATE,
-          common::STATE_ARCHIVED
-        }
-      );
+      state = common::STATE_ARCHIVED;
 
       recurAct.update();
+
+      auto type = cw.getOrFail(SYSTEM, TYPE)->getAs<name>();
+
+      if (type == common::ASSIGN_BADGE) {
+        badges::onBadgeArchived(*this, recurAct);
+      }
     }
     //It could happen if the original recurring activity was extended}
     //so reschedule with the new end period
@@ -1543,7 +1631,7 @@ void dao::archiverecur(uint64_t document_id)
 //   addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
 // }
 
-ACTION dao::modalerts(uint64_t root_id, ContentGroups& alerts)
+void dao::modalerts(uint64_t root_id, ContentGroups& alerts)
 {
   //Verify if id belongs to a DAO or DHO
   Document daoDoc(get_self(), root_id);
@@ -1688,7 +1776,7 @@ ACTION dao::modalerts(uint64_t root_id, ContentGroups& alerts)
   }
 }
 
-ACTION dao::modsalaryband(uint64_t dao_id, ContentGroups& salary_bands)
+void dao::modsalaryband(uint64_t dao_id, ContentGroups& salary_bands)
 {
   verifyDaoType(dao_id);
 
@@ -1839,7 +1927,7 @@ DocumentGraph& dao::getGraph()
  *   ]
  * ]
  */
-ACTION dao::adjustcmtmnt(name issuer, ContentGroups& adjust_info)
+void dao::adjustcmtmnt(name issuer, ContentGroups& adjust_info)
 {
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
@@ -1898,7 +1986,7 @@ ACTION dao::adjustcmtmnt(name issuer, ContentGroups& adjust_info)
   }
 }
 
-ACTION dao::adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferred_perc_x100)
+void dao::adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferred_perc_x100)
 {
   TRACE_FUNCTION();
 
@@ -1986,6 +2074,54 @@ ACTION dao::adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferr
     });
 
   assignment.update();
+}
+
+void dao::activatebdg(uint64_t assign_badge_id)
+{
+  RecurringActivity badgeAssing(this, assign_badge_id);
+  
+  EOS_CHECK(
+    //eosio::has_auth(badgeAssing.getAssignee().getAccount()) ||
+    eosio::has_auth(get_self()), //For now only contract can activate
+    "Only authorized users can activate this badge"
+  );
+
+  auto now = eosio::current_time_point();
+
+  auto startTime = badgeAssing.getStartPeriod()
+                              .getStartTime();
+
+  //We are still within the approved time periods
+  if (startTime <= now) {
+    if (badgeAssing.getLastPeriod()
+                   .getEndTime() >= now) {
+      badges::onBadgeActivated(*this, badgeAssing);
+    }
+  }
+  else {
+    //Let's reschedule then 
+    //Schedule a trx to close the proposal
+    eosio::transaction trx;
+    trx.actions.emplace_back(eosio::action(
+        eosio::permission_level(get_self(), "active"_n),
+        get_self(),
+        "activatebdg"_n,
+        std::make_tuple(badgeAssing.getID())
+    ));
+
+    auto activationTime = startTime.sec_since_epoch();
+
+    constexpr auto aditionalDelaySec = 60;
+    trx.delay_sec = (activationTime - now.sec_since_epoch()) + aditionalDelaySec;
+
+    auto dhoSettings = getSettingsDocument();
+
+    auto nextID = dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
+
+    trx.send(nextID, get_self());
+
+    dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
+  }
 }
 
 void dao::addtype(uint64_t dao_id, const std::string& dao_type)
@@ -2118,16 +2254,7 @@ uint64_t dao::getMemberID(const name& memberName)
 void dao::verifyDaoType(uint64_t dao_id) 
 {
   //Verify dao_id belongs to a DAO
-  Document daoDoc(get_self(), dao_id);
-  
-  auto type = daoDoc.getContentWrapper()
-                    .getOrFail(SYSTEM, TYPE)
-                    ->getAs<eosio::name>();
-
-  EOS_CHECK(
-    type == common::DAO,
-    "You can only apply to valid DAO's" 
-  );
+  TypedDocument::withType(*this, dao_id, common::DAO);
 }
 
 void dao::checkEnrollerAuth(uint64_t dao_id, const name& account)
@@ -2137,7 +2264,8 @@ void dao::checkEnrollerAuth(uint64_t dao_id, const name& account)
   auto memberID = getMemberID(account);
 
   EOS_CHECK(
-    Edge::exists(get_self(), dao_id, memberID, common::ENROLLER),
+    Edge::exists(get_self(), dao_id, memberID, common::ENROLLER) ||
+    Edge::exists(get_self(), dao_id, memberID, common::ADMIN),
     to_str("Only enrollers of the dao are allowed to perform this action")
   );
 }
@@ -2262,10 +2390,12 @@ void dao::on_husd(const name& from, const name& to, const asset& quantity, const
   EOS_CHECK(quantity.is_valid(), "quantity invalid");
 
   asset hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
+  
   EOS_CHECK(
     hyphaUsdVal.symbol.precision() == 4,
     to_str("Expected hypha_usd_value precision to be 4, but got:", hyphaUsdVal.symbol.precision())
   );
+
   double factor = (hyphaUsdVal.amount / 10000.0);
 
   EOS_CHECK(common::S_HUSD.precision() == common::S_HYPHA.precision(), "unexpected precision mismatch");
@@ -2373,9 +2503,9 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
 /*
 * @brief Generates settings document for the given DAO
 */
-void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper configCW, bool isDraft) 
+void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper configCW, bool isDraft, const string& itemsGroup) 
 {
-  auto [detailsIdx, _] = configCW.getGroup(DETAILS);
+  auto [detailsIdx, _] = configCW.getGroup(itemsGroup);
 
   EOS_CHECK(
     detailsIdx != -1,
@@ -2433,13 +2563,15 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
 
   const name onboarder = onboarderAcc->getAs<name>();
 
-  //TODO: Remove to enable anyone to create DAOs
-  auto hyphaId = getDAOID("hypha"_n);
+  //Just do this check on mainnet
+  if (!isTestnet()) {
+    auto hyphaId = getDAOID("hypha"_n);
 
-  EOS_CHECK(
-    hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
-    "You are not allowed to call this action"
-  );
+    EOS_CHECK(
+      hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
+      "You are not allowed to call this action"
+    );
+  }
 
   auto votingQuorum = configCW.getOrFail(detailsIdx, VOTING_QUORUM_FACTOR_X100).second;
 
@@ -2509,16 +2641,18 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
     "Cash token name must be less than 30 characters"
   )
 
-  auto primaryColor =  configCW.getOrFail("style", common::DAO_PRIMARY_COLOR);
+  const auto styleGroup = itemsGroup == SETTINGS ? SETTINGS : "style";
+
+  auto primaryColor =  configCW.getOrFail(styleGroup, common::DAO_PRIMARY_COLOR);
   primaryColor->getAs<std::string>();
 
-  auto secondaryColor =  configCW.getOrFail("style", common::DAO_SECONDARY_COLOR);
+  auto secondaryColor =  configCW.getOrFail(styleGroup, common::DAO_SECONDARY_COLOR);
   secondaryColor->getAs<std::string>();
 
-  auto textColor = configCW.getOrFail("style", common::DAO_TEXT_COLOR);
+  auto textColor = configCW.getOrFail(styleGroup, common::DAO_TEXT_COLOR);
   textColor->getAs<std::string>();
 
-  auto logo = configCW.getOrFail("style", common::DAO_LOGO);
+  auto logo = configCW.getOrFail(styleGroup, common::DAO_LOGO);
   logo->getAs<std::string>();
 
   auto settingsGroup = 
@@ -2603,8 +2737,6 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
     //Only dao.hypha should be able skip creating reward or peg token
     eosio::require_auth(get_self());
   }
-
-  initCoreMembers(*this, daoID, onboarder, configCW);
 }
 
 } // namespace hypha

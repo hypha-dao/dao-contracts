@@ -7,6 +7,10 @@
 #include <member.hpp>
 #include <logger/logger.hpp>
 
+#include <badges/badges.hpp>
+
+#include <recurring_activity.hpp>
+
 namespace hypha
 {
 
@@ -104,6 +108,27 @@ namespace hypha
         Edge::getOrNew(m_dao.get_self(), m_dao.get_self(), badge.getID (), assigneeDoc.getID(), common::HELD_BY);
         Edge::write(m_dao.get_self(), m_dao.get_self(), assigneeDoc.getID(), proposal.getID (), common::ASSIGN_BADGE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getID (), proposal.getID (), common::ASSIGNMENT);
+
+        eosio::action(
+            eosio::permission_level(m_dao.get_self(), "active"_n),
+            m_dao.get_self(),
+            "activatebdg"_n,
+            std::make_tuple(proposal.getID())
+        ).send();
+    }
+
+    void BadgeAssignmentProposal::publishImpl(Document& proposal)
+    {
+        TRACE_FUNCTION()
+
+        //Check if assignee doesn't hold a system badge already
+        auto badge = badges::getBadgeOf(m_dao, proposal.getID());
+
+        name assignee = proposal.getContentWrapper()
+                                .getOrFail(DETAILS, ASSIGNEE)
+                                ->getAs<eosio::name>();
+        
+        badges::checkHoldsBadge(m_dao, badge, m_daoID, m_dao.getMemberID(assignee));
     }
 
     std::string BadgeAssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)

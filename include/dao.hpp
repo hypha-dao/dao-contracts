@@ -147,6 +147,10 @@ namespace pricing {
       
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
 
+      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
+
+      ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
+
 #ifdef DEVELOP_BUILD
 
       struct InputEdge {
@@ -171,6 +175,7 @@ namespace pricing {
 
       ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
 
+      ACTION copybadge(uint64_t source_badge_id, uint64_t destination_dao_id, name proposer);
       // ACTION deletetok(asset asset, name contract) {
 
       //   require_auth(get_self());
@@ -280,6 +285,7 @@ namespace pricing {
       //ACTION remprcngplan(uint64_t plan_id, uint64_t replace_id);
       ACTION updatecurbil(uint64_t dao_id);
       ACTION activatedao(eosio::name dao_name);
+      ACTION activatebdg(uint64_t assign_badge_id);
       ACTION addtype(uint64_t dao_id, const std::string& dao_type);
 
       void setSetting(const string &key, const Content::FlexValue &value);
@@ -378,6 +384,10 @@ namespace pricing {
       using transfer_action = eosio::action_wrapper<name("transfer"), &dao::ontransfer>;
 
       Member getOrCreateMember(const name& member);
+
+      bool isTestnet() {
+         return get_self() == common::TESTNET_CONTRACT_NAME;
+      }
    private:
 
       AssetBatch calculatePendingClaims(uint64_t assignmentID, const AssetBatch& daoTokens);
@@ -422,7 +432,7 @@ namespace pricing {
 
       void checkAdminsAuth(uint64_t daoID);
 
-      void readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper configCW, bool isDraft);
+      void readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper configCW, bool isDraft, const string& itemsGroup = DETAILS);
 
       void checkEnrollerAuth(uint64_t daoID, const name& account);
 

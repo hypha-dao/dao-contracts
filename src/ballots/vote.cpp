@@ -7,6 +7,8 @@
 #include <voice/account.hpp>
 #include <logger/logger.hpp>
 
+#include <badges/badges.hpp>
+
 #define CONTENT_GROUP_LABEL_VOTE "vote"
 #define VOTE_DATE "date"
 #define VOTE_NOTE "notes"
@@ -117,6 +119,17 @@ namespace hypha
 
         // an edge from the vote to the proposal named voteon
         Edge::write(dao.get_self(), voter, getDocument().getID(), proposal.getID(), common::VOTE_ON);
+
+        if (badges::hasNorthStarBadge(dao, daoHash, voterDoc.getID())) {
+            if (vote == VOTE_FAIL){
+                Edge(dao.get_self(), dao.get_self(), voterDoc.getID(), proposal.getID(), common::VETO);
+                Edge(dao.get_self(), dao.get_self(), proposal.getID(), voterDoc.getID(), common::VETO_BY);
+            }
+            else if (Edge::exists(dao.get_self(), voterDoc.getID(), proposal.getID(), common::VETO)) {
+                Edge::get(dao.get_self(), voterDoc.getID(), proposal.getID(), common::VETO).erase();
+                Edge::get(dao.get_self(), proposal.getID(), voterDoc.getID(), common::VETO_BY).erase();
+            }
+        }
     }
 
     const std::string& Vote::getVote()

@@ -100,4 +100,14 @@ void RecurringActivity::scheduleArchive()
     dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
 }
 
+bool RecurringActivity::isRecurringActivity(Document& doc)
+{
+    auto cw = doc.getContentWrapper();
+
+    auto type = cw.getOrFail(SYSTEM, TYPE)->getAs<name>();
+
+    return type == common::ASSIGN_BADGE ||
+           type == common::ASSIGNMENT;
+}
+
 } // namespace hypha

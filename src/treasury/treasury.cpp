@@ -1,6 +1,7 @@
 #include "treasury/treasury.hpp"
 
 #include <dao.hpp>
+#include <common.hpp>
 #include <settings.hpp>
 #include <member.hpp>
 
@@ -94,6 +95,16 @@ void Treasury::checkTreasurerAuth()
                           .getGraph()
                           .getEdgesFrom(getId(), links::TREASURER);
 
+    auto adminEdges = getDao()
+                      .getGraph()
+                      .getEdgesFrom(getDaoID(), hypha::common::ADMIN);
+    
+    treasurerEdges.insert(
+        treasurerEdges.end(), 
+        std::move_iterator(adminEdges.end()),
+        std::move_iterator(adminEdges.begin())
+    );
+        
     EOS_CHECK(
       std::any_of(treasurerEdges.begin(), treasurerEdges.end(), [this](const Edge& edge) {
         Member member(getDao(), edge.to_node);

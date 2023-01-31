@@ -49,6 +49,7 @@ add_contract( dao dao
                 proposals/proposal_factory.cpp
                 ballots/vote.cpp
                 ballots/vote_tally.cpp
+                badges/badges.cpp
                 comments/likeable.cpp
                 comments/comment.cpp
                 comments/section.cpp

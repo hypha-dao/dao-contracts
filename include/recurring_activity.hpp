@@ -31,6 +31,8 @@ namespace hypha
 
         inline uint64_t getDaoID() { return m_daoID; }
         void scheduleArchive();
+
+        static bool isRecurringActivity(Document& doc);
     protected: 
         uint64_t m_daoID;
         Settings* m_daoSettings;

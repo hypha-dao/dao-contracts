@@ -11,6 +11,8 @@ using eosio::symbol;
 //TODO: Refacto into a Lazy load system to avoid allocating many std::strings that are not actually used
 namespace hypha::common
 {
+    inline constexpr auto TESTNET_CONTRACT_NAME = name("mtdhoxhyphaa");
+
     inline constexpr auto PEG_TOKEN = "peg_token";
     inline constexpr auto VOICE_TOKEN = "voice_token";
     inline constexpr auto REWARD_TOKEN = "reward_token";
@@ -102,6 +104,9 @@ namespace hypha::common
     inline constexpr name ENROLLER = name("enroller");
     inline constexpr name ADMIN = name("admin");
     inline constexpr name OWNER = name("owner");
+    inline constexpr name NORTH_STAR_HOLDER = name("northstrhold");
+    inline constexpr name VETO = name("veto");
+    inline constexpr name VETO_BY = name("vetoby");
 
     inline constexpr name DHO_ROOT_NAME = name("dhoroot");
     inline constexpr name ASSIGN_BADGE = name("assignbadge");
@@ -322,6 +327,7 @@ namespace hypha::common
 #define SETTINGS "settings"
 
 #define VOTE_POWER "vote_power"
+#define VOTE_FAIL "fail"
 #define VOTE_LABEL "vote"
 #define VOTER_LABEL "voter"
 #define EXPIRATION_LABEL "expiration"
