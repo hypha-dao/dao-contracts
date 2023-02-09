@@ -120,11 +120,11 @@ namespace hypha
 
         Edge::write(getContract(), getAccount(), getID(), paymentReceipt.getID(), common::PAYMENT);
 
-        // eosio::action(
-        //     eosio::permission_level{getContract(), name("active")},
-        //     name("eosio"), name("buyram"),
-        //     std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE))
-        //     .send();
+        eosio::action(
+            eosio::permission_level{ getContract(), name("active") },
+            name("eosio"), name("buyrambytes"),
+            std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE_BYTES))
+            .send();
     }
 
     eosio::name Member::getAccount()
