@@ -33,10 +33,12 @@ namespace hypha
         EOS_CHECK(badge.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::BADGE_NAME,
                      "badge document hash provided in assignment proposal is not of type badge");
 
-        EOS_CHECK(
-            m_daoID == Edge::get(m_dao.get_self(), badgeDocument.getID (), common::DAO).getToNode(),
-            to_str("Badge must belong to: ", m_daoID)
-        )
+        //Verify DAO has access to this badge
+        Edge::get(m_dao.get_self(), m_daoID, badgeDocument.getID(), common::BADGE_NAME);
+        // EOS_CHECK(
+        //     m_daoID == Edge::get(m_dao.get_self(), badgeDocument.getID (), common::DAO).getToNode(),
+        //     to_str("Badge must belong to: ", m_daoID)
+        // )
 
         EOS_CHECK(
             badge.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_APPROVED,

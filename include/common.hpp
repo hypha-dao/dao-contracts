@@ -76,6 +76,7 @@ namespace hypha::common
     inline constexpr auto SKIP_PEG_TOKEN_CREATION = "skip_peg_token_create";
     inline constexpr auto SKIP_REWARD_TOKEN_CREATION = "skip_reward_token_create";
     //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
+    const uint32_t RAM_ALLOWANCE_BYTES = (uint32_t) 512;
     inline constexpr auto URLS_GROUP = "urls";
     inline constexpr auto URL = "url";
     inline constexpr auto CLAIM_ENABLED = "claim_enabled";
