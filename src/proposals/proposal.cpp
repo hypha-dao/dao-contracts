@@ -328,12 +328,27 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
-        float quorumFactor = m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
-        float alignmentFactor = m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
+        int64_t quorumFactor = m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100);
+        int64_t alignmentFactor = m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100);
+
+        //quorumFactor = std::max(0.00f, std::min(1.00f, quorumFactor));
+        //alignmentFactor = std::max(0.00f, std::min(1.00f, alignmentFactor));
+
+        const int64_t maxFactor = 100;
+
+        EOS_CHECK(
+            quorumFactor >= 0 && quorumFactor <= maxFactor,
+            to_str("Quorum Factor out of valid range", quorumFactor)
+        );
+
+        EOS_CHECK(
+            alignmentFactor >= 0 && alignmentFactor <= maxFactor,
+            to_str("Alginment Factor out of valid range", alignmentFactor)
+        );
 
         auto voiceSupply = getVoiceSupply();
-
-        asset quorum_threshold = adjustAsset(voiceSupply, quorumFactor);
+        
+        asset quorum_threshold = voiceSupply * quorumFactor;
 
         VoteTally tally(m_dao, tallyID);
 
@@ -346,17 +361,12 @@ namespace hypha
         asset votes_fail = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs<eosio::asset>();
 
         asset total = votes_pass + votes_abstain + votes_fail;
+
         // pass / ( pass + fail ) > alignmentFactor
-        bool passesAlignment = votes_pass > adjustAsset(votes_pass + votes_fail, alignmentFactor);
-        if (total >= quorum_threshold &&      // must meet quorum
-            passesAlignment)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        bool passesAlignment = (votes_pass * maxFactor) >= ((votes_pass + votes_fail) * alignmentFactor);
+        bool passQuorum = (total * maxFactor) >= quorum_threshold;
+
+        return passQuorum && passesAlignment;
     }
     string Proposal::getTitle(ContentWrapper cw) const
     {
