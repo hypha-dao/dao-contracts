@@ -11,6 +11,8 @@ using eosio::symbol;
 //TODO: Refacto into a Lazy load system to avoid allocating many std::strings that are not actually used
 namespace hypha::common
 {
+    inline constexpr auto TESTNET_CONTRACT_NAME = name("mtdhoxhyphaa");
+
     inline constexpr auto PEG_TOKEN = "peg_token";
     inline constexpr auto VOICE_TOKEN = "voice_token";
     inline constexpr auto REWARD_TOKEN = "reward_token";
@@ -74,6 +76,7 @@ namespace hypha::common
     inline constexpr auto SKIP_PEG_TOKEN_CREATION = "skip_peg_token_create";
     inline constexpr auto SKIP_REWARD_TOKEN_CREATION = "skip_reward_token_create";
     //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
+    const uint32_t RAM_ALLOWANCE_BYTES = (uint32_t) 512;
     inline constexpr auto URLS_GROUP = "urls";
     inline constexpr auto URL = "url";
     inline constexpr auto CLAIM_ENABLED = "claim_enabled";
@@ -102,6 +105,9 @@ namespace hypha::common
     inline constexpr name ENROLLER = name("enroller");
     inline constexpr name ADMIN = name("admin");
     inline constexpr name OWNER = name("owner");
+    inline constexpr name NORTH_STAR_HOLDER = name("northstrhold");
+    inline constexpr name VETO = name("veto");
+    inline constexpr name VETO_BY = name("vetoby");
 
     inline constexpr name DHO_ROOT_NAME = name("dhoroot");
     inline constexpr name ASSIGN_BADGE = name("assignbadge");
@@ -138,6 +144,8 @@ namespace hypha::common
     inline constexpr        auto STATE_REJECTED = "rejected";
     inline constexpr        auto STATE_SUSPENDED = "suspended";
     inline constexpr        auto STATE_WITHDRAWED = "withdrawed";
+    inline constexpr        auto PROPOSAL_CATEGORY = "category";
+    inline constexpr        auto CATEGORY_SELF_APPROVED = "self_approved";
 
     inline constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
     inline constexpr name PERIOD = name("period");
@@ -183,6 +191,7 @@ namespace hypha::common
     inline constexpr name FAILED_PROPS = name("failedprops");
     inline constexpr name PASSED_PROPS = name("passedprops");
     inline constexpr name MEMBER = name("member");
+    inline constexpr name COMMEMBER = name("commember");
     inline constexpr name DHO = name ("dho");
     inline constexpr name DAO = name ("dao");
     inline constexpr name DAO_DRAFT = name ("dao.draft");
@@ -322,6 +331,7 @@ namespace hypha::common
 #define SETTINGS "settings"
 
 #define VOTE_POWER "vote_power"
+#define VOTE_FAIL "fail"
 #define VOTE_LABEL "vote"
 #define VOTER_LABEL "voter"
 #define EXPIRATION_LABEL "expiration"

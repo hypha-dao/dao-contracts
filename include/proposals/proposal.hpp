@@ -30,12 +30,18 @@ namespace hypha
         dao &m_dao;
 
     protected:
+
+        virtual bool checkMembership(const eosio::name& proposer, ContentGroups &contentGroups)
+        { return false; }
+
         virtual void proposeImpl(const eosio::name &proposer,
                                  ContentWrapper &contentWrapper) = 0;
 
         virtual void postProposeImpl(Document &proposal);
 
         virtual void passImpl(Document &proposal) = 0;
+
+        virtual void publishImpl(Document& proposal) {}
 
         virtual string getBallotContent(ContentWrapper &contentWrapper) = 0;
 
@@ -62,12 +68,16 @@ namespace hypha
 
         Document internalPropose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish, Section* commentSection);
 
+        void internalClose(Document &proposal, bool pass);
+
         virtual bool isRecurring() { return false; }
     protected:
         Settings* m_daoSettings;
         Settings* m_dhoSettings;
         uint64_t m_daoID;
-
+        //Should be marked if we require the proposal to pass automatically
+        bool selfApprove = false;
+    
         void _publish(const eosio::name &proposer, Document &proposal, uint64_t rootID);
         name _newCommentSection();
 

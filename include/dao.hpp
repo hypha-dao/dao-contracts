@@ -42,6 +42,33 @@ namespace pricing {
 
       DECLARE_DOCUMENT_GRAPH(dao)
 
+      TABLE ElectionVote
+      {
+         uint64_t account_id;
+         //uint64_t round_id;
+         uint64_t total_amount; 
+         uint64_t primary_key() const { return account_id; }
+         uint64_t by_amount() const { return total_amount; }
+      };
+
+      typedef multi_index<name("electionvote"), ElectionVote,
+                          eosio::indexed_by<name("byamount"),
+                          eosio::const_mem_fun<ElectionVote, uint64_t, &ElectionVote::by_amount>>>
+              election_vote_table;
+
+      TABLE TokenToDao
+      {
+        uint64_t id;
+        asset token;
+        uint64_t primary_key() const { return token.symbol.raw(); }
+        uint64_t by_id() const { return id; }
+      };
+
+      typedef multi_index<name("tokentodao"), TokenToDao,
+                          eosio::indexed_by<name("bydocid"),
+                          eosio::const_mem_fun<TokenToDao, uint64_t, &TokenToDao::by_id>>>
+              token_to_dao_table;
+
       TABLE NameToID
       {
         uint64_t id;
@@ -88,6 +115,8 @@ namespace pricing {
                           eosio::indexed_by<name("byrecipient"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_recipient>>,
                           eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
           payment_table;
+
+      ACTION assigntokdao(asset token, uint64_t dao_id, bool force);
 
       ACTION propose(uint64_t dao_id, const name &proposer, const name &proposal_type, ContentGroups &content_groups, bool publish);
       ACTION vote(const name& voter, uint64_t proposal_id, string &vote, const std::optional<string> & notes);
@@ -147,6 +176,11 @@ namespace pricing {
       
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
 
+      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
+
+      ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
+
+      ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name);
 #ifdef DEVELOP_BUILD
 
       struct InputEdge {
@@ -171,6 +205,7 @@ namespace pricing {
 
       ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
 
+      ACTION copybadge(uint64_t source_badge_id, uint64_t destination_dao_id, name proposer);
       // ACTION deletetok(asset asset, name contract) {
 
       //   require_auth(get_self());
@@ -263,24 +298,32 @@ namespace pricing {
       ACTION setpaynotes(uint64_t payment_id, string notes);
       ACTION setrsysttngs(uint64_t treasury_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 
+      //Upvote System
+      ACTION createupvelc(uint64_t dao_id, ContentGroups& election_config);
+      ACTION editupvelc(uint64_t election_id, ContentGroups& election_config);
+      ACTION cancelupvelc(uint64_t election_id);
+      ACTION updateupvelc(uint64_t election_id, bool reschedule);
+      ACTION castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> voted);
+
       //Pricing System actions
       /*
       * @brief Marks a DAO as waiting for Ecosystem activation
       */
-      ACTION markasecosys(uint64_t dao_id);
-      ACTION setdaotype(uint64_t dao_id, const string& dao_type);
-      ACTION activateplan(ContentGroups& plan_info);
-      ACTION activateecos(ContentGroups& ecosystem_info);
-      ACTION addprcngplan(ContentGroups& pricing_plan_info, const std::vector<uint64_t>& offer_ids);
-      ACTION addpriceoffr(ContentGroups& price_offer_info, const std::vector<uint64_t>& pricing_plan_ids);
-      ACTION setdefprcpln(uint64_t price_plan_id);
-      ACTION modoffers(const std::vector<uint64_t>& pricing_plan_ids, const std::vector<uint64_t>& offer_ids, bool unlink);
-      ACTION updateprcpln(uint64_t pricing_plan_id, ContentGroups& pricing_plan_info);
-      ACTION updateprcoff(uint64_t price_offer_id, ContentGroups& price_offer_info);
-      //ACTION remprcngplan(uint64_t plan_id, uint64_t replace_id);
-      ACTION updatecurbil(uint64_t dao_id);
-      ACTION activatedao(eosio::name dao_name);
-      ACTION addtype(uint64_t dao_id, const std::string& dao_type);
+      // ACTION markasecosys(uint64_t dao_id);
+      // ACTION setdaotype(uint64_t dao_id, const string& dao_type);
+      // ACTION activateplan(ContentGroups& plan_info);
+      // ACTION activateecos(ContentGroups& ecosystem_info);
+      // ACTION addprcngplan(ContentGroups& pricing_plan_info, const std::vector<uint64_t>& offer_ids);
+      // ACTION addpriceoffr(ContentGroups& price_offer_info, const std::vector<uint64_t>& pricing_plan_ids);
+      // ACTION setdefprcpln(uint64_t price_plan_id);
+      // ACTION modoffers(const std::vector<uint64_t>& pricing_plan_ids, const std::vector<uint64_t>& offer_ids, bool unlink);
+      // ACTION updateprcpln(uint64_t pricing_plan_id, ContentGroups& pricing_plan_info);
+      // ACTION updateprcoff(uint64_t price_offer_id, ContentGroups& price_offer_info);
+      // //ACTION remprcngplan(uint64_t plan_id, uint64_t replace_id);
+      // ACTION updatecurbil(uint64_t dao_id);
+      // ACTION activatedao(eosio::name dao_name);
+      ACTION activatebdg(uint64_t assign_badge_id);
+      // ACTION addtype(uint64_t dao_id, const std::string& dao_type);
 
       void setSetting(const string &key, const Content::FlexValue &value);
 
@@ -360,25 +403,39 @@ namespace pricing {
             }
          }
          //Adding credits to DAO
-         else if (get_first_receiver() == rewardContract &&
-                  to == get_self() &&
-                  from != get_self() &&
-                  quantity.symbol == hypha::common::S_HYPHA) {
-            auto [type, daoId] = splitStringView<std::string, int64_t>(string_view(memo.c_str(), memo.size()), ';');
+         else if (get_first_receiver() == rewardContract) {
 
-            EOS_CHECK(
-               type == "credit",
-               "Only credit transaction is currently available"
-            );
+            onRewardTransfer(from, to, quantity);
 
-            onCreditDao(static_cast<uint64_t>(daoId), quantity);
+            if (to == get_self() &&
+                from != get_self() &&
+                quantity.symbol == hypha::common::S_HYPHA) {
+
+               auto [type, daoId] = splitStringView<std::string, int64_t>(string_view(memo.c_str(), memo.size()), ';');
+
+               EOS_CHECK(
+                  type == "credit",
+                  "Only credit transaction is currently available"
+               );
+
+               onCreditDao(static_cast<uint64_t>(daoId), quantity);
+            }
          }
       }
 
       using transfer_action = eosio::action_wrapper<name("transfer"), &dao::ontransfer>;
 
       Member getOrCreateMember(const name& member);
+
+      bool isTestnet() {
+         return get_self() == common::TESTNET_CONTRACT_NAME;
+      }
+
+      void verifyDaoType(uint64_t daoID);
+
    private:
+
+      void onRewardTransfer(const name& from, const name& to, const asset& amount);
 
       AssetBatch calculatePendingClaims(uint64_t assignmentID, const AssetBatch& daoTokens);
 
@@ -415,14 +472,12 @@ namespace pricing {
 
       void setEcosystemPlan(pricing::PlanManager& planManager);
 
-      void verifyDaoType(uint64_t daoID);
-
       //TODO: Add parameter to specify staking account(s)
       void verifyEcosystemPayment(pricing::PlanManager& planManager, const string& priceItem, const string& priceStakedItem, const std::string& stakingMemo, const name& beneficiary);
 
       void checkAdminsAuth(uint64_t daoID);
 
-      void readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper configCW, bool isDraft);
+      void readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper configCW, bool isDraft, const string& itemsGroup = DETAILS);
 
       void checkEnrollerAuth(uint64_t daoID, const name& account);
 

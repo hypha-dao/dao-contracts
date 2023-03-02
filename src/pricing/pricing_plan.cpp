@@ -78,7 +78,7 @@ void PricingPlan::verifyData(const Data& data)
     )
 
     EOS_CHECK(
-        data.price.is_valid() && data.price.symbol == hypha::common::S_HYPHA, 
+        data.price.is_valid() && data.price.symbol == hypha::common::S_USD, 
         "Plan price is not valid or has an invalid symbol"
     )
 

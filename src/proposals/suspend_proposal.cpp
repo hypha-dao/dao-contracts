@@ -14,6 +14,8 @@
 #include <logger/logger.hpp>
 #include <recurring_activity.hpp>
 
+#include <badges/badges.hpp>
+
 namespace hypha
 {
 
@@ -85,8 +87,17 @@ namespace hypha
       case common::ROLE_NAME.value:
         //We don't have to do anything special for roles
         break;
-      case common::BADGE_NAME.value:        
-        break;
+      case common::BADGE_NAME.value: {
+        //Verify it's not a system badge
+
+        auto badgeInfo = badges::getBadgeInfo(originalDoc);
+
+        EOS_CHECK(
+          badgeInfo.type != badges::BadgeType::System,
+          "System badges cannot be suspended"
+        );
+
+      } break;
       default:
         EOS_CHECK(
           false,

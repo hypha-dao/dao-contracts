@@ -7,8 +7,36 @@
 #include <member.hpp>
 #include <logger/logger.hpp>
 
+#include <badges/badges.hpp>
+
+#include <recurring_activity.hpp>
+
+#include <upvote_election/upvote_election.hpp>
+#include <upvote_election/common.hpp>
+
 namespace hypha
 {
+
+    Document BadgeAssignmentProposal::getBadgeDoc(ContentGroups& cgs) const
+    {
+        auto cw = ContentWrapper(cgs);
+        auto badgeId = cw.getOrFail(DETAILS, BADGE_STRING)->getAs<int64_t>();
+        return Document(m_dao.get_self(), badgeId);
+    }
+
+    bool BadgeAssignmentProposal::checkMembership(const eosio::name& proposer, ContentGroups &contentGroups)
+    {
+        auto badge = getBadgeDoc(contentGroups);
+        auto badgeInfo = badges::getBadgeInfo(badge);
+
+        if (badgeInfo.type == badges::BadgeType::System && 
+            (badgeInfo.systemType == badges::SystemBadgeType::Voter || 
+             badgeInfo.systemType == badges::SystemBadgeType::Delegate)) {
+            return Member::isCommunityMember(m_dao, m_daoID, proposer);
+        }
+
+        return false;
+    }
 
     void BadgeAssignmentProposal::proposeImpl(const name &proposer, ContentWrapper &badgeAssignment)
     {
@@ -16,35 +44,112 @@ namespace hypha
         // assignee must exist and be a DHO member
         name assignee = badgeAssignment.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
 
-        EOS_CHECK(
-            Member::isMember(m_dao, m_daoID, assignee), 
-            "only members can be assigned to badges " + assignee.to_string()
-        );
-
          // badge assignment proposal must link to a valid badge
-        Document badgeDocument(m_dao.get_self(), badgeAssignment.getOrFail(DETAILS, BADGE_STRING)->getAs<int64_t>());
+        Document badgeDocument = getBadgeDoc(badgeAssignment.getContentGroups());
         
         auto badge = badgeDocument.getContentWrapper();
 
         EOS_CHECK(badge.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::BADGE_NAME,
                      "badge document hash provided in assignment proposal is not of type badge");
 
-        EOS_CHECK(
-            m_daoID == Edge::get(m_dao.get_self(), badgeDocument.getID (), common::DAO).getToNode(),
-            to_str("Badge must belong to: ", m_daoID)
-        )
+        //Verify DAO has access to this badge
+        Edge::get(m_dao.get_self(), m_daoID, badgeDocument.getID(), common::BADGE_NAME);
+        // EOS_CHECK(
+        //     m_daoID == Edge::get(m_dao.get_self(), badgeDocument.getID (), common::DAO).getToNode(),
+        //     to_str("Badge must belong to: ", m_daoID)
+        // )
 
         EOS_CHECK(
             badge.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_APPROVED,
             to_str("Badge must be approved before applying to it.")
         )
 
-        // START_PERIOD - number of periods the assignment is valid for
+        //Check for custom system badges
+        auto badgeInfo = badges::getBadgeInfo(badgeDocument);
+
         auto detailsGroup = badgeAssignment.getGroupOrFail(DETAILS);
-        if (auto [idx, startPeriod] = badgeAssignment.get(DETAILS, START_PERIOD); startPeriod)
-        {
-            Period period(&m_dao, std::get<int64_t>(startPeriod->value));
-        } else {
+
+        //Voter badge and Delegate badge has to be auto approved
+        if (badges::isSelfApproveBadge(badgeInfo.systemType)) {
+            
+            selfApprove = true;
+            //TODO: Should we check for basic types (?)
+            time_point start;
+            time_point end;
+
+            if (badgeInfo.systemType == badges::SystemBadgeType::Voter) {
+                //Setup 1 year duration
+                const auto year = eosio::days(365);
+                start = eosio::current_time_point();
+                end = start + year;
+            }
+            else {
+                if (badgeInfo.systemType != badges::SystemBadgeType::Delegate) {
+                    //We have to specify the election id
+                    auto election = badgeAssignment.getOrFail(DETAILS, badges::common::items::UPVOTE_ELECTION_ID)->getAs<int64_t>();
+                    upvote_election::UpvoteElection upvoteElection(m_dao, election);
+
+                    //Proposer must be contract
+                    EOS_CHECK(
+                        proposer == m_dao.get_self(),
+                        "Only contract is allowed to perform this action"
+                    );
+
+                    //Set start as when the election is finished
+                    start = upvoteElection.getEndDate();
+                    end = start + eosio::seconds(upvoteElection.getDuration());
+                }
+                else {
+                    //Fail if there is no upcoming election
+                    auto upvoteElection = upvote_election::UpvoteElection::getUpcomingElection(m_dao, m_daoID);
+
+                    EOS_CHECK(
+                        upvoteElection.getStatus() == upvote_election::common::upvote_status::UPCOMING,
+                        "You can only apply to Delegate badges when there is an upcomming election"
+                    )
+                    //For Delegate use the start and end of the election
+                    //start = upvoteElection.getStartDate();
+                    //For now we will set start date to current time
+                    start = eosio::current_time_point();
+                    end = upvoteElection.getEndDate();
+                }
+            }
+            
+            EOS_CHECK(
+                start.elapsed.count() && end.elapsed.count() &&
+                start < end,
+                to_str("Invalid start and end dates: ", start, " ", end)
+            );
+            
+            ContentWrapper::insertOrReplace(
+                *detailsGroup, 
+                Content{
+                    START_TIME, 
+                    start
+                }
+            );
+
+            ContentWrapper::insertOrReplace(
+                *detailsGroup, 
+                Content{
+                    END_TIME, 
+                    end
+                }
+            );
+
+            return;
+        }
+
+        // START_PERIOD - number of periods the assignment is valid for
+        
+        if (auto [idx, startPeriod] = badgeAssignment.get(DETAILS, START_PERIOD); startPeriod) {
+            Document period = TypedDocument::withType(
+                m_dao,
+                static_cast<uint64_t>(startPeriod->getAs<int64_t>()),
+                common::PERIOD
+            );
+        } 
+        else {
             // default START_PERIOD to next period
             ContentWrapper::insertOrReplace(
                 *detailsGroup, 
@@ -75,8 +180,20 @@ namespace hypha
         ContentWrapper contentWrapper = proposal.getContentWrapper();
 
         //    badge_assignment  ---- badge          ---->   badge
-        Document badge(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, BADGE_STRING)->getAs<int64_t>());
+        Document badge = getBadgeDoc(proposal.getContentGroups());
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), badge.getID (), common::BADGE_NAME);
+
+        //For this specific badges we don't setup a start period
+        if (selfApprove) {
+
+            ContentWrapper::insertOrReplace(
+                *contentWrapper.getGroupOrFail(SYSTEM),
+                Content { common::PROPOSAL_CATEGORY,
+                          common::CATEGORY_SELF_APPROVED }
+            );
+
+            return;
+        }
 
         //    badge_assignment  ---- start          ---->   period
         Document startPer(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>());
@@ -90,7 +207,7 @@ namespace hypha
 
         eosio::name assignee = contentWrapper.getOrFail(DETAILS, ASSIGNEE)->getAs<eosio::name>();
         Document assigneeDoc(m_dao.get_self(), m_dao.getMemberID(assignee));
-        Document badge(m_dao.get_self(), contentWrapper.getOrFail(DETAILS, BADGE_STRING)->getAs<int64_t>());
+        Document badge = getBadgeDoc(proposal.getContentGroups());
 
         // update graph edges:
         //    member            ---- holdsbadge     ---->   badge
@@ -104,6 +221,27 @@ namespace hypha
         Edge::getOrNew(m_dao.get_self(), m_dao.get_self(), badge.getID (), assigneeDoc.getID(), common::HELD_BY);
         Edge::write(m_dao.get_self(), m_dao.get_self(), assigneeDoc.getID(), proposal.getID (), common::ASSIGN_BADGE);
         Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getID (), proposal.getID (), common::ASSIGNMENT);
+
+        eosio::action(
+            eosio::permission_level(m_dao.get_self(), "active"_n),
+            m_dao.get_self(),
+            "activatebdg"_n,
+            std::make_tuple(proposal.getID())
+        ).send();
+    }
+
+    void BadgeAssignmentProposal::publishImpl(Document& proposal)
+    {
+        TRACE_FUNCTION()
+
+        //Check if assignee doesn't hold a system badge already
+        auto badge = badges::getBadgeOf(m_dao, proposal.getID());
+
+        name assignee = proposal.getContentWrapper()
+                                .getOrFail(DETAILS, ASSIGNEE)
+                                ->getAs<eosio::name>();
+        
+        badges::checkHoldsBadge(m_dao, badge, m_daoID, m_dao.getMemberID(assignee));
     }
 
     std::string BadgeAssignmentProposal::getBallotContent(ContentWrapper &contentWrapper)
