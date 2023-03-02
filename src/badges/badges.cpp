@@ -19,6 +19,8 @@
 namespace hypha::badges
 {
 
+
+namespace badges_links = badges::common::links;
 // void validateBadge(ContentWrapper& badgeCW)
 // {
 
@@ -35,7 +37,11 @@ BadgeInfo getBadgeInfo(Document& badge) {
         SystemBadgeType::Treasurer,
         SystemBadgeType::Admin,
         SystemBadgeType::NorthStar,
-        SystemBadgeType::Enroller
+        SystemBadgeType::Enroller,
+        SystemBadgeType::Voter,
+        SystemBadgeType::Delegate,
+        SystemBadgeType::ChiefDelegate,
+        SystemBadgeType::HeadDelegate
       };
 
       EOS_CHECK(
@@ -72,40 +78,44 @@ void onBadgeActivated(dao& dao, RecurringActivity& badgeAssign)
     
     mem.checkMembershipOrEnroll(badgeAssign.getDaoID());
 
+    auto createLink = [&](eosio::name link){ 
+        Edge(
+            dao.get_self(), 
+            dao.get_self(), 
+            badgeAssign.getDaoID(), 
+            mem.getID(), 
+            link
+        );
+    };
+
     if (type == BadgeType::System){
         switch (systemType)
         {
         case SystemBadgeType::Admin: {
             //Activate admin badge
-            Edge(
-                dao.get_self(), 
-                dao.get_self(), 
-                badgeAssign.getDaoID(), 
-                mem.getID(), 
-                hypha::common::ADMIN
-            );
+            createLink(hypha::common::ADMIN);
         } break;
         case SystemBadgeType::Treasurer: {
             auto treasury = treasury::Treasury::getFromDaoID(dao, badgeAssign.getDaoID());
             treasury.addTreasurer(mem.getID());
         } break;
         case SystemBadgeType::NorthStar: {
-            Edge(
-                dao.get_self(), 
-                dao.get_self(), 
-                badgeAssign.getDaoID(), 
-                mem.getID(), 
-                hypha::common::NORTH_STAR_HOLDER
-            );
+            createLink(hypha::common::NORTH_STAR_HOLDER);
         } break;
         case SystemBadgeType::Enroller: {
-            Edge(
-                dao.get_self(), 
-                dao.get_self(), 
-                badgeAssign.getDaoID(), 
-                mem.getID(), 
-                hypha::common::ENROLLER
-            );
+            createLink(hypha::common::ENROLLER);
+        } break;
+        case SystemBadgeType::Voter: {
+            createLink(badges_links::VOTER);
+        } break;
+        case SystemBadgeType::Delegate: {
+            createLink(badges_links::DELEGATE);
+        } break;
+        case SystemBadgeType::HeadDelegate: {
+            createLink(badges_links::HEAD_DELEGATE);
+        } break;
+        case SystemBadgeType::ChiefDelegate: {
+            createLink(badges_links::CHIEF_DELEGATE);
         } break;
         default:
             EOS_CHECK(false, "Invalid system badge type");
@@ -123,36 +133,42 @@ void onBadgeArchived(dao& dao, RecurringActivity& badgeAssign)
 
     auto memID = dao.getMemberID(assignee);
 
+    auto removeLink = [&](eosio::name link){ 
+        Edge::get(
+            dao.get_self(), 
+            badgeAssign.getDaoID(), 
+            memID, 
+            link
+        ).erase();
+    };
+
     if (type == BadgeType::System){
         switch (systemType)
         {
         case SystemBadgeType::Admin: {
-            Edge::get(
-                dao.get_self(), 
-                badgeAssign.getDaoID(), 
-                memID, 
-                hypha::common::ADMIN
-            ).erase();
+            removeLink(hypha::common::ADMIN);
         } break;
         case SystemBadgeType::Treasurer: {
             auto treasury = treasury::Treasury::getFromDaoID(dao, badgeAssign.getDaoID());
             treasury.removeTreasurer(memID);
         } break;
         case SystemBadgeType::NorthStar: {
-            Edge::get(
-                dao.get_self(), 
-                badgeAssign.getDaoID(), 
-                memID, 
-                hypha::common::NORTH_STAR_HOLDER
-            ).erase();
+            removeLink(hypha::common::NORTH_STAR_HOLDER);
         } break;
         case SystemBadgeType::Enroller: {
-            Edge::get(
-                dao.get_self(), 
-                badgeAssign.getDaoID(), 
-                memID, 
-                hypha::common::ENROLLER
-            ).erase();
+            removeLink(hypha::common::ENROLLER);
+        } break;
+        case SystemBadgeType::Voter: {
+            removeLink(badges_links::VOTER);
+        } break;
+        case SystemBadgeType::Delegate: {
+            removeLink(badges_links::DELEGATE);
+        } break;
+        case SystemBadgeType::HeadDelegate: {
+            removeLink(badges_links::HEAD_DELEGATE);
+        } break;
+        case SystemBadgeType::ChiefDelegate: {
+            removeLink(badges_links::CHIEF_DELEGATE);
         } break;
         default:
             EOS_CHECK(false, "Invalid system badge type");
@@ -172,15 +188,18 @@ Document getBadgeOf(dao& dao, uint64_t badgeAssignID)
     return Document(dao.get_self(), badgeEdge.getToNode());
 }
 
-static bool hasAdminBadge(dao& dao, uint64_t daoID, uint64_t memberID) {
+static bool hasAdminBadge(dao& dao, uint64_t daoID, uint64_t memberID) 
+{
     return Edge::exists(dao.get_self(), daoID, memberID, hypha::common::ADMIN);
 }
 
-static bool hasEnrollerBadge(dao& dao, uint64_t daoID, uint64_t memberID) {
+static bool hasEnrollerBadge(dao& dao, uint64_t daoID, uint64_t memberID) 
+{
     return Edge::exists(dao.get_self(), daoID, memberID, hypha::common::ENROLLER);
 }
 
-static bool hasTreasurerBadge(dao& dao, uint64_t daoID, uint64_t memberID) {
+static bool hasTreasurerBadge(dao& dao, uint64_t daoID, uint64_t memberID) 
+{
     return Edge::exists(dao.get_self(), daoID, memberID, treasury::common::links::TREASURER);
 }
 
@@ -188,6 +207,42 @@ bool hasNorthStarBadge(dao& dao, uint64_t daoID, uint64_t memberID)
 {
     return Edge::exists(dao.get_self(), daoID, memberID, hypha::common::NORTH_STAR_HOLDER);
 }
+
+bool hasVoterBadge(dao& dao, uint64_t daoID, uint64_t memberID)
+{
+    return Edge::exists(dao.get_self(), daoID, memberID, badges_links::VOTER);
+}
+
+bool hasDelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID)
+{
+    return Edge::exists(dao.get_self(), daoID, memberID, badges_links::DELEGATE);
+}
+
+bool hasHeadDelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID)
+{
+    return Edge::exists(dao.get_self(), daoID, memberID, badges_links::HEAD_DELEGATE);
+}
+
+bool hasChiefDelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID)
+{
+    return Edge::exists(dao.get_self(), daoID, memberID, badges_links::CHIEF_DELEGATE);
+}
+
+bool isSelfApproveBadge(SystemBadgeType systemType)
+{
+
+    switch (systemType) {
+        case SystemBadgeType::Voter:
+        case SystemBadgeType::Delegate:
+        case SystemBadgeType::ChiefDelegate:
+        case SystemBadgeType::HeadDelegate:
+        return true;
+        default:
+        return false;
+    }
+
+    return false;
+};
 
 void checkHoldsBadge(dao& dao, Document& badge, uint64_t daoID, uint64_t memberID)
 {    
@@ -201,16 +256,21 @@ void checkHoldsBadge(dao& dao, Document& badge, uint64_t daoID, uint64_t memberI
       { SystemBadgeType::Admin, hasAdminBadge },
       { SystemBadgeType::Enroller, hasEnrollerBadge },
       { SystemBadgeType::Treasurer, hasTreasurerBadge },
-      { SystemBadgeType::NorthStar, hasNorthStarBadge }
+      { SystemBadgeType::NorthStar, hasNorthStarBadge },
+      { SystemBadgeType::Voter, hasVoterBadge },
+      { SystemBadgeType::Delegate, hasDelegateBadge },
+      { SystemBadgeType::HeadDelegate, hasHeadDelegateBadge },
+      { SystemBadgeType::ChiefDelegate, hasChiefDelegateBadge }
     };
 
     EOS_CHECK(
         hasBadgeMap.count(systemType),
         to_str("Invalid System Badge Type:", static_cast<uint64_t>(systemType))
     )
-
+    
+    //User should not have the given Badge
     EOS_CHECK(
-        hasBadgeMap[systemType](dao, daoID, memberID),
+        !hasBadgeMap[systemType](dao, daoID, memberID),
         "User already holds badge"
     );
 }

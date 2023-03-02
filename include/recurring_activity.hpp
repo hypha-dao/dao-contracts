@@ -33,6 +33,9 @@ namespace hypha
         void scheduleArchive();
 
         static bool isRecurringActivity(Document& doc);
+
+        eosio::time_point getStartDate();
+        eosio::time_point getEndDate();
     protected: 
         uint64_t m_daoID;
         Settings* m_daoSettings;

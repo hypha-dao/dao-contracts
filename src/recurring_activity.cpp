@@ -86,7 +86,7 @@ void RecurringActivity::scheduleArchive()
         std::make_tuple(getID())
     ));
 
-    auto expiration = getLastPeriod().getEndTime().sec_since_epoch();
+    auto expiration = getEndDate().sec_since_epoch();
 
     constexpr auto aditionalDelaySec = 60;
     trx.delay_sec = (expiration - eosio::current_time_point().sec_since_epoch()) + aditionalDelaySec;
@@ -98,6 +98,26 @@ void RecurringActivity::scheduleArchive()
     trx.send(nextID, m_dao->get_self());
 
     dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
+}
+
+eosio::time_point RecurringActivity::getStartDate()
+{
+    auto cw = getContentWrapper();
+    if (auto [_, startTime] = cw.get(DETAILS, START_TIME); startTime) {
+        return startTime->getAs<time_point>();
+    }
+
+    return getStartPeriod().getStartTime();
+}
+
+eosio::time_point RecurringActivity::getEndDate()
+{
+    auto cw = getContentWrapper();
+    if (auto [_, endTime] = cw.get(DETAILS, END_TIME); endTime) {
+        return endTime->getAs<time_point>();
+    }
+    
+    return getLastPeriod().getEndTime();
 }
 
 bool RecurringActivity::isRecurringActivity(Document& doc)

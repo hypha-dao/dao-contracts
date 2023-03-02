@@ -14,7 +14,7 @@ namespace hypha {
         using Proposal::Proposal;
         
     protected:
-        
+        bool checkMembership(const eosio::name& proposer, ContentGroups &contentGroups) override;
         void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;
         void passImpl(Document &proposal) override;
         void postProposeImpl(Document &proposal) override;
@@ -25,5 +25,7 @@ namespace hypha {
         {
             return true;
         }
+    private:
+        Document getBadgeDoc(ContentGroups& cgs) const;
     };
 }

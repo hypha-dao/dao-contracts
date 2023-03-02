@@ -46,6 +46,11 @@ namespace hypha
         return Edge::exists(dao.get_self(), daoID, dao.getMemberID(member), common::MEMBER);
     }
 
+    bool Member::isCommunityMember(dao& dao, uint64_t daoID, const eosio::name &member)
+    {
+        return Edge::exists(dao.get_self(), daoID, dao.getMemberID(member), common::COMMEMBER);
+    }
+
     bool Member::exists(dao& dao, const eosio::name& memberName)
     {
         dao::member_table m_t(dao.get_self(), dao.get_self().value);

@@ -12,6 +12,8 @@
 #include <time_share.hpp>
 #include <logger/logger.hpp>
 
+#include <typed_document.hpp>
+
 namespace hypha
 {
 
@@ -26,16 +28,14 @@ namespace hypha
             "only members can be assigned to assignments " + assignee.to_string()
         );
 
-        Document roleDocument(
-            m_dao.get_self(), 
-            static_cast<uint64_t>(assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<int64_t>())
+        // role in the proposal must be of type: role
+        auto roleDocument = TypedDocument::withType(
+            m_dao,
+            static_cast<uint64_t>(assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<int64_t>()),
+            common::ROLE_NAME
         );
 
         auto role = roleDocument.getContentWrapper();
-
-        // role in the proposal must be of type: role
-        EOS_CHECK(role.getOrFail(SYSTEM, TYPE)->getAs<eosio::name>() == common::ROLE_NAME,
-                  "role document hash provided in assignment proposal is not of type: role");
 
         EOS_CHECK(
             m_daoID == Edge::get(m_dao.get_self(), roleDocument.getID(), common::DAO).getToNode(),
@@ -80,7 +80,12 @@ namespace hypha
         {
             //TODO: Store the dao in the period document and validate it 
             // verifies the period as valid & in the future
-            Period period(&m_dao, std::get<int64_t>(startPeriod->value));
+
+            Document period = TypedDocument::withType(
+                m_dao,
+                static_cast<uint64_t>(startPeriod->getAs<int64_t>()),
+                common::PERIOD
+            );
             // EOS_CHECK(
             //     period.getStartTime().sec_since_epoch() >= eosio::current_time_point().sec_since_epoch(),
             //     "Only future periods are allowed for starting period"

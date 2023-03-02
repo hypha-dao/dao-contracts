@@ -32,6 +32,8 @@
 #include <pricing/plan_manager.hpp>
 #include <pricing/common.hpp>
 
+#include <reward/account.hpp>
+
 namespace hypha {
 
 /**Testenv only */
@@ -57,6 +59,12 @@ void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
   Document toDoc(get_self(), to);
 
   Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
+}
+
+void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
+{
+    eosio::require_auth(get_self());
+    Edge::get(get_self(), from_node, to_node, edge_name).erase();
 }
 
 #ifdef DEVELOP_BUILD
@@ -205,6 +213,51 @@ void dao::copybadge(uint64_t source_badge_id, uint64_t destination_dao_id, name 
 }
 
 #endif
+
+static asset getAccountBalance(const name& rewardContract, const name& account, const asset& token)
+{
+  accounts a_t(rewardContract, account.value);
+
+  const auto& from = a_t.get( token.symbol.code().raw(), "no balance object found" );
+
+  return from.balance;
+}
+
+static void updateCommunityMembership(dao& dao, const name& account, const asset& token)
+{
+  dao::token_to_dao_table tok_t(dao.get_self(), dao.get_self().value);
+
+  auto entry = tok_t.get(token.symbol.raw(), "Missing token to dao entry");
+
+  auto daoId = entry.id;
+
+  dao.verifyDaoType(daoId);
+
+  auto settings = dao.getSettingsDocument();
+
+  auto rewardContract = settings->getOrFail<name>(REWARD_TOKEN_CONTRACT);
+
+  auto balance = getAccountBalance(rewardContract, account, token);
+
+  const auto minAmount = denormalizeToken(1.f, token);
+
+  auto member = dao.getOrCreateMember(account);
+
+  //TODO: Call this action on points where core membership could be removed
+
+  if (balance >= minAmount) {
+    //Let's check if we need to upgrade to community member
+    if (!Member::isMember(dao, daoId, account) &&
+        !Member::isCommunityMember(dao, daoId, account)) {
+      //Create Community Membership
+      Edge(dao.get_self(), dao.get_self(), daoId, member.getID(), common::COMMEMBER);
+    }
+  }
+  else if (Member::isCommunityMember(dao, daoId, account)) {
+    //Remove membership if we no longer meet the requirements
+    Edge::get(dao.get_self(), daoId, member.getID(), common::COMMEMBER).erase();
+  }
+}
 
 void dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
 {
@@ -439,45 +492,60 @@ void dao::withdraw(name owner, uint64_t document_id)
 
   auto cw = assignment.getContentWrapper();
 
+  auto detailsGroup = cw.getGroupOrFail(DETAILS);
+
   auto state = cw.getOrFail(DETAILS, common::STATE)->getAs<string>();
+
+  auto now = eosio::current_time_point();
 
   EOS_CHECK(
     state == common::STATE_APPROVED,
     to_str("Cannot withdraw ", state, " assignments")
   );
 
-  auto originalPeriods = assignment.getPeriodCount();
-
-  auto startPeriod = assignment.getStartPeriod();
-
-  auto now = eosio::current_time_point();
-
-  auto periodsToCurrent = int64_t(0);
-
-  //If the start period is in the future then we just set the period count to 0
-  //since it means that we are withdrawing before the start period
-  if (now > startPeriod.getStartTime()) {
-    //Calculate the number of periods since start period to the current period
-    auto currentPeriod = startPeriod.getPeriodUntil(now);
-
-    periodsToCurrent = startPeriod.getPeriodCountTo(currentPeriod);
-
-    periodsToCurrent = std::max(periodsToCurrent, int64_t(0)) + 1;
-
-    EOS_CHECK(
-      originalPeriods >= periodsToCurrent,
-      to_str("Withdrawal of expired assignment: ", document_id, " is not allowed")
-    );
-
-    if (cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == common::ASSIGNMENT) 
-    {
-      modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
+  //Quick check to verify if this is a self approved badge
+  //which doesn't contain periods data
+  if (auto [_, category] = cw.get(SYSTEM, common::PROPOSAL_CATEGORY); 
+      category && category->getAs<std::string>() == common::CATEGORY_SELF_APPROVED) {
+    
+    if (now < assignment.getEndDate()) {
+      ContentWrapper::insertOrReplace(*detailsGroup, Content{ END_TIME, now });
     }
+
+    auto badge = badges::getBadgeOf(*this, assignment.getID());
+
+    badges::onBadgeArchived(*this, assignment);
   }
+  else {
+    auto originalPeriods = assignment.getPeriodCount();
 
-  auto detailsGroup = cw.getGroupOrFail(DETAILS);
+    auto startPeriod = assignment.getStartPeriod();
 
-  ContentWrapper::insertOrReplace(*detailsGroup, Content{ PERIOD_COUNT, periodsToCurrent });
+    auto periodsToCurrent = int64_t(0);
+
+    //If the start period is in the future then we just set the period count to 0
+    //since it means that we are withdrawing before the start period
+    if (now > startPeriod.getStartTime()) {
+      //Calculate the number of periods since start period to the current period
+      auto currentPeriod = startPeriod.getPeriodUntil(now);
+
+      periodsToCurrent = startPeriod.getPeriodCountTo(currentPeriod);
+
+      periodsToCurrent = std::max(periodsToCurrent, int64_t(0)) + 1;
+
+      EOS_CHECK(
+        originalPeriods >= periodsToCurrent,
+        to_str("Withdrawal of expired assignment: ", document_id, " is not allowed")
+      );
+
+      if (cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == common::ASSIGNMENT) 
+      {
+        modifyCommitment(assignment, 0, std::nullopt, common::MOD_WITHDRAW);
+      }
+    }
+
+    ContentWrapper::insertOrReplace(*detailsGroup, Content{ PERIOD_COUNT, periodsToCurrent });
+  }
 
   ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::STATE, common::STATE_WITHDRAWED });
 
@@ -968,6 +1036,10 @@ eosio::asset dao::applyCoefficient(ContentWrapper& badge, const eosio::asset& ba
 AssetBatch dao::applyBadgeCoefficients(Period& period, const eosio::name& member, uint64_t dao, AssetBatch& ab)
 {
   TRACE_FUNCTION();
+
+  //Disable multipliers for now
+  return ab;
+
   // get list of badges
   auto badges = getCurrentBadges(period, member, dao);
   AssetBatch applied_assets = ab;
@@ -1587,7 +1659,7 @@ void dao::archiverecur(uint64_t document_id)
     require_auth(get_self());
   }
 
-  auto expirationDate = recurAct.getLastPeriod().getEndTime();
+  auto expirationDate = recurAct.getEndDate();
 
   auto cw = recurAct.getContentWrapper();
 
@@ -2088,13 +2160,11 @@ void dao::activatebdg(uint64_t assign_badge_id)
 
   auto now = eosio::current_time_point();
 
-  auto startTime = badgeAssing.getStartPeriod()
-                              .getStartTime();
+  auto startTime = badgeAssing.getStartDate();
 
   //We are still within the approved time periods
   if (startTime <= now) {
-    if (badgeAssing.getLastPeriod()
-                   .getEndTime() >= now) {
+    if (badgeAssing.getEndDate() >= now) {
       badges::onBadgeActivated(*this, badgeAssing);
     }
   }
@@ -2124,26 +2194,26 @@ void dao::activatebdg(uint64_t assign_badge_id)
   }
 }
 
-void dao::addtype(uint64_t dao_id, const std::string& dao_type)
-{
-  auto daoDoc = TypedDocument::withType(*this, dao_id, common::DAO);
+// void dao::addtype(uint64_t dao_id, const std::string& dao_type)
+// {
+//   auto daoDoc = TypedDocument::withType(*this, dao_id, common::DAO);
 
-  EOS_CHECK(
-    dao_type == pricing::common::dao_types::ANCHOR ||
-    dao_type == pricing::common::dao_types::ANCHOR_CHILD ||
-    dao_type == pricing::common::dao_types::INDIVIDUAL,
-    "Invalid DAO type"
-  );
+//   EOS_CHECK(
+//     dao_type == pricing::common::dao_types::ANCHOR ||
+//     dao_type == pricing::common::dao_types::ANCHOR_CHILD ||
+//     dao_type == pricing::common::dao_types::INDIVIDUAL,
+//     "Invalid DAO type"
+//   );
 
-  auto daoCW = daoDoc.getContentWrapper();
+//   auto daoCW = daoDoc.getContentWrapper();
 
-  daoCW.insertOrReplace(
-    *daoCW.getGroupOrFail(DETAILS),
-    Content{ common::DAO_TYPE, dao_type }
-  );
+//   daoCW.insertOrReplace(
+//     *daoCW.getGroupOrFail(DETAILS),
+//     Content{ common::DAO_TYPE, dao_type }
+//   );
         
-  daoDoc.update();
-}
+//   daoDoc.update();
+// }
 
 void dao::modifyCommitment(RecurringActivity& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
 {
@@ -2382,6 +2452,54 @@ void dao::createToken(const std::string& contractType, name issuer, const asset&
       asset{ -getTokenUnit(token), token.symbol }
     )
   ).send();
+}
+
+void dao::assigntokdao(asset token, uint64_t dao_id, bool force)
+{
+  eosio::require_auth(get_self());
+
+  token_to_dao_table tok_t(get_self(), get_self().value);
+
+  auto it = tok_t.find(token.symbol.raw());
+
+  auto insert = [&](TokenToDao& entry){
+    entry.id = dao_id;
+    entry.token = token;
+  };
+
+  {
+    auto by_id = tok_t.get_index<"bydocid"_n>();
+    auto idIt = by_id.find(dao_id);
+    EOS_CHECK(
+      force || idIt == by_id.end(),
+      to_str("There is already an entry for the specified dao_id: ", idIt->token)
+    );
+  }
+
+  if (it != tok_t.end()) {
+    EOS_CHECK(
+      force,
+      to_str("There is already an entry for the specified asset: ", it->id)
+    );
+
+    tok_t.modify(it, eosio::same_payer, insert);
+  }
+  else {
+    tok_t.emplace(get_self(), insert);
+  }
+}
+
+void dao::onRewardTransfer(const name& from, const name& to, const asset& amount)
+{
+  //TODO: Check final balances of both from and to and verify if they need to 
+  //get their community membership added or removed or mantained
+  if (from != get_self()) {
+    updateCommunityMembership(*this, from, amount);
+  }
+
+  if (to != get_self()) {
+    updateCommunityMembership(*this, to, amount);
+  }
 }
 
 void dao::on_husd(const name& from, const name& to, const asset& quantity, const string& memo) {

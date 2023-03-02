@@ -16,6 +16,7 @@ namespace hypha
         Member(dao& dao, uint64_t docID);
 
         static bool isMember(dao& dao, uint64_t daoID, const eosio::name &member);
+        static bool isCommunityMember(dao& dao, uint64_t daoID, const eosio::name &member);
         static bool exists(dao& dao, const eosio::name& memberName);
         eosio::name getAccount ();
         void apply (uint64_t applyTo, const std::string content);

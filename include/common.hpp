@@ -144,6 +144,8 @@ namespace hypha::common
     inline constexpr        auto STATE_REJECTED = "rejected";
     inline constexpr        auto STATE_SUSPENDED = "suspended";
     inline constexpr        auto STATE_WITHDRAWED = "withdrawed";
+    inline constexpr        auto PROPOSAL_CATEGORY = "category";
+    inline constexpr        auto CATEGORY_SELF_APPROVED = "self_approved";
 
     inline constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
     inline constexpr name PERIOD = name("period");
@@ -189,6 +191,7 @@ namespace hypha::common
     inline constexpr name FAILED_PROPS = name("failedprops");
     inline constexpr name PASSED_PROPS = name("passedprops");
     inline constexpr name MEMBER = name("member");
+    inline constexpr name COMMEMBER = name("commember");
     inline constexpr name DHO = name ("dho");
     inline constexpr name DAO = name ("dao");
     inline constexpr name DAO_DRAFT = name ("dao.draft");
