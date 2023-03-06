@@ -1,3 +1,3 @@
 #pragma once
-#define PRODUCTION_BUILD
+#define DEVELOP_BUILD
 #define EOS_BUILD

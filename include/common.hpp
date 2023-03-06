@@ -11,7 +11,11 @@ using eosio::symbol;
 //TODO: Refacto into a Lazy load system to avoid allocating many std::strings that are not actually used
 namespace hypha::common
 {
+#ifdef EOS_BUILD
+    inline constexpr auto TESTNET_CONTRACT_NAME = name("daoxhypha111");
+#else
     inline constexpr auto TESTNET_CONTRACT_NAME = name("mtdhoxhyphaa");
+#endif
 
     inline constexpr auto PEG_TOKEN = "peg_token";
     inline constexpr auto VOICE_TOKEN = "voice_token";
@@ -282,8 +286,6 @@ namespace hypha::common
 #define BALLOT_TYPE "ballot_type"
 
 // setting document
-#define SEEDS_TOKEN_CONTRACT "seeds_token_contract"
-#define SEEDS_ESCROW_CONTRACT "seeds_escrow_contract"
 #define PEG_TOKEN_CONTRACT "peg_token_contract"
 #define TREASURY_CONTRACT "treasury_contract"
 #define REWARD_TOKEN_CONTRACT "reward_token_contract"
@@ -292,7 +294,6 @@ namespace hypha::common
 #define GOVERNANCE_TOKEN_CONTRACT "governance_token_contract"
 
 #define UPDATED_DATE "updated_date"
-#define SEEDS_DEFERRAL_FACTOR_X100 "seeds_deferral_factor_x100"
 #define HYPHA_DEFERRAL_FACTOR_X100 "hypha_deferral_factor_x100"
 #define LAST_SENDER_ID "last_sender_id"
 #define VOTING_DURATION_SEC "voting_duration_sec"

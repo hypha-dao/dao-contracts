@@ -331,6 +331,8 @@ void dao::propose(uint64_t dao_id,
 
   verifyDaoType(dao_id);
 
+  eosio::require_auth(proposer);
+
   std::unique_ptr<Proposal> proposal = std::unique_ptr<Proposal>(ProposalFactory::Factory(*this, dao_id, proposal_type));
   proposal->propose(proposer, content_groups, publish);
 }
@@ -1181,7 +1183,7 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
   //Only hypha dao should be able to use this flag
   EOS_CHECK(
     kvs.count("is_hypha") == 0 ||
-    daoName == "hypha"_n,
+    daoName == eosio::name("hypha"),
     "Only hypha dao is allowed to add this setting"
   );
 
@@ -1253,7 +1255,7 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
 //    //Only hypha dao should be able to use this flag
 //    EOS_CHECK(
 //      key != "is_hypha" ||
-//      settings->getOrFail<eosio::name>(DAO_NAME) ==  "hypha"_n,
+//      settings->getOrFail<eosio::name>(DAO_NAME) ==  eosio::name("hypha"),
 //      "Only hypha dao is allowed to add this setting"
 //    );
 //    settings->addSetting(group.value_or(string{"settings"}), Content{key, value});
@@ -1444,7 +1446,7 @@ void dao::createdao(ContentGroups& config)
 
   const name dao = daoName->getAs<name>();
 
-  auto createDao = [&](uint64_t* parentID){
+  auto createDao = [&](uint64_t* parentID) {
     
     Document daoDoc(
       get_self(), 
@@ -1513,7 +1515,8 @@ void dao::createdao(ContentGroups& config)
     Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::END);
     Edge(get_self(), get_self(), daoDoc.getID(), newPeriod.getID(), common::PERIOD);
     Edge(get_self(), get_self(), newPeriod.getID(), daoDoc.getID(), common::DAO);
-
+    
+#ifdef USE_TREASURY
     //Create Treasury
     eosio::action(
       eosio::permission_level{ get_self(), name("active") },
@@ -1523,6 +1526,7 @@ void dao::createdao(ContentGroups& config)
         daoDoc.getID()
       )
     ).send();
+#endif
 
     return daoDoc;
   };
@@ -1530,6 +1534,7 @@ void dao::createdao(ContentGroups& config)
   auto daoParent = configCW.get(DETAILS, common::DAO_PARENT_ID).second;
 
   if (daoParent) {
+#ifdef USE_PRICING_PLAN
     auto daoParentID = static_cast<uint64_t>(daoParent->getAs<int64_t>());
     //Only admins of parent DAO are allowed to create children DAO's
     checkAdminsAuth(daoParentID);
@@ -1560,6 +1565,12 @@ void dao::createdao(ContentGroups& config)
     });
 
     setEcosystemPlan(planManager);
+#else
+    EOS_CHECK(
+      false,
+      "Pricing Plan module is not enabled"
+    );
+#endif
   }
   else {
     auto daoDoc = createDao(nullptr);
@@ -1667,7 +1678,11 @@ void dao::archiverecur(uint64_t document_id)
                   ->getAs<std::string>();
 
   if (state == common::STATE_APPROVED) {
-    if (expirationDate < eosio::current_time_point()) {
+
+    //auto forceArchive = cw.get(SYSTEM, "force_archive").second;
+
+    if (expirationDate <= eosio::current_time_point()/* ||
+        (!userCalled && forceArchive)*/) {
 
       auto details = cw.getGroupOrFail(DETAILS);
 
@@ -2148,6 +2163,8 @@ void dao::adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferred
   assignment.update();
 }
 
+#ifdef USE_PRICING_PLAN
+
 void dao::activatebdg(uint64_t assign_badge_id)
 {
   RecurringActivity badgeAssing(this, assign_badge_id);
@@ -2173,9 +2190,9 @@ void dao::activatebdg(uint64_t assign_badge_id)
     //Schedule a trx to close the proposal
     eosio::transaction trx;
     trx.actions.emplace_back(eosio::action(
-        eosio::permission_level(get_self(), "active"_n),
+        eosio::permission_level(get_self(), eosio::name("active")),
         get_self(),
-        "activatebdg"_n,
+        eosio::name("activatebdg"),
         std::make_tuple(badgeAssing.getID())
     ));
 
@@ -2194,26 +2211,28 @@ void dao::activatebdg(uint64_t assign_badge_id)
   }
 }
 
-// void dao::addtype(uint64_t dao_id, const std::string& dao_type)
-// {
-//   auto daoDoc = TypedDocument::withType(*this, dao_id, common::DAO);
+void dao::addtype(uint64_t dao_id, const std::string& dao_type)
+{
+  auto daoDoc = TypedDocument::withType(*this, dao_id, common::DAO);
 
-//   EOS_CHECK(
-//     dao_type == pricing::common::dao_types::ANCHOR ||
-//     dao_type == pricing::common::dao_types::ANCHOR_CHILD ||
-//     dao_type == pricing::common::dao_types::INDIVIDUAL,
-//     "Invalid DAO type"
-//   );
+  EOS_CHECK(
+    dao_type == pricing::common::dao_types::ANCHOR ||
+    dao_type == pricing::common::dao_types::ANCHOR_CHILD ||
+    dao_type == pricing::common::dao_types::INDIVIDUAL,
+    "Invalid DAO type"
+  );
 
-//   auto daoCW = daoDoc.getContentWrapper();
+  auto daoCW = daoDoc.getContentWrapper();
 
-//   daoCW.insertOrReplace(
-//     *daoCW.getGroupOrFail(DETAILS),
-//     Content{ common::DAO_TYPE, dao_type }
-//   );
+  daoCW.insertOrReplace(
+    *daoCW.getGroupOrFail(DETAILS),
+    Content{ common::DAO_TYPE, dao_type }
+  );
         
-//   daoDoc.update();
-// }
+  daoDoc.update();
+}
+
+#endif
 
 void dao::modifyCommitment(RecurringActivity& assignment, int64_t commitment, std::optional<eosio::time_point> fixedStartDate, std::string_view modifier)
 {
@@ -2406,9 +2425,9 @@ void dao::genPeriods(uint64_t dao_id, int64_t period_count/*, int64_t period_dur
 
   if (period_count > MAX_PERIODS_PER_CALL) {
     eosio::action(
-      eosio::permission_level(get_self(), "active"_n),
+      eosio::permission_level(get_self(), eosio::name("active")),
       get_self(),
-      "genperiods"_n,
+      eosio::name("genperiods"),
       std::make_tuple(dao_id,
         period_count - MAX_PERIODS_PER_CALL)
     ).send();
@@ -2683,12 +2702,20 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
 
   //Just do this check on mainnet
   if (!isTestnet()) {
+
+#ifdef EOS_BUILD
+    EOS_CHECK(
+      onboarder == eosio::name("dao.hypha"),
+      "Only authorized account can create DAO"
+    )
+#else
     auto hyphaId = getDAOID("hypha"_n);
 
     EOS_CHECK(
       hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
       "You are not allowed to call this action"
     );
+#endif
   }
 
   auto votingQuorum = configCW.getOrFail(detailsIdx, VOTING_QUORUM_FACTOR_X100).second;
@@ -2815,6 +2842,18 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
 
   //If this is a draft we don't need to do any of the following
   if (isDraft) return;
+
+  //Assign token
+  eosio::action(
+    eosio::permission_level{ get_self(), name("active") },
+    get_self(),
+    name("assigntokdao"),
+    std::make_tuple(
+      rewardToken->getAs<asset>(),
+      daoID,
+      false
+    )
+  ).send();
 
   createVoiceToken(
     dao,

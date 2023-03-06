@@ -33,10 +33,10 @@ namespace links {
     // inline constexpr auto ADMIN_BADGE = "adminbdg";
     // inline constexpr auto ENROLLER_BADGE = "enrollerbdg";
     // inline constexpr auto NORTH_STAR_BADGE = "northstarbdg";
-    inline constexpr auto VOTER = "voter"_n;
-    inline constexpr auto DELEGATE = "delegate"_n; 
-    inline constexpr auto HEAD_DELEGATE = "headdelegate"_n; 
-    inline constexpr auto CHIEF_DELEGATE = "chiefdelegate"_n; 
+    inline constexpr auto VOTER = eosio::name("voter");
+    inline constexpr auto DELEGATE = eosio::name("delegate"); 
+    inline constexpr auto HEAD_DELEGATE = eosio::name("headdelegate"); 
+    inline constexpr auto CHIEF_DELEGATE = eosio::name("chiefdelegate"); 
 }
 
 }

@@ -95,10 +95,12 @@ void onBadgeActivated(dao& dao, RecurringActivity& badgeAssign)
             //Activate admin badge
             createLink(hypha::common::ADMIN);
         } break;
+#ifdef USE_TREASURY
         case SystemBadgeType::Treasurer: {
             auto treasury = treasury::Treasury::getFromDaoID(dao, badgeAssign.getDaoID());
             treasury.addTreasurer(mem.getID());
         } break;
+#endif
         case SystemBadgeType::NorthStar: {
             createLink(hypha::common::NORTH_STAR_HOLDER);
         } break;
@@ -148,10 +150,12 @@ void onBadgeArchived(dao& dao, RecurringActivity& badgeAssign)
         case SystemBadgeType::Admin: {
             removeLink(hypha::common::ADMIN);
         } break;
+#ifdef USE_TREASURY
         case SystemBadgeType::Treasurer: {
             auto treasury = treasury::Treasury::getFromDaoID(dao, badgeAssign.getDaoID());
             treasury.removeTreasurer(memID);
         } break;
+#endif
         case SystemBadgeType::NorthStar: {
             removeLink(hypha::common::NORTH_STAR_HOLDER);
         } break;

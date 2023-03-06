@@ -21,6 +21,8 @@
  * @connection TrsyPayment -> attestation -> Attestation
  */
 
+#ifdef USE_TREASURY
+
 namespace hypha::treasury {
 
 class Redemption;
@@ -52,3 +54,5 @@ public:
 using TrsyPaymentData = TrsyPayment::Data;
 
 }
+
+#endif

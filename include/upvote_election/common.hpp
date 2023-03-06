@@ -15,10 +15,10 @@ namespace groups {
 }
 
 namespace types {
-    inline constexpr auto UPVOTE_ELECTION = "upvt.electn"_n;
-    inline constexpr auto ELECTION_ROUND = "electn.round"_n;
-    inline constexpr auto ELECTION_VOTE = "election.vote"_n;
-    inline constexpr auto ELECTION_VOTE_GROUP = "vote.group"_n;
+    inline constexpr auto UPVOTE_ELECTION = eosio::name("upvt.electn");
+    inline constexpr auto ELECTION_ROUND = eosio::name("electn.round");
+    inline constexpr auto ELECTION_VOTE = eosio::name("election.vote");
+    inline constexpr auto ELECTION_VOTE_GROUP = eosio::name("vote.group");
 }
 
 namespace upvote_status {
@@ -29,20 +29,22 @@ namespace upvote_status {
 }
 
 namespace links {
-    inline constexpr auto UPCOMING_ELECTION = "upcomingelct"_n;
-    inline constexpr auto ONGOING_ELECTION = "ongoingelct"_n;
-    inline constexpr auto PREVIOUS_ELECTION = "previouselct"_n;
-    inline constexpr auto ELECTION = "election"_n;
-    inline constexpr auto START_ROUND = "startround"_n;
-    inline constexpr auto CURRENT_ROUND = "currentround"_n;
-    inline constexpr auto CHIEF_ROUND = "chiefround"_n;
-    inline constexpr auto HEAD_ROUND = "headround"_n;
-    inline constexpr auto ROUND = "round"_n;
-    inline constexpr auto NEXT_ROUND = "nextround"_n;
-    inline constexpr auto ROUND_CANDIDATE = "candidate"_n;
-    inline constexpr auto ROUND_WINNER = "winner"_n;
-    inline constexpr auto ELECTION_GROUP = "elctngroup"_n;
-    inline constexpr auto VOTE = "vote"_n; 
+    inline constexpr auto UPCOMING_ELECTION = eosio::name("upcomingelct");
+    inline constexpr auto ONGOING_ELECTION = eosio::name("ongoingelct");
+    inline constexpr auto PREVIOUS_ELECTION = eosio::name("previouselct");
+    inline constexpr auto ELECTION = eosio::name("election");
+    inline constexpr auto START_ROUND = eosio::name("startround");
+    inline constexpr auto CURRENT_ROUND = eosio::name("currentround");
+    inline constexpr auto CHIEF_ROUND = eosio::name("chiefround");
+    inline constexpr auto HEAD_ROUND = eosio::name("headround");
+    inline constexpr auto ROUND = eosio::name("round");
+    inline constexpr auto NEXT_ROUND = eosio::name("nextround");
+    inline constexpr auto ROUND_CANDIDATE = eosio::name("candidate");
+    inline constexpr auto ROUND_WINNER = eosio::name("winner");
+    inline constexpr auto ELECTION_GROUP = eosio::name("elctngroup");
+    inline constexpr auto VOTE = eosio::name("vote");
+    inline constexpr auto CHIEF_DELEGATE = eosio::name("chiefdelegate");
+    inline constexpr auto HEAD_DELEGATE = eosio::name("headdelegate");
 }
 
 namespace items {

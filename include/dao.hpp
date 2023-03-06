@@ -289,6 +289,7 @@ namespace pricing {
       ACTION deletedaodft(uint64_t dao_draft_id);
       ACTION archiverecur(uint64_t document_id);
       
+#ifdef USE_TREASURY
       //Treasury actions
       ACTION createtrsy(uint64_t dao_id);
       ACTION addtreasurer(uint64_t treasury_id, name treasurer);
@@ -297,33 +298,38 @@ namespace pricing {
       ACTION newpayment(name treasurer, uint64_t redemption_id, const asset& amount, string notes);
       ACTION setpaynotes(uint64_t payment_id, string notes);
       ACTION setrsysttngs(uint64_t treasury_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
-
+#endif
       //Upvote System
       ACTION createupvelc(uint64_t dao_id, ContentGroups& election_config);
       ACTION editupvelc(uint64_t election_id, ContentGroups& election_config);
       ACTION cancelupvelc(uint64_t election_id);
       ACTION updateupvelc(uint64_t election_id, bool reschedule);
       ACTION castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> voted);
+#ifdef EOS_BUILD
+      ACTION importelct(uint64_t dao_id, bool deferred);
+#endif
 
       //Pricing System actions
       /*
       * @brief Marks a DAO as waiting for Ecosystem activation
       */
-      // ACTION markasecosys(uint64_t dao_id);
-      // ACTION setdaotype(uint64_t dao_id, const string& dao_type);
-      // ACTION activateplan(ContentGroups& plan_info);
-      // ACTION activateecos(ContentGroups& ecosystem_info);
-      // ACTION addprcngplan(ContentGroups& pricing_plan_info, const std::vector<uint64_t>& offer_ids);
-      // ACTION addpriceoffr(ContentGroups& price_offer_info, const std::vector<uint64_t>& pricing_plan_ids);
-      // ACTION setdefprcpln(uint64_t price_plan_id);
-      // ACTION modoffers(const std::vector<uint64_t>& pricing_plan_ids, const std::vector<uint64_t>& offer_ids, bool unlink);
-      // ACTION updateprcpln(uint64_t pricing_plan_id, ContentGroups& pricing_plan_info);
-      // ACTION updateprcoff(uint64_t price_offer_id, ContentGroups& price_offer_info);
-      // //ACTION remprcngplan(uint64_t plan_id, uint64_t replace_id);
-      // ACTION updatecurbil(uint64_t dao_id);
-      // ACTION activatedao(eosio::name dao_name);
+#ifdef USE_PRICING_PLAN
+      ACTION markasecosys(uint64_t dao_id);
+      ACTION setdaotype(uint64_t dao_id, const string& dao_type);
+      ACTION activateplan(ContentGroups& plan_info);
+      ACTION activateecos(ContentGroups& ecosystem_info);
+      ACTION addprcngplan(ContentGroups& pricing_plan_info, const std::vector<uint64_t>& offer_ids);
+      ACTION addpriceoffr(ContentGroups& price_offer_info, const std::vector<uint64_t>& pricing_plan_ids);
+      ACTION setdefprcpln(uint64_t price_plan_id);
+      ACTION modoffers(const std::vector<uint64_t>& pricing_plan_ids, const std::vector<uint64_t>& offer_ids, bool unlink);
+      ACTION updateprcpln(uint64_t pricing_plan_id, ContentGroups& pricing_plan_info);
+      ACTION updateprcoff(uint64_t price_offer_id, ContentGroups& price_offer_info);
+      //ACTION remprcngplan(uint64_t plan_id, uint64_t replace_id);
+      ACTION updatecurbil(uint64_t dao_id);
+      ACTION activatedao(eosio::name dao_name);
       ACTION activatebdg(uint64_t assign_badge_id);
-      // ACTION addtype(uint64_t dao_id, const std::string& dao_type);
+      ACTION addtype(uint64_t dao_id, const std::string& dao_type);
+#endif
 
       void setSetting(const string &key, const Content::FlexValue &value);
 

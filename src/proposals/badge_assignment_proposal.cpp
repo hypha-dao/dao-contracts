@@ -74,20 +74,37 @@ namespace hypha
             
             selfApprove = true;
             //TODO: Should we check for basic types (?)
-            time_point start;
+            time_point start = eosio::current_time_point();
             time_point end;
 
             if (badgeInfo.systemType == badges::SystemBadgeType::Voter) {
                 //Setup 1 year duration
                 const auto year = eosio::days(365);
-                start = eosio::current_time_point();
                 end = start + year;
             }
             else {
-                if (badgeInfo.systemType != badges::SystemBadgeType::Delegate) {
+                if (badgeInfo.systemType == badges::SystemBadgeType::HeadDelegate ||
+                    badgeInfo.systemType == badges::SystemBadgeType::ChiefDelegate) {
                     //We have to specify the election id
                     auto election = badgeAssignment.getOrFail(DETAILS, badges::common::items::UPVOTE_ELECTION_ID)->getAs<int64_t>();
-                    upvote_election::UpvoteElection upvoteElection(m_dao, election);
+
+                    int64_t duration = 0;
+                    
+                    //0 value 45means that the upvote election was imported
+                    if (election) {
+                        upvote_election::UpvoteElection upvoteElection(m_dao, election);
+                        //Set start as when the election is finished
+                        start = upvoteElection.getEndDate();
+                        duration = upvoteElection.getDuration();
+                    }
+                    else {
+                        duration = m_daoSettings->getOrFail<int64_t>(upvote_election::common::items::UPVOTE_DURATION);
+                    }
+
+                    EOS_CHECK(
+                        duration > 0,
+                        "Delegate Badge duration must be a positive amount"
+                    );
 
                     //Proposer must be contract
                     EOS_CHECK(
@@ -95,10 +112,9 @@ namespace hypha
                         "Only contract is allowed to perform this action"
                     );
 
-                    //Set start as when the election is finished
-                    start = upvoteElection.getEndDate();
-                    end = start + eosio::seconds(upvoteElection.getDuration());
+                    end = start + eosio::seconds(duration);
                 }
+                //Delegate type
                 else {
                     //Fail if there is no upcoming election
                     auto upvoteElection = upvote_election::UpvoteElection::getUpcomingElection(m_dao, m_daoID);
@@ -107,10 +123,11 @@ namespace hypha
                         upvoteElection.getStatus() == upvote_election::common::upvote_status::UPCOMING,
                         "You can only apply to Delegate badges when there is an upcomming election"
                     )
-                    //For Delegate use the start and end of the election
-                    //start = upvoteElection.getStartDate();
+                    
                     //For now we will set start date to current time
-                    start = eosio::current_time_point();
+                    //otherwise delegate edge won't be created until election starts
+                    //but we need it before to showcase in UI how many candidates
+                    //have already applied
                     end = upvoteElection.getEndDate();
                 }
             }
@@ -137,11 +154,13 @@ namespace hypha
                 }
             );
 
+            //Since the follwoing items are just required for other smart/custom badges
+            //we should return, otherwise we would error out as those items are not
+            //provided for upvote badges.
             return;
         }
 
         // START_PERIOD - number of periods the assignment is valid for
-        
         if (auto [idx, startPeriod] = badgeAssignment.get(DETAILS, START_PERIOD); startPeriod) {
             Document period = TypedDocument::withType(
                 m_dao,
@@ -223,9 +242,9 @@ namespace hypha
         Edge::write(m_dao.get_self(), m_dao.get_self(), badge.getID (), proposal.getID (), common::ASSIGNMENT);
 
         eosio::action(
-            eosio::permission_level(m_dao.get_self(), "active"_n),
+            eosio::permission_level(m_dao.get_self(), eosio::name("active")),
             m_dao.get_self(),
-            "activatebdg"_n,
+            eosio::name("activatebdg"),
             std::make_tuple(proposal.getID())
         ).send();
     }

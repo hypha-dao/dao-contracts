@@ -3,9 +3,13 @@
 #include "upvote_election/election_round.hpp"
 #include "upvote_election/vote_group.hpp"
 
+#include <numeric>
+#include <algorithm>
+
 #include "badges/badges.hpp"
 
 #include "upvote_election/common.hpp"
+#include "recurring_activity.hpp"
 
 #include <member.hpp>
 
@@ -161,9 +165,9 @@ static void scheduleElectionUpdate(dao& dao, UpvoteElection& election, time_poin
     //Schedule a trx to close the proposal
     eosio::transaction trx;
     trx.actions.emplace_back(eosio::action(
-        eosio::permission_level(dao.get_self(), "active"_n),
+        eosio::permission_level(dao.get_self(), eosio::name("active")),
         dao.get_self(),
-        "updateupvelc"_n,
+        eosio::name("updateupvelc"),
         std::make_tuple(election.getId(), true)
     ));
 
@@ -184,7 +188,7 @@ static void scheduleElectionUpdate(dao& dao, UpvoteElection& election, time_poin
     dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
 }
 
-static void assignDelegateBadges(dao& dao, uint64_t daoId, const std::vector<uint64_t>& chiefDelegates, std::optional<uint64_t> headDelegate)
+static void assignDelegateBadges(dao& dao, uint64_t daoId, uint64_t electionId, const std::vector<uint64_t>& chiefDelegates, std::optional<uint64_t> headDelegate, eosio::transaction* trx = nullptr)
 {
     //Generate proposals for each one of the delegates
 
@@ -194,13 +198,13 @@ static void assignDelegateBadges(dao& dao, uint64_t daoId, const std::vector<uin
 
         auto memAccount = mem.getAccount();
 
-        eosio::action(
-            eosio::permission_level(dao.get_self(), "active"_n),
+        auto action = eosio::action(
+            eosio::permission_level(dao.get_self(), eosio::name("active")),
             dao.get_self(),
-            "propose"_n,
+            eosio::name("propose"),
             std::make_tuple(
                 daoId, 
-                memAccount, 
+                dao.get_self(), 
                 common::ASSIGN_BADGE,
                 ContentGroups{
                     ContentGroup{
@@ -208,17 +212,25 @@ static void assignDelegateBadges(dao& dao, uint64_t daoId, const std::vector<uin
                         Content{ TITLE, title },
                         Content{ DESCRIPTION, title },
                         Content{ ASSIGNEE, memAccount },
-                        Content{ BADGE_STRING, static_cast<int64_t>(badge) }
+                        Content{ BADGE_STRING, static_cast<int64_t>(badge) },
+                        Content{ badges::common::items::UPVOTE_ELECTION_ID, static_cast<int64_t>(electionId) }
                 }},
                 true
             )
-        ).send();
+        );
+
+        if (trx) {
+            trx->actions.emplace_back(action);
+        }
+        else {
+            action.send();
+        }
     };
 
-    auto chiefBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), "chiefdelegate"_n);
+    auto chiefBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), upvote_common::links::CHIEF_DELEGATE);
     auto chiefBadge = TypedDocument::withType(dao, chiefBadgeEdge.getToNode(), common::BADGE_NAME);
 
-    auto headBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), "headdelegate"_n);
+    auto headBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), upvote_common::links::HEAD_DELEGATE);
     auto headBadge = TypedDocument::withType(dao, headBadgeEdge.getToNode(), common::BADGE_NAME);
 
     for (auto& chief : chiefDelegates) {
@@ -229,6 +241,122 @@ static void assignDelegateBadges(dao& dao, uint64_t daoId, const std::vector<uin
         createAssignment("Head Delegate", *headDelegate, headBadge.getID());
     }
 }
+
+#ifdef EOS_BUILD
+void dao::importelct(uint64_t dao_id, bool deferred)
+{
+    verifyDaoType(dao_id);
+    checkAdminsAuth(dao_id);
+
+    //Schedule a trx to archive and to crate new badges
+    eosio::transaction trx;
+
+    //Remove existing Head Delegate/Chief Delegate badges if any
+    auto cleanBadgesOf = [&](const name& badgeEdge) {
+        auto badgeId = Edge::get(get_self(), getRootID(), badgeEdge).getToNode();
+
+        auto badgeAssignmentEdges = getGraph().getEdgesFrom(badgeId, common::ASSIGNMENT);
+
+        //Filter out those that are not from the specified DAO
+        auto badgeAssignments = std::vector<uint64_t>{};
+        badgeAssignments.reserve(badgeAssignmentEdges.size());
+
+        std::transform(
+            badgeAssignmentEdges.begin(),
+            badgeAssignmentEdges.end(),
+            std::back_inserter(badgeAssignments),
+            [](const Edge& edge){
+                return edge.to_node;
+            }
+        );
+
+        badgeAssignments.erase(
+            std::remove_if(
+                badgeAssignments.begin(),
+                badgeAssignments.end(),
+                [&](uint64_t id) { 
+                    return !Edge::exists(get_self(), id, dao_id, common::DAO);
+                }
+            ),
+            badgeAssignments.end()
+        );
+
+        for (auto& id : badgeAssignments) {
+            auto doc = TypedDocument::withType(*this, id, common::ASSIGN_BADGE);
+
+            auto cw = doc.getContentWrapper();
+
+            cw.insertOrReplace(*cw.getGroupOrFail(SYSTEM), Content {
+                "force_archive",
+                1
+            });
+
+            cw.insertOrReplace(*cw.getGroupOrFail(DETAILS), Content {
+                END_TIME,
+                eosio::current_time_point()
+            });
+
+            doc.update();
+
+            trx.actions.emplace_back(eosio::action(
+                eosio::permission_level(get_self(), eosio::name("active")),
+                get_self(),
+                eosio::name("archiverecur"),
+                std::make_tuple(id)
+            ));
+        }
+    };
+
+    cleanBadgesOf(upvote_common::links::HEAD_DELEGATE);
+    cleanBadgesOf(upvote_common::links::CHIEF_DELEGATE);
+
+    struct [[eosio::table("elect.state"), eosio::contract("genesis.eden")]] election_state_v0 {
+        name lead_representative;
+        std::vector<name> board;
+        eosio::block_timestamp_type last_election_time;  
+    };
+
+    using election_state_singleton = eosio::singleton<"elect.state"_n, std::variant<election_state_v0>>;
+
+    election_state_singleton election_s("genesis.eden"_n, 0);
+    auto state = election_s.get();
+
+    std::vector<uint64_t> chiefs;
+    uint64_t head = 0;
+
+    std::visit([](election_state_v0& election){
+        //TODO: Read head and chief delegates
+        //Remove head from chief if exists 
+    }, state);
+
+    //TODO: Enroll as community member if not yet
+
+    //Add action to create new delegates
+    //TODO: Modify badge assignment proposal to receive election id as 0
+    //meaning that election was done outside
+    assignDelegateBadges(*this, dao_id, 0, chiefs, head ? std::optional{head} : std::nullopt, &trx);
+
+    //Trigger all cleanup and propose actions
+    if (deferred) {
+        constexpr auto aditionalDelaySec = 5;
+        trx.delay_sec = aditionalDelaySec;
+
+        auto dhoSettings = getSettingsDocument();
+
+        auto nextID = dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
+
+        trx.send(nextID, get_self());
+
+        dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
+    }
+    else {
+        for (auto& action : trx.actions) {
+            action.send();
+        }
+    }
+    
+}
+#endif
 
 //Check if we need to update an ongoing elections status:
 //upcoming -> ongoing
@@ -336,11 +464,11 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
                         chiefs.end()
                     );
 
-                    assignDelegateBadges(*this, daoId, chiefs, winners.at(0));
+                    assignDelegateBadges(*this, daoId, election.getId(), chiefs, winners.at(0));
                 }
                 //No head delegate
                 else {
-                    assignDelegateBadges(*this, daoId, winners, std::nullopt);
+                    assignDelegateBadges(*this, daoId, election.getId(), winners, std::nullopt);
                 }
                 
 
@@ -396,6 +524,8 @@ void dao::castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> vot
 {
     eosio::require_auth(voter);
 
+    //TODO: Cancel existing Delegate badges
+
     //Verify round_id is the same as the current round
     ElectionRound round(*this, round_id);
 
@@ -418,7 +548,7 @@ void dao::castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> vot
         "Only registered voters are allowed to perform this action"
     );
 
-    auto votedEdge = Edge::getOrNew(get_self(), get_self(), round_id, memberId, "voted"_n);
+    auto votedEdge = Edge::getOrNew(get_self(), get_self(), round_id, memberId, eosio::name("voted"));
 
     if (voted.empty()) {
         votedEdge.erase();
@@ -510,6 +640,9 @@ void dao::createupvelc(uint64_t dao_id, ContentGroups& election_config)
 
 void dao::editupvelc(uint64_t election_id, ContentGroups& election_config)
 {
+    //TODO: Change existing delegate badges
+    //end time according to the new upvoteElection.getEndDate(), 
+    //also reschedule for archive
     UpvoteElection upvoteElection(*this, election_id);
     auto daoId = upvoteElection.getDaoID();
     

@@ -3,6 +3,8 @@
 #include <typed_document.hpp>
 #include <macros.hpp>
 
+#ifdef USE_TREASURY
+
 namespace hypha::treasury {
 
 /**
@@ -64,3 +66,5 @@ public:
 using TreasuryData = Treasury::Data;
 
 }
+
+#endif

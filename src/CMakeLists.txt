@@ -32,7 +32,6 @@ add_contract( dao dao
                 payers/peg_payer.cpp
                 payers/voice_payer.cpp
                 payers/reward_payer.cpp
-                payers/seeds_payer.cpp
                 payers/payer_factory.cpp
                 proposals/proposal.cpp
                 proposals/role_proposal.cpp

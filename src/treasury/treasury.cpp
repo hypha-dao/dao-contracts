@@ -7,6 +7,8 @@
 
 #include "treasury/common.hpp"
 
+#ifdef USE_TREASURY
+
 namespace hypha::treasury {
 
 using namespace common;
@@ -122,3 +124,5 @@ Treasury Treasury::getFromDaoID(dao& dao, uint64_t daoID)
 }
 
 }
+
+#endif

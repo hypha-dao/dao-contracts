@@ -165,7 +165,7 @@ namespace hypha
 
         uint64_t primary_key()const { return supply.symbol.code().raw(); }
     };
-    typedef eosio::multi_index< "stat"_n, currency_stats > stats;
+    typedef eosio::multi_index<name("stat"), currency_stats > stats;
 
 
     // price history table is used to read the seeds price
