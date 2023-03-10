@@ -46,6 +46,11 @@ namespace hypha
         return Edge::exists(dao.get_self(), daoID, dao.getMemberID(member), common::MEMBER);
     }
 
+    bool Member::isCommunityMember(dao& dao, uint64_t daoID, const eosio::name &member)
+    {
+        return Edge::exists(dao.get_self(), daoID, dao.getMemberID(member), common::COMMEMBER);
+    }
+
     bool Member::exists(dao& dao, const eosio::name& memberName)
     {
         dao::member_table m_t(dao.get_self(), dao.get_self().value);
@@ -120,11 +125,11 @@ namespace hypha
 
         Edge::write(getContract(), getAccount(), getID(), paymentReceipt.getID(), common::PAYMENT);
 
-        // eosio::action(
-        //     eosio::permission_level{getContract(), name("active")},
-        //     name("eosio"), name("buyram"),
-        //     std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE))
-        //     .send();
+        eosio::action(
+            eosio::permission_level{ getContract(), name("active") },
+            name("eosio"), name("buyrambytes"),
+            std::make_tuple(getContract(), getAccount(), common::RAM_ALLOWANCE_BYTES)
+        ).send();
     }
 
     eosio::name Member::getAccount()

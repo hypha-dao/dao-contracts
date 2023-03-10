@@ -78,7 +78,7 @@ void PlanManager::removeCredit(const asset& amount)
 
     EOS_CHECK(
         newCredit.amount >= 0,
-        _s("Insufficient funds in Plan Manager")
+        to_str(_s("Insufficient funds in Plan Manager, has: "), getCredit(), " but needs: ", amount)
     )
 
     EOS_CHECK(
@@ -124,10 +124,14 @@ PricingPlan PlanManager::getEcosystemPlan(dao& dao)
 
 void PlanManager::setStartBill(const BillingInfo& bill)
 {
-    EOS_CHECK(
-        getDao().getGraph().getEdgesFrom(getId(), links::START_BILL).empty(),
-        "Start billing info cannot be set twice"
-    )
+    if (auto [exists, edge] = Edge::getIfExists(getDao().get_self(), getId(), links::START_BILL);
+        exists) {
+        edge.erase();
+    }
+    // EOS_CHECK(
+    //     getDao().getGraph().getEdgesFrom(getId(), links::START_BILL).empty(),
+    //     "Start billing info cannot be set twice"
+    // )
 
     Edge(
         getDao().get_self(),

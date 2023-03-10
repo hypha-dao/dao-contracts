@@ -29,7 +29,7 @@ namespace hypha { namespace voice {
     };
 
     using stats_by_key = eosio::indexed_by<
-        "bykey"_n,
+        eosio::name("bykey"),
         eosio::const_mem_fun<currency_statsv2, uint128_t, &currency_statsv2::by_tenant_and_code>
     >;
     using stats = eosio::multi_index<name("stat.v2"), currency_statsv2, stats_by_key>;

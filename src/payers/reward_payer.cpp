@@ -20,7 +20,7 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
-        if (m_daoSettings->getOrFail<name>(DAO_NAME) == "hypha"_n) {
+        if (m_daoSettings->getOrFail<name>(DAO_NAME) == eosio::name("hypha")) {
             issueToken(m_dao.getSettingOrFail<eosio::name>(REWARD_TOKEN_CONTRACT),
                        m_dao.get_self(),
                        m_dao.getSettingOrFail<eosio::name>(HYPHA_COSALE_CONTRACT),

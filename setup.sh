@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echoerr() { 
-    echo "\033[0;31m Error - Invalid arguments: \033[0m Expected one of the following (dev|prod|develop|production) i.e 'setup.sh dev'" 
+    echo "\033[0;31m Error - Invalid arguments: \033[0m Expected one of the following (dev|eosdev|prod|eosprod|develop|production) i.e 'setup.sh dev'" 
 }
 
 if [[ $# -eq 1 ]];
@@ -12,6 +12,12 @@ then
     elif [[ "$1" == "prod" || "$1" == "production" ]];
     then
         ENV="production"
+    elif [[ "$1" == "eosdev" || "$1" == "eosdevelop" ]];
+    then
+        ENV="eos_development"
+    elif [[ "$1" == "eosprod" || "$1" == "eosproduction" ]];
+    then
+        ENV="eos_production"
     else
         echoerr
         exit

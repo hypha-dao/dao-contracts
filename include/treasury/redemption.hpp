@@ -15,6 +15,8 @@
  * @connection Treasury -> redemption -> Redemption
  */
 
+#ifdef USE_TREASURY
+
 namespace hypha::treasury {
 
 class TrsyPayment;
@@ -47,3 +49,5 @@ public:
 using RedemptionData = Redemption::Data;
 
 }
+
+#endif

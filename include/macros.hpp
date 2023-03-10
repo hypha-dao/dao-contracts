@@ -88,8 +88,16 @@ FOR_EACH(DECLARE_DATA_MEMBER, __VA_ARGS__)\
 
 #define USE_GETSET USE
 #define NO_USE_GETSET NO_USE
+#define USE_GET USE_ONLY_GET
 
 #define NO_USE_GET_SET_DEC(name, type, getSet)
+
+#define USE_ONLY_GET_GET_SET_DEC(name, type, getSet)\
+const type& get##getSet() {\
+    return getContentWrapper()\
+          .getOrFail(DETAILS, #name)\
+          ->getAs<type>();\
+}
 
 #define USE_GET_SET_DEC(name, type, getSet)\
 const type& get##getSet() {\

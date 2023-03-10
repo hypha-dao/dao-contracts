@@ -26,7 +26,7 @@ namespace hypha { namespace voice {
     };
 
     using accounts_by_key = eosio::indexed_by<
-        "bykey"_n,
+        eosio::name("bykey"),
         eosio::const_mem_fun<accountv2, uint128_t, &accountv2::by_tenant_and_code>
     >;
     using accounts = eosio::multi_index<"accounts.v2"_n, accountv2, accounts_by_key>;

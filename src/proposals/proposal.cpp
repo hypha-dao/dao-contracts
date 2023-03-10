@@ -15,6 +15,7 @@
 #include <logger/logger.hpp>
 #include <recurring_activity.hpp>
 #include <comments/section.hpp>
+#include <badges/badges.hpp>
 
 using namespace eosio;
 
@@ -36,7 +37,12 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
-        EOS_CHECK(Member::isMember(m_dao, m_daoID, proposer), "only members can make proposals: " + proposer.to_string());
+        EOS_CHECK(
+            checkMembership(proposer, contentGroups) ||
+            proposer == m_dao.get_self() ||
+            Member::isMember(m_dao, m_daoID, proposer),
+            "only members can make proposals: " + proposer.to_string()
+        );
         return this->internalPropose(proposer, contentGroups, publish, nullptr);
     }
 
@@ -64,6 +70,11 @@ namespace hypha
             to_str("Proposal description length has to be less or equal to ", common::MAX_PROPOSAL_DESC_CHARS, " characters")
         )
 
+        EOS_CHECK(
+            proposalContent.getGroup(SYSTEM).second == nullptr,
+            "System group must not be specified"
+        )
+
         contentGroups.push_back(makeSystemGroup(proposer,
                                                 getProposalType(),
                                                 title,
@@ -86,7 +97,6 @@ namespace hypha
             commentSection->move(proposalNode);
         }
 
-
         // creates the document, or the graph NODE
         auto memberID = m_dao.getMemberID(proposer);
 
@@ -98,17 +108,21 @@ namespace hypha
         // the proposal was PROPOSED_BY proposer; this creates the graph EDGE
         Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), memberID, common::OWNED_BY);
 
+        Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), root, common::DAO);
+
+        Edge::write(m_dao.get_self(), proposer, root, proposalNode.getID(), common::VOTABLE);
+
+        postProposeImpl(proposalNode);
+
         if (publish) {
             _publish(proposer, proposalNode, root);
         } else {
             Edge::write(m_dao.get_self(), proposer, root, proposalNode.getID(), STAGING_PROPOSAL);
         }
 
-        Edge::write(m_dao.get_self(), proposer, proposalNode.getID (), root, common::DAO);
-
-        Edge::write(m_dao.get_self(), proposer, root, proposalNode.getID(), common::VOTABLE);
-
-        postProposeImpl(proposalNode);
+        if (selfApprove) {
+            internalClose(proposalNode, true);
+        }
 
         return proposalNode;
     }
@@ -134,36 +148,13 @@ namespace hypha
         VoteTally(m_dao, proposal, m_daoSettings);
     }
 
-    void Proposal::close(Document &proposal)
+    void Proposal::internalClose(Document &proposal, bool pass)
     {
-        TRACE_FUNCTION()
-
-        EOS_CHECK(
-            Edge::exists(m_dao.get_self(), m_daoID, proposal.getID(), common::PROPOSAL), 
-            "Only published proposals can be closed"
-        );
-
-        auto voteTallyEdge = Edge::get(m_dao.get_self(), proposal.getID (), common::VOTE_TALLY);
-
-        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
-        EOS_CHECK(
-            eosio::time_point_sec(eosio::current_time_point()) > expiration,
-            "Voting is still active for this proposal"
-        );
-
-        Edge edge = Edge::get(m_dao.get_self(), m_daoID, proposal.getID (), common::PROPOSAL);
-        edge.erase();
-
-        bool proposalDidPass;
-
-        auto ballotID = voteTallyEdge.getToNode();
-        proposalDidPass = didPass(ballotID);
-
         auto details = proposal.getContentWrapper().getGroupOrFail(DETAILS);
 
         ContentWrapper::insertOrReplace(*details, Content{
           common::STATE,
-          proposalDidPass ? common::STATE_APPROVED : common::STATE_REJECTED
+          pass ? common::STATE_APPROVED : common::STATE_REJECTED
         });
 
         ContentWrapper::insertOrReplace(*details, Content {
@@ -181,9 +172,11 @@ namespace hypha
             m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100)
         });
 
-        if (proposalDidPass)
-        {
+        Edge edge = Edge::get(m_dao.get_self(), m_daoID, proposal.getID (), common::PROPOSAL);
+        edge.erase();
 
+        if (pass)
+        {
             auto system = proposal.getContentWrapper().getGroupOrFail(SYSTEM);
             
             ContentWrapper::insertOrReplace(*system, Content{
@@ -211,6 +204,37 @@ namespace hypha
             // create edge for FAILED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID (), common::FAILED_PROPS);
         }
+    }
+
+    void Proposal::close(Document &proposal)
+    {
+        TRACE_FUNCTION()
+
+        EOS_CHECK(
+            Edge::exists(m_dao.get_self(), m_daoID, proposal.getID(), common::PROPOSAL), 
+            "Only published proposals can be closed"
+        );
+
+        auto voteTallyEdge = Edge::get(m_dao.get_self(), proposal.getID (), common::VOTE_TALLY);
+
+        auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
+        EOS_CHECK(
+            eosio::time_point_sec(eosio::current_time_point()) > expiration,
+            "Voting is still active for this proposal"
+        );
+
+        bool proposalDidPass;
+
+        auto vetoByEdges = m_dao.getGraph()
+                                .getEdgesFrom(proposal.getID(), common::VETO_BY);
+        
+        auto ballotID = voteTallyEdge.getToNode();
+        
+        //Currently if 2 North Start badge holders veto the proposal
+        //it should not pass
+        proposalDidPass = (vetoByEdges.size() < 2) && didPass(ballotID);
+
+        internalClose(proposal, proposalDidPass);
     }
 
     void Proposal::publish(const eosio::name &proposer, Document &proposal)
@@ -321,14 +345,31 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
-        float quorumFactor = m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100) / 100.0f;
-        float alignmentFactor = m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100) / 100.0f;
+        int64_t quorumFactor = m_daoSettings->getOrFail<int64_t>(VOTING_QUORUM_FACTOR_X100);
+        int64_t alignmentFactor = m_daoSettings->getOrFail<int64_t>(VOTING_ALIGNMENT_FACTOR_X100);
+
+        //quorumFactor = std::max(0.00f, std::min(1.00f, quorumFactor));
+        //alignmentFactor = std::max(0.00f, std::min(1.00f, alignmentFactor));
+
+        const int64_t maxFactor = 100;
+
+        EOS_CHECK(
+            quorumFactor >= 0 && quorumFactor <= maxFactor,
+            to_str("Quorum Factor out of valid range", quorumFactor)
+        );
+
+        EOS_CHECK(
+            alignmentFactor >= 0 && alignmentFactor <= maxFactor,
+            to_str("Alginment Factor out of valid range", alignmentFactor)
+        );
 
         auto voiceSupply = getVoiceSupply();
-
-        asset quorum_threshold = adjustAsset(voiceSupply, quorumFactor);
+        
+        asset quorum_threshold = voiceSupply * quorumFactor;
 
         VoteTally tally(m_dao, tallyID);
+
+        //TODO: Check for North Badge veto
 
         // Currently get pass/fail
         // Todo: Abstract this part into VoteTally class
@@ -337,17 +378,12 @@ namespace hypha
         asset votes_fail = tally.getDocument().getContentWrapper().getOrFail(common::BALLOT_DEFAULT_OPTION_FAIL.to_string(), VOTE_POWER)->getAs<eosio::asset>();
 
         asset total = votes_pass + votes_abstain + votes_fail;
+
         // pass / ( pass + fail ) > alignmentFactor
-        bool passesAlignment = votes_pass > adjustAsset(votes_pass + votes_fail, alignmentFactor);
-        if (total >= quorum_threshold &&      // must meet quorum
-            passesAlignment)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        bool passesAlignment = (votes_pass * maxFactor) >= ((votes_pass + votes_fail) * alignmentFactor);
+        bool passQuorum = (total * maxFactor) >= quorum_threshold;
+
+        return passQuorum && passesAlignment;
     }
     string Proposal::getTitle(ContentWrapper cw) const
     {
@@ -440,14 +476,16 @@ namespace hypha
             Content { common::STATE, common::STATE_PROPOSED }
         );
 
+        publishImpl(proposal);
+
         proposal.update();
 
         //Schedule a trx to close the proposal
         eosio::transaction trx;
         trx.actions.emplace_back(eosio::action(
-            permission_level(m_dao.get_self(), "active"_n),
+            permission_level(m_dao.get_self(), eosio::name("active")),
             m_dao.get_self(),
-            "closedocprop"_n,
+            eosio::name("closedocprop"),
             std::make_tuple(proposal.getID())
         ));
 

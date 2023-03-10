@@ -31,6 +31,11 @@ namespace hypha
 
         inline uint64_t getDaoID() { return m_daoID; }
         void scheduleArchive();
+
+        static bool isRecurringActivity(Document& doc);
+
+        eosio::time_point getStartDate();
+        eosio::time_point getEndDate();
     protected: 
         uint64_t m_daoID;
         Settings* m_daoSettings;

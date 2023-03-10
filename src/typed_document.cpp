@@ -66,7 +66,8 @@ namespace hypha
                                "; actual: ", docType->getAs<eosio::name>(), " for document: ", getId())
         )
 
-        getNodeLabel();
+        //For now we don't require a node label
+        //getNodeLabel();
     }
 
     ContentGroups& TypedDocument::processContent(ContentGroups& content)

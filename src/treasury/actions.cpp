@@ -14,6 +14,8 @@
 
 namespace hypha {
 
+#ifdef USE_TREASURY
+
 using treasury::Treasury;
 using treasury::TreasuryData;
 using treasury::Redemption;
@@ -23,6 +25,7 @@ using treasury::TrsyPayment;
 using treasury::TrsyPaymentData;
 
 namespace trsycommon = treasury::common;
+
 
 ACTION dao::addtreasurer(uint64_t treasury_id, name treasurer)
 {
@@ -186,8 +189,16 @@ ACTION dao::setrsysttngs(uint64_t treasury_id, const std::map<std::string, Conte
   settings->setSettings(group.value_or(SETTINGS), kvs);
 }
 
+#endif
+
 void dao::onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo)
 {
+#ifndef USE_TREASURY
+  EOS_CHECK(
+    false,
+    "Treasury Module is not enabled"
+  );
+#else
   EOS_CHECK(quantity.amount > 0, "quantity must be > 0");
   EOS_CHECK(quantity.is_valid(), "quantity invalid");
 
@@ -251,6 +262,7 @@ void dao::onCashTokenTransfer(const name& from, const name& to, const asset& qua
   memberBal.add(quantity);
 
   memberBal.update();
+#endif
 }
 
 }

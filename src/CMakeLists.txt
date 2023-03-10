@@ -32,7 +32,6 @@ add_contract( dao dao
                 payers/peg_payer.cpp
                 payers/voice_payer.cpp
                 payers/reward_payer.cpp
-                payers/seeds_payer.cpp
                 payers/payer_factory.cpp
                 proposals/proposal.cpp
                 proposals/role_proposal.cpp
@@ -49,10 +48,15 @@ add_contract( dao dao
                 proposals/proposal_factory.cpp
                 ballots/vote.cpp
                 ballots/vote_tally.cpp
+                badges/badges.cpp
                 comments/likeable.cpp
                 comments/comment.cpp
                 comments/section.cpp
                 comments/reaction.cpp
+                upvote_election/actions.cpp
+                upvote_election/election_round.cpp
+                upvote_election/upvote_election.cpp
+                upvote_election/vote_group.cpp
                 ../document-graph/src/document_graph/document_graph.cpp
                 ../document-graph/src/document_graph/document.cpp
                 ../document-graph/src/document_graph/content_wrapper.cpp

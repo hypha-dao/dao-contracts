@@ -22,6 +22,7 @@ using namespace pricing::common;
 
 void dao::onCreditDao(uint64_t dao_id, const asset& amount)
 {
+#ifdef USE_PRICING_PLAN
     verifyDaoType(dao_id);
 
     EOS_CHECK(
@@ -40,8 +41,16 @@ void dao::onCreditDao(uint64_t dao_id, const asset& amount)
 
     planManager.addCredit(amount);
 
-    planManager.update();   
+    planManager.update();
+#else
+    EOS_CHECK(
+        false,
+        "Pricing Module not enabled"
+    );
+#endif
 }
+
+#ifdef USE_PRICING_PLAN
 
 static auto getStartAndEndDates(time_t t, int64_t periods)
 {
@@ -127,9 +136,9 @@ static void scheduleBillUpdate(const BillingInfo& bill, uint64_t daoID)
 
     // eosio::transaction trx;
     // trx.actions.emplace_back(eosio::action(
-    //     permission_level(m_dao.get_self(), "active"_n),
+    //     permission_level(m_dao.get_self(), eosio::name("active")),
     //     m_dao.get_self(),
-    //     "closedocprop"_n,
+    //     eosio::name("closedocprop"),
     //     std::make_tuple(proposal.getID())
     // ));
 
@@ -145,13 +154,42 @@ static void scheduleBillUpdate(const BillingInfo& bill, uint64_t daoID)
     // m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
 }
 
+static eosio::asset calculateHyphaAmount(dao& dao, const eosio::asset& usdAmount) {
+    
+    auto normalized = normalizeToken(usdAmount);
+
+    EOS_CHECK(
+        usdAmount.symbol == hypha::common::S_USD,
+        to_str("Symbol missmatch, expected USD, got", usdAmount)
+    );
+
+    //Calculate the HYPHA amount payment
+    auto saleHyphaUsdVal = dao.getSettingOrFail<eosio::asset>(items::SALE_HYPHA_USD_VALUE);
+
+    EOS_CHECK(
+        saleHyphaUsdVal.symbol.precision() == 4,
+        to_str("Expected sale_hypha_usd_value precision to be 4, but got:", saleHyphaUsdVal.symbol.precision())
+    );
+
+    normalized /= normalizeToken(saleHyphaUsdVal);
+
+    return denormalizeToken(normalized, {0, hypha::common::S_HYPHA});
+}
+
 void dao::verifyEcosystemPayment(PlanManager& planManager, const string& priceItem, const string& priceStakedItem, const std::string& stakingMemo, const name& beneficiary)
 {
   auto settings = getSettingsDocument();
 
-  auto price = settings->getOrFail<asset>(groups::ECOSYSTEM, priceItem);
+  //Prices come in USD so we need to convert into HYPHA
+  auto price = calculateHyphaAmount(
+    planManager.getDao(),
+    settings->getOrFail<asset>(priceItem)
+  );
   
-  auto priceStaked = settings->getOrFail<asset>(groups::ECOSYSTEM, priceStakedItem);
+  auto priceStaked = calculateHyphaAmount(
+    planManager.getDao(),
+    settings->getOrFail<asset>(priceStakedItem)
+  );
 
   //Verify the current credit >= price + stakedPrice
   planManager.removeCredit(price + priceStaked);
@@ -171,7 +209,7 @@ void dao::verifyEcosystemPayment(PlanManager& planManager, const string& priceIt
           get_self(), 
           stakingContract, 
           priceStaked, 
-          ""
+          string{""}
       )
   ).send();
 
@@ -232,6 +270,8 @@ ACTION dao::markasecosys(uint64_t dao_id)
     auto planManager = PlanManager::getFromDaoID(*this, dao_id);
 
     //Verify the current pricing plan is the default one
+    //We might want to update in the future to allow
+    //DAOs with an existing pricing plan
     EOS_CHECK(
         planManager.getCurrentBill()
                    .getPricingPlan()
@@ -274,9 +314,7 @@ ACTION dao::setdaotype(uint64_t dao_id, const string& dao_type)
 }
 
 ACTION dao::activateecos(ContentGroups& ecosystem_info)
-{
-    EOS_CHECK(false, "This action is not enabled");
-    
+{   
     auto cw = ContentWrapper(ecosystem_info);
 
     auto daoID = cw.getOrFail(DETAILS, items::DAO_ID)
@@ -482,7 +520,10 @@ ACTION dao::activateplan(ContentGroups& plan_info)
 
     float priceDisc = 1.0f - plan.getDiscountPercentage() / 10000.f;
 
-    auto payAmount = adjustAsset(plan.getPrice(), priceDisc * offerDisc * periods);
+    auto payAmount = calculateHyphaAmount(
+        *this, 
+        adjustAsset(plan.getPrice(), priceDisc * offerDisc * periods)
+    );
 
     planManager.removeCredit(payAmount);
 
@@ -793,9 +834,9 @@ ACTION dao::updatecurbil(uint64_t dao_id)
                 )
 
                 eosio::action(
-                    eosio::permission_level(get_self(), "active"_n),
+                    eosio::permission_level(get_self(), eosio::name("active")),
                     get_self(),
-                    "activateplan"_n,
+                    eosio::name("activateplan"),
                     std::make_tuple(
                         ContentGroups {
                             ContentGroup {
@@ -813,5 +854,7 @@ ACTION dao::updatecurbil(uint64_t dao_id)
         }
     }
 }
+
+#endif
 
 }
