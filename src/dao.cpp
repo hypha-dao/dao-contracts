@@ -2163,8 +2163,6 @@ void dao::adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferred
   assignment.update();
 }
 
-#ifdef USE_PRICING_PLAN
-
 void dao::activatebdg(uint64_t assign_badge_id)
 {
   RecurringActivity badgeAssing(this, assign_badge_id);
@@ -2210,6 +2208,8 @@ void dao::activatebdg(uint64_t assign_badge_id)
     dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
   }
 }
+
+#ifdef USE_PRICING_PLAN
 
 void dao::addtype(uint64_t dao_id, const std::string& dao_type)
 {

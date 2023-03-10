@@ -75,8 +75,27 @@ void onBadgeActivated(dao& dao, RecurringActivity& badgeAssign)
     auto assignee = badgeAssign.getAssignee().getAccount();
 
     auto mem = dao.getOrCreateMember(assignee);
+
+    //Previously we enrolled member automatically, for now it will be disabled
+    //as this could incorrectly enroll a community member
+    //mem.checkMembershipOrEnroll(badgeAssign.getDaoID()); 
+
+    auto hasMembership = [&](SystemBadgeType& type){
+
+        bool isMember = Member::isMember(dao, badgeAssign.getDaoID(), assignee);
+        
+        //Let's check for community as well if the Badge is self approve type
+        if (!isMember && isSelfApproveBadge(type)) {
+            isMember = Member::isCommunityMember(dao, badgeAssign.getDaoID(), assignee);
+        }
+        
+        return isMember;
+    };
     
-    mem.checkMembershipOrEnroll(badgeAssign.getDaoID());
+    EOS_CHECK(
+        hasMembership(systemType),
+        to_str(assignee, " must have a valid membership to activate Badge")
+    );
 
     auto createLink = [&](eosio::name link){ 
         Edge(

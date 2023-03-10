@@ -220,7 +220,7 @@ static void assignDelegateBadges(dao& dao, uint64_t daoId, uint64_t electionId, 
         );
 
         if (trx) {
-            trx->actions.emplace_back(action);
+            trx->actions.emplace_back(std::move(action));
         }
         else {
             action.send();
@@ -322,19 +322,44 @@ void dao::importelct(uint64_t dao_id, bool deferred)
     auto state = election_s.get();
 
     std::vector<uint64_t> chiefs;
-    uint64_t head = 0;
+    std::optional<uint64_t> head = 0;
 
-    std::visit([](election_state_v0& election){
-        //TODO: Read head and chief delegates
-        //Remove head from chief if exists 
+    std::visit([&](election_state_v0& election){
+        
+        //If we want to prevent head del to be twice in the board array
+        //we can use a simple find condition, for now it doesn't
+        //matter if the head del is duplicated as we only assign one head 
+        //variable
+        // if (std::find(
+        //     election.board.begin(), 
+        //     election.board.end(), 
+        //     election.lead_representative
+        // ) == election.board.end()) {
+        //     election.board.push_back(election.lead_representative);
+        // }
+
+        for (auto& mem : election.board) {
+            if (mem) {
+                auto member = getOrCreateMember(mem);
+
+                //Make community member if not core or communnity member already
+                if (!Member::isMember(*this, dao_id, mem) &&
+                    !Member::isCommunityMember(*this, dao_id, mem)) {
+                    Edge(get_self(), get_self(), dao_id, member.getID(), common::COMMEMBER);
+                }
+
+                if (mem == election.lead_representative) {
+                    head = member.getID();
+                }
+                else {
+                    chiefs.push_back(member.getID());
+                }
+            }
+        }
     }, state);
 
-    //TODO: Enroll as community member if not yet
-
-    //Add action to create new delegates
-    //TODO: Modify badge assignment proposal to receive election id as 0
-    //meaning that election was done outside
-    assignDelegateBadges(*this, dao_id, 0, chiefs, head ? std::optional{head} : std::nullopt, &trx);
+    //Send election id as 0 meaning that election was done outside
+    assignDelegateBadges(*this, dao_id, 0, chiefs, head, &trx);
 
     //Trigger all cleanup and propose actions
     if (deferred) {
