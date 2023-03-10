@@ -10,6 +10,8 @@
 #include <treasury/payment.hpp>
 #include <treasury/treasury.hpp>
 
+#ifdef USE_TREASURY
+
 namespace hypha::treasury {
 
 using namespace common;
@@ -68,3 +70,5 @@ Treasury Redemption::getTreasury()
 }
 
 } // namespace treasury
+
+#endif

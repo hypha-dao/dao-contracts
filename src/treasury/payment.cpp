@@ -6,6 +6,8 @@
 #include <treasury/treasury.hpp>
 #include <document_graph/edge.hpp>
 
+#ifdef USE_TREASURY
+
 namespace hypha::treasury {
 
 using namespace common;
@@ -59,3 +61,5 @@ Treasury TrsyPayment::getTreasury()
 }
 
 } // namespace treasury
+
+#endif

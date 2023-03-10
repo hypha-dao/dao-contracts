@@ -5,6 +5,8 @@
 #include <dao.hpp>
 #include <document_graph/edge.hpp>
 
+#ifdef USE_TREASURY
+
 namespace hypha::treasury {
 
 using namespace common;
@@ -80,3 +82,5 @@ void Balance::substract(const asset& quantity)
 }
 
 } // namespace treasury
+
+#endif

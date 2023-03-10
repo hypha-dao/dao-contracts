@@ -75,8 +75,27 @@ void onBadgeActivated(dao& dao, RecurringActivity& badgeAssign)
     auto assignee = badgeAssign.getAssignee().getAccount();
 
     auto mem = dao.getOrCreateMember(assignee);
+
+    //Previously we enrolled member automatically, for now it will be disabled
+    //as this could incorrectly enroll a community member
+    //mem.checkMembershipOrEnroll(badgeAssign.getDaoID()); 
+
+    auto hasMembership = [&](SystemBadgeType& type){
+
+        bool isMember = Member::isMember(dao, badgeAssign.getDaoID(), assignee);
+        
+        //Let's check for community as well if the Badge is self approve type
+        if (!isMember && isSelfApproveBadge(type)) {
+            isMember = Member::isCommunityMember(dao, badgeAssign.getDaoID(), assignee);
+        }
+        
+        return isMember;
+    };
     
-    mem.checkMembershipOrEnroll(badgeAssign.getDaoID());
+    EOS_CHECK(
+        hasMembership(systemType),
+        to_str(assignee, " must have a valid membership to activate Badge")
+    );
 
     auto createLink = [&](eosio::name link){ 
         Edge(
@@ -95,10 +114,12 @@ void onBadgeActivated(dao& dao, RecurringActivity& badgeAssign)
             //Activate admin badge
             createLink(hypha::common::ADMIN);
         } break;
+#ifdef USE_TREASURY
         case SystemBadgeType::Treasurer: {
             auto treasury = treasury::Treasury::getFromDaoID(dao, badgeAssign.getDaoID());
             treasury.addTreasurer(mem.getID());
         } break;
+#endif
         case SystemBadgeType::NorthStar: {
             createLink(hypha::common::NORTH_STAR_HOLDER);
         } break;
@@ -148,10 +169,12 @@ void onBadgeArchived(dao& dao, RecurringActivity& badgeAssign)
         case SystemBadgeType::Admin: {
             removeLink(hypha::common::ADMIN);
         } break;
+#ifdef USE_TREASURY
         case SystemBadgeType::Treasurer: {
             auto treasury = treasury::Treasury::getFromDaoID(dao, badgeAssign.getDaoID());
             treasury.removeTreasurer(memID);
         } break;
+#endif
         case SystemBadgeType::NorthStar: {
             removeLink(hypha::common::NORTH_STAR_HOLDER);
         } break;

@@ -1,7 +1,6 @@
 #include <payers/payer_factory.hpp>
 #include <payers/peg_payer.hpp>
 #include <payers/reward_payer.hpp>
-#include <payers/seeds_payer.hpp>
 #include <payers/voice_payer.hpp>
 #include <logger/logger.hpp>
 #include <map>

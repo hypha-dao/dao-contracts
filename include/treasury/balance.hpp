@@ -12,6 +12,8 @@
  * @connection Member -> redeembal -> Balance
  */
 
+#ifdef USE_TREASURY
+
 namespace hypha::treasury {
 
 class Balance : public TypedDocument
@@ -41,3 +43,5 @@ public:
 using BalanceData = Balance::Data;
 
 }
+
+#endif

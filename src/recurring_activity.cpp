@@ -80,9 +80,9 @@ void RecurringActivity::scheduleArchive()
     //Schedule a trx to close the proposal
     eosio::transaction trx;
     trx.actions.emplace_back(eosio::action(
-        eosio::permission_level(m_dao->get_self(), "active"_n),
+        eosio::permission_level(m_dao->get_self(), eosio::name("active")),
         m_dao->get_self(),
-        "archiverecur"_n,
+        eosio::name("archiverecur"),
         std::make_tuple(getID())
     ));
 

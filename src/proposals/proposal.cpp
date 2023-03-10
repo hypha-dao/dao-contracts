@@ -483,9 +483,9 @@ namespace hypha
         //Schedule a trx to close the proposal
         eosio::transaction trx;
         trx.actions.emplace_back(eosio::action(
-            permission_level(m_dao.get_self(), "active"_n),
+            permission_level(m_dao.get_self(), eosio::name("active")),
             m_dao.get_self(),
-            "closedocprop"_n,
+            eosio::name("closedocprop"),
             std::make_tuple(proposal.getID())
         ));
 

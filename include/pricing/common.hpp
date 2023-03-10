@@ -9,10 +9,10 @@ namespace groups {
 }
 
 namespace types {
-    inline constexpr auto PRICING_PLAN = "pricing.plan"_n;
-    inline constexpr auto PRICE_OFFER = "price.offer"_n;
-    inline constexpr auto PLAN_MANAGER = "plan.manager"_n;
-    inline constexpr auto BILLING_INFO = "billing.info"_n;
+    inline constexpr auto PRICING_PLAN = eosio::name("pricing.plan");
+    inline constexpr auto PRICE_OFFER = eosio::name("price.offer");
+    inline constexpr auto PLAN_MANAGER = eosio::name("plan.manager");
+    inline constexpr auto BILLING_INFO = eosio::name("billing.info");
     inline constexpr auto PREPAID = "prepaid";
     inline constexpr auto UNLIMITED = "unlimited";
 } //namespace types
@@ -24,17 +24,17 @@ namespace dao_types {
 }
 
 namespace links {
-    inline constexpr auto PRICING_PLAN = "pricingplan"_n;
-    inline constexpr auto DEFAULT_PRICING_PLAN = "defpriceplan"_n;
-    inline constexpr auto ECOSYSTEM_PRICING_PLAN = "ecopriceplan"_n;
-    inline constexpr auto BILL = "bill"_n;
-    inline constexpr auto START_BILL = "startbill"_n;
-    inline constexpr auto LAST_BILL = "lastbill"_n;
-    inline constexpr auto CURRENT_BILL = "currentbill"_n;
-    inline constexpr auto PREV_START_BILL = "prevstartbil"_n;
-    inline constexpr auto NEXT_BILL = "nextbill"_n;
-    inline constexpr auto PLAN_MANAGER = "planmanager"_n;
-    inline constexpr auto PRICE_OFFER = "priceoffer"_n;
+    inline constexpr auto PRICING_PLAN = eosio::name("pricingplan");
+    inline constexpr auto DEFAULT_PRICING_PLAN = eosio::name("defpriceplan");
+    inline constexpr auto ECOSYSTEM_PRICING_PLAN = eosio::name("ecopriceplan");
+    inline constexpr auto BILL = eosio::name("bill");
+    inline constexpr auto START_BILL = eosio::name("startbill");
+    inline constexpr auto LAST_BILL = eosio::name("lastbill");
+    inline constexpr auto CURRENT_BILL = eosio::name("currentbill");
+    inline constexpr auto PREV_START_BILL = eosio::name("prevstartbil");
+    inline constexpr auto NEXT_BILL = eosio::name("nextbill");
+    inline constexpr auto PLAN_MANAGER = eosio::name("planmanager");
+    inline constexpr auto PRICE_OFFER = eosio::name("priceoffer");
 } // namespace links
 
 namespace items {

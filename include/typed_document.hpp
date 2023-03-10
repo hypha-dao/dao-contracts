@@ -1,6 +1,7 @@
 #pragma once
 #include <document_graph/document.hpp>
 #include <eosio/name.hpp>
+#include <config/config.hpp>
 
 namespace hypha
 {
