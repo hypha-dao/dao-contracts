@@ -68,7 +68,7 @@ public:
      */
     void remKVSetting(const std::string& group, const Content& setting);
     
-    inline uint64_t getRootID() 
+    uint64_t getRootID() 
     {
         return m_rootID;
     }

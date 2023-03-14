@@ -8,38 +8,36 @@ namespace hypha::treasury::common {
 #ifdef USE_TREASURY
     
 namespace types {
-    inline constexpr auto TREASURY = eosio::name("treasury");
-    inline constexpr auto TREASURY_PAYMENT = eosio::name("trsy.payment");
-    inline constexpr auto REDEMPTION = eosio::name("redemption");
-    inline constexpr auto ATTESTATION = eosio::name("attestation");
-    inline constexpr auto BALANCE = eosio::name("balance");
+    constexpr auto TREASURY = eosio::name("treasury");
+    constexpr auto TREASURY_PAYMENT = eosio::name("trsy.payment");
+    constexpr auto REDEMPTION = eosio::name("redemption");
+//     constexpr auto ATTESTATION = eosio::name("attestation");
+    constexpr auto BALANCE = eosio::name("balance");
 }
 
 namespace links {
-    inline constexpr auto TREASURY_OF = eosio::name("treasuryof");
-    inline constexpr auto TREASURER = eosio::name("treasurer");
-    inline constexpr auto& TREASURY = types::TREASURY;
-    inline constexpr auto TREASURER_OF = eosio::name("treasurerof");
-    inline constexpr auto& PAYMENT = hypha::common::PAYMENT;
-    inline constexpr auto& ATTESTATION = types::ATTESTATION;
-    inline constexpr auto ATTESTED = eosio::name("attested");
-    inline constexpr auto ATTESTED_BY = eosio::name("attestedby");
-    inline constexpr auto PAYS = eosio::name("pays");
-    inline constexpr auto PAID_BY = eosio::name("paidby");
-    inline constexpr auto& REDEMPTION = types::REDEMPTION;
-    inline constexpr auto REDEEM_BALANCE = eosio::name("redeembal");
-    inline constexpr auto BALANCE_OWNER = eosio::name("owner");
+    constexpr auto TREASURY_OF = eosio::name("treasuryof");
+    constexpr auto TREASURER = eosio::name("treasurer");
+    constexpr auto TREASURER_OF = eosio::name("treasurerof");
+//     constexpr auto& PAYMENT = hypha::common::PAYMENT;
+    // constexpr auto& ATTESTATION = types::ATTESTATION;
+    constexpr auto ATTESTED = eosio::name("attested");
+    constexpr auto ATTESTED_BY = eosio::name("attestedby");
+    constexpr auto PAYS = eosio::name("pays");
+    constexpr auto PAID_BY = eosio::name("paidby");
+    constexpr auto REDEEM_BALANCE = eosio::name("redeembal");
+    constexpr auto BALANCE_OWNER = eosio::name("owner");
 }
 
 namespace fields {
-    inline constexpr auto THRESHOLD = "threshold";
-    inline constexpr auto REDEMPTIONS_ENABLED = "redemptions_enabled";
+    constexpr auto THRESHOLD = "threshold";
+    constexpr auto REDEMPTIONS_ENABLED = "redemptions_enabled";
 }
 
 #else //Required fields constants even when treasury is off
 
 namespace links {
-    inline constexpr auto TREASURER = eosio::name("treasurer");
+    constexpr auto TREASURER = eosio::name("treasurer");
 }
 
 #endif

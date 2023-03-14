@@ -30,7 +30,7 @@ namespace hypha
         eosio::asset getVoiceSalary();
         eosio::asset getPegSalary();
 
-        inline uint64_t getDaoID() { return m_daoID; }
+        uint64_t getDaoID() { return m_daoID; }
     private: 
         eosio::asset getAsset (std::string_view key);
     };

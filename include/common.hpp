@@ -12,208 +12,208 @@ using eosio::symbol;
 namespace hypha::common
 {
 #ifdef EOS_BUILD
-    inline constexpr auto TESTNET_CONTRACT_NAME = name("daoxhypha111");
+    constexpr auto TESTNET_CONTRACT_NAME = name("daoxhypha111");
 #else
-    inline constexpr auto TESTNET_CONTRACT_NAME = name("mtdhoxhyphaa");
+    constexpr auto TESTNET_CONTRACT_NAME = name("mtdhoxhyphaa");
 #endif
 
-    inline constexpr auto PEG_TOKEN = "peg_token";
-    inline constexpr auto VOICE_TOKEN = "voice_token";
-    inline constexpr auto REWARD_TOKEN = "reward_token";
-    inline constexpr auto REWARD_TO_PEG_RATIO = "reward_to_peg_ratio";
+    constexpr auto PEG_TOKEN = "peg_token";
+    constexpr auto VOICE_TOKEN = "voice_token";
+    constexpr auto REWARD_TOKEN = "reward_token";
+    constexpr auto REWARD_TO_PEG_RATIO = "reward_to_peg_ratio";
 
-    inline constexpr symbol S_REWARD("BM", 2);
-    inline constexpr symbol S_VOICE("BMV", 2);
-    inline constexpr symbol S_PEG("BUSD", 2);
+    constexpr symbol S_REWARD("BM", 2);
+    constexpr symbol S_VOICE("BMV", 2);
+    constexpr symbol S_PEG("BUSD", 2);
 
-    inline constexpr symbol S_SEEDS("SEEDS", 4);
-    inline constexpr symbol S_USD("USD", 2);
-    inline constexpr symbol S_HUSD("HUSD", 2);
-    inline constexpr symbol S_HYPHA("HYPHA", 2);
+    constexpr symbol S_SEEDS("SEEDS", 4);
+    constexpr symbol S_USD("USD", 2);
+    constexpr symbol S_HUSD("HUSD", 2);
+    constexpr symbol S_HYPHA("HYPHA", 2);
 
     //Dao settings
-    inline constexpr auto DAO_TYPE = "dao_type";
+    constexpr auto DAO_TYPE = "dao_type";
 
-    inline constexpr auto DAO_DESCRIPTION = "dao_description";
-    inline constexpr auto DAO_DRAFT_ID = "dao_draft";
-    inline constexpr auto DAO_PARENT_ID = "dao_parent";
-    inline constexpr auto DAO_TITLE = "dao_title";
-    inline constexpr auto DAO_URL = "dao_url";
+    constexpr auto DAO_DESCRIPTION = "dao_description";
+    constexpr auto DAO_DRAFT_ID = "dao_draft";
+    constexpr auto DAO_PARENT_ID = "dao_parent";
+    constexpr auto DAO_TITLE = "dao_title";
+    constexpr auto DAO_URL = "dao_url";
 
-    inline constexpr auto BENEFICIARY_ACCOUNT = "beneficiary";
+    constexpr auto BENEFICIARY_ACCOUNT = "beneficiary";
 
     //
-    inline constexpr auto ADD_ADMINS_ENABLED = "add_admins_enabled";
-    inline constexpr auto REWARD_TOKEN_NAME = "reward_token_name";
-    inline constexpr auto PEG_TOKEN_NAME = "peg_token_name";
+    constexpr auto ADD_ADMINS_ENABLED = "add_admins_enabled";
+    constexpr auto REWARD_TOKEN_NAME = "reward_token_name";
+    constexpr auto PEG_TOKEN_NAME = "peg_token_name";
 
-    inline constexpr auto DAO_DOCUMENTATION_URL = "documentation_url";
-    inline constexpr auto DAO_DISCORD_URL = "discord_url";
-    inline constexpr auto DAO_LOGO = "logo";
-    inline constexpr auto DAO_EXTENDED_LOGO = "extended_logo";
-    inline constexpr auto DAO_PATTERN = "pattern";
-    inline constexpr auto DAO_PRIMARY_COLOR = "primary_color";
-    inline constexpr auto DAO_SECONDARY_COLOR = "secondary_color";
-    inline constexpr auto DAO_TEXT_COLOR = "text_color";
-    inline constexpr auto DAO_PATTERN_COLOR = "pattern_color";
-    inline constexpr auto DAO_PATTERN_OPACITY = "pattern_opacity";
-    inline constexpr auto DAO_SPLASH_BACKGROUND_IMAGE = "splash_background_image";
+    constexpr auto DAO_DOCUMENTATION_URL = "documentation_url";
+    constexpr auto DAO_DISCORD_URL = "discord_url";
+    constexpr auto DAO_LOGO = "logo";
+    constexpr auto DAO_EXTENDED_LOGO = "extended_logo";
+    constexpr auto DAO_PATTERN = "pattern";
+    constexpr auto DAO_PRIMARY_COLOR = "primary_color";
+    constexpr auto DAO_SECONDARY_COLOR = "secondary_color";
+    constexpr auto DAO_TEXT_COLOR = "text_color";
+    constexpr auto DAO_PATTERN_COLOR = "pattern_color";
+    constexpr auto DAO_PATTERN_OPACITY = "pattern_opacity";
+    constexpr auto DAO_SPLASH_BACKGROUND_IMAGE = "splash_background_image";
     
-    inline constexpr auto DAO_DASHBOARD_BACKGROUND_IMAGE = "dashboard_background_image";
-    inline constexpr auto DAO_DASHBOARD_TITLE = "dashboard_title";
-    inline constexpr auto DAO_DASHBOARD_PARAGRAPH = "dashboard_paragraph";
-    inline constexpr auto DAO_PROPOSALS_BACKGROUND_IMAGE = "proposals_background_image";
-    inline constexpr auto DAO_PROPOSALS_TITLE = "proposals_title";
-    inline constexpr auto DAO_PROPOSALS_PARAGRAPH = "proposals_paragraph";
-    inline constexpr auto DAO_MEMBERS_BACKGROUND_IMAGE = "members_background_image";
-    inline constexpr auto DAO_MEMBERS_TITLE = "members_title";
-    inline constexpr auto DAO_MEMBERS_PARAGRAPH = "members_paragraph";
-    inline constexpr auto DAO_ORGANISATION_BACKGROUND_IMAGE = "organisation_background_image";
-    inline constexpr auto DAO_ORGANISATION_TITLE = "organisation_title";
-    inline constexpr auto DAO_ORGANISATION_PARAGRAPH = "organisation_paragraph";
+    constexpr auto DAO_DASHBOARD_BACKGROUND_IMAGE = "dashboard_background_image";
+    constexpr auto DAO_DASHBOARD_TITLE = "dashboard_title";
+    constexpr auto DAO_DASHBOARD_PARAGRAPH = "dashboard_paragraph";
+    constexpr auto DAO_PROPOSALS_BACKGROUND_IMAGE = "proposals_background_image";
+    constexpr auto DAO_PROPOSALS_TITLE = "proposals_title";
+    constexpr auto DAO_PROPOSALS_PARAGRAPH = "proposals_paragraph";
+    constexpr auto DAO_MEMBERS_BACKGROUND_IMAGE = "members_background_image";
+    constexpr auto DAO_MEMBERS_TITLE = "members_title";
+    constexpr auto DAO_MEMBERS_PARAGRAPH = "members_paragraph";
+    constexpr auto DAO_ORGANISATION_BACKGROUND_IMAGE = "organisation_background_image";
+    constexpr auto DAO_ORGANISATION_TITLE = "organisation_title";
+    constexpr auto DAO_ORGANISATION_PARAGRAPH = "organisation_paragraph";
 
-    inline constexpr auto PERIOD_DURATION = "period_duration_sec";
-    inline constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
-    inline constexpr auto DAO_USES_SEEDS = "uses_seeds";
-    inline constexpr auto VOICE_TOKEN_DECAY_PERIOD = "voice_token_decay_period";
-    inline constexpr auto VOICE_TOKEN_DECAY_PER_PERIOD = "voice_token_decay_per_period_x10M";
-    inline constexpr auto SKIP_PEG_TOKEN_CREATION = "skip_peg_token_create";
-    inline constexpr auto SKIP_REWARD_TOKEN_CREATION = "skip_reward_token_create";
+    constexpr auto PERIOD_DURATION = "period_duration_sec";
+    constexpr auto ONBOARDER_ACCOUNT = "onboarder_account";
+    constexpr auto DAO_USES_SEEDS = "uses_seeds";
+    constexpr auto VOICE_TOKEN_DECAY_PERIOD = "voice_token_decay_period";
+    constexpr auto VOICE_TOKEN_DECAY_PER_PERIOD = "voice_token_decay_per_period_x10M";
+    constexpr auto SKIP_PEG_TOKEN_CREATION = "skip_peg_token_create";
+    constexpr auto SKIP_REWARD_TOKEN_CREATION = "skip_reward_token_create";
     //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
     const uint32_t RAM_ALLOWANCE_BYTES = (uint32_t) 512;
-    inline constexpr auto URLS_GROUP = "urls";
-    inline constexpr auto URL = "url";
-    inline constexpr auto CLAIM_ENABLED = "claim_enabled";
+    constexpr auto URLS_GROUP = "urls";
+    constexpr auto URL = "url";
+    constexpr auto CLAIM_ENABLED = "claim_enabled";
     // 365.25 / 7.4
     //const float PHASES_PER_YEAR = 49.3581081081;
 
     //365.25*24*60*60
-    inline constexpr int64_t YEAR_DURATION_SEC = 31557600;
+    constexpr int64_t YEAR_DURATION_SEC = 31557600;
 
-    inline constexpr size_t MAX_PROPOSAL_TITLE_CHARS = 50;
-    inline constexpr size_t MAX_PROPOSAL_DESC_CHARS = 4000;
+    constexpr size_t MAX_PROPOSAL_TITLE_CHARS = 50;
+    constexpr size_t MAX_PROPOSAL_DESC_CHARS = 4000;
 
     // 49.36 phases per annum, so each phase is 2.026% of the total
     //const float PHASE_TO_YEAR_RATIO = 0.02026009582;
 
     // graph edge names
-    inline constexpr name ESCROW = name("escrow");
-    inline constexpr name SETTINGS_EDGE = name("settings");
-    inline constexpr name HOLDS_BADGE = name("holdsbadge");
-    inline constexpr name HELD_BY = name("heldby");
-    inline constexpr name OWNED_BY = name("ownedby");
-    inline constexpr name OWNS = name("owns");
-    inline constexpr name MEMBER_OF = name("memberof");
-    inline constexpr name APPLICANT = name("applicant");
-    inline constexpr name APPLICANT_OF = name("applicantof");
-    inline constexpr name ENROLLER = name("enroller");
-    inline constexpr name ADMIN = name("admin");
-    inline constexpr name OWNER = name("owner");
-    inline constexpr name NORTH_STAR_HOLDER = name("northstrhold");
-    inline constexpr name VETO = name("veto");
-    inline constexpr name VETO_BY = name("vetoby");
+    constexpr name ESCROW = name("escrow");
+    constexpr name SETTINGS_EDGE = name("settings");
+    constexpr name HOLDS_BADGE = name("holdsbadge");
+    constexpr name HELD_BY = name("heldby");
+    constexpr name OWNED_BY = name("ownedby");
+    constexpr name OWNS = name("owns");
+    constexpr name MEMBER_OF = name("memberof");
+    constexpr name APPLICANT = name("applicant");
+    constexpr name APPLICANT_OF = name("applicantof");
+    constexpr name ENROLLER = name("enroller");
+    constexpr name ADMIN = name("admin");
+    constexpr name OWNER = name("owner");
+    constexpr name NORTH_STAR_HOLDER = name("northstrhold");
+    constexpr name VETO = name("veto");
+    constexpr name VETO_BY = name("vetoby");
 
-    inline constexpr name DHO_ROOT_NAME = name("dhoroot");
-    inline constexpr name ASSIGN_BADGE = name("assignbadge");
-    inline constexpr name VOTE_TALLY = name("votetally");
-    inline constexpr name ASSIGNMENT = name("assignment");
-    inline constexpr name ROLE_NAME = name("role");
-    inline constexpr name PAYOUT = name("payout");
-    inline constexpr name ATTESTATION = name("attestation");
-    inline constexpr name EDIT = name("edit");
-    inline constexpr name ORIGINAL = name("original");
-    inline constexpr name EXTENSION = name("extension");
-    inline constexpr        name SUSPEND = name("suspend");
-    inline constexpr        name SUSPENDED = name("suspended");
+    constexpr name DHO_ROOT_NAME = name("dhoroot");
+    constexpr name ASSIGN_BADGE = name("assignbadge");
+    constexpr name VOTE_TALLY = name("votetally");
+    constexpr name ASSIGNMENT = name("assignment");
+    constexpr name ROLE_NAME = name("role");
+    constexpr name PAYOUT = name("payout");
+    constexpr name ATTESTATION = name("attestation");
+    constexpr name EDIT = name("edit");
+    constexpr name ORIGINAL = name("original");
+    constexpr name EXTENSION = name("extension");
+    constexpr        name SUSPEND = name("suspend");
+    constexpr        name SUSPENDED = name("suspended");
     //Must only be used by Quests
-    inline constexpr        name ENTRUSTED_TO = name("entrustedto");
-    inline constexpr        name ENTRUSTED = name("entrusted");
-    inline constexpr name QUEST_START = name("queststart");
-    inline constexpr name QUEST_COMPLETION = name("questcomplet");
+    constexpr        name ENTRUSTED_TO = name("entrustedto");
+    constexpr        name ENTRUSTED = name("entrusted");
+    constexpr name QUEST_START = name("queststart");
+    constexpr name QUEST_COMPLETION = name("questcomplet");
 
     //Must only be used by Assignments
-    inline constexpr name ASSIGNED = name("assigned");
-    inline constexpr name ASSIGNEE_NAME = name("assignee");
-    inline constexpr        auto APPROVED_DATE = "original_approved_date";
-    inline constexpr        auto BALLOT_TITLE = "ballot_title";
-    inline constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
-    inline constexpr        auto BALLOT_QUORUM = "ballot_quorum";
-    inline constexpr        auto BALLOT_SUPPLY = "ballot_supply";
-    inline constexpr        auto BALLOT_ALIGNMENT = "ballot_alignment";
-    inline constexpr        auto STATE = "state";
-    inline constexpr        auto STATE_PROPOSED = "proposed";
-    inline constexpr        auto STATE_ARCHIVED = "archived";
-    inline constexpr        auto STATE_DRAFTED = "drafted";
-    inline constexpr        auto STATE_APPROVED = "approved";
-    inline constexpr        auto STATE_REJECTED = "rejected";
-    inline constexpr        auto STATE_SUSPENDED = "suspended";
-    inline constexpr        auto STATE_WITHDRAWED = "withdrawed";
-    inline constexpr        auto PROPOSAL_CATEGORY = "category";
-    inline constexpr        auto CATEGORY_SELF_APPROVED = "self_approved";
+    constexpr name ASSIGNED = name("assigned");
+    constexpr name ASSIGNEE_NAME = name("assignee");
+    constexpr        auto APPROVED_DATE = "original_approved_date";
+    constexpr        auto BALLOT_TITLE = "ballot_title";
+    constexpr        auto BALLOT_DESCRIPTION = "ballot_description";
+    constexpr        auto BALLOT_QUORUM = "ballot_quorum";
+    constexpr        auto BALLOT_SUPPLY = "ballot_supply";
+    constexpr        auto BALLOT_ALIGNMENT = "ballot_alignment";
+    constexpr        auto STATE = "state";
+    constexpr        auto STATE_PROPOSED = "proposed";
+    constexpr        auto STATE_ARCHIVED = "archived";
+    constexpr        auto STATE_DRAFTED = "drafted";
+    constexpr        auto STATE_APPROVED = "approved";
+    constexpr        auto STATE_REJECTED = "rejected";
+    constexpr        auto STATE_SUSPENDED = "suspended";
+    constexpr        auto STATE_WITHDRAWED = "withdrawed";
+    constexpr        auto PROPOSAL_CATEGORY = "category";
+    constexpr        auto CATEGORY_SELF_APPROVED = "self_approved";
 
-    inline constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
-    inline constexpr name PERIOD = name("period");
-    inline constexpr name START = name ("start");
-    inline constexpr name CURRENT = name ("current");
-    inline constexpr name END = name ("end");
-    inline constexpr name NEXT = name ("next");
-    inline constexpr name PAYMENT = name("payment");
-    inline constexpr name PAID = name ("paid");
-    inline constexpr name CLAIMED = name ("claimed");
+    constexpr        auto HYPHA_USD_VALUE = "hypha_usd_value";
+    constexpr name PERIOD = name("period");
+    constexpr name START = name ("start");
+    constexpr name CURRENT = name ("current");
+    constexpr name END = name ("end");
+    constexpr name NEXT = name ("next");
+    constexpr name PAYMENT = name("payment");
+    constexpr name PAID = name ("paid");
+    constexpr name CLAIMED = name ("claimed");
 
-    inline constexpr name COMPLETED_BY = name("completedby");
+    constexpr name COMPLETED_BY = name("completedby");
 
-    inline constexpr auto PEG_AMOUNT = "peg_amount";
-    inline constexpr auto VOICE_AMOUNT = "voice_amount";
-    inline constexpr auto REWARD_AMOUNT = "reward_amount";
+    constexpr auto PEG_AMOUNT = "peg_amount";
+    constexpr auto VOICE_AMOUNT = "voice_amount";
+    constexpr auto REWARD_AMOUNT = "reward_amount";
 
-    inline constexpr name VOTE = name ("vote");
-    inline constexpr name VOTE_ON = name ("voteon");
+    constexpr name VOTE = name ("vote");
+    constexpr name VOTE_ON = name ("voteon");
 
-    inline constexpr name COMMENT = name("comment");
-    inline constexpr name COMMENT_OF = name("commentof");
-    inline constexpr name COMMENT_SECTION = name("cmntsect");
-    inline constexpr name COMMENT_SECTION_OF = name("cmntsectof");
+    constexpr name COMMENT = name("comment");
+    constexpr name COMMENT_OF = name("commentof");
+    constexpr name COMMENT_SECTION = name("cmntsect");
+    constexpr name COMMENT_SECTION_OF = name("cmntsectof");
 
-    inline constexpr name REACTED_TO = name("reactedto");
-    inline constexpr name REACTED_BY = name("reactedby");
-    inline constexpr name REACTION = name("reaction");
-    inline constexpr name REACTION_OF = name("reactionof");
-    inline constexpr name REACTION_LINK = name("reactionlnk");
-    inline constexpr name REACTION_LINK_REVERSE = name("reactionlnkr");
+    constexpr name REACTED_TO = name("reactedto");
+    constexpr name REACTED_BY = name("reactedby");
+    constexpr name REACTION = name("reaction");
+    constexpr name REACTION_OF = name("reactionof");
+    constexpr name REACTION_LINK = name("reactionlnk");
+    constexpr name REACTION_LINK_REVERSE = name("reactionlnkr");
 
 
     // document types
-    inline constexpr name ALERT = name ("alert");
-    inline constexpr name SALARY_BAND = name ("salaryband");
-    inline constexpr name NOTIFIES = name ("notifies");
+    constexpr name ALERT = name ("alert");
+    constexpr name SALARY_BAND = name ("salaryband");
+    constexpr name NOTIFIES = name ("notifies");
 
     // graph edges hanging off of primary DHO node
-    inline constexpr name BADGE_NAME = name("badge");
-    inline constexpr name PROPOSAL = name("proposal");
-    inline constexpr name VOTABLE = name("votable");
-    inline constexpr name FAILED_PROPS = name("failedprops");
-    inline constexpr name PASSED_PROPS = name("passedprops");
-    inline constexpr name MEMBER = name("member");
-    inline constexpr name COMMEMBER = name("commember");
-    inline constexpr name DHO = name ("dho");
-    inline constexpr name DAO = name ("dao");
-    inline constexpr name DAO_DRAFT = name ("dao.draft");
-    inline constexpr name CHILD_DAO_DRAFT = name("childdraft");
-    inline constexpr name CHILD_DAO = name("anchorchild");
-    inline constexpr name PARENT_DAO = name("anchorparent");
+    constexpr name BADGE_NAME = name("badge");
+    constexpr name PROPOSAL = name("proposal");
+    constexpr name VOTABLE = name("votable");
+    constexpr name FAILED_PROPS = name("failedprops");
+    constexpr name PASSED_PROPS = name("passedprops");
+    constexpr name MEMBER = name("member");
+    constexpr name COMMEMBER = name("commember");
+    constexpr name DHO = name ("dho");
+    constexpr name DAO = name ("dao");
+    constexpr name DAO_DRAFT = name ("dao.draft");
+    constexpr name CHILD_DAO_DRAFT = name("childdraft");
+    constexpr name CHILD_DAO = name("anchorchild");
+    constexpr name PARENT_DAO = name("anchorparent");
 
-    inline constexpr name BALLOT_TYPE_OPTIONS = name("options");
+    constexpr name BALLOT_TYPE_OPTIONS = name("options");
 
-    inline constexpr name GROUP_TYPE_OPTION = name("option");
+    constexpr name GROUP_TYPE_OPTION = name("option");
 
     //SALARY BANDS
-    inline constexpr auto SALARY_BAND_NAME = "name";
+    constexpr auto SALARY_BAND_NAME = "name";
 
     //ALERTS
-    inline constexpr auto ADD_GROUP = "add";
-    inline constexpr auto EDIT_GROUP = "edit";
-    inline constexpr auto DELETE_GROUP = "del";
+    constexpr auto ADD_GROUP = "add";
+    constexpr auto EDIT_GROUP = "edit";
+    constexpr auto DELETE_GROUP = "del";
 
     namespace AlertInfo {
       enum  {
@@ -224,27 +224,27 @@ namespace hypha::common
       };
     }
 
-    inline constexpr name LAST_TIME_SHARE = name("lastimeshare");
-    inline constexpr name CURRENT_TIME_SHARE = name("curtimeshare");
-    inline constexpr name INIT_TIME_SHARE = name("initimeshare");
-    inline constexpr name NEXT_TIME_SHARE = name("nextimeshare");
-    inline constexpr name TIME_SHARE_LABEL = name("timeshare");
-    inline constexpr auto ADJUST_MODIFIER = "modifier";
-    inline constexpr auto MOD_WITHDRAW = "withdraw";
+    constexpr name LAST_TIME_SHARE = name("lastimeshare");
+    constexpr name CURRENT_TIME_SHARE = name("curtimeshare");
+    constexpr name INIT_TIME_SHARE = name("initimeshare");
+    constexpr name NEXT_TIME_SHARE = name("nextimeshare");
+    constexpr name TIME_SHARE_LABEL = name("timeshare");
+    constexpr auto ADJUST_MODIFIER = "modifier";
+    constexpr auto MOD_WITHDRAW = "withdraw";
 
-    inline constexpr auto APPROVED_DEFERRED = "approved_deferred_perc_x100";
+    constexpr auto APPROVED_DEFERRED = "approved_deferred_perc_x100";
 
-    inline constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
-    inline constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
-    inline constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
+    constexpr name BALLOT_DEFAULT_OPTION_PASS = name("pass");
+    constexpr name BALLOT_DEFAULT_OPTION_ABSTAIN = name("abstain");
+    constexpr name BALLOT_DEFAULT_OPTION_FAIL = name("fail");
 
-    inline constexpr auto PEG_SALARY_PER_PERIOD = "peg_salary_per_period";
-    inline constexpr auto VOICE_SALARY_PER_PERIOD = "voice_salary_per_period";
-    inline constexpr auto REWARD_SALARY_PER_PERIOD = "reward_salary_per_period";
+    constexpr auto PEG_SALARY_PER_PERIOD = "peg_salary_per_period";
+    constexpr auto VOICE_SALARY_PER_PERIOD = "voice_salary_per_period";
+    constexpr auto REWARD_SALARY_PER_PERIOD = "reward_salary_per_period";
 
-    inline constexpr auto REWARD_COEFFICIENT = "reward_coefficient_x10000";
-    inline constexpr auto VOICE_COEFFICIENT = "voice_coefficient_x10000";
-    inline constexpr auto PEG_COEFFICIENT = "peg_coefficient_x10000";
+    constexpr auto REWARD_COEFFICIENT = "reward_coefficient_x10000";
+    constexpr auto VOICE_COEFFICIENT = "voice_coefficient_x10000";
+    constexpr auto PEG_COEFFICIENT = "peg_coefficient_x10000";
 
 // content keys
 // keys used with settings

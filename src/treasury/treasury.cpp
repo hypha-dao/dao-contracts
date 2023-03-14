@@ -23,7 +23,7 @@ Treasury::Treasury(dao& dao, Data data)
     auto daoID = data.dao;
 
     EOS_CHECK(
-        dao.getGraph().getEdgesFrom(daoID, links::TREASURY).empty(),
+        dao.getGraph().getEdgesFrom(daoID, types::TREASURY).empty(),
         "DAO can only have 1 treasury"
     )
 
@@ -45,7 +45,7 @@ Treasury::Treasury(dao& dao, Data data)
         dao.get_self(), 
         daoID,
         getId(),
-        links::TREASURY
+        types::TREASURY
     );
 
     Edge(
@@ -118,7 +118,7 @@ void Treasury::checkTreasurerAuth()
 
 Treasury Treasury::getFromDaoID(dao& dao, uint64_t daoID)
 {
-    auto treasuryEdge = Edge::get(dao.get_self(), daoID, links::TREASURY);
+    auto treasuryEdge = Edge::get(dao.get_self(), daoID, types::TREASURY);
 
     return Treasury(dao, treasuryEdge.getToNode());
 }

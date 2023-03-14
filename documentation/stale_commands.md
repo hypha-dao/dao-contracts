@@ -533,7 +533,7 @@ node dao.js -f proposals/config.json -h $HOST --config
 node loadPhases.js
 
 
-# add inline actions to pay SEEDS to escrow
+# add actions to pay SEEDS to escrow
 - transfer
 - create # what is vesting period of each payment
 

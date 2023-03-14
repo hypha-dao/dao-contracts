@@ -69,34 +69,34 @@ void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
 
 #ifdef DEVELOP_BUILD
 
-void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
-{
-  require_auth(get_self());
+// void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
+// {
+//   require_auth(get_self());
 
-  Document fromDoc(get_self(), from);
-  Document toDoc(get_self(), to);
+//   Document fromDoc(get_self(), from);
+//   Document toDoc(get_self(), to);
 
-  Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
-}
+//   Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
+// }
 
-void dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
-{
-  require_auth(get_self());
+// void dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
+// {
+//   require_auth(get_self());
 
-  Document doc(get_self(), doc_id);
+//   Document doc(get_self(), doc_id);
 
-  auto cw = doc.getContentWrapper();
+//   auto cw = doc.getContentWrapper();
 
-  cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
+//   cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
 
-  doc.update();
-}
+//   doc.update();
+// }
 
-void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
-{
-    eosio::require_auth(get_self());
-    Edge::get(get_self(), from_node, to_node, edge_name).erase();
-}
+// void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
+// {
+//     eosio::require_auth(get_self());
+//     Edge::get(get_self(), from_node, to_node, edge_name).erase();
+// }
 
 void dao::adddocs(std::vector<Document>& docs)
 {

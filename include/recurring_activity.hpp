@@ -29,7 +29,7 @@ namespace hypha
 
         dao *m_dao;
 
-        inline uint64_t getDaoID() { return m_daoID; }
+        uint64_t getDaoID() { return m_daoID; }
         void scheduleArchive();
 
         static bool isRecurringActivity(Document& doc);

@@ -39,7 +39,7 @@ Redemption::Redemption(dao& dao, uint64_t treasuryID, Data data)
         dao.get_self(),
         treasuryID,
         getId(),
-        links::REDEMPTION
+        types::REDEMPTION
     );
 }
 
@@ -65,7 +65,7 @@ std::vector<TrsyPayment> Redemption::getPayments()
 
 Treasury Redemption::getTreasury()
 {
-    auto redemptionEdge = Edge::getTo(getDao().get_self(), getId(), links::REDEMPTION);
+    auto redemptionEdge = Edge::getTo(getDao().get_self(), getId(), types::REDEMPTION);
     return Treasury(getDao(), redemptionEdge.getFromNode());
 }
 

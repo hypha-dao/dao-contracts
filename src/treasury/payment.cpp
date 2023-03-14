@@ -28,7 +28,7 @@ TrsyPayment::TrsyPayment(dao& dao, uint64_t treasuryID, uint64_t redemptionID, D
         dao.get_self(),
         treasuryID,
         getId(),
-        links::PAYMENT
+        hypha::common::PAYMENT
     );
 
     Edge(
@@ -50,13 +50,13 @@ TrsyPayment::TrsyPayment(dao& dao, uint64_t treasuryID, uint64_t redemptionID, D
 
 Redemption TrsyPayment::getRedemption()
 {
-    auto redemptionEdge = Edge::get(getDao().get_self(), getId(), links::PAYS);
+    auto redemptionEdge = Edge::get(getDao().get_self(), getId(),links::PAYS);
     return Redemption(getDao(), redemptionEdge.getToNode());
 }
 
 Treasury TrsyPayment::getTreasury()
 {
-    auto payEdge = Edge::getTo(getDao().get_self(), getId(), links::PAYMENT);
+    auto payEdge = Edge::getTo(getDao().get_self(), getId(), hypha::common::PAYMENT);
     return Treasury(getDao(), payEdge.getFromNode());
 }
 
