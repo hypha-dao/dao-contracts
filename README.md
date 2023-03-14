@@ -76,5 +76,11 @@ The script at scripts/dao.js can interacts with the contracts.
 ### Go library and tests
 Unit and some integrations tests at https://github.com/hypha-dao/dao-contracts/dao-go 
 
+## Building on Mac OS X
 
+Every OS update breaks the build. Use this command to clean directory when there are build errors: 
+
+```
+git clean -xdf
+```
 
