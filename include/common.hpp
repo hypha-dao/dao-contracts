@@ -96,6 +96,16 @@ namespace hypha::common
     // 49.36 phases per annum, so each phase is 2.026% of the total
     //const float PHASE_TO_YEAR_RATIO = 0.02026009582;
 
+    //Payout proposal specific items
+    inline constexpr auto PAYOUT_SUBTYPE = "proposal_subtype";
+
+    inline constexpr name POLICY = name("policy");
+    inline constexpr auto MASTER_POLICY = "master_policy";
+    inline constexpr auto PARENT_QUEST_ITEM = "parent_quest";
+    inline constexpr auto PARENT_QUEST = name("parentquest");
+    inline constexpr auto CHILD_QUEST = name("parentquest");
+    inline constexpr auto QUEST_START_ITEM = "quest_start";
+
     // graph edge names
     inline constexpr name ESCROW = name("escrow");
     inline constexpr name SETTINGS_EDGE = name("settings");
@@ -131,6 +141,9 @@ namespace hypha::common
     inline constexpr name QUEST_START = name("queststart");
     inline constexpr name QUEST_COMPLETION = name("questcomplet");
 
+    //Generic lock edge
+    inline constexpr name LOCKED_BY = name("lockedby");
+
     //Must only be used by Assignments
     inline constexpr name ASSIGNED = name("assigned");
     inline constexpr name ASSIGNEE_NAME = name("assignee");
@@ -162,6 +175,7 @@ namespace hypha::common
     inline constexpr name CLAIMED = name ("claimed");
 
     inline constexpr name COMPLETED_BY = name("completedby");
+    inline constexpr name COMPLETED = name("completed");
 
     inline constexpr auto PEG_AMOUNT = "peg_amount";
     inline constexpr auto VOICE_AMOUNT = "voice_amount";

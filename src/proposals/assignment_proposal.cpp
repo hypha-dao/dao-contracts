@@ -90,6 +90,11 @@ namespace hypha
             //     period.getStartTime().sec_since_epoch() >= eosio::current_time_point().sec_since_epoch(),
             //     "Only future periods are allowed for starting period"
             // )
+
+            EOS_CHECK(
+                Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
+                "Period must belong to the DAO"
+            );
         } else {
             // default START_PERIOD to next period
             ContentWrapper::insertOrReplace(

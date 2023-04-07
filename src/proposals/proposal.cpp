@@ -198,7 +198,8 @@ namespace hypha
         }
         else
         {
-            //TODO: Add failImpl()
+            failImpl(proposal);
+
             proposal.update();
 
             // create edge for FAILED_PROPS

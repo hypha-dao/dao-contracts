@@ -167,6 +167,11 @@ namespace hypha
                 static_cast<uint64_t>(startPeriod->getAs<int64_t>()),
                 common::PERIOD
             );
+
+            EOS_CHECK(
+                Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
+                "Period must belong to the DAO"
+            );
         } 
         else {
             // default START_PERIOD to next period
