@@ -11,6 +11,8 @@
 #include <proposals/ass_extend_proposal.hpp>
 #include <proposals/quest_start_proposal.hpp>
 #include <proposals/quest_completion_proposal.hpp>
+#include <proposals/policy_proposal.hpp>
+#include <proposals/poll_proposal.hpp>
 #include <logger/logger.hpp>
 
 #include <common.hpp>
@@ -52,6 +54,12 @@ namespace hypha
 
         case common::QUEST_COMPLETION.value:
             return new QuestCompletionProposal(dao, daoHash);
+            
+        case common::POLICY.value:
+            return new PolicyProposal(dao, daoHash);
+
+        case common::POLL.value:
+            return new PollProposal(dao, daoHash);
     
         // TODO: should be expanded to work with Badge Assignments as well
         case common::EXTENSION.value:

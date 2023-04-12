@@ -15,61 +15,42 @@
 namespace hypha
 {
 
-/**
- * @brief Payout proposal is used as a generic wrapper for different types of proposals
- * Contribution (Request for a payment)
- * Policy (Policy document)
- * Quest Start (start of a quest)
- * Quest Completion (Completion of Quest)
- * 
- */
-
-std::optional<name> PayoutProposal::getSubType(ContentWrapper &contentWrapper)
+bool PayoutProposal::checkMembership(const eosio::name& proposer, ContentGroups &contentGroups)
 {
-    auto [_, subType] = contentWrapper.get(DETAILS, common::PAYOUT_SUBTYPE);
-
-    return subType ? std::optional{subType->getAs<name>()} : std::nullopt;
+    return Member::isCommunityMember(m_dao, m_daoID, proposer);
 }
 
-bool PayoutProposal::isPayable(ContentWrapper &contentWrapper)
+std::optional<Document> PayoutProposal::getParent(const char* parentItem, const name& parentType, ContentWrapper &contentWrapper, bool mustExist) 
 {
-    if (auto subType = getSubType(contentWrapper))
+    if (auto [_, parent] = contentWrapper.get(DETAILS, parentItem);
+        parent) 
     {
-        //Check if it's a valid subtype
-        return subType == common::QUEST_COMPLETION;
+        auto parentDoc = TypedDocument::withType(m_dao, parent->getAs<int64_t>(), parentType);
+        
+        return parentDoc;
     }
 
-    return true;
-}
-
-// void PayoutProposal::checkPayoutFields(const name &proposer, ContentWrapper &contentWrapper)
-// {
-
-// }
-
-void PayoutProposal::checkPolicyFields(const name &proposer, ContentWrapper &contentWrapper)
-{
-
-}
-
-void PayoutProposal::checkQuestStartFields(const name &proposer, ContentWrapper &contentWrapper)
-{
-    // PERIOD_COUNT - number of periods the quest is valid for
-    auto periodCount = contentWrapper.getOrFail(DETAILS, PERIOD_COUNT);
-
     EOS_CHECK(
-        periodCount->getAs<int64_t>() < 26, 
-        PERIOD_COUNT + string(" must be less than 26. You submitted: ") + std::to_string(std::get<int64_t>(periodCount->value))
-    );
+        !mustExist,
+        to_str("Required item not found: ", parentItem)
+    )
+
+    return std::nullopt;
 }
 
-void PayoutProposal::checkQuestCompletionFields(const name &proposer, ContentWrapper &contentWrapper)
+Document PayoutProposal::getParent(uint64_t from, const name& edgeName, const name& parentType)
 {
+    auto parentEdge = Edge::get(m_dao.get_self(), from, edgeName);
 
+    auto doc = TypedDocument::withType(m_dao, parentEdge.getToNode(), parentType);
+
+    return doc;
 }
 
-void PayoutProposal::checkPaymentFields(const name& proposer, ContentWrapper &contentWrapper, bool onlyCoreMembers)
+void PayoutProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
 {
+    TRACE_FUNCTION()
+
     auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
 
     // recipient must exist and be a DHO member
@@ -80,12 +61,6 @@ void PayoutProposal::checkPaymentFields(const name& proposer, ContentWrapper &co
         "Proposer must be the recipient of the payment"
     );
     
-    EOS_CHECK(
-        Member::isMember(m_dao, m_daoID, recipient) ||
-        !onlyCoreMembers && Member::isCommunityMember(m_dao, m_daoID, recipient), 
-        "only members are eligible for payouts: " + recipient.to_string()
-    );
-
     auto tokens = AssetBatch {
         .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
         .peg = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
@@ -167,138 +142,35 @@ void PayoutProposal::checkPaymentFields(const name& proposer, ContentWrapper &co
         "Missing reward_amount item"
     );
 }
-std::optional<Document> PayoutProposal::getParent(const char* parentItem, const name& parentType, ContentWrapper &contentWrapper, bool mustExist) 
+
+void PayoutProposal::markRelatives(const name& link, const name& fromRelationship, const name& toRelationship, uint64_t docId, bool clear)
 {
-    if (auto [_, parent] = contentWrapper.get(DETAILS, parentItem);
-        parent) 
-    {
-        auto parentDoc = TypedDocument::withType(m_dao, parent->getAs<int64_t>(), parentType);
-        return parentDoc;
-    }
-
-    EOS_CHECK(
-        !mustExist,
-        to_str("Required item not found: ", parentItem)
-    )
-
-    return std::nullopt;
-}
-
-Document PayoutProposal::getParent(uint64_t from, const name& edgeName, const name& parentType)
-{
-    auto parentEdge = Edge::get(m_dao.get_self(), from, edgeName);
-
-    return TypedDocument::withType(m_dao, parentEdge.getToNode(), parentType);
-}
-
-void PayoutProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
-{
-    TRACE_FUNCTION()
-
-    //Check if this is an special payout proposal
-    if (auto subType = getSubType(contentWrapper))
-    {
-        //Check if it's a valid subtype
-        switch (*subType)
-        {
-        case common::QUEST_COMPLETION:
-            checkQuestCompletionFields(proposer, contentWrapper);
-            break;
-        case common::QUEST_START:
-            checkPaymentFields(proposer, contentWrapper, false);
-            checkQuestStartFields(proposer, contentWrapper);
-            break;
-        case common::POLICY:
-            checkPolicyFields(proposer, contentWrapper);
-            break;
-        default:
-            EOS_CHECK(
-                false, 
-                to_str("Invalid subtype ", *subType)
-            );
-            break;
+    auto current = docId;
+    
+    const auto getEdge = [&](int64_t doc) -> std::optional<Edge> {
+        if (auto [exists, edge] = Edge::getIfExists(m_dao.get_self(), doc, link); exists) {
+            return edge;
         }
 
-        return;
-    }
+        return std::nullopt;
+    };
 
-    //Then dealing with regular Payout proposal
-    checkPaymentFields(proposer, contentWrapper, false);
-}
+    while(auto parentEdge = getEdge(current)) {
+        
+        auto parentId = parentEdge->getToNode();
 
-void PayoutProposal::postProposeImpl(Document &proposal)
-{
-    TRACE_FUNCTION();
-
-    auto cw = proposal.getContentWrapper();
-    //Check if this is an special payout proposal
-    if (auto subType = getSubType(cw))
-    {
-        //Check if it's a valid subtype
-        switch (*subType)
-        {
-        case common::QUEST_COMPLETION: {
-
-            //We must have stablished a quest start 
-            auto questStartDoc = *getParent(common::QUEST_START_ITEM, common::QUEST_START, cw, true);
-
-            //Check start quest hasn't been completed yet or there isn't an open completion proposal
-            auto [isCompleted, completeEdge] = Edge::getIfExists(m_dao.get_self(), questStartDoc.getID(), common::COMPLETED_BY);
-            
-            EOS_CHECK(
-                !isCompleted,
-                to_str("Quest was already completed by: ", completeEdge.getToNode())
-            );
-
-            auto [isLocked, lockedEdge] = Edge::getIfExists(m_dao.get_self(), questStartDoc.getID(), common::LOCKED_BY);
-
-            EOS_CHECK(
-                !isLocked,
-                to_str("Quest is already being completed by: ", lockedEdge.getToNode())
-            );
-
-            //Create edge to start quest
-            Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), questStartDoc.getID(), common::QUEST_START);
-            Edge(m_dao.get_self(), m_dao.get_self(), questStartDoc.getID(), proposal.getID(), common::LOCKED_BY);
-
-        }   break;
-        case common::QUEST_START: {
-            //We might have stablished a previous quest start
-
-            if (auto parentQuest = getParent(common::PARENT_QUEST_ITEM, common::QUEST_START, cw)) {
-                //Create parent quest edge
-                Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), parentQuest->getID(), common::PARENT_QUEST);
-            }
-
-            //Check start period
-            auto startPeriod = cw.getOrFail(DETAILS, START_PERIOD);
-            
-            Document period = TypedDocument::withType(
-                m_dao,
-                static_cast<uint64_t>(startPeriod->getAs<int64_t>()),
-                common::PERIOD
-            );
-
-            EOS_CHECK(
-                Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
-                "Period must belong to the DAO"
-            );
-
-            Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), period.getID(), common::START);
-
-        }   break;
-        case common::POLICY: {
-            //We might have stablished a master policy
-        }   break;
-        default:
-            EOS_CHECK(
-                false, 
-                to_str("Invalid subtype ", *subType)
-            );
-            break;
+        //Alway point to the original docId and iterate every relative
+        //If clear then remove the relationship
+        if (clear) {
+            Edge::get(m_dao.get_self(), docId, parentId, fromRelationship).erase();
+            Edge::get(m_dao.get_self(), parentId, docId, toRelationship).erase();
+        }
+        else {
+            Edge(m_dao.get_self(), m_dao.get_self(), docId, parentId, fromRelationship);
+            Edge(m_dao.get_self(), m_dao.get_self(), parentId, docId, toRelationship);
         }
 
-        return;
+        current = parentId;
     }
 }
 
@@ -313,18 +185,7 @@ void PayoutProposal::passImpl(Document &proposal)
 
     auto cw = proposal.getContentWrapper();
 
-    auto subType = getSubType(cw);
-
-    //Regular payout
-    if (!subType) {
-        pay(proposal, common::PAYOUT);
-    }
-    else if (*subType == common::QUEST_COMPLETION) {
-        auto questStart = getParent(proposal.getID(), common::QUEST_START, common::QUEST_START);
-        pay(questStart, common::QUEST_COMPLETION);
-        Edge(m_dao.get_self(), m_dao.get_self(), questStart.getID(), proposal.getID(), common::COMPLETED_BY);
-        Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), questStart.getID(), common::COMPLETED);
-    }
+    pay(proposal, common::PAYOUT);
 }
 
 void PayoutProposal::pay(Document &proposal, eosio::name edgeName)
@@ -364,17 +225,6 @@ void PayoutProposal::pay(Document &proposal, eosio::name edgeName)
             m_dao.makePayment(m_daoSettings, proposal.getID(), recipient, std::get<eosio::asset>(content.value), memo, eosio::name{0}, tokens);
             payoutItems.erase(it);
         }
-    }
-}
-
-void PayoutProposal::failImpl(Document &proposal)
-{
-    auto cw = proposal.getContentWrapper();
-
-    if (auto subType = getSubType(cw); subType && *subType == common::QUEST_COMPLETION)
-    {
-        //Remove locked by edge for quest completion subtype so later on we can create a new completion proposal
-        Edge::getTo(m_dao.get_self(), proposal.getID(), common::LOCKED_BY).erase();
     }
 }
 

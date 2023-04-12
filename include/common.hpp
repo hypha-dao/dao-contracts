@@ -99,12 +99,14 @@ namespace hypha::common
     //Payout proposal specific items
     inline constexpr auto PAYOUT_SUBTYPE = "proposal_subtype";
 
-    inline constexpr name POLICY = name("policy");
-    inline constexpr auto MASTER_POLICY = "master_policy";
-    inline constexpr auto PARENT_QUEST_ITEM = "parent_quest";
-    inline constexpr auto PARENT_QUEST = name("parentquest");
-    inline constexpr auto CHILD_QUEST = name("parentquest");
+    inline constexpr auto MASTER_POLICY_ITEM = "master_policy";
     inline constexpr auto QUEST_START_ITEM = "quest_start";
+    inline constexpr auto PARENT_QUEST_ITEM = "parent_quest";
+    inline constexpr auto MASTER_POLICY = name("masterpolicy");
+    inline constexpr auto PARENT_QUEST = name("parentquest");
+    inline constexpr auto CHILD_QUEST = name("childquest");
+    inline constexpr auto ASCENDANT = name("ascendant");
+    inline constexpr auto DESCENDANT = name("descendant");
 
     // graph edge names
     inline constexpr name ESCROW = name("escrow");
@@ -130,6 +132,8 @@ namespace hypha::common
     inline constexpr name ROLE_NAME = name("role");
     inline constexpr name PAYOUT = name("payout");
     inline constexpr name ATTESTATION = name("attestation");
+    inline constexpr name POLICY = name("policy");
+    inline constexpr name POLL = name("poll");
     inline constexpr name EDIT = name("edit");
     inline constexpr name ORIGINAL = name("original");
     inline constexpr name EXTENSION = name("extension");
@@ -195,6 +199,9 @@ namespace hypha::common
     inline constexpr name REACTION_OF = name("reactionof");
     inline constexpr name REACTION_LINK = name("reactionlnk");
     inline constexpr name REACTION_LINK_REVERSE = name("reactionlnkr");
+
+    //Circles stuff
+    inline constexpr name CIRCLE = name("circle");
 
 
     // document types

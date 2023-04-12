@@ -67,7 +67,7 @@ void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
     Edge::get(get_self(), from_node, to_node, edge_name).erase();
 }
 
-#ifdef DEVELOP_BUILD
+#ifdef DEVELOP_BUILD_HELPERS
 
 void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
 {

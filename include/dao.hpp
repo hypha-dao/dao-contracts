@@ -181,7 +181,7 @@ namespace pricing {
       ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
 
       ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name);
-#ifdef DEVELOP_BUILD
+#ifdef DEVELOP_BUILD_HELPERS
 
       struct InputEdge {
          eosio::name creator;

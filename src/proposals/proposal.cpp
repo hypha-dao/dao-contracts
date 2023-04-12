@@ -139,10 +139,11 @@ namespace hypha
         );
 
         EOS_CHECK(
-            Member::isMember(m_dao, m_daoID, voter), 
+            Member::isMember(m_dao, m_daoID, voter),
             "Only members of this DAO can vote proposals: " + voter.to_string()
         );
 
+        //TODO: Add parameter to check voting type (community or core)
         Vote(m_dao, voter, vote, proposal, notes);
         
         VoteTally(m_dao, proposal, m_daoSettings);
