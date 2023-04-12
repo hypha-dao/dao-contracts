@@ -14,8 +14,10 @@ bool PolicyProposal::checkMembership(const eosio::name& proposer, ContentGroups 
 }
 
 void PolicyProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
-{
-}
+{}
+
+void PolicyProposal::passImpl(Document &proposal)
+{}
 
 void PolicyProposal::failImpl(Document &proposal)
 {

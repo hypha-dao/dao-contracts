@@ -5,6 +5,15 @@
 namespace hypha
 {
 
+void PollProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
+{}
+
+void PollProposal::passImpl(Document &proposal)
+{}
+
+void PollProposal::failImpl(Document &proposal)
+{}
+
 void PollProposal::postProposeImpl(Document &proposal)
 {
     auto cw = proposal.getContentWrapper();
