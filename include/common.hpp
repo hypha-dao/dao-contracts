@@ -116,8 +116,10 @@ namespace hypha::common
     inline constexpr name OWNED_BY = name("ownedby");
     inline constexpr name OWNS = name("owns");
     inline constexpr name MEMBER_OF = name("memberof");
+    inline constexpr name MEMBER_OF_CIRCLE = name("memberofcirc");
     inline constexpr name APPLICANT = name("applicant");
     inline constexpr name APPLICANT_OF = name("applicantof");
+    inline constexpr name APPLICANT_OF_CIRCLE = name("applofcirc");
     inline constexpr name ENROLLER = name("enroller");
     inline constexpr name ADMIN = name("admin");
     inline constexpr name OWNER = name("owner");
@@ -187,6 +189,7 @@ namespace hypha::common
 
     inline constexpr name VOTE = name ("vote");
     inline constexpr name VOTE_ON = name ("voteon");
+    inline constexpr auto COMMUNITY_VOTING = "community_voting";
 
     inline constexpr name COMMENT = name("comment");
     inline constexpr name COMMENT_OF = name("commentof");
@@ -202,6 +205,11 @@ namespace hypha::common
 
     //Circles stuff
     inline constexpr name CIRCLE = name("circle");
+    inline constexpr auto CIRCLE_NAME = "name";
+    inline constexpr auto CIRCLE_PURPOSE = "purpose";
+    inline constexpr auto PARENT_CIRCLE_ITEM = "parent_circle";
+    inline constexpr auto PARENT_CIRCLE = name("parentcircle");
+    inline constexpr auto SUB_CIRCLE = name("subcircle");
 
 
     // document types

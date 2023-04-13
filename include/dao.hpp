@@ -274,6 +274,10 @@ namespace pricing {
          return def;
       }
 
+      ACTION applycircle(uint64_t circle_id, name applicant);
+      ACTION rejectcircle(uint64_t circle_id, name enroller, name applicant);
+      ACTION enrollcircle(uint64_t circle_id, name enroller, name applicant);
+
       ACTION remmember(uint64_t dao_id, const std::vector<name>& member_names);
       ACTION remapplicant(uint64_t dao_id, const std::vector<name>& applicant_names);
 

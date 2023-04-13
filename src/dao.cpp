@@ -290,6 +290,88 @@ void dao::setclaimenbld(uint64_t dao_id, bool enabled)
   settings->setSetting({ common::CLAIM_ENABLED, static_cast<int64_t>(enabled) });
 }
 
+static void validateCircle(dao* dao, uint64_t circleID) {
+  
+  auto circle = TypedDocument::withType(*dao, circleID, common::CIRCLE);
+
+  auto cw = circle.getContentWrapper();
+
+  auto state = cw.getOrFail(DETAILS, common::STATE)->getAs<std::string>();
+
+  EOS_CHECK(
+    state == common::STATE_APPROVED,
+    to_str("Cannot perform operation on ", state, " circle")
+  );
+}
+
+void dao::applycircle(uint64_t circle_id, name applicant)
+{
+  validateCircle(this, circle_id);
+
+  auto daoId = Edge::get(get_self(), circle_id, common::DAO).getToNode();
+
+  //Only core members are allowed to apply as circle members
+  EOS_CHECK(
+    Member::isMember(*this, daoId, applicant),
+    "Only core members can apply for circle membership"
+  );
+
+  eosio::require_auth(applicant);
+
+  auto applicantId = getMemberID(applicant);
+
+  Edge(get_self(), get_self(), circle_id, applicantId, common::APPLICANT);
+  Edge(get_self(), get_self(), applicantId, circle_id, common::APPLICANT_OF_CIRCLE);
+}
+
+void dao::rejectcircle(uint64_t circle_id, name enroller, name applicant)
+{
+  validateCircle(this, circle_id);
+
+  auto daoId = Edge::get(get_self(), circle_id, common::DAO).getToNode();
+
+  checkEnrollerAuth(daoId, enroller);
+
+  auto memberId = getMemberID(applicant);
+
+  Edge::get(get_self(), circle_id, memberId, common::APPLICANT).erase();
+  Edge::get(get_self(), memberId, circle_id, common::APPLICANT_OF_CIRCLE).erase();
+}
+
+void dao::enrollcircle(uint64_t circle_id, name enroller, name applicant)
+{
+  validateCircle(this, circle_id);
+
+  auto daoId = Edge::get(get_self(), circle_id, common::DAO).getToNode();
+
+  checkEnrollerAuth(daoId, enroller);
+
+  auto memberId = getMemberID(applicant);
+
+  Edge::get(get_self(), circle_id, memberId, common::APPLICANT).erase();
+  Edge::get(get_self(), memberId, circle_id, common::APPLICANT_OF_CIRCLE).erase();
+
+  Edge(get_self(), get_self(), circle_id, memberId, common::MEMBER);
+  Edge(get_self(), get_self(), memberId, circle_id, common::MEMBER_OF_CIRCLE);
+
+  //Optimize: Move to an Edge static function and reuse in payout_proposal as well
+  const auto getToID = [&](name contract, int64_t doc, name edgeName) -> std::optional<uint64_t> {
+      if (auto [exists, edge] = Edge::getIfExists(contract, doc, edgeName); exists) {
+          return edge.getToNode();
+      }
+
+      return std::nullopt;
+  };
+
+  auto currentID = circle_id;
+  //We need to recursively add member to parent circles
+  while (auto parentID = getToID(get_self(), currentID, common::PARENT_CIRCLE)) {
+    Edge(get_self(), get_self(), *parentID, memberId, common::MEMBER);
+    Edge(get_self(), get_self(), memberId, *parentID, common::MEMBER_OF_CIRCLE);
+    currentID = *parentID;
+  }
+}
+
 void dao::remmember(uint64_t dao_id, const std::vector<name>& member_names)
 {
   verifyDaoType(dao_id);

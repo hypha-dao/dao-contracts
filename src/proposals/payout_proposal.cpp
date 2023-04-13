@@ -162,12 +162,23 @@ void PayoutProposal::markRelatives(const name& link, const name& fromRelationshi
         //Alway point to the original docId and iterate every relative
         //If clear then remove the relationship
         if (clear) {
-            Edge::get(m_dao.get_self(), docId, parentId, fromRelationship).erase();
-            Edge::get(m_dao.get_self(), parentId, docId, toRelationship).erase();
+            //For now just clear parent relationship
+            if (fromRelationship) {
+                Edge::get(m_dao.get_self(), docId, parentId, fromRelationship).erase();
+            }
+            
+            if (toRelationship) {
+                Edge::get(m_dao.get_self(), parentId, docId, toRelationship).erase();
+            }
         }
         else {
-            Edge(m_dao.get_self(), m_dao.get_self(), docId, parentId, fromRelationship);
-            Edge(m_dao.get_self(), m_dao.get_self(), parentId, docId, toRelationship);
+            //Hack to enable just creating either from or to relationship or both
+            if (fromRelationship) {
+                Edge(m_dao.get_self(), m_dao.get_self(), docId, parentId, fromRelationship);
+            }
+            if (toRelationship) {
+                Edge(m_dao.get_self(), m_dao.get_self(), parentId, docId, toRelationship);
+            }
         }
 
         current = parentId;

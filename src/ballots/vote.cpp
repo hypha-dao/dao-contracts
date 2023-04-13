@@ -72,26 +72,36 @@ namespace hypha
                 break;
             }
         }
+        
+        asset votePower;
 
         Settings* daoSettings = dao.getSettingsDocument(daoHash);
 
-        // Fetch vote power
-        // Todo: Need to ensure that the balance does not need a decay.
-        name hvoiceContract = dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
-        hypha::voice::accounts acnts(hvoiceContract, voter.value);
-        auto account_index = acnts.get_index<name("bykey")>();
-
         asset voiceToken = daoSettings->getOrFail<asset>(common::VOICE_TOKEN);
 
-        auto v_itr = account_index.find(
-            voice::accountv2::build_key(
-                daoSettings->getOrFail<name>(DAO_NAME),
-                voiceToken.symbol.code()
-            )
-        );
-        eosio::check(v_itr != account_index.end(), "No VOICE found");
+        //If community voting is active for this proposal, every vote is just 1
+        if (auto [_, communityVote] = proposal.getContentWrapper().get(SYSTEM, common::COMMUNITY_VOTING);
+            communityVote && communityVote->getAs<int64_t>()) {
+            votePower = denormalizeToken(1.0, voiceToken);
+        }
+        //Else fetch vote power from the voice contract
+        else {
+            // Todo: Need to ensure that the balance does not need a decay.
+            name hvoiceContract = dao.getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+            hypha::voice::accounts acnts(hvoiceContract, voter.value);
+            auto account_index = acnts.get_index<name("bykey")>();
 
-        asset votePower = v_itr->balance;
+            auto v_itr = account_index.find(
+                voice::accountv2::build_key(
+                    daoSettings->getOrFail<name>(DAO_NAME),
+                    voiceToken.symbol.code()
+                )
+            );
+
+            eosio::check(v_itr != account_index.end(), "No VOICE found");
+
+            votePower = v_itr->balance;
+        }
 
         ContentGroups contentGroups{
             ContentGroup{

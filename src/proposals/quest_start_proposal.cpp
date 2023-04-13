@@ -39,7 +39,10 @@ namespace hypha
             //Create parent quest edge
             Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), parentQuest->getID(), common::PARENT_QUEST);
 
-            markRelatives(common::PARENT_QUEST, common::ASCENDANT, common::DESCENDANT, proposal.getID());
+            //Note: We might want to also check if parent quest is already linked to another quest so we don't 
+            //allow multiple children and limit it to just 1
+
+            markRelatives(common::PARENT_QUEST, common::ASCENDANT, name(), proposal.getID());
         }
 
          //TODO: Check circle field
@@ -77,12 +80,14 @@ namespace hypha
         Member assignee = Member(m_dao, m_dao.getMemberID(contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>()));
         
         Edge::write(m_dao.get_self(), m_dao.get_self(), assignee.getID(), proposal.getID(), common::ENTRUSTED_TO);
+
+        markRelatives(common::PARENT_QUEST, name(), common::DESCENDANT, proposal.getID());
     }
 
     void QuestStartProposal::failImpl(Document &proposal)
     {
         //Remove relationships
-        markRelatives(common::PARENT_QUEST, common::ASCENDANT, common::DESCENDANT, proposal.getID(), true);
+        //markRelatives(common::PARENT_QUEST, common::ASCENDANT, common::DESCENDANT, proposal.getID(), true);
     }
 
     name QuestStartProposal::getProposalType()

@@ -13,6 +13,7 @@
 #include <proposals/quest_completion_proposal.hpp>
 #include <proposals/policy_proposal.hpp>
 #include <proposals/poll_proposal.hpp>
+#include <proposals/circle_proposal.hpp>
 #include <logger/logger.hpp>
 
 #include <common.hpp>
@@ -60,6 +61,9 @@ namespace hypha
 
         case common::POLL.value:
             return new PollProposal(dao, daoHash);
+
+        case common::CIRCLE.value:
+            return new CircleProposal(dao, daoHash);
     
         // TODO: should be expanded to work with Badge Assignments as well
         case common::EXTENSION.value:

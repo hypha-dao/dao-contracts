@@ -24,7 +24,7 @@ void PollProposal::postProposeImpl(Document &proposal)
     if (votingType == "Community") {
         ContentWrapper::insertOrReplace(
             *cw.getGroupOrFail(SYSTEM),
-            Content{ "community_voting", 1 }
+            Content{ common::COMMUNITY_VOTING, 1 }
         );
     }
 }

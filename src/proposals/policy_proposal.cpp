@@ -17,11 +17,14 @@ void PolicyProposal::proposeImpl(const name &proposer, ContentWrapper &contentWr
 {}
 
 void PolicyProposal::passImpl(Document &proposal)
-{}
+{
+    //Mark relationship from parent/grand parent/etc. to this doc
+    markRelatives(common::MASTER_POLICY, name(), common::DESCENDANT, proposal.getID());
+}
 
 void PolicyProposal::failImpl(Document &proposal)
 {
-    markRelatives(common::MASTER_POLICY, common::ASCENDANT, common::DESCENDANT, proposal.getID(), true);
+    //markRelatives(common::MASTER_POLICY, common::ASCENDANT, common::DESCENDANT, proposal.getID(), true);
 }
 
 void PolicyProposal::postProposeImpl(Document &proposal)
@@ -42,7 +45,8 @@ void PolicyProposal::postProposeImpl(Document &proposal)
         //Create master policy edge
         Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), masterPolicy->getID(), common::MASTER_POLICY);
 
-        markRelatives(common::MASTER_POLICY, common::ASCENDANT, common::DESCENDANT, proposal.getID());
+        //Don't mark relationship from parent to child for now
+        markRelatives(common::MASTER_POLICY, common::ASCENDANT, name(), proposal.getID());
     }
 }
 
