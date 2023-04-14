@@ -320,6 +320,11 @@ void dao::applycircle(uint64_t circle_id, name applicant)
 
   auto applicantId = getMemberID(applicant);
 
+  EOS_CHECK(
+    !Edge::exists(get_self(), circle_id, applicantId, common::MEMBER),
+    "Applicant is member of circle already"
+  );
+
   Edge(get_self(), get_self(), circle_id, applicantId, common::APPLICANT);
   Edge(get_self(), get_self(), applicantId, circle_id, common::APPLICANT_OF_CIRCLE);
 }
@@ -366,8 +371,9 @@ void dao::enrollcircle(uint64_t circle_id, name enroller, name applicant)
   auto currentID = circle_id;
   //We need to recursively add member to parent circles
   while (auto parentID = getToID(get_self(), currentID, common::PARENT_CIRCLE)) {
-    Edge(get_self(), get_self(), *parentID, memberId, common::MEMBER);
-    Edge(get_self(), get_self(), memberId, *parentID, common::MEMBER_OF_CIRCLE);
+    //Use get or new in case it is already member of the circle
+    Edge::getOrNew(get_self(), get_self(), *parentID, memberId, common::MEMBER);
+    Edge::getOrNew(get_self(), get_self(), memberId, *parentID, common::MEMBER_OF_CIRCLE);
     currentID = *parentID;
   }
 }
