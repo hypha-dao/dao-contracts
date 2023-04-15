@@ -73,6 +73,11 @@ void QuestCompletionProposal::failImpl(Document &proposal)
 {
     TRACE_FUNCTION()
     Edge::getTo(m_dao.get_self(), proposal.getID(), common::LOCKED_BY).erase();
+
+    auto questStart = getParent(proposal.getID(), common::QUEST_START, common::QUEST_START);
+
+    //Make a history of failed proposals
+    Edge(m_dao.get_self(), m_dao.get_self(), questStart.getID(), proposal.getID(), common::FAILED_PROPS);
 }
 
 name QuestCompletionProposal::getProposalType()

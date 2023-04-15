@@ -227,6 +227,14 @@ namespace hypha::common
     inline constexpr name COMMEMBER = name("commember");
     inline constexpr name DHO = name ("dho");
     inline constexpr name DAO = name ("dao");
+    inline constexpr name MSIG = name ("multisig");
+    inline constexpr name OPEN_MSIG = name ("openmultisig");
+    inline constexpr name FAILED_MSIG = name ("failnmultisig");
+    inline constexpr name PASSED_MSIG = name ("passmultisig");
+    inline constexpr name APPROVE_MSIG = name ("approvemsig");
+    inline constexpr name EXECUTED_BY = name ("executedby");
+    inline constexpr name APPROVED_BY = name ("approvedby");
+    inline constexpr name CANCELED_BY = name ("canceledby");
     inline constexpr name DAO_DRAFT = name ("dao.draft");
     inline constexpr name CHILD_DAO_DRAFT = name("childdraft");
     inline constexpr name CHILD_DAO = name("anchorchild");

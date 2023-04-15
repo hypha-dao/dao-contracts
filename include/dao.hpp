@@ -150,6 +150,11 @@ namespace pricing {
       ACTION remenroller(const uint64_t dao_id, name enroller_account);
       ACTION remadmin(const uint64_t dao_id, name admin_account);
 
+      ACTION createmsig(uint64_t dao_id, name creator, std::map<std::string, Content::FlexValue> kvs);
+      ACTION votemsig(uint64_t msig_id, name signer, bool approve);
+      ACTION execmsig(uint64_t msig_id, name executer);
+      ACTION cancelcmsig(uint64_t msig_id, name canceler);
+
       //Removes a dho/contract level setting
       //ACTION remsetting(const string &key);
 
