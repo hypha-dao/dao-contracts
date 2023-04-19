@@ -38,35 +38,6 @@ namespace hypha {
 
 /**Testenv only */
 
-void dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
-{
-  require_auth(get_self());
-
-  Document doc(get_self(), doc_id);
-
-  auto cw = doc.getContentWrapper();
-
-  cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
-
-  doc.update();
-}
-
-void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
-{
-  require_auth(get_self());
-
-  Document fromDoc(get_self(), from);
-  Document toDoc(get_self(), to);
-
-  Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
-}
-
-void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
-{
-    eosio::require_auth(get_self());
-    Edge::get(get_self(), from_node, to_node, edge_name).erase();
-}
-
 #ifdef DEVELOP_BUILD_HELPERS
 
 void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
@@ -1577,7 +1548,7 @@ void dao::execmsig(uint64_t msig_id, name executer)
   auto daoSettings = getSettingsDocument(daoID);
 
   //Default approval amount is 2
-  auto requiredApprovals = daoSettings->getSettingOrDefault<int64_t>("msig_approval_amount", 2);
+  auto requiredApprovals = daoSettings->getSettingOrDefault<int64_t>("msig_approval_amount", 1);
 
   //Check if enough approvals
   auto approvalsCount = Edge::getEdgesToCount(get_self(), msig_id, common::APPROVE_MSIG);
