@@ -96,6 +96,18 @@ namespace hypha::common
     // 49.36 phases per annum, so each phase is 2.026% of the total
     //const float PHASE_TO_YEAR_RATIO = 0.02026009582;
 
+    //Payout proposal specific items
+    inline constexpr auto PAYOUT_SUBTYPE = "proposal_subtype";
+
+    inline constexpr auto MASTER_POLICY_ITEM = "master_policy";
+    inline constexpr auto QUEST_START_ITEM = "quest_start";
+    inline constexpr auto PARENT_QUEST_ITEM = "parent_quest";
+    inline constexpr auto MASTER_POLICY = name("masterpolicy");
+    inline constexpr auto PARENT_QUEST = name("parentquest");
+    inline constexpr auto CHILD_QUEST = name("childquest");
+    inline constexpr auto ASCENDANT = name("ascendant");
+    inline constexpr auto DESCENDANT = name("descendant");
+
     // graph edge names
     inline constexpr name ESCROW = name("escrow");
     inline constexpr name SETTINGS_EDGE = name("settings");
@@ -104,8 +116,10 @@ namespace hypha::common
     inline constexpr name OWNED_BY = name("ownedby");
     inline constexpr name OWNS = name("owns");
     inline constexpr name MEMBER_OF = name("memberof");
+    inline constexpr name MEMBER_OF_CIRCLE = name("memberofcirc");
     inline constexpr name APPLICANT = name("applicant");
     inline constexpr name APPLICANT_OF = name("applicantof");
+    inline constexpr name APPLICANT_OF_CIRCLE = name("applofcirc");
     inline constexpr name ENROLLER = name("enroller");
     inline constexpr name ADMIN = name("admin");
     inline constexpr name OWNER = name("owner");
@@ -120,6 +134,8 @@ namespace hypha::common
     inline constexpr name ROLE_NAME = name("role");
     inline constexpr name PAYOUT = name("payout");
     inline constexpr name ATTESTATION = name("attestation");
+    inline constexpr name POLICY = name("policy");
+    inline constexpr name POLL = name("poll");
     inline constexpr name EDIT = name("edit");
     inline constexpr name ORIGINAL = name("original");
     inline constexpr name EXTENSION = name("extension");
@@ -130,6 +146,9 @@ namespace hypha::common
     inline constexpr        name ENTRUSTED = name("entrusted");
     inline constexpr name QUEST_START = name("queststart");
     inline constexpr name QUEST_COMPLETION = name("questcomplet");
+
+    //Generic lock edge
+    inline constexpr name LOCKED_BY = name("lockedby");
 
     //Must only be used by Assignments
     inline constexpr name ASSIGNED = name("assigned");
@@ -162,6 +181,7 @@ namespace hypha::common
     inline constexpr name CLAIMED = name ("claimed");
 
     inline constexpr name COMPLETED_BY = name("completedby");
+    inline constexpr name COMPLETED = name("completed");
 
     inline constexpr auto PEG_AMOUNT = "peg_amount";
     inline constexpr auto VOICE_AMOUNT = "voice_amount";
@@ -169,6 +189,7 @@ namespace hypha::common
 
     inline constexpr name VOTE = name ("vote");
     inline constexpr name VOTE_ON = name ("voteon");
+    inline constexpr auto COMMUNITY_VOTING = "community_voting";
 
     inline constexpr name COMMENT = name("comment");
     inline constexpr name COMMENT_OF = name("commentof");
@@ -181,6 +202,14 @@ namespace hypha::common
     inline constexpr name REACTION_OF = name("reactionof");
     inline constexpr name REACTION_LINK = name("reactionlnk");
     inline constexpr name REACTION_LINK_REVERSE = name("reactionlnkr");
+
+    //Circles stuff
+    inline constexpr name CIRCLE = name("circle");
+    inline constexpr auto CIRCLE_NAME = "name";
+    inline constexpr auto CIRCLE_PURPOSE = "purpose";
+    inline constexpr auto PARENT_CIRCLE_ITEM = "parent_circle";
+    inline constexpr auto PARENT_CIRCLE = name("parentcircle");
+    inline constexpr auto SUB_CIRCLE = name("subcircle");
 
 
     // document types
@@ -198,6 +227,14 @@ namespace hypha::common
     inline constexpr name COMMEMBER = name("commember");
     inline constexpr name DHO = name ("dho");
     inline constexpr name DAO = name ("dao");
+    inline constexpr name MSIG = name ("multisig");
+    inline constexpr name OPEN_MSIG = name ("openmultisig");
+    inline constexpr name FAILED_MSIG = name ("failnmultisig");
+    inline constexpr name PASSED_MSIG = name ("passmultisig");
+    inline constexpr name APPROVE_MSIG = name ("approvemsig");
+    inline constexpr name EXECUTED_BY = name ("executedby");
+    inline constexpr name APPROVED_BY = name ("approvedby");
+    inline constexpr name CANCELED_BY = name ("canceledby");
     inline constexpr name DAO_DRAFT = name ("dao.draft");
     inline constexpr name CHILD_DAO_DRAFT = name("childdraft");
     inline constexpr name CHILD_DAO = name("anchorchild");

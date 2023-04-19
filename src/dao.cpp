@@ -38,36 +38,7 @@ namespace hypha {
 
 /**Testenv only */
 
-void dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
-{
-  require_auth(get_self());
-
-  Document doc(get_self(), doc_id);
-
-  auto cw = doc.getContentWrapper();
-
-  cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
-
-  doc.update();
-}
-
-void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
-{
-  require_auth(get_self());
-
-  Document fromDoc(get_self(), from);
-  Document toDoc(get_self(), to);
-
-  Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
-}
-
-void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
-{
-    eosio::require_auth(get_self());
-    Edge::get(get_self(), from_node, to_node, edge_name).erase();
-}
-
-#ifdef DEVELOP_BUILD
+#ifdef DEVELOP_BUILD_HELPERS
 
 void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
 {
@@ -288,6 +259,94 @@ void dao::setclaimenbld(uint64_t dao_id, bool enabled)
   )
 
   settings->setSetting({ common::CLAIM_ENABLED, static_cast<int64_t>(enabled) });
+}
+
+static void validateCircle(dao* dao, uint64_t circleID) {
+  
+  auto circle = TypedDocument::withType(*dao, circleID, common::CIRCLE);
+
+  auto cw = circle.getContentWrapper();
+
+  auto state = cw.getOrFail(DETAILS, common::STATE)->getAs<std::string>();
+
+  EOS_CHECK(
+    state == common::STATE_APPROVED,
+    to_str("Cannot perform operation on ", state, " circle")
+  );
+}
+
+void dao::applycircle(uint64_t circle_id, name applicant)
+{
+  validateCircle(this, circle_id);
+
+  auto daoId = Edge::get(get_self(), circle_id, common::DAO).getToNode();
+
+  //Only core members are allowed to apply as circle members
+  EOS_CHECK(
+    Member::isMember(*this, daoId, applicant),
+    "Only core members can apply for circle membership"
+  );
+
+  eosio::require_auth(applicant);
+
+  auto applicantId = getMemberID(applicant);
+
+  EOS_CHECK(
+    !Edge::exists(get_self(), circle_id, applicantId, common::MEMBER),
+    "Applicant is member of circle already"
+  );
+
+  Edge(get_self(), get_self(), circle_id, applicantId, common::APPLICANT);
+  Edge(get_self(), get_self(), applicantId, circle_id, common::APPLICANT_OF_CIRCLE);
+}
+
+void dao::rejectcircle(uint64_t circle_id, name enroller, name applicant)
+{
+  validateCircle(this, circle_id);
+
+  auto daoId = Edge::get(get_self(), circle_id, common::DAO).getToNode();
+
+  checkEnrollerAuth(daoId, enroller);
+
+  auto memberId = getMemberID(applicant);
+
+  Edge::get(get_self(), circle_id, memberId, common::APPLICANT).erase();
+  Edge::get(get_self(), memberId, circle_id, common::APPLICANT_OF_CIRCLE).erase();
+}
+
+void dao::enrollcircle(uint64_t circle_id, name enroller, name applicant)
+{
+  validateCircle(this, circle_id);
+
+  auto daoId = Edge::get(get_self(), circle_id, common::DAO).getToNode();
+
+  checkEnrollerAuth(daoId, enroller);
+
+  auto memberId = getMemberID(applicant);
+
+  Edge::get(get_self(), circle_id, memberId, common::APPLICANT).erase();
+  Edge::get(get_self(), memberId, circle_id, common::APPLICANT_OF_CIRCLE).erase();
+
+  Edge(get_self(), get_self(), circle_id, memberId, common::MEMBER);
+  Edge(get_self(), get_self(), memberId, circle_id, common::MEMBER_OF_CIRCLE);
+
+  //Optimize: Move to an Edge static function and reuse in payout_proposal as well
+  const auto getToID = [&](name contract, int64_t doc, name edgeName) -> std::optional<uint64_t> {
+      if (auto [exists, edge] = Edge::getIfExists(contract, doc, edgeName); exists) {
+          return edge.getToNode();
+      }
+
+      return std::nullopt;
+  };
+
+  auto currentID = circle_id;
+  //We need to recursively add member to parent circles
+  while (auto parentID = getToID(get_self(), currentID, common::PARENT_CIRCLE)) {
+    //Use get or new in case it is already member of the circle
+    Edge::getOrNew(get_self(), get_self(), *parentID, memberId, common::MEMBER);
+    Edge::getOrNew(get_self(), get_self(), memberId, *parentID, common::MEMBER_OF_CIRCLE);
+    currentID = *parentID;
+  }
 }
 
 void dao::remmember(uint64_t dao_id, const std::vector<name>& member_names)
@@ -1192,6 +1251,9 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
   //Fixed settings that cannot be changed
   using FixedSettingsMap = std::map<std::string, const std::vector<std::string>>;
 
+  //TODO: Add new setting to enable/disable direct setdaosetting
+  //and only enable setting's changes through msig proposals
+
   //If the action was authorized with contract permission, let's allow changing any 
   //setting
   FixedSettingsMap fixedSettings = eosio::has_auth(get_self()) || isDraft ? 
@@ -1347,6 +1409,203 @@ void dao::remenroller(const uint64_t dao_id, name enroller_account)
   );
 
   Edge::get(get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER).erase();
+}
+
+void dao::createmsig(uint64_t dao_id, name creator, std::map<std::string, Content::FlexValue> kvs)
+{
+  auto memberID = getMemberID(creator);
+
+  checkAdminsAuth(dao_id);
+
+  eosio::require_auth(creator);
+
+  //Check there are not open msig proposals
+  EOS_CHECK(
+    !Edge::getIfExists(get_self(), dao_id, common::OPEN_MSIG).first,
+    "There is an open mulltisig proposal already"
+  );
+
+  //Fixed settings that cannot be changed
+  using FixedSettingsMap = std::map<std::string, const std::vector<std::string>>;
+
+  //TODO: Add new setting to enable/disable direct setdaosetting
+  //and only enable setting's changes through msig proposals
+
+  //If the action was authorized with contract permission, let's allow changing any 
+  //setting
+  FixedSettingsMap fixedSettings = FixedSettingsMap {
+    {
+      SETTINGS,
+      {
+        common::REWARD_TOKEN,
+        common::VOICE_TOKEN,
+        common::PEG_TOKEN,
+        common::PERIOD_DURATION,
+        common::CLAIM_ENABLED,
+        common::ADD_ADMINS_ENABLED,
+        DAO_NAME
+      }
+    }
+  };
+
+  //If groupName doesn't exists in fixedSettings it will just create an empty array
+  for (auto& fs : fixedSettings[SETTINGS]) {
+    EOS_CHECK(
+      kvs.count(fs) == 0,
+      to_str(fs, " setting cannot be modified in group: ", SETTINGS)
+    );
+  }
+
+  //Check for url_change
+  if (kvs.count(common::DAO_URL)) {
+    auto newUrlCon = kvs[common::DAO_URL];
+
+    EOS_CHECK(
+      std::holds_alternative<std::string>(newUrlCon) &&
+      std::get<std::string>(newUrlCon).size() <= 56,
+      "Url must be a string and less than 56 characters"
+    )
+
+    auto globalSettings = getSettingsDocument();
+  
+    auto globalSetCW = globalSettings->getContentWrapper();
+
+    if (auto [_, urlsGroup] = globalSetCW.getGroup(common::URLS_GROUP); 
+        urlsGroup) {
+      for (auto& url : *urlsGroup) {
+        EOS_CHECK(
+          url.label == CONTENT_GROUP_LABEL ||
+          url.value != newUrlCon,
+          to_str("URL is already being used, please use a different one", " ", url.label, " ", url.getAs<std::string>())
+        );
+      }
+    }
+  }
+
+  ContentGroup settings {
+    Content{ CONTENT_GROUP_LABEL, SETTINGS }
+  };
+
+  for (auto& [key, value] : kvs) {
+    settings.emplace_back( Content{ key, value} );
+  }
+
+  auto msigContents = ContentGroups({
+    ContentGroup{
+        Content(CONTENT_GROUP_LABEL, DETAILS), 
+        //Content(ROOT_NODE, contract)
+        Content{common::DAO.to_string(), static_cast<int64_t>(dao_id)},
+        Content{common::OWNER.to_string(), creator},
+    },
+    ContentGroup{
+        Content(CONTENT_GROUP_LABEL, SYSTEM), 
+        Content(TYPE, common::MSIG),
+        Content(NODE_LABEL, to_str("Multisig proposal"))
+    },
+    std::move(settings)
+  });
+
+  Document msigDoc(get_self(), creator, msigContents);
+
+  Edge(get_self(), get_self(), dao_id, msigDoc.getID(), common::OPEN_MSIG);
+}
+
+void dao::votemsig(uint64_t msig_id, name signer, bool approve)
+{
+  auto memberID = getMemberID(signer);
+
+  //Check proposal is still open for voting
+  auto daoID = Edge::getTo(get_self(), msig_id, common::OPEN_MSIG).getFromNode();
+
+  checkAdminsAuth(daoID);
+
+  eosio::require_auth(signer);
+
+  if (approve) {
+    Edge(get_self(), get_self(), memberID, msig_id, common::APPROVE_MSIG);
+    Edge(get_self(), get_self(), msig_id, memberID, common::APPROVED_BY);
+  }
+  else {
+    Edge::get(get_self(), memberID, msig_id, common::APPROVE_MSIG).erase();
+    Edge::get(get_self(), msig_id, memberID, common::APPROVED_BY).erase();
+  }
+}
+
+void dao::execmsig(uint64_t msig_id, name executer)
+{
+  auto memberID = getMemberID(executer);
+
+  //Check proposal is not already closed
+  auto daoID = Edge::getTo(get_self(), msig_id, common::OPEN_MSIG).getFromNode();
+
+  //Might need to add workaround for when admins are removed or added
+  //when proposal already exists
+
+  checkAdminsAuth(daoID);
+
+  eosio::require_auth(executer);
+
+  auto daoSettings = getSettingsDocument(daoID);
+
+  //Default approval amount is 2
+  auto requiredApprovals = daoSettings->getSettingOrDefault<int64_t>("msig_approval_amount", 1);
+
+  //Check if enough approvals
+  auto approvalsCount = Edge::getEdgesToCount(get_self(), msig_id, common::APPROVE_MSIG);
+
+  EOS_CHECK(
+    approvalsCount >= requiredApprovals,
+    to_str("Not enough approvals required ", requiredApprovals, " got ", approvalsCount)
+  );
+
+  Edge::get(get_self(), daoID, msig_id, common::OPEN_MSIG).erase();
+
+  Edge(get_self(), get_self(), msig_id, memberID, common::EXECUTED_BY);
+
+  auto msigDoc = TypedDocument::withType(*this, msig_id, common::MSIG);
+
+  auto misgCW = msigDoc.getContentWrapper();
+
+  auto settings = misgCW.getGroupOrFail(SETTINGS);
+
+  std::map<std::string, Content::FlexValue> kvs;
+
+  for (auto& setting : *settings) {
+    if (setting.label != CONTENT_GROUP_LABEL) {
+      kvs.insert({ setting.label, setting.value });
+    }
+  }
+
+  eosio::action(
+    eosio::permission_level{ get_self(), name("active") },
+    get_self(),
+    name("setdaosetting"),
+    std::make_tuple(
+      daoID,
+      kvs,
+      std::optional<std::string>{SETTINGS}
+    )
+  ).send();
+}
+
+void dao::cancelcmsig(uint64_t msig_id, name canceler)
+{
+  auto memberID = getMemberID(canceler);
+
+   //Check proposal is not already closed
+  auto daoID = Edge::getTo(get_self(), msig_id, common::OPEN_MSIG).getFromNode();
+
+  //Might need to add workaround for when admins are removed or added
+  //when proposal already exists
+
+  checkAdminsAuth(daoID);
+
+  eosio::require_auth(canceler);
+
+  //Check if the msig is still open and close it
+  Edge::get(get_self(), daoID, msig_id, common::OPEN_MSIG).erase();
+
+  Edge(get_self(), get_self(), msig_id, memberID, common::CANCELED_BY);
 }
 
 void dao::remadmin(const uint64_t dao_id, name admin_account)

@@ -41,6 +41,8 @@ namespace hypha
 
         virtual void passImpl(Document &proposal) = 0;
 
+        virtual void failImpl(Document &proposal) {};
+
         virtual void publishImpl(Document& proposal) {}
 
         virtual string getBallotContent(ContentWrapper &contentWrapper) = 0;
@@ -55,14 +57,14 @@ namespace hypha
         ContentGroup makeBallotGroup();
         ContentGroup makeBallotOptionsGroup();
 
-        bool didPass(uint64_t tallyHash);
+        bool didPass(Document& proposal, uint64_t tallyHash);
 
         string getTitle(ContentWrapper cw) const;
         string getDescription(ContentWrapper cw) const;
 
         std::pair<bool, uint64_t> hasOpenProposal(name proposalType, uint64_t docID);
         
-        eosio::asset getVoiceSupply();
+        eosio::asset getVoiceSupply(Document& proposal);
     private:
         bool oldDidPass(const eosio::name &ballotId);
 

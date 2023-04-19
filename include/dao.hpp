@@ -150,6 +150,11 @@ namespace pricing {
       ACTION remenroller(const uint64_t dao_id, name enroller_account);
       ACTION remadmin(const uint64_t dao_id, name admin_account);
 
+      ACTION createmsig(uint64_t dao_id, name creator, std::map<std::string, Content::FlexValue> kvs);
+      ACTION votemsig(uint64_t msig_id, name signer, bool approve);
+      ACTION execmsig(uint64_t msig_id, name executer);
+      ACTION cancelcmsig(uint64_t msig_id, name canceler);
+
       //Removes a dho/contract level setting
       //ACTION remsetting(const string &key);
 
@@ -175,13 +180,8 @@ namespace pricing {
       ACTION setclaimenbld(uint64_t dao_id, bool enabled);
       
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
-
-      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
-
-      ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
-
-      ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name);
-#ifdef DEVELOP_BUILD
+      
+#ifdef DEVELOP_BUILD_HELPERS
 
       struct InputEdge {
          eosio::name creator;
@@ -273,6 +273,10 @@ namespace pricing {
 
          return def;
       }
+
+      ACTION applycircle(uint64_t circle_id, name applicant);
+      ACTION rejectcircle(uint64_t circle_id, name enroller, name applicant);
+      ACTION enrollcircle(uint64_t circle_id, name enroller, name applicant);
 
       ACTION remmember(uint64_t dao_id, const std::vector<name>& member_names);
       ACTION remapplicant(uint64_t dao_id, const std::vector<name>& applicant_names);

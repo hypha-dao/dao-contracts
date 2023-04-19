@@ -139,10 +139,11 @@ namespace hypha
         );
 
         EOS_CHECK(
-            Member::isMember(m_dao, m_daoID, voter), 
+            Member::isMember(m_dao, m_daoID, voter),
             "Only members of this DAO can vote proposals: " + voter.to_string()
         );
 
+        //TODO: Add parameter to check voting type (community or core)
         Vote(m_dao, voter, vote, proposal, notes);
         
         VoteTally(m_dao, proposal, m_daoSettings);
@@ -157,10 +158,14 @@ namespace hypha
           pass ? common::STATE_APPROVED : common::STATE_REJECTED
         });
 
-        ContentWrapper::insertOrReplace(*details, Content {
-            common::BALLOT_SUPPLY,
-            getVoiceSupply()
-        });
+        //Since getting supply might be a heavy computaion we store it in other places, so if that's the case
+        //don't calculate it again
+        if (!proposal.getContentWrapper().exists(DETAILS, common::BALLOT_SUPPLY)) {
+            ContentWrapper::insertOrReplace(*details, Content {
+                common::BALLOT_SUPPLY,
+                getVoiceSupply(proposal)
+            });
+        }
 
         ContentWrapper::insertOrReplace(*details, Content {
             common::BALLOT_QUORUM,
@@ -198,7 +203,8 @@ namespace hypha
         }
         else
         {
-            //TODO: Add failImpl()
+            failImpl(proposal);
+
             proposal.update();
 
             // create edge for FAILED_PROPS
@@ -232,7 +238,7 @@ namespace hypha
         
         //Currently if 2 North Start badge holders veto the proposal
         //it should not pass
-        proposalDidPass = (vetoByEdges.size() < 2) && didPass(ballotID);
+        proposalDidPass = (vetoByEdges.size() < 2) && didPass(proposal, ballotID);
 
         internalClose(proposal, proposalDidPass);
     }
@@ -341,7 +347,7 @@ namespace hypha
         };
     }
 
-    bool Proposal::didPass(uint64_t tallyID)
+    bool Proposal::didPass(Document& proposal, uint64_t tallyID)
     {
         TRACE_FUNCTION()
 
@@ -363,7 +369,19 @@ namespace hypha
             to_str("Alginment Factor out of valid range", alignmentFactor)
         );
 
-        auto voiceSupply = getVoiceSupply();
+        asset voiceSupply;
+
+        voiceSupply = getVoiceSupply(proposal);
+
+        auto cw = proposal.getContentWrapper();
+
+        ContentWrapper::insertOrReplace(
+            *cw.getGroupOrFail(DETAILS), 
+            Content {
+                common::BALLOT_SUPPLY,
+                voiceSupply
+            }
+        );
         
         asset quorum_threshold = voiceSupply * quorumFactor;
 
@@ -438,9 +456,21 @@ namespace hypha
       return { false, uint64_t{} };
     }
 
-    eosio::asset Proposal::getVoiceSupply()
+    eosio::asset Proposal::getVoiceSupply(Document& proposal)
     {
         asset voiceToken = m_daoSettings->getOrFail<eosio::asset>(common::VOICE_TOKEN);
+
+        //If community voting is enabled supply should be equal to amount of members (both community and core)
+        if (auto [_, communityVote] = proposal.getContentWrapper().get(SYSTEM, common::COMMUNITY_VOTING);
+            communityVote && communityVote->getAs<int64_t>()) {
+            
+            //Get total amount of members and community members
+            auto totalMembers = Edge::getEdgesFromCount(m_dao.get_self(), m_daoID, common::MEMBER);
+            totalMembers += Edge::getEdgesFromCount(m_dao.get_self(), m_daoID, common::COMMEMBER);
+            
+            return denormalizeToken(static_cast<double>(totalMembers), voiceToken);
+        }
+
         name voiceContract = m_dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
         hypha::voice::stats statstable(voiceContract, voiceToken.symbol.code().raw());
         auto stats_index = statstable.get_index<name("bykey")>();

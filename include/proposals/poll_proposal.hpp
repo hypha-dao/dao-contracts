@@ -5,11 +5,10 @@
 
 namespace hypha
 {
-    class QuestCompletionProposal : public PayoutProposal
+    class PollProposal : public PayoutProposal
     {
     public:
         using PayoutProposal::PayoutProposal;
-
     protected:
         void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;
         void postProposeImpl(Document &proposal) override;

@@ -5,12 +5,13 @@
 
 namespace hypha
 {
-    class QuestCompletionProposal : public PayoutProposal
+    class PolicyProposal : public PayoutProposal
     {
     public:
         using PayoutProposal::PayoutProposal;
 
     protected:
+        bool checkMembership(const eosio::name& proposer, ContentGroups &contentGroups) override;
         void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;
         void postProposeImpl(Document &proposal) override;
         void passImpl(Document &proposal) override;
