@@ -16,8 +16,7 @@ namespace hypha
             PERIOD_COUNT + string(" must be less than 26. You submitted: ") + std::to_string(std::get<int64_t>(periodCount->value))
         );
 
-        //TODO: Add required parameters check on proposeImpl
-        //Also we should specify the quest rewards here
+        //Check token rewards for the quest and recipient item
         PayoutProposal::proposeImpl(proposer, contentWrapper);
     }
 
@@ -26,7 +25,7 @@ namespace hypha
         auto cw = proposal.getContentWrapper();
 
         //We might have stablished a previous quest start
-        if (auto parentQuest = getParent(common::PARENT_QUEST_ITEM, common::QUEST_START, cw)) {
+        if (auto parentQuest = getItemDocOpt(common::PARENT_QUEST_ITEM, common::QUEST_START, cw)) {
 
             auto parentCW = parentQuest->getContentWrapper();
             //Only approved quest can be used as parent quest
@@ -45,15 +44,9 @@ namespace hypha
             markRelatives(common::PARENT_QUEST, common::ASCENDANT, name(), proposal.getID());
         }
 
-         //TODO: Check circle field
-        if (auto [_, circleIdItem] = cw.get(DETAILS, "circle_id"); circleIdItem) {
-            auto circleId = circleIdItem->getAs<int64_t>();
-
-            //Validate circle 
-            TypedDocument::withType(m_dao, circleId, common::CIRCLE);
-
+        if (auto circle = getItemDocOpt(common::CIRCLE_ID, common::CIRCLE, cw)) {
             //Create circle link
-            Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), circleId, common::CIRCLE);
+            Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), circle->getID(), common::CIRCLE);
         }
 
         //Check start period

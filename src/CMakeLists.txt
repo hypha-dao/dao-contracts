@@ -45,6 +45,7 @@ add_contract( dao dao
                 proposals/suspend_proposal.cpp
                 proposals/quest_start_proposal.cpp
                 proposals/quest_completion_proposal.cpp
+                proposals/budget_proposal.cpp
                 proposals/policy_proposal.cpp
                 proposals/poll_proposal.cpp
                 proposals/circle_proposal.cpp

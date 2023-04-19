@@ -7,6 +7,7 @@
 #include <common.hpp>
 #include <util.hpp>
 #include <proposals/edit_proposal.hpp>
+#include <proposals/payout_proposal.hpp>
 #include <assignment.hpp>
 #include <period.hpp>
 #include <logger/logger.hpp>
@@ -16,18 +17,19 @@
 namespace hypha
 {
 
+    /**
+     * TODO: Refactor this class into only allowing fetching specific items
+     * for each proposal type in order to avoid editing restricted data.
+     * Also implement locked by idiom to avoid reading all existing edit proposals
+     */
+
     void EditProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     { 
-      EOS_CHECK(
-        Member::isMember(m_dao, m_daoID, proposer),
-        to_str("Only members of: ", m_daoID, " can edit this proposal")
-      )
-
       auto originalDocHash = contentWrapper.getOrFail(DETAILS, ORIGINAL_DOCUMENT)->getAs<int64_t>();
 
       Document originalDoc(m_dao.get_self(), originalDocHash);
 
-      if (auto [hasOpenEditProp, proposalHash] = hasOpenProposal(common::SUSPEND, originalDoc.getID());
+      if (auto [hasOpenEditProp, proposalHash] = hasOpenProposal(common::ORIGINAL, originalDoc.getID());
           hasOpenEditProp) {
         EOS_CHECK(
           false,
@@ -47,6 +49,9 @@ namespace hypha
         );
 
         Document original;
+
+        //TODO: Make restricted items list that should never be edited in 
+        //any proposal type, i.e. dao, state, original_approved_date
 
         //Valid for both Assignment and BadgeAssignment
         if (auto edges = m_dao.getGraph().getEdgesTo(originalDocID, common::ASSIGNMENT);
@@ -97,6 +102,13 @@ namespace hypha
         }
 
         ContentWrapper ocw = original.getContentWrapper();
+
+        auto type = ocw.getOrFail(SYSTEM, TYPE)->getAs<name>();
+
+        if (type == common::BUDGET) {
+          //Check that we have required token items
+          PayoutProposal::checkTokenItems(m_daoSettings, proposalContent);
+        }
 
         auto state = ocw.getOrFail(DETAILS, common::STATE)->getAs<string>();
 

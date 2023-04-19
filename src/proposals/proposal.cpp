@@ -531,4 +531,37 @@ namespace hypha
         m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
     }
 
+    std::optional<Document> Proposal::getItemDocOpt(const char* docItem, const name& docType, ContentWrapper &contentWrapper)
+    {
+        if (auto [_, item] = contentWrapper.get(DETAILS, docItem);
+            item) 
+        {
+            auto doc = TypedDocument::withType(m_dao, item->getAs<int64_t>(), docType);
+            
+            return doc;
+        }
+
+        return std::nullopt;
+    }
+
+    Document Proposal::getItemDoc(const char* docItem, const name& docType, ContentWrapper &contentWrapper)
+    {
+        auto docOpt = getItemDocOpt(docItem, docType, contentWrapper);
+
+        EOS_CHECK(
+            docOpt,
+            to_str("Required item not found: ", docItem)
+        )
+
+        return std::move(*docOpt);
+    }
+
+    Document Proposal::getLinkDoc(uint64_t from, const name& link, const name& docType)
+    {
+        auto linkEdge = Edge::get(m_dao.get_self(), from, link);
+
+        auto doc = TypedDocument::withType(m_dao, linkEdge.getToNode(), docType);
+
+        return doc;
+    }
 } // namespace hypha

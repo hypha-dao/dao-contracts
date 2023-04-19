@@ -15,56 +15,14 @@
 namespace hypha
 {
 
-bool PayoutProposal::checkMembership(const eosio::name& proposer, ContentGroups &contentGroups)
+void PayoutProposal::checkTokenItems(Settings* daoSettings, ContentWrapper contentWrapper)
 {
-    return Member::isCommunityMember(m_dao, m_daoID, proposer);
-}
-
-std::optional<Document> PayoutProposal::getParent(const char* parentItem, const name& parentType, ContentWrapper &contentWrapper, bool mustExist) 
-{
-    if (auto [_, parent] = contentWrapper.get(DETAILS, parentItem);
-        parent) 
-    {
-        auto parentDoc = TypedDocument::withType(m_dao, parent->getAs<int64_t>(), parentType);
-        
-        return parentDoc;
-    }
-
-    EOS_CHECK(
-        !mustExist,
-        to_str("Required item not found: ", parentItem)
-    )
-
-    return std::nullopt;
-}
-
-Document PayoutProposal::getParent(uint64_t from, const name& edgeName, const name& parentType)
-{
-    auto parentEdge = Edge::get(m_dao.get_self(), from, edgeName);
-
-    auto doc = TypedDocument::withType(m_dao, parentEdge.getToNode(), parentType);
-
-    return doc;
-}
-
-void PayoutProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
-{
-    TRACE_FUNCTION()
-
     auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
-
-    // recipient must exist and be a DHO member
-    name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
-
-    EOS_CHECK(
-        proposer == recipient,
-        "Proposer must be the recipient of the payment"
-    );
     
     auto tokens = AssetBatch {
-        .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-        .peg = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
-        .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+        .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
+        .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+        .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
     };
 
     // if usd_amount is provided in the DETAILS section, convert that to token components
@@ -80,7 +38,7 @@ void PayoutProposal::proposeImpl(const name &proposer, ContentWrapper &contentWr
         EOS_CHECK(deferred >= 0, DEFERRED + string(" must be greater than or equal to zero. You submitted: ") + std::to_string(deferred));
         EOS_CHECK(deferred <= 100, DEFERRED + string(" must be less than or equal to 100 (=100%). You submitted: ") + std::to_string(deferred));
 
-        auto rewardPegVal = m_daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO);
+        auto rewardPegVal = daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO);
         
         auto salaries = calculateSalaries(SalaryConfig {
             .periodSalary = normalizeToken(usd),
@@ -141,6 +99,26 @@ void PayoutProposal::proposeImpl(const name &proposer, ContentWrapper &contentWr
         hasReward, 
         "Missing reward_amount item"
     );
+}
+
+bool PayoutProposal::checkMembership(const eosio::name& proposer, ContentGroups &contentGroups)
+{
+    return Member::isCommunityMember(m_dao, m_daoID, proposer);
+}
+
+void PayoutProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
+{
+    TRACE_FUNCTION()
+
+    // recipient must exist and be a DHO member
+    name recipient = contentWrapper.getOrFail(DETAILS, RECIPIENT)->getAs<eosio::name>();
+
+    EOS_CHECK(
+        proposer == recipient,
+        "Proposer must be the recipient of the payment"
+    );
+
+    checkTokenItems(m_daoSettings, contentWrapper);
 }
 
 void PayoutProposal::markRelatives(const name& link, const name& fromRelationship, const name& toRelationship, uint64_t docId, bool clear)

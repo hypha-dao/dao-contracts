@@ -31,7 +31,7 @@ void PolicyProposal::postProposeImpl(Document &proposal)
 {
     auto cw = proposal.getContentWrapper();
     //Check for master policy
-    if (auto masterPolicy = getParent(common::MASTER_POLICY_ITEM, common::POLICY, cw)) {
+    if (auto masterPolicy = getItemDocOpt(common::MASTER_POLICY_ITEM, common::POLICY, cw)) {
 
         auto parentCW = masterPolicy->getContentWrapper();
 
