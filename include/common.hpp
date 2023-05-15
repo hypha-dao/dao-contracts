@@ -223,6 +223,7 @@ namespace hypha::common
     inline constexpr name BADGE_NAME = name("badge");
     inline constexpr name PROPOSAL = name("proposal");
     inline constexpr name VOTABLE = name("votable");
+    inline constexpr name CLOSED_PROPS = name("closedprops");
     inline constexpr name FAILED_PROPS = name("failedprops");
     inline constexpr name PASSED_PROPS = name("passedprops");
     inline constexpr name MEMBER = name("member");

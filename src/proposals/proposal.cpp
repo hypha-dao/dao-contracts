@@ -210,6 +210,8 @@ namespace hypha
             // create edge for FAILED_PROPS
             Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID (), common::FAILED_PROPS);
         }
+
+        Edge::write(m_dao.get_self(), m_dao.get_self(), m_daoID, proposal.getID (), common::CLOSED_PROPS);
     }
 
     void Proposal::close(Document &proposal)
