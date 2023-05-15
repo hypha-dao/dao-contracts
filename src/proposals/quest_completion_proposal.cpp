@@ -8,7 +8,7 @@ namespace hypha
 void QuestCompletionProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
 {
     //Verify recipient in quest start is the same as the proposer of the quest completion
-    auto questStartDoc = *getParent(common::QUEST_START_ITEM, common::QUEST_START, contentWrapper, true);
+    auto questStartDoc = getItemDoc(common::QUEST_START_ITEM, common::QUEST_START, contentWrapper);
 
     auto questStartCW = questStartDoc.getContentWrapper();
 
@@ -34,7 +34,7 @@ void QuestCompletionProposal::postProposeImpl(Document &proposal)
     auto cw = proposal.getContentWrapper();
     
     //We must have stablished a quest start 
-    auto questStartDoc = *getParent(common::QUEST_START_ITEM, common::QUEST_START, cw, true);
+    auto questStartDoc = getItemDoc(common::QUEST_START_ITEM, common::QUEST_START, cw);
 
     //TODO: Check if the pacted time duration already happened (current time > start_date + period_count)
 
@@ -63,7 +63,7 @@ void QuestCompletionProposal::passImpl(Document &proposal)
 {
     TRACE_FUNCTION()
 
-    auto questStart = getParent(proposal.getID(), common::QUEST_START, common::QUEST_START);
+    auto questStart = getLinkDoc(proposal.getID(), common::QUEST_START, common::QUEST_START);
     pay(questStart, common::QUEST_COMPLETION);
     Edge(m_dao.get_self(), m_dao.get_self(), questStart.getID(), proposal.getID(), common::COMPLETED_BY);
     Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), questStart.getID(), common::COMPLETED);
@@ -74,7 +74,7 @@ void QuestCompletionProposal::failImpl(Document &proposal)
     TRACE_FUNCTION()
     Edge::getTo(m_dao.get_self(), proposal.getID(), common::LOCKED_BY).erase();
 
-    auto questStart = getParent(proposal.getID(), common::QUEST_START, common::QUEST_START);
+    auto questStart = getLinkDoc(proposal.getID(), common::QUEST_START, common::QUEST_START);
 
     //Make a history of failed proposals
     Edge(m_dao.get_self(), m_dao.get_self(), questStart.getID(), proposal.getID(), common::FAILED_PROPS);

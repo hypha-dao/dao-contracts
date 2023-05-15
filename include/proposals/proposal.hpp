@@ -65,6 +65,10 @@ namespace hypha
         std::pair<bool, uint64_t> hasOpenProposal(name proposalType, uint64_t docID);
         
         eosio::asset getVoiceSupply(Document& proposal);
+
+        std::optional<Document> getItemDocOpt(const char* docItem, const name& docType, ContentWrapper &contentWrapper);
+        Document getItemDoc(const char* docItem, const name& docType, ContentWrapper &contentWrapper);
+        Document getLinkDoc(uint64_t from, const name& link, const name& docType);
     private:
         bool oldDidPass(const eosio::name &ballotId);
 

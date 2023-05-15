@@ -31,7 +31,7 @@ void PolicyProposal::postProposeImpl(Document &proposal)
 {
     auto cw = proposal.getContentWrapper();
     //Check for master policy
-    if (auto masterPolicy = getParent(common::MASTER_POLICY_ITEM, common::POLICY, cw)) {
+    if (auto masterPolicy = getItemDocOpt(common::MASTER_POLICY_ITEM, common::POLICY, cw)) {
 
         auto parentCW = masterPolicy->getContentWrapper();
 
@@ -47,6 +47,12 @@ void PolicyProposal::postProposeImpl(Document &proposal)
 
         //Don't mark relationship from parent to child for now
         markRelatives(common::MASTER_POLICY, common::ASCENDANT, name(), proposal.getID());
+    }
+
+    //Check for parent circle
+    if (auto parentCircle = getItemDocOpt(common::PARENT_CIRCLE_ITEM, common::CIRCLE, cw)) {
+        //Make relationship to parent circle
+        Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), parentCircle->getID(), common::PARENT_CIRCLE);
     }
 }
 

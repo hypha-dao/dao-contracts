@@ -40,10 +40,10 @@ void checkDaoCanEnrrollMember(dao& dao, uint64_t daoID)
     {
         auto currentPlan = getCurrentPlan(*planManager);
 
-        auto currentMembers = dao.getGraph().getEdgesFrom(daoID, common::MEMBER);
+        auto currentMembers = Edge::getEdgesFromCount(dao.get_self(), daoID, common::MEMBER);
 
         EOS_CHECK(
-            currentMembers.size() < currentPlan.getMaxMemberCount(),
+            currentMembers < currentPlan.getMaxMemberCount(),
             to_str("You already reached the max number of members available for your plan: ", currentPlan.getMaxMemberCount())
         )
     }

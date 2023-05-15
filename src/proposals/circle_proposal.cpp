@@ -15,9 +15,9 @@ void CircleProposal::postProposeImpl(Document &proposal)
 {
     auto cw = proposal.getContentWrapper();
 
-    if (auto [_, parentCircle] = cw.get(DETAILS, common::PARENT_CIRCLE_ITEM); parentCircle) {
+    if (auto parentCircle = getItemDocOpt(common::PARENT_CIRCLE_ITEM, common::CIRCLE, cw)) {
         //Make relationship to parent
-        Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), parentCircle->getAs<int64_t>(), common::PARENT_CIRCLE);
+        Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), parentCircle->getID(), common::PARENT_CIRCLE);
     }
 }
 
@@ -25,9 +25,9 @@ void CircleProposal::passImpl(Document &proposal)
 {
     auto cw = proposal.getContentWrapper();
 
-    if (auto [_, parentCircle] = cw.get(DETAILS, common::PARENT_CIRCLE_ITEM); parentCircle) {
+    if (auto parentCircle = getItemDocOpt(common::PARENT_CIRCLE_ITEM, common::CIRCLE, cw)) {
         //Make relationship from parent
-        Edge(m_dao.get_self(), m_dao.get_self(), parentCircle->getAs<int64_t>(), proposal.getID(), common::SUB_CIRCLE);
+        Edge(m_dao.get_self(), m_dao.get_self(), parentCircle->getID(), proposal.getID(), common::SUB_CIRCLE);
     }
     else {
         //Make circle top level

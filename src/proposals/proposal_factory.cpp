@@ -14,6 +14,7 @@
 #include <proposals/policy_proposal.hpp>
 #include <proposals/poll_proposal.hpp>
 #include <proposals/circle_proposal.hpp>
+#include <proposals/budget_proposal.hpp>
 #include <logger/logger.hpp>
 
 #include <common.hpp>
@@ -64,6 +65,9 @@ namespace hypha
 
         case common::CIRCLE.value:
             return new CircleProposal(dao, daoHash);
+        
+        case common::BUDGET.value:
+            return new BudgetProposal(dao, daoHash);
     
         // TODO: should be expanded to work with Badge Assignments as well
         case common::EXTENSION.value:

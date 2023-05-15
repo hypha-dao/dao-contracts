@@ -133,6 +133,7 @@ namespace hypha::common
     inline constexpr name ASSIGNMENT = name("assignment");
     inline constexpr name ROLE_NAME = name("role");
     inline constexpr name PAYOUT = name("payout");
+    inline constexpr name BUDGET = name("budget");
     inline constexpr name ATTESTATION = name("attestation");
     inline constexpr name POLICY = name("policy");
     inline constexpr name POLL = name("poll");
@@ -210,6 +211,7 @@ namespace hypha::common
     inline constexpr auto PARENT_CIRCLE_ITEM = "parent_circle";
     inline constexpr auto PARENT_CIRCLE = name("parentcircle");
     inline constexpr auto SUB_CIRCLE = name("subcircle");
+    inline constexpr auto CIRCLE_ID = "circle_id";
 
 
     // document types
@@ -221,6 +223,7 @@ namespace hypha::common
     inline constexpr name BADGE_NAME = name("badge");
     inline constexpr name PROPOSAL = name("proposal");
     inline constexpr name VOTABLE = name("votable");
+    inline constexpr name CLOSED_PROPS = name("closedprops");
     inline constexpr name FAILED_PROPS = name("failedprops");
     inline constexpr name PASSED_PROPS = name("passedprops");
     inline constexpr name MEMBER = name("member");

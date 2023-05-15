@@ -6,7 +6,8 @@
 
 namespace hypha
 {
-
+    class Settings;
+    
     /**
      * @brief Payout proposal is used as a generic wrapper for different types of proposals
      * Contribution (Request for a payment)
@@ -21,6 +22,8 @@ namespace hypha
 
     public:
         using Proposal::Proposal;
+
+        static void checkTokenItems(Settings* daoSettings, ContentWrapper contentWrapper);
     protected:
         void proposeImpl(const name &proposer, ContentWrapper &contentWrapper) override;
         bool checkMembership(const eosio::name& proposer, ContentGroups &contentGroups) override;
@@ -29,9 +32,6 @@ namespace hypha
         name getProposalType() override;
 
         void pay(Document &proposal, eosio::name edgeName);
-
-        Document getParent(uint64_t from, const name& edgeName, const name& parentType);
-        std::optional<Document> getParent(const char* parentItem, const name& parentType, ContentWrapper &contentWrapper, bool mustExist = false);
 
         void markRelatives(const name& link, const name& fromRelationship, const name& toRelationship, uint64_t docId, bool clear = false);
         //void markAncestry(const name& ancestryLink, uint64_t docId);
