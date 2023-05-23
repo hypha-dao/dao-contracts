@@ -36,6 +36,14 @@ namespace fields {
     inline constexpr auto REDEMPTIONS_ENABLED = "redemptions_enabled";
 }
 
+namespace payment_state {
+    inline constexpr auto NONE = "none";
+    inline constexpr auto PENDING = "pending";
+    inline constexpr auto EXECUTED = "executed";
+    //Just remove the payment document for now
+    //inline constexpr auto CANCELED = "canceled";
+}
+
 #else //Required fields constants even when treasury is off
 
 namespace links {

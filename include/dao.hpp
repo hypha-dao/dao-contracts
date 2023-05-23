@@ -294,12 +294,22 @@ namespace pricing {
       ACTION archiverecur(uint64_t document_id);
       
 #ifdef USE_TREASURY
+      
+      struct RedemptionInfo 
+      {
+         eosio::asset amount;
+         name receiver;
+         string notes;
+         uint64_t redemption_id;
+      };
+
       //Treasury actions
       ACTION createtrsy(uint64_t dao_id);
       ACTION addtreasurer(uint64_t treasury_id, name treasurer);
       ACTION remtreasurer(uint64_t treasury_id, name treasurer);
       ACTION redeem(uint64_t dao_id, name requestor, const asset& amount);
       ACTION newpayment(name treasurer, uint64_t redemption_id, const asset& amount, string notes);
+      ACTION newmsigpay(name treasurer, uint64_t treasury_id, std::vector<RedemptionInfo>& payments, const std::vector<eosio::permission_level>& signers);
       ACTION setpaynotes(uint64_t payment_id, string notes);
       ACTION setrsysttngs(uint64_t treasury_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 #endif

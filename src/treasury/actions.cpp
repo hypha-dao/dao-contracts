@@ -6,6 +6,8 @@
 #include <member.hpp>
 #include <document_graph/edge.hpp>
 
+#include <eosio/action.hpp>
+
 #include <treasury/treasury.hpp>
 #include <treasury/redemption.hpp>
 #include <treasury/balance.hpp>
@@ -26,6 +28,133 @@ using treasury::TrsyPaymentData;
 
 namespace trsycommon = treasury::common;
 
+static TrsyPayment createTrsyPayment(dao& dao, const name& treasurer, std::optional<uint64_t> treasuryID, const dao::RedemptionInfo& payment, bool isMsig) {
+
+  EOS_CHECK(
+    payment.amount.amount > 0,
+    "Amount must be greater to 0"
+  )
+
+  //Verify the redemption id is valid by creating a Redemption object with it
+  Redemption redemption(dao, payment.redemption_id);
+
+  auto treasury = redemption.getTreasury();
+  treasury.checkTreasurerAuth();
+
+  EOS_CHECK(
+    !treasuryID.has_value() || *treasuryID == treasury.getId(),
+    "Redemption must belong to the provided DAO Treasury"
+  )
+
+  const auto& amountRequested = redemption.getAmountRequested();
+
+  {
+    auto amountDue = amountRequested - redemption.getAmountPaid();
+    //Check the payment amount is less or equal to the amount due
+    EOS_CHECK(
+      payment.amount <= amountDue,
+      to_str(
+        "Redemption amount must be less than amount due. Original requested amount: ", amountRequested,
+        "; Paid amount: ", redemption.getAmountPaid(),
+        ". The remaining amount due is: ", amountDue,
+        " and you attempted to create a new payment for: ", payment.amount
+      )
+    );
+  }
+
+  //Update amount paid
+  redemption.setAmountPaid(redemption.getAmountPaid() + payment.amount);
+  redemption.update();
+  
+  TrsyPayment trsyPayment(dao, treasury.getId(), payment.redemption_id, TrsyPaymentData {
+    .creator = treasurer,
+    .amount_paid = payment.amount,
+    .notes = std::move(payment.notes),
+    .state = isMsig ? trsycommon::payment_state::PENDING : trsycommon::payment_state::NONE //Specific flag for non msig payments
+  });
+
+  return trsyPayment;
+}
+
+ACTION dao::newmsigpay(name treasurer, uint64_t treasury_id, std::vector<RedemptionInfo>& payments, const std::vector<eosio::permission_level>& signers)
+{
+  require_auth(treasurer);
+
+  EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
+ 
+  //TODO: Should we notify the requestor?
+  auto dhoSettings = getSettingsDocument();
+  auto nextProposalNameInt = dhoSettings->getSettingOrDefault("next_proposal_name_int", int64_t(1'000'000));
+  
+  name proposalName = name(uint64_t(nextProposalNameInt));
+
+  dhoSettings->setSetting(Content{"next_proposal_name_int", nextProposalNameInt + 1});
+
+  //Msig Document to store proposal name
+  ContentGroups msigInfoCgs{
+    ContentGroup{
+      Content {CONTENT_GROUP_LABEL, DETAILS},
+      Content {"proposal_name", proposalName},
+      Content {"treasury_id", int64_t(treasury_id)},
+      Content {"state", trsycommon::payment_state::PENDING}
+    },
+    ContentGroup {
+      Content {CONTENT_GROUP_LABEL, SYSTEM},
+      Content {TYPE, "msig.info"_n},
+      Content {NODE_LABEL, "Multisig Info"}
+    }
+  };
+
+  Document msigInfoDoc(get_self(), get_self(), msigInfoCgs);
+
+  auto daoId = Treasury(*this, treasury_id).getDaoID();
+
+  auto daoSettings = getSettingsDocument(daoId);
+
+  auto treasuryAccount = daoSettings->getOrFail<name>("treasury_account");
+
+  auto nativeToken = dhoSettings->getOrFail<asset>("native_token");
+
+  eosio::transaction trx;
+
+  trx.expiration = eosio::current_time_point() + eosio::days(5);
+
+  //Hardcode for now the price
+  constexpr auto NATIVE_TO_USD_RATIO = 1.25;
+
+  for (auto& redemptionInfo : payments) {
+    auto trsyPay = createTrsyPayment(*this, treasurer, treasury_id, redemptionInfo, true);
+
+    Edge(get_self(), get_self(), trsyPay.getId(), msigInfoDoc.getID(), "msiginfo"_n);
+    Edge(get_self(), get_self(), msigInfoDoc.getID(), trsyPay.getId(), trsycommon::links::PAYMENT);
+
+    auto calculatedNative = int64_t(normalizeToken(redemptionInfo.amount) / NATIVE_TO_USD_RATIO);
+
+    std::string notes;
+
+    //Notes structure receiver;redemption_id;notes
+    notes = to_str(
+      redemptionInfo.receiver, ";", 
+      redemptionInfo.redemption_id, ";", 
+      redemptionInfo.notes.empty() ? "Redemption payment" : redemptionInfo.notes
+    );
+
+    trx.actions.push_back(eosio::action(
+      eosio::permission_level{treasuryAccount, "active"_n},
+      "eosio.token"_n,
+      "transfer"_n,
+      std::tuple(treasuryAccount, get_self(), denormalizeToken(calculatedNative, nativeToken), notes)
+    ));
+  }
+
+  //Setup single multisig transaction for all redemptions (might want to create 1 per redemptio or make it optional)
+  eosio::action(
+    eosio::permission_level{get_self(), "active"_n},
+    "eosio.msig"_n,
+    "propose"_n,
+    std::tuple(get_self(), proposalName, signers, trx)
+  ).send();
+}
 
 ACTION dao::addtreasurer(uint64_t treasury_id, name treasurer)
 {
@@ -118,42 +247,13 @@ ACTION dao::newpayment(name treasurer, uint64_t redemption_id, const asset& amou
 
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-  EOS_CHECK(
-    amount.amount > 0,
-    "Amount must be greater to 0"
-  )
-
-  //Verify the redemption id is valid by creating a Redemption object with it
-  Redemption redemption(*this, redemption_id);
-
-  auto treasury = redemption.getTreasury();
-  treasury.checkTreasurerAuth();
-
-  const auto& amountRequested = redemption.getAmountRequested();
-
-  {
-    auto amountDue = amountRequested - redemption.getAmountPaid();
-    //Check the payment amount is less or equal to the amount due
-    EOS_CHECK(
-      amount <= amountDue,
-      to_str(
-        "Redemption amount must be less than amount due. Original requested amount: ", amountRequested,
-        "; Paid amount: ", redemption.getAmountPaid(),
-        ". The remaining amount due is: ", amountDue,
-        " and you attempted to create a new payment for: ", amount
-      )
-    );
-  }
-
-  //Update amount paid
-  redemption.setAmountPaid(redemption.getAmountPaid() + amount);
-  redemption.update();
-  
-  TrsyPayment payment(*this, treasury.getId(), redemption_id, TrsyPaymentData {
-    .creator = treasurer,
-    .amount_paid = amount,
-    .notes = std::move(notes)
-  });
+  createTrsyPayment(
+    *this, 
+    treasurer, 
+    std::nullopt, 
+    RedemptionInfo{ .amount = amount, .receiver = name(), .notes = notes, .redemption_id = redemption_id }, 
+    false
+  );
 
   //TODO: Should we notify the requestor?
 }

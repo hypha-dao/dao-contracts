@@ -21,7 +21,7 @@ namespace hypha::common
     inline constexpr auto VOICE_TOKEN = "voice_token";
     inline constexpr auto REWARD_TOKEN = "reward_token";
     inline constexpr auto REWARD_TO_PEG_RATIO = "reward_to_peg_ratio";
-
+    inline constexpr auto NATIVE_TOKEN_TO_USD_RATIO = "native_token_to_usd_ratio";
     inline constexpr symbol S_REWARD("BM", 2);
     inline constexpr symbol S_VOICE("BMV", 2);
     inline constexpr symbol S_PEG("BUSD", 2);
@@ -79,6 +79,7 @@ namespace hypha::common
     inline constexpr auto VOICE_TOKEN_DECAY_PER_PERIOD = "voice_token_decay_per_period_x10M";
     inline constexpr auto SKIP_PEG_TOKEN_CREATION = "skip_peg_token_create";
     inline constexpr auto SKIP_REWARD_TOKEN_CREATION = "skip_reward_token_create";
+    inline constexpr auto MSIG_APPROVAL_AMOUNT = "msig_approval_amount";
     //const asset RAM_ALLOWANCE = asset(20000, symbol("TLOS", 4));
     const uint32_t RAM_ALLOWANCE_BYTES = (uint32_t) 512;
     inline constexpr auto URLS_GROUP = "urls";

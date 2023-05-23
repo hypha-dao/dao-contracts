@@ -85,10 +85,6 @@ void dao::remdoc(uint64_t doc_id)
 {
     eosio::require_auth(get_self());
     Document doc(get_self(), doc_id);
-    auto cw = doc.getContentWrapper();
-    if (cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == hypha::common::DAO) {
-      remNameID<dao_table>(cw.getOrFail(DETAILS, DAO_NAME)->getAs<name>());
-    }
     m_documentGraph.eraseDocument(doc_id, true);
 }
 
@@ -1268,6 +1264,7 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
         common::PERIOD_DURATION,
         common::CLAIM_ENABLED,
         common::ADD_ADMINS_ENABLED,
+        common::MSIG_APPROVAL_AMOUNT,
         DAO_NAME
       }
     }
@@ -1548,7 +1545,7 @@ void dao::execmsig(uint64_t msig_id, name executer)
   auto daoSettings = getSettingsDocument(daoID);
 
   //Default approval amount is 2
-  auto requiredApprovals = daoSettings->getSettingOrDefault<int64_t>("msig_approval_amount", 1);
+  auto requiredApprovals = daoSettings->getSettingOrDefault<int64_t>(common::MSIG_APPROVAL_AMOUNT, 1);
 
   //Check if enough approvals
   auto approvalsCount = Edge::getEdgesToCount(get_self(), msig_id, common::APPROVE_MSIG);
