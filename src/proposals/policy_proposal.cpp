@@ -6,13 +6,7 @@
 
 namespace hypha
 {
-
-bool PolicyProposal::checkMembership(const eosio::name& proposer, ContentGroups &contentGroups)
-{
-    //We only allow core members to create policy proposals
-    return false;
-}
-
+    
 void PolicyProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
 {}
 

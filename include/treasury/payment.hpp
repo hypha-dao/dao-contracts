@@ -34,8 +34,10 @@ class TrsyPayment : public TypedDocument {
         Data,
         PROPERTY(creator, eosio::name, Creator, NO_USE_GETSET),
         PROPERTY(amount_paid, eosio::asset, AmountPaid, USE_GETSET),
+        PROPERTY(native_amount_paid, eosio::asset, NativeAmountPaid, USE_GETSET),
         PROPERTY(notes, string, Notes, USE_GETSET),
-        PROPERTY(state, string, State, USE_GETSET),
+        //For now just store state in the MsigInfo document
+        //PROPERTY(state, string, State, USE_GETSET),
         PROPERTY(msig, name, Msig, USE_GET)
     )
 public:

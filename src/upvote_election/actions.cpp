@@ -1,3 +1,4 @@
+#ifdef USE_UPVOTE_ELECTIONS
 #include <dao.hpp>
 #include "upvote_election/upvote_election.hpp"
 #include "upvote_election/election_round.hpp"
@@ -712,3 +713,5 @@ void dao::editupvelc(uint64_t election_id, ContentGroups& election_config)
 }
 
 }
+
+#endif

@@ -31,8 +31,7 @@ namespace hypha
 
     protected:
 
-        virtual bool checkMembership(const eosio::name& proposer, ContentGroups &contentGroups)
-        { return false; }
+        virtual bool checkMembership(const eosio::name& proposer, ContentGroups &contentGroups);
 
         virtual void proposeImpl(const eosio::name &proposer,
                                  ContentWrapper &contentWrapper) = 0;
