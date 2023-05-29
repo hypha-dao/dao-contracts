@@ -1,4 +1,3 @@
-#ifdef USE_UPVOTE_ELECTIONS
 #include <dao.hpp>
 #include "upvote_election/upvote_election.hpp"
 #include "upvote_election/election_round.hpp"
@@ -13,6 +12,8 @@
 #include "recurring_activity.hpp"
 
 #include <member.hpp>
+
+#ifdef USE_UPVOTE_ELECTIONS
 
 namespace hypha {
 
