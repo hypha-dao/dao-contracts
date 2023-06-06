@@ -545,6 +545,18 @@ namespace hypha
         {
             auto doc = TypedDocument::withType(m_dao, item->getAs<int64_t>(), docType);
             
+            //Verify that Document is approved
+            auto docCW = doc.getContentWrapper();
+
+            auto state = docCW.get(DETAILS, common::STATE).second;
+
+            //Only approved documents can be used as relatives
+            EOS_CHECK(
+                state == nullptr ||
+                state->getAs<string>() == common::STATE_APPROVED,
+                "Only approved Documents can be used as reference"
+            );
+
             return doc;
         }
 

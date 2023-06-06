@@ -26,16 +26,6 @@ void PolicyProposal::postProposeImpl(Document &proposal)
     auto cw = proposal.getContentWrapper();
     //Check for master policy
     if (auto masterPolicy = getItemDocOpt(common::MASTER_POLICY_ITEM, common::POLICY, cw)) {
-
-        auto parentCW = masterPolicy->getContentWrapper();
-
-        //Only approved quest can be used as parent quest
-        EOS_CHECK(
-            parentCW.getOrFail(DETAILS, common::STATE)
-                    ->getAs<string>() == common::STATE_APPROVED,
-            "Only approved Policy can be used as master policy"
-        );
-
         //Create master policy edge
         Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), masterPolicy->getID(), common::MASTER_POLICY);
 

@@ -26,21 +26,11 @@ namespace hypha
 
         //We might have stablished a previous quest start
         if (auto parentQuest = getItemDocOpt(common::PARENT_QUEST_ITEM, common::QUEST_START, cw)) {
-
-            auto parentCW = parentQuest->getContentWrapper();
-            //Only approved quest can be used as parent quest
-            EOS_CHECK(
-                parentCW.getOrFail(DETAILS, common::STATE)
-                        ->getAs<string>() == common::STATE_APPROVED,
-                "Only approved quest can be used as parent quest"
-            );
-
             //Create parent quest edge
             Edge(m_dao.get_self(), m_dao.get_self(), proposal.getID(), parentQuest->getID(), common::PARENT_QUEST);
 
             //Note: We might want to also check if parent quest is already linked to another quest so we don't 
             //allow multiple children and limit it to just 1
-
             markRelatives(common::PARENT_QUEST, common::ASCENDANT, name(), proposal.getID());
         }
 
