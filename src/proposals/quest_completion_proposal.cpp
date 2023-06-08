@@ -18,15 +18,6 @@ void QuestCompletionProposal::proposeImpl(const name &proposer, ContentWrapper &
         proposer == recipient,
         "Proposer must be the recipient of the Quest Start"
     );
-
-    //Quest start must have been approved
-
-    auto state = questStartCW.getOrFail(DETAILS, common::STATE)->getAs<string>();
-
-    EOS_CHECK(
-        state == common::STATE_APPROVED,
-        to_str("Quest Completion can be created only for approved Quest Start proposals")
-    );
 }
 
 void QuestCompletionProposal::postProposeImpl(Document &proposal)
