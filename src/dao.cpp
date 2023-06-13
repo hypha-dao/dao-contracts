@@ -239,6 +239,22 @@ void dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
   mem.checkMembershipOrEnroll(dao_id);
 }
 
+void dao::setupbadges(uint64_t dao_id)
+{
+  verifyDaoType(dao_id);
+  
+  checkAdminsAuth(dao_id);
+
+  auto defBadges = m_documentGraph.getEdgesFrom(getRootID(), name("defbadge"));
+
+  for (auto& badge : defBadges) {
+    //Verify it's a badge
+    auto doc = TypedDocument::withType(*this, badge.getToNode(), common::BADGE_NAME);
+
+    Edge::getOrNew(get_self(), get_self(), dao_id, doc.getID(), common::BADGE_NAME);
+  }
+}
+
 void dao::setclaimenbld(uint64_t dao_id, bool enabled)
 {
   verifyDaoType(dao_id);
@@ -1783,6 +1799,15 @@ void dao::createdao(ContentGroups& config)
       )
     ).send();
 #endif
+
+    eosio::action(
+      eosio::permission_level{ get_self(), name("active") },
+      get_self(),
+      name("setupbadges"),
+      std::make_tuple(
+        daoDoc.getID()
+      )
+    ).send();
 
     return daoDoc;
   };

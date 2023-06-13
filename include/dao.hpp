@@ -180,6 +180,8 @@ namespace pricing {
       ACTION setclaimenbld(uint64_t dao_id, bool enabled);
       
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
+
+      ACTION setupbadges(uint64_t dao_id);
       
 #ifdef DEVELOP_BUILD_HELPERS
 
