@@ -7,8 +7,26 @@ void CircleProposal::proposeImpl(const name &proposer, ContentWrapper &contentWr
     //Check for circle name and purpose. Note: might need to add some character
     //limits
     //Also we might want to check for duplicated circle names
-    contentWrapper.getOrFail(DETAILS, common::CIRCLE_NAME)->getAs<std::string>();
-    contentWrapper.getOrFail(DETAILS, common::CIRCLE_PURPOSE)->getAs<std::string>();
+    auto name = contentWrapper.getOrFail(DETAILS, common::CIRCLE_NAME)->getAs<std::string>();
+
+    EOS_CHECK(
+        name.size() <= 64,
+        "Circle name is too large, max characters is 64"
+    )
+
+    auto purpose = contentWrapper.getOrFail(DETAILS, common::CIRCLE_PURPOSE)->getAs<std::string>();
+
+    EOS_CHECK(
+        purpose.size() < 512,
+        "Circle purpose is too large, max characters is 512"
+    )
+
+    if (auto [_, isAutoApprove] = contentWrapper.get(DETAILS, common::AUTO_APPROVE); 
+        isAutoApprove && isAutoApprove->getAs<int64_t>() == 1) {
+        //Only admins of the DAO are allowed to create this type of proposals
+        m_dao.checkAdminsAuth(m_daoID);
+        selfApprove = true;
+    }
 }
 
 void CircleProposal::postProposeImpl(Document &proposal) 

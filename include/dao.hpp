@@ -462,6 +462,8 @@ namespace pricing {
 
       void verifyDaoType(uint64_t daoID);
 
+      void checkAdminsAuth(uint64_t daoID);
+
    private:
 
       void onRewardTransfer(const name& from, const name& to, const asset& amount);
@@ -505,8 +507,6 @@ namespace pricing {
 
       //TODO: Add parameter to specify staking account(s)
       void verifyEcosystemPayment(pricing::PlanManager& planManager, const string& priceItem, const string& priceStakedItem, const std::string& stakingMemo, const name& beneficiary);
-
-      void checkAdminsAuth(uint64_t daoID);
 
       void readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper configCW, bool isDraft, const string& itemsGroup = DETAILS);
 

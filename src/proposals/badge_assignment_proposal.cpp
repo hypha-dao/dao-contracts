@@ -40,6 +40,8 @@ namespace hypha
              badgeInfo.systemType == badges::SystemBadgeType::Delegate)) {
             return Member::isCommunityMember(m_dao, m_daoID, proposer);
         }
+
+        return false;
     }
 
     void BadgeAssignmentProposal::proposeImpl(const name &proposer, ContentWrapper &badgeAssignment)

@@ -2164,7 +2164,7 @@ void dao::modsalaryband(uint64_t dao_id, ContentGroups& salary_bands)
     );
 
     EOS_CHECK(
-      amount.is_valid(),
+      amount.is_valid() && amount.symbol == common::S_USD,
       "Invalid salary band annual usd amount"
     );
   };

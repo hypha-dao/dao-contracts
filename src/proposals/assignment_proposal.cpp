@@ -29,10 +29,10 @@ namespace hypha
         );
 
         // role in the proposal must be of type: role
-        auto roleDocument = TypedDocument::withType(
-            m_dao,
-            static_cast<uint64_t>(assignment.getOrFail(DETAILS, ROLE_STRING)->getAs<int64_t>()),
-            common::ROLE_NAME
+        auto roleDocument = getItemDoc(
+            ROLE_STRING,
+            common::ROLE_NAME,
+            assignment
         );
 
         auto role = roleDocument.getContentWrapper();
@@ -40,11 +40,6 @@ namespace hypha
         EOS_CHECK(
             m_daoID == Edge::get(m_dao.get_self(), roleDocument.getID(), common::DAO).getToNode(),
             to_str("Role must belong to: ", m_daoID)
-        )
-
-        EOS_CHECK(
-            role.getOrFail(DETAILS, common::STATE)->getAs<string>() == common::STATE_APPROVED,
-            to_str("Role must be approved before applying to it.")
         )
 
         // time_share_x100 is required and must be greater than zero and less than 100%
@@ -64,14 +59,23 @@ namespace hypha
         // deferred_x100 is required and must be greater than or equal to zero and less than or equal to 10000
         int64_t deferred = assignment.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>();
         EOS_CHECK(deferred >= 0, DEFERRED + string(" must be greater than or equal to zero. You submitted: ") + std::to_string(deferred));
-        EOS_CHECK(deferred <= 10000, DEFERRED + string(" must be less than or equal to 10000 (=100%). You submitted: ") + std::to_string(deferred));
+        EOS_CHECK(deferred <= 100, DEFERRED + string(" must be less than or equal to 100 (=100%). You submitted: ") + std::to_string(deferred));
 
-        // retrieve the minimum deferred from the role, if it exists, and check the assignment against it
-        if (auto [idx, minDeferred] = role.get(DETAILS, MIN_DEFERRED); minDeferred)
+        auto salaryBand = getItemDoc("salary_band_id", common::SALARY_BAND, assignment);
+
+        EOS_CHECK(
+            Edge::exists(m_dao.get_self(), salaryBand.getID(), m_daoID, common::DAO),
+            to_str("Salary band must belong to: ", m_daoID)
+        )
+
+        auto salaryBandCW = salaryBand.getContentWrapper();
+        
+        // retrieve the minimum deferred from the salary band
         {
+            auto minDeferred = salaryBandCW.getOrFail(DETAILS, MIN_DEFERRED);
             EOS_CHECK(deferred >= minDeferred->getAs<int64_t>(),
-                         DEFERRED + string(" must be greater than or equal to the role configuration. Role value for ") +
-                             MIN_DEFERRED + " is " + std::to_string(minDeferred->getAs<int64_t>()) + ", and you submitted: " + std::to_string(deferred));
+                      DEFERRED + string(" must be greater than or equal to the salary band configuration. Salary band value for ") +
+                      MIN_DEFERRED + " is " + std::to_string(minDeferred->getAs<int64_t>()) + ", and you submitted: " + std::to_string(deferred));
         }
 
         // START_PERIOD - number of periods the assignment is valid for
@@ -120,7 +124,7 @@ namespace hypha
             ContentWrapper::insertOrReplace(*detailsGroup, Content{PERIOD_COUNT, 13});
         }
 
-        asset annual_usd_salary = role.getOrFail(DETAILS, ANNUAL_USD_SALARY)->getAs<eosio::asset>();
+        asset annual_usd_salary = salaryBandCW.getOrFail(DETAILS, ANNUAL_USD_SALARY)->getAs<eosio::asset>();
 
         // add the USD period pay amount (this is used to calculate SEEDS at time of salary claim)
         Content usdSalaryPerPeriod(USD_SALARY_PER_PERIOD, adjustAsset(annual_usd_salary, getPhaseToYearRatio(m_daoSettings)));
@@ -178,6 +182,11 @@ namespace hypha
         // assignment ---- start ----> period
         uint64_t startPeriodID = static_cast<uint64_t>(cw.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>());
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), startPeriodID, common::START);
+
+        auto salaryBand = getItemDoc("salary_band_id", common::SALARY_BAND, cw);
+
+        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID(), salaryBand.getID(), common::SALARY_BAND);
+        Edge::write(m_dao.get_self(), m_dao.get_self(), salaryBand.getID(), proposal.getID(), common::ASSIGNMENT);
     }
 
     void AssignmentProposal::passImpl(Document &proposal)
