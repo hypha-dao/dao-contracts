@@ -103,7 +103,8 @@ void PayoutProposal::checkTokenItems(Settings* daoSettings, ContentWrapper conte
 
 bool PayoutProposal::checkMembership(const eosio::name& proposer, ContentGroups &contentGroups)
 {
-    return Member::isCommunityMember(m_dao, m_daoID, proposer);
+    return  Proposal::checkMembership(proposer, contentGroups) ||
+            Member::isCommunityMember(m_dao, m_daoID, proposer);
 }
 
 void PayoutProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)

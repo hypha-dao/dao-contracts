@@ -60,19 +60,27 @@ namespace hypha
 
     int64_t stringViewToInt(string_view str);
 
+    uint64_t stringViewToUInt(string_view str);
+
     vector<string_view> splitStringView(string_view str, char delimiter);
 
     template<typename T>
     class ShowType;
 
     auto convert = [](auto& x, string_view str) {
-        using Type = std::remove_reference_t<decltype(x)>;
+        using Type = std::decay_t<decltype(x)>;
         
         if constexpr (std::is_same_v<Type, std::string>) {
           x = std::string(str);
         }
         else if constexpr(std::is_same_v<Type, int64_t>) {
           x = stringViewToInt(str);
+        }
+        else if constexpr(std::is_same_v<Type, uint64_t>) {
+          x = stringViewToUInt(str);
+        }
+        else if constexpr(std::is_same_v<Type, name>) {
+          x = name(str);
         }
         else if constexpr(std::is_same_v<Type, eosio::asset>) {
           auto parts = splitStringView(str, ' ');
@@ -95,8 +103,8 @@ namespace hypha
     };
 
     struct Overloaded {
-      std::vector<string_view>& strs;
-      Overloaded(std::vector<string_view>& strviews) : strs(strviews) {}
+      const std::vector<string_view>& strs;
+      Overloaded(const std::vector<string_view>& strviews) : strs(strviews) {}
       template<class... T>
       void operator()(T&&... args) {
         int n = 0;
@@ -105,10 +113,8 @@ namespace hypha
     };
 
     template<class ... T>
-    std::tuple<T...> splitStringView(string_view str, char delimiter)
-    {
-      auto strs = splitStringView(str, delimiter);
-      
+    std::tuple<T...> splitStringView(const std::vector<string_view>& strs)
+    {      
       EOS_CHECK(
         sizeof...(T) == strs.size(),
         to_str("Mismatch of readed parameters, expected ", sizeof...(T), " but got ", strs.size())
@@ -118,6 +124,14 @@ namespace hypha
       std::apply(Overloaded(strs), res);
 
       return res;
+    }
+
+    template<class ... T>
+    std::tuple<T...> splitStringView(string_view str, char delimiter)
+    {
+      auto strs = splitStringView(str, delimiter);
+      
+      return splitStringView<T...>(strs);
     }
 
     void issueToken(const eosio::name &token_contract,

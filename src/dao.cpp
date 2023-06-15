@@ -85,10 +85,6 @@ void dao::remdoc(uint64_t doc_id)
 {
     eosio::require_auth(get_self());
     Document doc(get_self(), doc_id);
-    auto cw = doc.getContentWrapper();
-    if (cw.getOrFail(SYSTEM, TYPE)->getAs<name>() == hypha::common::DAO) {
-      remNameID<dao_table>(cw.getOrFail(DETAILS, DAO_NAME)->getAs<name>());
-    }
     m_documentGraph.eraseDocument(doc_id, true);
 }
 
@@ -241,6 +237,22 @@ void dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
   auto mem = getOrCreateMember(member);
 
   mem.checkMembershipOrEnroll(dao_id);
+}
+
+void dao::setupbadges(uint64_t dao_id)
+{
+  verifyDaoType(dao_id);
+  
+  checkAdminsAuth(dao_id);
+
+  auto defBadges = m_documentGraph.getEdgesFrom(getRootID(), name("defbadge"));
+
+  for (auto& badge : defBadges) {
+    //Verify it's a badge
+    auto doc = TypedDocument::withType(*this, badge.getToNode(), common::BADGE_NAME);
+
+    Edge::getOrNew(get_self(), get_self(), dao_id, doc.getID(), common::BADGE_NAME);
+  }
 }
 
 void dao::setclaimenbld(uint64_t dao_id, bool enabled)
@@ -1268,6 +1280,7 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
         common::PERIOD_DURATION,
         common::CLAIM_ENABLED,
         common::ADD_ADMINS_ENABLED,
+        common::MSIG_APPROVAL_AMOUNT,
         DAO_NAME
       }
     }
@@ -1548,7 +1561,7 @@ void dao::execmsig(uint64_t msig_id, name executer)
   auto daoSettings = getSettingsDocument(daoID);
 
   //Default approval amount is 2
-  auto requiredApprovals = daoSettings->getSettingOrDefault<int64_t>("msig_approval_amount", 1);
+  auto requiredApprovals = daoSettings->getSettingOrDefault<int64_t>(common::MSIG_APPROVAL_AMOUNT, 1);
 
   //Check if enough approvals
   auto approvalsCount = Edge::getEdgesToCount(get_self(), msig_id, common::APPROVE_MSIG);
@@ -1786,6 +1799,15 @@ void dao::createdao(ContentGroups& config)
       )
     ).send();
 #endif
+
+    eosio::action(
+      eosio::permission_level{ get_self(), name("active") },
+      get_self(),
+      name("setupbadges"),
+      std::make_tuple(
+        daoDoc.getID()
+      )
+    ).send();
 
     return daoDoc;
   };

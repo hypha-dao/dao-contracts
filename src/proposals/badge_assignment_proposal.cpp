@@ -26,6 +26,12 @@ namespace hypha
 
     bool BadgeAssignmentProposal::checkMembership(const eosio::name& proposer, ContentGroups &contentGroups)
     {
+        // TODO: Check scope item in badge document, will be used to define what type of user 
+        // can apply for the badge i.e. 'CORE', 'COMMUNITY' & 'CORE_AND_COMMUNITY'
+        if (Proposal::checkMembership(proposer, contentGroups)) {
+            return true;
+        }
+
         auto badge = getBadgeDoc(contentGroups);
         auto badgeInfo = badges::getBadgeInfo(badge);
 
@@ -34,8 +40,6 @@ namespace hypha
              badgeInfo.systemType == badges::SystemBadgeType::Delegate)) {
             return Member::isCommunityMember(m_dao, m_daoID, proposer);
         }
-
-        return false;
     }
 
     void BadgeAssignmentProposal::proposeImpl(const name &proposer, ContentWrapper &badgeAssignment)

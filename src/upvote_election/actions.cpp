@@ -13,6 +13,8 @@
 
 #include <member.hpp>
 
+#ifdef USE_UPVOTE_ELECTIONS
+
 namespace hypha {
 
 using upvote_election::UpvoteElection;
@@ -712,3 +714,5 @@ void dao::editupvelc(uint64_t election_id, ContentGroups& election_config)
 }
 
 }
+
+#endif

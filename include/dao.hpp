@@ -180,6 +180,8 @@ namespace pricing {
       ACTION setclaimenbld(uint64_t dao_id, bool enabled);
       
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
+
+      ACTION setupbadges(uint64_t dao_id);
       
 #ifdef DEVELOP_BUILD_HELPERS
 
@@ -294,15 +296,28 @@ namespace pricing {
       ACTION archiverecur(uint64_t document_id);
       
 #ifdef USE_TREASURY
+      
+      struct RedemptionInfo 
+      {
+         eosio::asset amount;
+         name receiver;
+         string notes;
+         uint64_t redemption_id;
+      };
+
       //Treasury actions
       ACTION createtrsy(uint64_t dao_id);
       ACTION addtreasurer(uint64_t treasury_id, name treasurer);
       ACTION remtreasurer(uint64_t treasury_id, name treasurer);
       ACTION redeem(uint64_t dao_id, name requestor, const asset& amount);
       ACTION newpayment(name treasurer, uint64_t redemption_id, const asset& amount, string notes);
+      ACTION newmsigpay(name treasurer, uint64_t treasury_id, std::vector<RedemptionInfo>& payments, const std::vector<eosio::permission_level>& signers);
+      ACTION updatemsig(uint64_t msig_id);
+      ACTION cancmsigpay(name treasurer, uint64_t msig_id);
       ACTION setpaynotes(uint64_t payment_id, string notes);
       ACTION setrsysttngs(uint64_t treasury_id, const std::map<std::string, Content::FlexValue>& kvs, std::optional<std::string> group);
 #endif
+#ifdef USE_UPVOTE_ELECTIONS
       //Upvote System
       ACTION createupvelc(uint64_t dao_id, ContentGroups& election_config);
       ACTION editupvelc(uint64_t election_id, ContentGroups& election_config);
@@ -311,6 +326,7 @@ namespace pricing {
       ACTION castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> voted);
 #ifdef EOS_BUILD
       ACTION importelct(uint64_t dao_id, bool deferred);
+#endif
 #endif
 
       //Pricing System actions
@@ -431,6 +447,9 @@ namespace pricing {
                onCreditDao(static_cast<uint64_t>(daoId), quantity);
             }
          }
+         else if (get_first_receiver() == "eosio.token"_n) {
+            onNativeTokenTransfer(from, to, quantity, memo);
+         }
       }
 
       using transfer_action = eosio::action_wrapper<name("transfer"), &dao::ontransfer>;
@@ -459,6 +478,8 @@ namespace pricing {
       void on_husd(const name& from, const name& to, const asset& quantity, const string& memo);
 
       void onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo);
+
+      void onNativeTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo);
 
       void onCreditDao(uint64_t dao_id, const asset& amount);
 

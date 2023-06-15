@@ -1,4 +1,7 @@
 #pragma once
 #define DEVELOP_BUILD
 #define EOS_BUILD
-#define USE_PRICING_PLAN
+//#define DEVELOP_BUILD_HELPERS
+//#define USE_UPVOTE_ELECTIONS
+#define USE_TREASURY
+//#define USE_PRICING_PLAN

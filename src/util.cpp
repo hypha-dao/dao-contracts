@@ -114,6 +114,16 @@ namespace hypha
         return val;
     }
 
+    uint64_t stringViewToUInt(string_view str)
+    {
+        uint64_t val;
+        auto [ptr, err] = std::from_chars(str.data(), str.data() + str.size(), val);
+        EOS_CHECK(err != std::errc::invalid_argument && 
+                  err != std::errc::result_out_of_range,
+                  to_str("Cannot conver string to int: ", std::string(str)))
+        return val;
+    }
+
     void issueToken(const eosio::name &token_contract,
                     const eosio::name &issuer,
                     const eosio::name &to,

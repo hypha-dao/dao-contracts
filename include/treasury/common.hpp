@@ -13,6 +13,7 @@ namespace types {
     inline constexpr auto REDEMPTION = eosio::name("redemption");
     inline constexpr auto ATTESTATION = eosio::name("attestation");
     inline constexpr auto BALANCE = eosio::name("balance");
+    inline constexpr auto MSIG_INFO = eosio::name("msig.info");
 }
 
 namespace links {
@@ -34,6 +35,18 @@ namespace links {
 namespace fields {
     inline constexpr auto THRESHOLD = "threshold";
     inline constexpr auto REDEMPTIONS_ENABLED = "redemptions_enabled";
+    inline constexpr auto NATIVE_TOKEN = "native_token";
+    inline constexpr auto PROPOSAL_NAME = "proposal_name";
+    inline constexpr auto TREASURY_ID = "treasury_id";
+    inline constexpr auto PAYMENT_STATE = "state";
+}
+
+namespace payment_state {
+    inline constexpr auto NONE = "none";
+    inline constexpr auto PENDING = "pending";
+    inline constexpr auto EXECUTED = "executed";
+    //Just remove the payment document for now
+    //inline constexpr auto CANCELED = "canceled";
 }
 
 #else //Required fields constants even when treasury is off

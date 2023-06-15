@@ -33,15 +33,20 @@ namespace hypha
 
     Proposal::~Proposal() {}
 
+    bool Proposal::checkMembership(const eosio::name& proposer, ContentGroups &contentGroups)
+    { 
+        return Member::isMember(m_dao, m_daoID, proposer);
+    }
+
     Document Proposal::propose(const eosio::name &proposer, ContentGroups &contentGroups, bool publish)
     {
         TRACE_FUNCTION()
 
         EOS_CHECK(
             checkMembership(proposer, contentGroups) ||
-            proposer == m_dao.get_self() ||
-            Member::isMember(m_dao, m_daoID, proposer),
-            "only members can make proposals: " + proposer.to_string()
+            //Contract can always create proposal
+            proposer == m_dao.get_self(),
+            "Invalid memership for user: " + proposer.to_string()
         );
         return this->internalPropose(proposer, contentGroups, publish, nullptr);
     }
@@ -540,6 +545,18 @@ namespace hypha
         {
             auto doc = TypedDocument::withType(m_dao, item->getAs<int64_t>(), docType);
             
+            //Verify that Document is approved
+            auto docCW = doc.getContentWrapper();
+
+            auto state = docCW.get(DETAILS, common::STATE).second;
+
+            //Only approved documents can be used as relatives
+            EOS_CHECK(
+                state == nullptr ||
+                state->getAs<string>() == common::STATE_APPROVED,
+                "Only approved Documents can be used as reference"
+            );
+
             return doc;
         }
 
