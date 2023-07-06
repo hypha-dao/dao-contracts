@@ -75,6 +75,26 @@ namespace hypha
 
         auto detailsGroup = badgeAssignment.getGroupOrFail(DETAILS);
 
+        //Check for auto-approved badges (Only valid for Admin and Enroller)
+        if (auto [_, isAutoApprove] = badgeAssignment.get(DETAILS, common::AUTO_APPROVE); 
+            isAutoApprove && isAutoApprove->getAs<int64_t>() == 1) {
+            //Only admins of the DAO are allowed to create this type of proposals
+            //m_dao.checkAdminsAuth(m_daoID);
+            EOS_CHECK(
+                proposer == m_dao.get_self(),
+                "Only contract is allowed to perform this action"
+            );
+
+            EOS_CHECK(
+                badgeInfo.systemType == badges::SystemBadgeType::Admin ||
+                badgeInfo.systemType == badges::SystemBadgeType::Enroller,
+                "This type of badge cannot be self approved"
+            );
+
+            selfApprove = true;
+            return;
+        }
+
         //Voter badge and Delegate badge has to be auto approved
         if (badges::isSelfApproveBadge(badgeInfo.systemType)) {
             
@@ -215,13 +235,6 @@ namespace hypha
 
         //For this specific badges we don't setup a start period
         if (selfApprove) {
-
-            ContentWrapper::insertOrReplace(
-                *contentWrapper.getGroupOrFail(SYSTEM),
-                Content { common::PROPOSAL_CATEGORY,
-                          common::CATEGORY_SELF_APPROVED }
-            );
-
             return;
         }
 

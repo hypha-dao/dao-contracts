@@ -39,6 +39,7 @@ namespace hypha::common
     inline constexpr auto DAO_PARENT_ID = "dao_parent";
     inline constexpr auto DAO_TITLE = "dao_title";
     inline constexpr auto DAO_URL = "dao_url";
+    inline constexpr auto DEFAULT_ASSET = "default_asset";
 
     inline constexpr auto BENEFICIARY_ACCOUNT = "beneficiary";
 

@@ -113,6 +113,13 @@ void onBadgeActivated(dao& dao, RecurringActivity& badgeAssign)
         case SystemBadgeType::Admin: {
             //Activate admin badge
             createLink(hypha::common::ADMIN);
+            Edge(
+                dao.get_self(), 
+                dao.get_self(), 
+                mem.getID(), 
+                badgeAssign.getID(), 
+                common::links::ADMIN_BADGE
+            );
         } break;
 #ifdef USE_TREASURY
         case SystemBadgeType::Treasurer: {
@@ -125,6 +132,13 @@ void onBadgeActivated(dao& dao, RecurringActivity& badgeAssign)
         } break;
         case SystemBadgeType::Enroller: {
             createLink(hypha::common::ENROLLER);
+            Edge(
+                dao.get_self(), 
+                dao.get_self(), 
+                mem.getID(), 
+                badgeAssign.getID(), 
+                common::links::ENROLLER_BADGE
+            );
         } break;
         case SystemBadgeType::Voter: {
             createLink(badges_links::VOTER);
@@ -168,6 +182,9 @@ void onBadgeArchived(dao& dao, RecurringActivity& badgeAssign)
         {
         case SystemBadgeType::Admin: {
             removeLink(hypha::common::ADMIN);
+            if (Edge::exists(dao.get_self(), memID, badgeAssign.getID(), common::links::ADMIN_BADGE)) {
+                Edge::get(dao.get_self(), memID, badgeAssign.getID(), common::links::ADMIN_BADGE).erase();
+            }
         } break;
 #ifdef USE_TREASURY
         case SystemBadgeType::Treasurer: {
@@ -180,6 +197,9 @@ void onBadgeArchived(dao& dao, RecurringActivity& badgeAssign)
         } break;
         case SystemBadgeType::Enroller: {
             removeLink(hypha::common::ENROLLER);
+            if (Edge::exists(dao.get_self(), memID, badgeAssign.getID(), common::links::ENROLLER_BADGE)) {
+                Edge::get(dao.get_self(), memID, badgeAssign.getID(), common::links::ENROLLER_BADGE).erase();
+            }
         } break;
         case SystemBadgeType::Voter: {
             removeLink(badges_links::VOTER);

@@ -95,7 +95,7 @@ namespace hypha
 
         if (selfApprove) {
             ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(SYSTEM),
-                                            Content { "self_approved", 1 });
+                                            Content { common::CATEGORY_SELF_APPROVED, 1 });
         }
 
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);

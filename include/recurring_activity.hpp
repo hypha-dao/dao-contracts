@@ -34,6 +34,8 @@ namespace hypha
 
         static bool isRecurringActivity(Document& doc);
 
+        bool isInfinite();
+
         eosio::time_point getStartDate();
         eosio::time_point getEndDate();
     protected: 
