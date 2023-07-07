@@ -1442,10 +1442,10 @@ void dao::remenroller(const uint64_t dao_id, name enroller_account)
 
   checkAdminsAuth(dao_id);
 
-  EOS_CHECK(
-    m_documentGraph.getEdgesFrom(dao_id, common::ENROLLER).size() > 1,
-    "Cannot remove enroller, there has to be at least 1"
-  );
+  // EOS_CHECK(
+  //   m_documentGraph.getEdgesFrom(dao_id, common::ENROLLER).size() > 1,
+  //   "Cannot remove enroller, there has to be at least 1"
+  // );
 
   //Check first if the user has enroller badge
   if (!remBadgePerm(*this, enroller_account, dao_id, badges::common::links::ENROLLER_BADGE)) {
@@ -1662,10 +1662,10 @@ void dao::remadmin(const uint64_t dao_id, name admin_account)
   //checkAdminsAuth(dao_id);
   eosio::require_auth(get_self());
 
-  EOS_CHECK(
-    m_documentGraph.getEdgesFrom(dao_id, common::ADMIN).size() > 1,
-    "Cannot remove admin, there has to be at least 1"
-  );
+  // EOS_CHECK(
+  //   m_documentGraph.getEdgesFrom(dao_id, common::ADMIN).size() > 1,
+  //   "Cannot remove admin, there has to be at least 1"
+  // );
 
   //Check first if the user has admin badge
   if (!remBadgePerm(*this, admin_account, dao_id, badges::common::links::ADMIN_BADGE)) {
@@ -2946,6 +2946,10 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
   sg.push_back({ common::DAO_DASHBOARD_BACKGROUND_IMAGE, "" });
   sg.push_back({ common::DAO_DASHBOARD_TITLE, "Welcome to " + daoTitle });
   sg.push_back({ common::DAO_DASHBOARD_PARAGRAPH, daoDescStr });
+  sg.push_back({ "proposals_creation_enabled", 1});
+  sg.push_back({ "members_application_enabled", 1});
+  sg.push_back({ "removable_banners_enabled", 1});
+  sg.push_back({ "multisig_enabled", 0});
   sg.push_back({ common::DAO_PROPOSALS_BACKGROUND_IMAGE, ""});
   sg.push_back({ common::DAO_PROPOSALS_TITLE, "Every vote counts"});
   sg.push_back({ common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In " + daoTitle + " we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
