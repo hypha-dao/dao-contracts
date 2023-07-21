@@ -67,6 +67,13 @@ void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
     Edge::get(get_self(), from_node, to_node, edge_name).erase();
 }
 
+void dao::remdoc(uint64_t doc_id)
+{
+    eosio::require_auth(get_self());
+    Document doc(get_self(), doc_id);
+    m_documentGraph.eraseDocument(doc_id, true);
+}
+
 #ifdef DEVELOP_BUILD_HELPERS
 
 void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
@@ -1811,10 +1818,6 @@ void dao::createdao(ContentGroups& config)
     else {
       readDaoSettings(daoDoc.getID(), dao, configCW, false);
     }
-
-    auto onboarder = getSettingsDocument(daoDoc.getID())->getOrFail<name>(common::ONBOARDER_ACCOUNT);
-
-    initCoreMembers(*this, daoDoc.getID(), onboarder, configCW);
     
     //Create start period
     Period newPeriod(this, eosio::current_time_point(), to_str(dao, " start period"));
@@ -1845,6 +1848,13 @@ void dao::createdao(ContentGroups& config)
         daoDoc.getID()
       )
     ).send();
+
+    auto onboarder = getSettingsDocument(daoDoc.getID())->getOrFail<name>(common::ONBOARDER_ACCOUNT);
+
+    //Init core members should happen after scheduling setupdefs action 
+    //as that is resposible for generating the "badge" edges from the DAO to
+    //the badges used in admin/enroller proposals inside initCoreMembers
+    initCoreMembers(*this, daoDoc.getID(), onboarder, configCW);
 
     return daoDoc;
   };

@@ -189,6 +189,8 @@ namespace pricing {
       ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name);
 
       ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
+
+      ACTION remdoc(uint64_t doc_id);
       
 #ifdef DEVELOP_BUILD_HELPERS
 
