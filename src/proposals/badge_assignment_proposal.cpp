@@ -193,7 +193,8 @@ namespace hypha
                 static_cast<uint64_t>(startPeriod->getAs<int64_t>()),
                 common::PERIOD
             );
-
+            
+            //TODO Period: Remove since period refactor will no longer point to DAO
             EOS_CHECK(
                 Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
                 "Period must belong to the DAO"
