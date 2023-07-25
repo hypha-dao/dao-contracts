@@ -97,7 +97,7 @@ namespace hypha
             else {
                 //Fallback for transition period
                 //TODO: Remove in a few days
-                annual_usd_salary = role.getOrFail(DETAILS, ANNUAL_USD_SALARY)->getAs<eosio::asset>();;
+                annual_usd_salary = role.getOrFail(DETAILS, ANNUAL_USD_SALARY)->getAs<eosio::asset>();
                 minDeferred = role.getOrFail(DETAILS, MIN_DEFERRED)->getAs<int64_t>();
             }
         }
@@ -125,6 +125,7 @@ namespace hypha
             //     "Only future periods are allowed for starting period"
             // )
 
+            //TODO Period: Remove since period refactor will no longer point to DAO
             EOS_CHECK(
                 Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
                 "Period must belong to the DAO"
@@ -211,10 +212,11 @@ namespace hypha
         uint64_t startPeriodID = static_cast<uint64_t>(cw.getOrFail(DETAILS, START_PERIOD)->getAs<int64_t>());
         Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID (), startPeriodID, common::START);
 
-        auto salaryBand = getItemDoc("salary_band_id", common::SALARY_BAND, cw);
+        if (auto salaryBand = getItemDocOpt("salary_band_id", common::SALARY_BAND, cw)) {
+            Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID(), salaryBand->getID(), common::SALARY_BAND);
+            Edge::write(m_dao.get_self(), m_dao.get_self(), salaryBand->getID(), proposal.getID(), common::ASSIGNMENT);
+        }
 
-        Edge::write(m_dao.get_self(), m_dao.get_self(), proposal.getID(), salaryBand.getID(), common::SALARY_BAND);
-        Edge::write(m_dao.get_self(), m_dao.get_self(), salaryBand.getID(), proposal.getID(), common::ASSIGNMENT);
     }
 
     void AssignmentProposal::passImpl(Document &proposal)
