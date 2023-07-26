@@ -654,9 +654,9 @@ void dao::createupvelc(uint64_t dao_id, ContentGroups& election_config)
     auto rounds = getRounds(election_config, endDate);
 
     UpvoteElection upvoteElection(*this, dao_id, UpvoteElectionData{
-        .status = upvote_common::upvote_status::UPCOMING,
         .start_date = startDate,
         .end_date = endDate,
+        .status = upvote_common::upvote_status::UPCOMING,
         .duration = duration
     });
 

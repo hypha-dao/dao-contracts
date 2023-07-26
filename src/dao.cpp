@@ -828,7 +828,7 @@ void dao::claimnextper(uint64_t assignment_id)
 
   auto ab = calculatePeriodPayout(
       *periodToClaim, 
-      AssetBatch{ .peg = pegSalary, .voice = voiceSalary, .reward = rewardSalary }, 
+      AssetBatch{ .reward = rewardSalary, .peg = pegSalary, .voice = voiceSalary }, 
       daoTokens, 
       nextOpt,
       lastUsedTimeShare, 
@@ -962,9 +962,9 @@ AssetBatch dao::calculatePeriodPayout(Period& period,
   int64_t periodEndSec = period.getEndTime().sec_since_epoch();
 
   AssetBatch payout {
+    .reward = eosio::asset{ 0, daoTokens.reward.symbol },
     .peg = eosio::asset{ 0, daoTokens.peg.symbol },
-    .voice = eosio::asset{ 0, daoTokens.voice.symbol },
-    .reward = eosio::asset{ 0, daoTokens.reward.symbol }
+    .voice = eosio::asset{ 0, daoTokens.voice.symbol }
   };
           
   while (nextTimeShareOpt)
@@ -1035,9 +1035,9 @@ AssetBatch dao::calculatePendingClaims(uint64_t assignmentID, const AssetBatch& 
   Assignment assignment(this, assignmentID);
   
   AssetBatch payAmount {
+    .reward = eosio::asset{ 0, daoTokens.reward.symbol },
     .peg = eosio::asset{ 0, daoTokens.peg.symbol },
-    .voice = eosio::asset{ 0, daoTokens.voice.symbol },
-    .reward = eosio::asset{ 0, daoTokens.reward.symbol }
+    .voice = eosio::asset{ 0, daoTokens.voice.symbol }
   };
 
   // Ensure that the claimed period is within the approved period count
@@ -1050,8 +1050,8 @@ AssetBatch dao::calculatePendingClaims(uint64_t assignmentID, const AssetBatch& 
   const asset rewardSalary = assignment.getRewardSalary();
 
   AssetBatch salary{
-    .peg = pegSalary,
     .reward = rewardSalary,
+    .peg = pegSalary,
     .voice = voiceSalary
   };
 
