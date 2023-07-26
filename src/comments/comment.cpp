@@ -14,7 +14,7 @@ namespace hypha
     const std::string ENTRY_EDITED = "edited";
     const std::string ENTRY_DELETED = "deleted";
 
-    Comment::Comment(dao& dao, uint64_t id) : TypedDocument(dao, id, TYPED_DOCUMENT_TYPE)
+    Comment::Comment(dao& dao, uint64_t id) : Likeable(dao, id, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
     }
@@ -24,7 +24,7 @@ namespace hypha
         Section& section,
         const eosio::name author,
         const string& content
-    ) : TypedDocument(dao, TYPED_DOCUMENT_TYPE)
+    ) : Likeable(dao, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
         this->initComment(
@@ -40,7 +40,7 @@ namespace hypha
         Comment& comment,
         const eosio::name author,
         const string& content
-    ) : TypedDocument(dao, TYPED_DOCUMENT_TYPE)
+    ) : Likeable(dao, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
         this->initComment(

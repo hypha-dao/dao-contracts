@@ -9,7 +9,7 @@ namespace hypha
 {
     class dao;
 
-    class Comment : virtual public TypedDocument, public Likeable
+    class Comment : public Likeable
     {
     public:
         Comment(dao& dao, uint64_t id);
