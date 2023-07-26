@@ -9,7 +9,7 @@ namespace hypha
 
     class dao;
 
-    class Section : virtual public TypedDocument, public Likeable
+    class Section : public Likeable
     {
         public:
             Section(dao& dao, uint64_t id);
