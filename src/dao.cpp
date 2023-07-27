@@ -31,8 +31,8 @@
 
 #ifdef USE_PRICING_PLAN
 #include <pricing/plan_manager.hpp>
-#include <pricing/common.hpp>
 #endif
+#include <pricing/common.hpp>
 
 #include <reward/account.hpp>
 
