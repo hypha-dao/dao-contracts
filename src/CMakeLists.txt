@@ -1,10 +1,9 @@
 project(dao)
 
-set(EOSIO_WASM_OLD_BEHAVIOR "Off")
-find_package(eosio.cdt)
+find_package(cdt)
 
 # Activate Logging
-#add_compile_definitions(USE_LOGGING)
+# add_compile_definitions(USE_LOGGING)
 
 add_contract( dao dao
                 dao.cpp
