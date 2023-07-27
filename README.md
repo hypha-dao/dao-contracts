@@ -14,6 +14,7 @@ EOSIO contracts for managing a decentralized autonomous organization on EOSIO ch
 ```
 git clone https://github.com/hypha-dao/dao-contracts
 cd dao-contracts
+git submodule init
 git submodule update
 #Use dev for testnet or prod for mainnet 
 ./setup.sh prod|dev
