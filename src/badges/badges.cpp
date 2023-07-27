@@ -85,9 +85,11 @@ void onBadgeActivated(dao& dao, RecurringActivity& badgeAssign)
         bool isMember = Member::isMember(dao, badgeAssign.getDaoID(), assignee);
         
         //Let's check for community as well if the Badge is self approve type
+        #ifdef USE_UPVOTE_ELECTIONS
         if (!isMember && isSelfApproveBadge(type)) {
             isMember = Member::isCommunityMember(dao, badgeAssign.getDaoID(), assignee);
         }
+        #endif
         
         return isMember;
     };
@@ -251,6 +253,7 @@ bool hasChiefDelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID)
     return Edge::exists(dao.get_self(), daoID, memberID, badges_links::CHIEF_DELEGATE);
 }
 
+#ifdef USE_UPVOTE_ELECTIONS
 bool isSelfApproveBadge(SystemBadgeType systemType)
 {
 
@@ -266,6 +269,7 @@ bool isSelfApproveBadge(SystemBadgeType systemType)
 
     return false;
 };
+#endif
 
 void checkHoldsBadge(dao& dao, Document& badge, uint64_t daoID, uint64_t memberID)
 {    

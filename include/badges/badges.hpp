@@ -54,8 +54,9 @@ bool hasChiefDelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID);
 void checkHoldsBadge(dao& dao, Document& badge, uint64_t daoID, uint64_t memberID);
 
 //bool isPeriodBased(Document& badge);
-
+#ifdef USE_UPVOTE_ELECTIONS
 bool isSelfApproveBadge(SystemBadgeType systemType);
+#endif
 
 }
 

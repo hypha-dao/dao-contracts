@@ -11,8 +11,10 @@
 
 #include <recurring_activity.hpp>
 
+#ifdef USE_UPVOTE_ELECTIONS
 #include <upvote_election/upvote_election.hpp>
 #include <upvote_election/common.hpp>
+#endif
 
 namespace hypha
 {
@@ -74,6 +76,7 @@ namespace hypha
         auto detailsGroup = badgeAssignment.getGroupOrFail(DETAILS);
 
         //Voter badge and Delegate badge has to be auto approved
+        #ifdef USE_UPVOTE_ELECTIONS
         if (badges::isSelfApproveBadge(badgeInfo.systemType)) {
             
             selfApprove = true;
@@ -163,6 +166,7 @@ namespace hypha
             //provided for upvote badges.
             return;
         }
+        #endif
 
         // START_PERIOD - number of periods the assignment is valid for
         if (auto [idx, startPeriod] = badgeAssignment.get(DETAILS, START_PERIOD); startPeriod) {
