@@ -14,9 +14,7 @@
 #include <payers/payer.hpp>
 #include <logger/logger.hpp>
 
-#ifdef USE_PRICING_PLAN
 #include <pricing/features.hpp>
-#endif
 
 namespace hypha
 {

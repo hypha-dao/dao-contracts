@@ -11,10 +11,8 @@
 
 #include <recurring_activity.hpp>
 
-#ifdef USE_UPVOTE_ELECTIONS
 #include <upvote_election/upvote_election.hpp>
 #include <upvote_election/common.hpp>
-#endif
 
 namespace hypha
 {

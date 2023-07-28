@@ -29,9 +29,7 @@
 
 #include <typed_document_factory.hpp>
 
-#ifdef USE_PRICING_PLAN
 #include <pricing/plan_manager.hpp>
-#endif
 #include <pricing/common.hpp>
 
 #include <reward/account.hpp>

@@ -22,6 +22,12 @@ cmake ..
 make
 ```
 
+### Troubleshooting
+
+In case of cache errors - run this cmake command after deleting the build folder
+
+```cmake -S . -B ./build```
+
 ## Unit Tests
 
 Run unit tests with Hydra framework like this
