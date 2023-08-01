@@ -11,7 +11,7 @@ namespace hypha
 
     const std::string GROUP_SECTION = "comment_section";
 
-    Section::Section(dao& dao, uint64_t id) : TypedDocument(dao, id, TYPED_DOCUMENT_TYPE)
+    Section::Section(dao& dao, uint64_t id) : Likeable(dao, id, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
     }
@@ -19,7 +19,7 @@ namespace hypha
     Section::Section(
         dao& dao,
         Document& proposal
-    ) : TypedDocument(dao, TYPED_DOCUMENT_TYPE)
+    ) : Likeable(dao, TYPED_DOCUMENT_TYPE)
     {
         TRACE_FUNCTION()
         ContentGroups contentGroups{

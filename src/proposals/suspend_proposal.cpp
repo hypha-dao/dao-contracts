@@ -85,7 +85,12 @@ namespace hypha
 
        } break;
       case common::ROLE_NAME.value:
-        //We don't have to do anything special for roles
+        //Verify it's not a default asset
+        EOS_CHECK(
+          !ocw.exists(SYSTEM, common::DEFAULT_ASSET),
+          "System Roles cannot be suspended"
+        );
+        
         break;
       case common::BADGE_NAME.value: {
         //Verify it's not a system badge

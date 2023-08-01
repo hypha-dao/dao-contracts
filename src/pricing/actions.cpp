@@ -537,8 +537,8 @@ ACTION dao::activateplan(ContentGroups& plan_info)
         .end_date = downgradeToDef ? eosio::time_point{} : end,
         .billing_day = billingDay,
         .period_count = downgradeToDef ? -1 : periods,
-        .offer_discount_perc_x10000 = offer.getDiscountPercentage(),
         .discount_perc_x10000 = plan.getDiscountPercentage(),
+        .offer_discount_perc_x10000 = offer.getDiscountPercentage(),
         .plan_name = plan.getName(),
         .plan_price = plan.getPrice(),
         .total_paid = payAmount,
@@ -753,8 +753,8 @@ ACTION dao::updateprcpln(uint64_t pricing_plan_id, ContentGroups& pricing_plan_i
         .name = name ? name->getAs<std::string>() : plan.getName(),
         .price = price ? price->getAs<eosio::asset>() : plan.getPrice(),
         .reactivation_period_sec = reactivationPeriod ? reactivationPeriod->getAs<int64_t>() : plan.getReactivationPeriod(),
-        .discount_perc_x10000 = discount ? discount->getAs<int64_t>() : plan.getDiscountPercentage(),
-        .max_member_count = maxMembers ? maxMembers->getAs<int64_t>() : plan.getMaxMemberCount()
+        .max_member_count = maxMembers ? maxMembers->getAs<int64_t>() : plan.getMaxMemberCount(),
+        .discount_perc_x10000 = discount ? discount->getAs<int64_t>() : plan.getDiscountPercentage()
     });
 }
 

@@ -39,6 +39,7 @@ namespace hypha::common
     inline constexpr auto DAO_PARENT_ID = "dao_parent";
     inline constexpr auto DAO_TITLE = "dao_title";
     inline constexpr auto DAO_URL = "dao_url";
+    inline constexpr auto DEFAULT_ASSET = "default_asset";
 
     inline constexpr auto BENEFICIARY_ACCOUNT = "beneficiary";
 
@@ -103,6 +104,7 @@ namespace hypha::common
     inline constexpr auto MASTER_POLICY_ITEM = "master_policy";
     inline constexpr auto QUEST_START_ITEM = "quest_start";
     inline constexpr auto PARENT_QUEST_ITEM = "parent_quest";
+    inline constexpr auto AUTO_APPROVE = "auto_approve";
     inline constexpr auto MASTER_POLICY = name("masterpolicy");
     inline constexpr auto PARENT_QUEST = name("parentquest");
     inline constexpr auto CHILD_QUEST = name("childquest");

@@ -13,13 +13,13 @@ namespace hypha
     void RoleProposal::proposeImpl(const name &proposer, ContentWrapper &contentWrapper)
     {
         TRACE_FUNCTION()
-        // capacity is no longer enforced; commenting check
-        // int64_t capacity = std::get<int64_t>(m_dao._document_graph.get_content(details, common::FULL_TIME_CAPACITY, true));
-        // check(capacity > 0, "fulltime_capacity_x100 must be greater than zero. You submitted: " + std::to_string(capacity));
 
-        eosio::asset annual_usd_salary = contentWrapper.getOrFail(DETAILS, ANNUAL_USD_SALARY)->getAs<eosio::asset>();
-        eosio::check (annual_usd_salary.amount > 0, ANNUAL_USD_SALARY + string(" must be greater than zero. You submitted: ") + annual_usd_salary.to_string());
-
+        if (auto [_, isAutoApprove] = contentWrapper.get(DETAILS, common::AUTO_APPROVE); 
+            isAutoApprove && isAutoApprove->getAs<int64_t>() == 1) {
+            //Only admins of the DAO are allowed to create this type of proposals
+            m_dao.checkAdminsAuth(m_daoID);
+            selfApprove = true;
+        }
     }
 
     void RoleProposal::passImpl(Document &proposal)
