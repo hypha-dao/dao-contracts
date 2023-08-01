@@ -38,6 +38,42 @@ namespace hypha {
 
 /**Testenv only */
 
+void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
+{
+  require_auth(get_self());
+
+  Document fromDoc(get_self(), from);
+  Document toDoc(get_self(), to);
+
+  Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
+}
+
+void dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
+{
+  require_auth(get_self());
+
+  Document doc(get_self(), doc_id);
+
+  auto cw = doc.getContentWrapper();
+
+  cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
+
+  doc.update();
+}
+
+void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
+{
+    eosio::require_auth(get_self());
+    Edge::get(get_self(), from_node, to_node, edge_name).erase();
+}
+
+void dao::remdoc(uint64_t doc_id)
+{
+    eosio::require_auth(get_self());
+    Document doc(get_self(), doc_id);
+    m_documentGraph.eraseDocument(doc_id, true);
+}
+
 #ifdef DEVELOP_BUILD_HELPERS
 
 void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
@@ -239,7 +275,7 @@ void dao::autoenroll(uint64_t dao_id, const name& enroller, const name& member)
   mem.checkMembershipOrEnroll(dao_id);
 }
 
-void dao::setupbadges(uint64_t dao_id)
+void dao::setupdefs(uint64_t dao_id)
 {
   verifyDaoType(dao_id);
   
@@ -252,6 +288,24 @@ void dao::setupbadges(uint64_t dao_id)
     auto doc = TypedDocument::withType(*this, badge.getToNode(), common::BADGE_NAME);
 
     Edge::getOrNew(get_self(), get_self(), dao_id, doc.getID(), common::BADGE_NAME);
+  }
+
+  auto defRoles = m_documentGraph.getEdgesFrom(getRootID(), name("defrole"));
+
+  for (auto& role : defRoles) {
+    //Verify it's a badge
+    auto doc = TypedDocument::withType(*this, role.getToNode(), common::ROLE_NAME);
+
+    Edge::getOrNew(get_self(), get_self(), dao_id, doc.getID(), common::ROLE_NAME);
+  }
+
+  auto defBands = m_documentGraph.getEdgesFrom(getRootID(), name("defband"));
+
+  for (auto& band : defBands) {
+    //Verify it's a badge
+    auto doc = TypedDocument::withType(*this, band.getToNode(), common::SALARY_BAND);
+
+    Edge::getOrNew(get_self(), get_self(), dao_id, doc.getID(), common::SALARY_BAND);
   }
 }
 
@@ -436,6 +490,31 @@ void dao::closedocprop(uint64_t proposal_id)
   proposal->close(docprop);
 }
 
+void dao::delasset(uint64_t asset_id)
+{
+  auto doc = Document(get_self(), asset_id);
+  auto cw = doc.getContentWrapper();
+
+  auto type = cw.getOrFail(SYSTEM, TYPE)->getAs<name>();
+
+  EOS_CHECK(
+    type == common::CIRCLE ||
+    type == common::ROLE_NAME,
+    "Invalid asset, no valid type"
+  );
+
+  EOS_CHECK(
+    cw.getOrFail(SYSTEM, common::CATEGORY_SELF_APPROVED)->getAs<int64_t>() == 1,
+    "Asset is not admin created"
+  );
+
+  auto daoId = cw.getOrFail(DETAILS, common::DAO.to_string())->getAs<int64_t>();
+
+  checkAdminsAuth(static_cast<uint64_t>(daoId));
+
+  m_documentGraph.eraseDocument(doc.getID(), true);
+}
+
 void dao::proposepub(const name& proposer, uint64_t proposal_id)
 {
   TRACE_FUNCTION();
@@ -557,11 +636,10 @@ void dao::withdraw(name owner, uint64_t document_id)
   eosio::name assignee = assignment.getAssignee().getAccount();
 
   EOS_CHECK(
-    assignee == owner,
+    assignee == owner &&
+    (eosio::has_auth(owner) || eosio::has_auth(get_self())),
     to_str("Only the member [", assignee.to_string(), "] can withdraw the assignment [", document_id, "]")
   );
-
-  eosio::require_auth(owner);
 
   auto cw = assignment.getContentWrapper();
 
@@ -578,10 +656,12 @@ void dao::withdraw(name owner, uint64_t document_id)
 
   //Quick check to verify if this is a self approved badge
   //which doesn't contain periods data
-  if (auto [_, category] = cw.get(SYSTEM, common::PROPOSAL_CATEGORY); 
-      category && category->getAs<std::string>() == common::CATEGORY_SELF_APPROVED) {
+  if (auto [_, selfApproved] = cw.get(SYSTEM, common::CATEGORY_SELF_APPROVED);
+      selfApproved && selfApproved->getAs<int64_t>()) {
     
-    if (now < assignment.getEndDate()) {
+    //If for some reason we would like to store end time for infinte assignments
+    //we could just replace to isInfinte || now < endDate
+    if (!assignment.isInfinite() && now < assignment.getEndDate()) {
       ContentWrapper::insertOrReplace(*detailsGroup, Content{ END_TIME, now });
     }
 
@@ -781,8 +861,6 @@ void dao::claimnextper(uint64_t assignment_id)
   }
 
   string memo = assignmentNodeLabel + ", period: " + periodToClaim.value().getNodeLabel();
-
-  ab = applyBadgeCoefficients(periodToClaim.value(), assignee, daoID, ab);
 
   makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.reward, memo, eosio::name{ 0 }, daoTokens);
   makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{ 0 }, daoTokens);
@@ -1017,116 +1095,6 @@ asset dao::getProRatedAsset(ContentWrapper* assignment, const symbol& symbol, co
     assetToPay = std::get<eosio::asset>(assetContent->value);
   }
   return adjustAsset(assetToPay, proration);
-}
-
-std::vector<Document> dao::getCurrentBadges(Period& period, const name& member, uint64_t dao)
-{
-  TRACE_FUNCTION();
-  std::vector<Document> current_badges;
-
-  Member memDoc(*this, getMemberID(member));
-
-  std::vector<Edge> badge_assignment_edges = m_documentGraph.getEdgesFrom(memDoc.getID(), common::ASSIGN_BADGE);
-  for (const Edge& e : badge_assignment_edges)
-  {
-    Document badgeAssignmentDoc(get_self(), e.to_node);
-    Edge badge_edge = Edge::get(get_self(), badgeAssignmentDoc.getID(), common::BADGE_NAME);
-
-    //Verify badge still exists
-    EOS_CHECK(
-      Document::exists(get_self(), badge_edge.getToNode()),
-      to_str("Badge document doesn't exits for badge assignment:",
-        badgeAssignmentDoc.getID(),
-        " badge:", badge_edge.getToNode())
-    );
-
-    //Verify the badge is actually from the requested DAO
-    if (Edge::get(get_self(), e.to_node, common::DAO).getToNode() != dao) {
-      continue;
-    }
-
-    auto badgeAssignment = badgeAssignmentDoc.getContentWrapper();
-
-    auto state = badgeAssignment.getOrFail(DETAILS, common::STATE)
-                                ->getAs<std::string>();
-
-    if (state != common::STATE_APPROVED) {
-      continue;
-    }
-
-    //Check if badge assignment is old (it contains end_period)
-    if (badgeAssignment.exists(DETAILS, END_PERIOD)) {
-      continue;
-    }
-
-    //Verify Badge document exists
-    Document badge(get_self(), badge_edge.getToNode());
-
-    Content* startPeriodContent = badgeAssignment.getOrFail(DETAILS, START_PERIOD);
-
-    Period startPeriod(
-      this,
-      static_cast<uint64_t>(startPeriodContent->getAs<int64_t>())
-    );
-    int64_t periodCount = badgeAssignment.getOrFail(DETAILS, PERIOD_COUNT)->getAs<int64_t>();
-    auto endPeriod = startPeriod.getNthPeriodAfter(periodCount);
-
-    int64_t badgeAssignmentStart = startPeriod.getStartTime().sec_since_epoch();
-    int64_t badgeAssignmentExpiration = endPeriod.getStartTime().sec_since_epoch();
-
-    auto periodStartSecs = period.getStartTime().sec_since_epoch();
-    //Badge expiration should be compared against the claimed period instead
-    //of the current time, point since it could happen that the assignment is
-    //beign claimed after the badge assignment expired.
-    if (badgeAssignmentStart <= periodStartSecs &&
-      periodStartSecs < badgeAssignmentExpiration) {
-      current_badges.push_back(badge);
-    }
-  }
-
-  return current_badges;
-}
-
-eosio::asset dao::applyCoefficient(ContentWrapper& badge, const eosio::asset& base, const std::string& key)
-{
-  TRACE_FUNCTION();
-  if (auto [idx, coefficient] = badge.get(DETAILS, key); coefficient)
-  {
-    if (std::holds_alternative<std::monostate>(coefficient->value))
-    {
-      return asset{ 0, base.symbol };
-    }
-
-    EOS_CHECK(std::holds_alternative<int64_t>(coefficient->value), "fatal error: coefficient must be an int64_t type: key: " + key);
-
-    float coeff_float = (float)((float)std::get<int64_t>(coefficient->value) / (float)10000);
-    float adjustment = (float)coeff_float - (float)1;
-    return adjustAsset(base, adjustment);
-  }
-  return asset{ 0, base.symbol };
-}
-
-AssetBatch dao::applyBadgeCoefficients(Period& period, const eosio::name& member, uint64_t dao, AssetBatch& ab)
-{
-  TRACE_FUNCTION();
-
-  //Disable multipliers for now
-  return ab;
-
-  // get list of badges
-  auto badges = getCurrentBadges(period, member, dao);
-  AssetBatch applied_assets = ab;
-
-  // for each badge, apply appropriate coefficients
-  for (auto& badge : badges)
-  {
-    ContentWrapper badgeCW = badge.getContentWrapper();
-    applied_assets.reward = applied_assets.reward + applyCoefficient(badgeCW, ab.reward, common::REWARD_COEFFICIENT);
-    applied_assets.peg = applied_assets.peg + applyCoefficient(badgeCW, ab.peg, common::PEG_COEFFICIENT);
-    applied_assets.voice = applied_assets.voice + applyCoefficient(badgeCW, ab.voice, common::VOICE_COEFFICIENT);
-  }
-
-  return applied_assets;
 }
 
 void dao::makePayment(Settings* daoSettings,
@@ -1364,6 +1332,44 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
 //   settings->remSetting(key);
 // }
 
+static void makeAutoApproveBadge(const name& contract, const std::string& title, const std::string& desc, const name& owner, uint64_t daoID, int64_t badgeID)
+{
+  eosio::action(
+      eosio::permission_level(contract, eosio::name("active")),
+      contract,
+      eosio::name("propose"),
+      std::make_tuple(
+          daoID,
+          contract,
+          common::ASSIGN_BADGE,
+          ContentGroups{
+              ContentGroup{
+                  Content{ CONTENT_GROUP_LABEL, DETAILS },
+                  Content{ TITLE, title },
+                  Content{ DESCRIPTION, desc },
+                  Content{ ASSIGNEE, owner },
+                  Content{ BADGE_STRING, badgeID },
+                  Content{ common::AUTO_APPROVE, 1 }
+          }},
+          true
+      )
+  ).send();
+}
+
+static void makeEnrollerBadge(dao& dao, const name& owner, uint64_t daoID)
+{
+  auto enrollerBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::ENROLLER_BADGE);
+  auto enrollerBadge = TypedDocument::withType(dao, enrollerBadgeEdge.getToNode(), common::BADGE_NAME);
+  makeAutoApproveBadge(dao.get_self(), "Enroller", "Enroller Permissions", owner, daoID, enrollerBadge.getID());
+}
+
+static void makeAdminBadge(dao& dao, const name& owner, uint64_t daoID)
+{
+  auto adminBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::ADMIN_BADGE);
+  auto adminBadge = TypedDocument::withType(dao, adminBadgeEdge.getToNode(), common::BADGE_NAME);
+  makeAutoApproveBadge(dao.get_self(), "Admin", "Admin Permissions", owner, daoID, adminBadge.getID());
+}
+
 void  dao::addenroller(const uint64_t dao_id, name enroller_account)
 {
   TRACE_FUNCTION();
@@ -1376,7 +1382,10 @@ void  dao::addenroller(const uint64_t dao_id, name enroller_account)
   
   mem.checkMembershipOrEnroll(dao_id);
 
-  Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER);
+  //Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER);
+
+  //Create propose action to generate badge assing
+  makeEnrollerBadge(*this, enroller_account, dao_id);
 }
 
 void dao::addadmins(const uint64_t dao_id, const std::vector<name>& admin_accounts)
@@ -1400,11 +1409,35 @@ void dao::addadmins(const uint64_t dao_id, const std::vector<name>& admin_accoun
     
     mem.checkMembershipOrEnroll(dao_id);
 
-    Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(adminAccount), common::ADMIN);
+    //Edge::getOrNew(get_self(), get_self(), dao_id, getMemberID(adminAccount), common::ADMIN);
+
+    makeAdminBadge(*this, adminAccount, dao_id);
   }
 
   //Automatically disable the feature after using it
   daoSettings->setSetting(Content{common::ADD_ADMINS_ENABLED, int64_t(0)});
+}
+
+static bool remBadgePerm(dao& dao, const name& member, uint64_t daoID, const name& badgeEdge) {
+
+  auto badgeAssignmentEdges = dao.getGraph().getEdgesFrom(dao.getMemberID(member), badgeEdge);
+
+  for (auto& edge : badgeAssignmentEdges) {
+    auto badgeAssignID = edge.getToNode();
+    if (Edge::exists(dao.get_self(), badgeAssignID, daoID, common::DAO)) {
+      eosio::action(
+        eosio::permission_level{ dao.get_self(), name("active") },
+        dao.get_self(),
+        name("archiverecur"),
+        std::make_tuple(
+          badgeAssignID
+        )
+      ).send();
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void dao::remenroller(const uint64_t dao_id, name enroller_account)
@@ -1416,12 +1449,17 @@ void dao::remenroller(const uint64_t dao_id, name enroller_account)
 
   checkAdminsAuth(dao_id);
 
-  EOS_CHECK(
-    m_documentGraph.getEdgesFrom(dao_id, common::ENROLLER).size() > 1,
-    "Cannot remove enroller, there has to be at least 1"
-  );
+  // EOS_CHECK(
+  //   m_documentGraph.getEdgesFrom(dao_id, common::ENROLLER).size() > 1,
+  //   "Cannot remove enroller, there has to be at least 1"
+  // );
 
-  Edge::get(get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER).erase();
+  //Check first if the user has enroller badge
+  if (!remBadgePerm(*this, enroller_account, dao_id, badges::common::links::ENROLLER_BADGE)) {
+    //If not just remove the permission
+    Edge::get(get_self(), dao_id, getMemberID(enroller_account), common::ENROLLER).erase();
+  }
+
 }
 
 void dao::createmsig(uint64_t dao_id, name creator, std::map<std::string, Content::FlexValue> kvs)
@@ -1631,12 +1669,16 @@ void dao::remadmin(const uint64_t dao_id, name admin_account)
   //checkAdminsAuth(dao_id);
   eosio::require_auth(get_self());
 
-  EOS_CHECK(
-    m_documentGraph.getEdgesFrom(dao_id, common::ADMIN).size() > 1,
-    "Cannot remove admin, there has to be at least 1"
-  );
+  // EOS_CHECK(
+  //   m_documentGraph.getEdgesFrom(dao_id, common::ADMIN).size() > 1,
+  //   "Cannot remove admin, there has to be at least 1"
+  // );
 
-  Edge::get(get_self(), dao_id, getMemberID(admin_account), common::ADMIN).erase();
+  //Check first if the user has admin badge
+  if (!remBadgePerm(*this, admin_account, dao_id, badges::common::links::ADMIN_BADGE)) {
+    //If not just remove the permission
+    Edge::get(get_self(), dao_id, getMemberID(admin_account), common::ADMIN).erase();
+  }
 }
 
 void dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/)
@@ -1682,8 +1724,10 @@ static void initCoreMembers(dao& dao, uint64_t daoID, eosio::name onboarder, Con
     member.enroll(onboarder, daoID, "DAO Core member");
 
     //Create owner, admin and enroller edges
-    Edge(dao.get_self(), dao.get_self(), daoID, member.getID(), common::ENROLLER);
-    Edge(dao.get_self(), dao.get_self(), daoID, member.getID(), common::ADMIN);
+    //Edge(dao.get_self(), dao.get_self(), daoID, member.getID(), common::ENROLLER);
+    //Edge(dao.get_self(), dao.get_self(), daoID, member.getID(), common::ADMIN);
+    makeEnrollerBadge(dao, coreMem, daoID);
+    makeAdminBadge(dao, coreMem, daoID);
   }
 }
 
@@ -1774,10 +1818,6 @@ void dao::createdao(ContentGroups& config)
     else {
       readDaoSettings(daoDoc.getID(), dao, configCW, false);
     }
-
-    auto onboarder = getSettingsDocument(daoDoc.getID())->getOrFail<name>(common::ONBOARDER_ACCOUNT);
-
-    initCoreMembers(*this, daoDoc.getID(), onboarder, configCW);
     
     //Create start period
     Period newPeriod(this, eosio::current_time_point(), to_str(dao, " start period"));
@@ -1803,11 +1843,18 @@ void dao::createdao(ContentGroups& config)
     eosio::action(
       eosio::permission_level{ get_self(), name("active") },
       get_self(),
-      name("setupbadges"),
+      name("setupdefs"),
       std::make_tuple(
         daoDoc.getID()
       )
     ).send();
+
+    auto onboarder = getSettingsDocument(daoDoc.getID())->getOrFail<name>(common::ONBOARDER_ACCOUNT);
+
+    //Init core members should happen after scheduling setupdefs action 
+    //as that is resposible for generating the "badge" edges from the DAO to
+    //the badges used in admin/enroller proposals inside initCoreMembers
+    initCoreMembers(*this, daoDoc.getID(), onboarder, configCW);
 
     return daoDoc;
   };
@@ -1951,8 +1998,6 @@ void dao::archiverecur(uint64_t document_id)
     require_auth(get_self());
   }
 
-  auto expirationDate = recurAct.getEndDate();
-
   auto cw = recurAct.getContentWrapper();
 
   auto& state = cw.getOrFail(DETAILS, common::STATE)
@@ -1960,9 +2005,10 @@ void dao::archiverecur(uint64_t document_id)
 
   if (state == common::STATE_APPROVED) {
 
-    //auto forceArchive = cw.get(SYSTEM, "force_archive").second;
+    auto forceArchive = recurAct.isInfinite();
 
-    if (expirationDate <= eosio::current_time_point()/* ||
+    if (forceArchive || 
+        recurAct.getEndDate() <= eosio::current_time_point()/* ||
         (!userCalled && forceArchive)*/) {
 
       auto details = cw.getGroupOrFail(DETAILS);
@@ -2164,7 +2210,7 @@ void dao::modsalaryband(uint64_t dao_id, ContentGroups& salary_bands)
     );
 
     EOS_CHECK(
-      amount.is_valid(),
+      amount.is_valid() && amount.symbol == common::S_USD,
       "Invalid salary band annual usd amount"
     );
   };
@@ -2209,7 +2255,8 @@ void dao::modsalaryband(uint64_t dao_id, ContentGroups& salary_bands)
                 Content(CONTENT_GROUP_LABEL, DETAILS),
                 Content(common::SALARY_BAND_NAME, name),
                 Content(ANNUAL_USD_SALARY, amount),
-                Content(MIN_DEFERRED, minDeferred)
+                Content(MIN_DEFERRED, minDeferred),
+                Content(common::DAO.to_string(), static_cast<int64_t>(dao_id))
             },
             ContentGroup{
                 Content(CONTENT_GROUP_LABEL, SYSTEM),
@@ -2453,6 +2500,11 @@ void dao::activatebdg(uint64_t assign_badge_id)
     eosio::has_auth(get_self()), //For now only contract can activate
     "Only authorized users can activate this badge"
   );
+
+  if (badgeAssing.isInfinite()) {
+    badges::onBadgeActivated(*this, badgeAssing);
+    return;
+  }
 
   auto now = eosio::current_time_point();
 
@@ -2904,6 +2956,10 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
   sg.push_back({ common::DAO_DASHBOARD_BACKGROUND_IMAGE, "" });
   sg.push_back({ common::DAO_DASHBOARD_TITLE, "Welcome to " + daoTitle });
   sg.push_back({ common::DAO_DASHBOARD_PARAGRAPH, daoDescStr });
+  sg.push_back({ "proposals_creation_enabled", 1});
+  sg.push_back({ "members_application_enabled", 1});
+  sg.push_back({ "removable_banners_enabled", 1});
+  sg.push_back({ "multisig_enabled", 0});
   sg.push_back({ common::DAO_PROPOSALS_BACKGROUND_IMAGE, ""});
   sg.push_back({ common::DAO_PROPOSALS_TITLE, "Every vote counts"});
   sg.push_back({ common::DAO_PROPOSALS_PARAGRAPH, "Decentralized decision making is a new kind of governance framework that ensures that decisions are open, just and equitable for all participants. In " + daoTitle + " we use the 80/20 voting method as well as VOICE, our token that determines your voting power. Votes are open for 7 days." });
@@ -2955,17 +3011,9 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
     "Dao title has be less than 48 characters"
   );
 
-  auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
-
   auto voiceToken = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN).second;
   auto voiceTokenDecayPeriod = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PERIOD).second;
   auto voiceTokenDecayPerPeriodX10M = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PER_PERIOD).second;
-
-  auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
-
-  auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
-
-  rewardToPegTokenRatio->getAs<asset>();
 
   //Generate periods
   //auto inititialPeriods = configCW.getOrFail(detailsIdx, PERIOD_COUNT);
@@ -3035,38 +3083,6 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
     "DAO URL must be less than 30 characters"
   )
 
-  Content rewardTokenName = Content{  
-    common::REWARD_TOKEN_NAME,
-    to_str(rewardToken->getAs<eosio::asset>().symbol.code())
-  };
-
-  if (auto [_, rwrdTokName] = configCW.get(detailsIdx, common::REWARD_TOKEN_NAME);
-      rwrdTokName) 
-  {
-    rewardTokenName.value = std::move(rwrdTokName->value);
-  }
-
-  EOS_CHECK(
-    rewardTokenName.getAs<std::string>().size() <= 30,
-    "Utility token name must be less than 30 characters"
-  )
-
-  Content pegTokenName = Content{  
-    common::PEG_TOKEN_NAME,
-    to_str(rewardToken->getAs<eosio::asset>().symbol.code())
-  };
-
-  if (auto [_, pegTokName] = configCW.get(detailsIdx, common::PEG_TOKEN_NAME);
-      pegTokName) 
-  {
-    pegTokenName.value = std::move(pegTokName->value);
-  }
-
-  EOS_CHECK(
-    pegTokenName.getAs<std::string>().size() <= 30,
-    "Cash token name must be less than 30 characters"
-  )
-
   const auto styleGroup = itemsGroup == SETTINGS ? SETTINGS : "style";
 
   auto primaryColor =  configCW.getOrFail(styleGroup, common::DAO_PRIMARY_COLOR);
@@ -3088,10 +3104,7 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
     std::move(*daoTitle),
     std::move(*daoDescription),
     std::move(daoURL),
-    *pegToken,
     *voiceToken,
-    *rewardToken,
-    std::move(*rewardToPegTokenRatio),
     std::move(*periodDurationSeconds),
     std::move(*votingDurationSeconds),
     std::move(*onboarderAcc),
@@ -3105,6 +3118,79 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
     std::move(*textColor),
     std::move(*logo)
   };
+
+  auto skipPegTok = false;
+  auto skipRewardTok = false;
+
+  if (auto [_, skipPeg] = configCW.get(DETAILS, common::SKIP_PEG_TOKEN_CREATION); skipPeg) {
+    skipPegTok = skipPeg->getAs<int64_t>() == 1;
+  }
+
+  if (auto [_, skipRew] = configCW.get(DETAILS, common::SKIP_REWARD_TOKEN_CREATION); skipRew) {
+    skipRewardTok = skipRew->getAs<int64_t>() == 1;
+  }
+
+  if (!skipPegTok) {
+
+    auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
+    
+    Content pegTokenName = Content{  
+      common::PEG_TOKEN_NAME,
+      to_str(pegToken->getAs<eosio::asset>().symbol.code())
+    };
+
+    if (auto [_, pegTokName] = configCW.get(detailsIdx, common::PEG_TOKEN_NAME);
+        pegTokName) 
+    {
+      pegTokenName.value = std::move(pegTokName->value);
+    }
+
+    EOS_CHECK(
+      pegTokenName.getAs<std::string>().size() <= 30,
+      "Cash token name must be less than 30 characters"
+    )
+
+    //Don't move the token as it it will be used later on 
+    settingsGroup.push_back(*pegToken);
+    settingsGroup.push_back(std::move(pegTokenName));
+  }
+
+  if (!skipRewardTok) {
+
+    auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
+
+    auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
+
+    rewardToPegTokenRatio->getAs<asset>();
+
+    auto rewardTokenMaxSupply = configCW.getOrFail(detailsIdx, "reward_token_max_supply").second;
+
+    EOS_CHECK(
+      rewardToken->getAs<asset>().symbol == rewardTokenMaxSupply->getAs<asset>().symbol,
+      "Symbol mismatch between reward_token and reward_token_max_supply"
+    )
+
+    Content rewardTokenName = Content{  
+      common::REWARD_TOKEN_NAME,
+      to_str(rewardToken->getAs<eosio::asset>().symbol.code())
+    };
+
+    if (auto [_, rwrdTokName] = configCW.get(detailsIdx, common::REWARD_TOKEN_NAME);
+        rwrdTokName)
+    {
+      rewardTokenName.value = std::move(rwrdTokName->value);
+    }
+
+    EOS_CHECK(
+      rewardTokenName.getAs<std::string>().size() <= 30,
+      "Utility token name must be less than 30 characters"
+    )
+
+    //Don't move the token as it it will be used later on 
+    settingsGroup.push_back(*rewardToken);
+    settingsGroup.push_back(std::move(rewardTokenName));
+    settingsGroup.push_back(*rewardTokenMaxSupply);
+  }
 
   addDefaultSettings(settingsGroup, daoTitleStr, daoDescStr);
 
@@ -3124,18 +3210,6 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
   //If this is a draft we don't need to do any of the following
   if (isDraft) return;
 
-  //Assign token
-  eosio::action(
-    eosio::permission_level{ get_self(), name("active") },
-    get_self(),
-    name("assigntokdao"),
-    std::make_tuple(
-      rewardToken->getAs<asset>(),
-      daoID,
-      false
-    )
-  ).send();
-
   createVoiceToken(
     dao,
     voiceToken->getAs<asset>(),
@@ -3143,38 +3217,51 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
     voiceTokenDecayPerPeriodX10M->getAs<int64_t>()
   );
 
-
   auto dhoSettings = getSettingsDocument();
   
   //Check if we should skip creating reward & peg tokens
   //this might be the case if the tokens already exists
-  if (auto [idx, skipPegTokFlag] = configCW.get(DETAILS, common::SKIP_PEG_TOKEN_CREATION);
-    skipPegTokFlag == nullptr ||
-    skipPegTokFlag->getAs<int64_t>() == 0) {
+  if (!skipPegTok) {
+    auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
+
+    //TODO: Add supply
+
     createToken(
       PEG_TOKEN_CONTRACT,
       dhoSettings->getOrFail<eosio::name>(TREASURY_CONTRACT),
       pegToken->getAs<eosio::asset>()
     );
   }
-  else {
-    //Only dao.hypha should be able skip creating reward or peg token
-    eosio::require_auth(get_self());
-  }
+  // else {
+  //   //Only dao.hypha should be able skip creating reward or peg token
+  //   eosio::require_auth(get_self());
+  // }
 
-  if (auto [idx, skipRewardTokFlag] = configCW.get(DETAILS, common::SKIP_REWARD_TOKEN_CREATION);
-    skipRewardTokFlag == nullptr ||
-    skipRewardTokFlag->getAs<int64_t>() == 0) {
+  if (!skipRewardTok) {
+    auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
+
+    //Assign token
+    eosio::action(
+      eosio::permission_level{ get_self(), name("active") },
+      get_self(),
+      name("assigntokdao"),
+      std::make_tuple(
+        rewardToken->getAs<asset>(),
+        daoID,
+        false
+      )
+    ).send();
+    
     createToken(
       REWARD_TOKEN_CONTRACT,
       get_self(),
       rewardToken->getAs<eosio::asset>()
     );
   }
-  else {
-    //Only dao.hypha should be able skip creating reward or peg token
-    eosio::require_auth(get_self());
-  }
+  // else {
+  //   //Only dao.hypha should be able skip creating reward or peg token
+  //   eosio::require_auth(get_self());
+  // }
 }
 
 } // namespace hypha

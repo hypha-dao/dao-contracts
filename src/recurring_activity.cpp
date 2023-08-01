@@ -1,6 +1,8 @@
 #include "recurring_activity.hpp"
 
 #include "dao.hpp"
+#include "badges/badges.hpp"
+#include "typed_document.hpp"
 
 namespace hypha
 {
@@ -76,7 +78,12 @@ int64_t RecurringActivity::getPeriodCount()
 }
 
 void RecurringActivity::scheduleArchive()
-{
+{   
+    //Do nothing when dealing with infinite activities (i.e. self approved Admin/Enroller Badge)
+    if (isInfinite()) {
+        return;
+    }
+    
     //Schedule a trx to close the proposal
     eosio::transaction trx;
     trx.actions.emplace_back(eosio::action(
@@ -128,6 +135,32 @@ bool RecurringActivity::isRecurringActivity(Document& doc)
 
     return type == common::ASSIGN_BADGE ||
            type == common::ASSIGNMENT;
+}
+
+bool RecurringActivity::isInfinite()
+{
+    //Admin and Enroller badges that are created through auto approved proposals are infinite
+    auto cw = getContentWrapper();
+
+    if (auto [_, isSelfApproved] = cw.get(SYSTEM, common::CATEGORY_SELF_APPROVED); 
+        isSelfApproved && isSelfApproved->getAs<int64_t>()) {
+        
+        auto type = cw.getOrFail(SYSTEM, TYPE)->getAs<name>();
+
+        if (type == common::ASSIGN_BADGE) {
+            
+            auto badgeEdge = Edge::get(m_dao->get_self(), getID(), common::BADGE_NAME);
+
+            auto badge = TypedDocument::withType(*m_dao, badgeEdge.getToNode(), common::BADGE_NAME);
+
+            auto badgeInfo = badges::getBadgeInfo(badge);
+            
+            return badgeInfo.systemType == badges::SystemBadgeType::Admin ||
+                   badgeInfo.systemType == badges::SystemBadgeType::Enroller;
+        }
+    }
+    
+    return false;
 }
 
 } // namespace hypha

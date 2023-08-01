@@ -357,61 +357,6 @@ ACTION dao::setrsysttngs(uint64_t treasury_id, const std::map<std::string, Conte
   settings->setSettings(group.value_or(SETTINGS), kvs);
 }
 
-#endif
-
-void dao::onNativeTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo)
-{
-#ifdef USE_TREASURY
-  auto settings = getSettingsDocument();
-
-  auto nativeToken = settings->getOrFail<asset>(treasury::common::fields::NATIVE_TOKEN);
-
-  if (from != get_self() && 
-      to == get_self() &&
-      nativeToken.symbol == quantity.symbol) {
-
-    auto memoParams = splitStringView(memo, ';');
-
-    //If the memo can be split in 3 paramaters, then we know it's related to a msig payment
-    if (memoParams.size() == 3) {
-      auto [receiver, paymentID, payNotes] = splitStringView<name, uint64_t, std::string>(memoParams);
-
-      //Let's mark the payment as executed
-      // TrsyPayment payment(*this, paymentID);
-      
-      // EOS_CHECK(
-      //   payment.getState() == trsycommon::payment_state::PENDING,
-      //   to_str("Payment state has to be ", trsycommon::payment_state::PENDING, " but is currently ", payment.getState())
-      // );
-
-      // payment.setState(trsycommon::payment_state::EXECUTED);
-      // payment.update();
-
-      auto msigEdge = Edge::get(get_self(), paymentID, "msiginfo"_n);
-
-      auto msigInfo = TypedDocument::withType(*this, msigEdge.getToNode(), trsycommon::types::MSIG_INFO);
-
-      auto msigCW = msigInfo.getContentWrapper();
-
-      msigCW.insertOrReplace(
-        *msigCW.getGroupOrFail(DETAILS), 
-        Content{ trsycommon::fields::PAYMENT_STATE, trsycommon::payment_state::EXECUTED }
-      );
-
-      msigInfo.update();
-
-      //Forward the payment to the receiver
-      eosio::action(
-        eosio::permission_level{get_self(), "active"_n},
-        "eosio.token"_n,
-        "transfer"_n,
-        std::tuple(get_self(), receiver, quantity, payNotes)
-      ).send();
-    }
-
-  }
-#endif
-}
 
 struct approval {
   eosio::permission_level level;
@@ -468,6 +413,62 @@ ACTION dao::updatemsig(uint64_t msig_id)
     auto memberID = getMemberID(approval.level.actor);
     Edge(get_self(), get_self(), msig_id, memberID, common::APPROVED_BY);
   }
+}
+
+#endif
+
+void dao::onNativeTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo)
+{
+#ifdef USE_TREASURY
+  auto settings = getSettingsDocument();
+
+  auto nativeToken = settings->getOrFail<asset>(treasury::common::fields::NATIVE_TOKEN);
+
+  if (from != get_self() && 
+      to == get_self() &&
+      nativeToken.symbol == quantity.symbol) {
+
+    auto memoParams = splitStringView(memo, ';');
+
+    //If the memo can be split in 3 paramaters, then we know it's related to a msig payment
+    if (memoParams.size() == 3) {
+      auto [receiver, paymentID, payNotes] = splitStringView<name, uint64_t, std::string>(memoParams);
+
+      //Let's mark the payment as executed
+      // TrsyPayment payment(*this, paymentID);
+      
+      // EOS_CHECK(
+      //   payment.getState() == trsycommon::payment_state::PENDING,
+      //   to_str("Payment state has to be ", trsycommon::payment_state::PENDING, " but is currently ", payment.getState())
+      // );
+
+      // payment.setState(trsycommon::payment_state::EXECUTED);
+      // payment.update();
+
+      auto msigEdge = Edge::get(get_self(), paymentID, "msiginfo"_n);
+
+      auto msigInfo = TypedDocument::withType(*this, msigEdge.getToNode(), trsycommon::types::MSIG_INFO);
+
+      auto msigCW = msigInfo.getContentWrapper();
+
+      msigCW.insertOrReplace(
+        *msigCW.getGroupOrFail(DETAILS), 
+        Content{ trsycommon::fields::PAYMENT_STATE, trsycommon::payment_state::EXECUTED }
+      );
+
+      msigInfo.update();
+
+      //Forward the payment to the receiver
+      eosio::action(
+        eosio::permission_level{get_self(), "active"_n},
+        "eosio.token"_n,
+        "transfer"_n,
+        std::tuple(get_self(), receiver, quantity, payNotes)
+      ).send();
+    }
+
+  }
+#endif
 }
 
 void dao::onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo)

@@ -40,14 +40,9 @@ namespace hypha
         }
 
         //Check start period
-        auto startPeriod = cw.getOrFail(DETAILS, START_PERIOD);
+        Document period = getItemDoc(START_PERIOD, common::PERIOD, cw);
 
-        Document period = TypedDocument::withType(
-            m_dao,
-            static_cast<uint64_t>(startPeriod->getAs<int64_t>()),
-            common::PERIOD
-        );
-
+        //TODO Period: Remove since period refactor will no longer point to DAO
         EOS_CHECK(
             Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
             "Period must belong to the DAO"

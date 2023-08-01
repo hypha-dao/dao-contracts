@@ -93,6 +93,11 @@ namespace hypha
                                         Content { common::DAO.to_string(),
                                                   static_cast<int64_t>(m_daoID) });
 
+        if (selfApprove) {
+            ContentWrapper::insertOrReplace(*proposalContent.getGroupOrFail(SYSTEM),
+                                            Content { common::CATEGORY_SELF_APPROVED, 1 });
+        }
+
         Document proposalNode(m_dao.get_self(), proposer, contentGroups);
 
         // Creates comment section

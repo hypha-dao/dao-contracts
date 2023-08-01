@@ -121,6 +121,7 @@ namespace pricing {
       ACTION propose(uint64_t dao_id, const name &proposer, const name &proposal_type, ContentGroups &content_groups, bool publish);
       ACTION vote(const name& voter, uint64_t proposal_id, string &vote, const std::optional<string> & notes);
       ACTION closedocprop(uint64_t proposal_id);
+      ACTION delasset(uint64_t asset_id);
 
       ACTION proposepub(const name &proposer, uint64_t proposal_id);
       ACTION proposerem(const name &proposer, uint64_t proposal_id);
@@ -181,7 +182,15 @@ namespace pricing {
       
       ACTION autoenroll(uint64_t dao_id, const name& enroller, const name& member);
 
-      ACTION setupbadges(uint64_t dao_id);
+      ACTION setupdefs(uint64_t dao_id);
+
+      ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
+
+      ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name);
+
+      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
+
+      ACTION remdoc(uint64_t doc_id);
       
 #ifdef DEVELOP_BUILD_HELPERS
 
@@ -462,6 +471,8 @@ namespace pricing {
 
       void verifyDaoType(uint64_t daoID);
 
+      void checkAdminsAuth(uint64_t daoID);
+
    private:
 
       void onRewardTransfer(const name& from, const name& to, const asset& amount);
@@ -506,8 +517,6 @@ namespace pricing {
       //TODO: Add parameter to specify staking account(s)
       void verifyEcosystemPayment(pricing::PlanManager& planManager, const string& priceItem, const string& priceStakedItem, const std::string& stakingMemo, const name& beneficiary);
 
-      void checkAdminsAuth(uint64_t daoID);
-
       void readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper configCW, bool isDraft, const string& itemsGroup = DETAILS);
 
       void checkEnrollerAuth(uint64_t daoID, const name& account);
@@ -526,8 +535,6 @@ namespace pricing {
 
       void createToken(const std::string& contractType, name issuer, const asset& token);
 
-      eosio::asset applyCoefficient(ContentWrapper& badge, const eosio::asset &base, const std::string &key);
-      AssetBatch applyBadgeCoefficients(Period& period, const eosio::name &member, uint64_t dao, AssetBatch &ab);
       std::vector<Document> getCurrentBadges(Period& period, const eosio::name &member, uint64_t dao);
 
       bool isPaused();
