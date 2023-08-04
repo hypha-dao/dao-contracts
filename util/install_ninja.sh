@@ -7,12 +7,6 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
-# Check if Ninja is already installed
-if command_exists ninja; then
-  echo "Ninja is already installed."
-  exit 0
-fi
-
 # Check if required tools (git and cmake) are installed
 if ! command_exists git || ! command_exists cmake; then
   echo "Installing required dependencies: git and cmake..."
@@ -27,3 +21,8 @@ apt-get install -y ninja-build
 
 echo "Ninja installation complete."
 
+echo "Installing wasm-opt"
+
+apt-get install binaryen
+
+echo "wasm-opt install complete."
