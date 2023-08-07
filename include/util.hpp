@@ -41,6 +41,8 @@ namespace hypha
       double rewardToPegRatio;
       double deferredPerc;
       double voiceMultipler = 2.0;
+      double rewardMultipler = 1.0;
+      double pegMultipler = 1.0;
     };
 
     /**

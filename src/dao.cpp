@@ -2971,7 +2971,9 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
   sg.push_back({ common::DAO_ORGANISATION_PARAGRAPH, "Select from a multitude of tools to finetune how the organization works. From treasury and compensation to decision-making, from roles to badges, you have every lever at your fingertips." });
   sg.push_back({ common::ADD_ADMINS_ENABLED, int64_t(1) });
   sg.push_back({ common::CLAIM_ENABLED, int64_t(1) });
-
+  sg.push_back({ common::VOICE_MULTIPLIER, int64_t(2) });
+  sg.push_back({ common::REWARD_MULTIPLIER, int64_t(1) });
+  sg.push_back({ common::PEG_MULTIPLIER, int64_t(1) });
 }
 
 /*
