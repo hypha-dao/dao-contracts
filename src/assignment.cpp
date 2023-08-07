@@ -59,7 +59,14 @@ namespace hypha
 
     eosio::asset Assignment::getRewardSalary() 
     {
+      auto rewardToken = m_daoSettings->getSettingOrDefault<eosio::asset>(common::REWARD_TOKEN);
+
+      if (!rewardToken.is_valid()) return {};
+
+      //It's posible that the assignment was created before the reward token was setup, so let's check for that case
       auto cw = getContentWrapper();
+
+      if (!cw.exists(DETAILS, common::REWARD_SALARY_PER_PERIOD)) return {};
 
       asset usdPerPeriod = cw
                            .getOrFail(DETAILS, USD_SALARY_PER_PERIOD)->getAs<eosio::asset>();
@@ -75,22 +82,30 @@ namespace hypha
       auto rewardToPegVal = normalizeToken(m_daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO));
 
       auto rewardPerPeriod = usdPerPeriodCommitmentAdjusted * deferred / rewardToPegVal;
-
-      auto rewardToken = m_daoSettings->getOrFail<eosio::asset>(common::REWARD_TOKEN);
     
       return denormalizeToken(rewardPerPeriod, rewardToken);
     }
 
     eosio::asset Assignment::getVoiceSalary()
     {
-        return getContentWrapper()
-               .getOrFail(DETAILS, common::VOICE_SALARY_PER_PERIOD)->getAs<eosio::asset>();
+      return getContentWrapper()
+              .getOrFail(DETAILS, common::VOICE_SALARY_PER_PERIOD)->getAs<eosio::asset>();
     }
 
     eosio::asset Assignment::getPegSalary()
     {
-        return getContentWrapper()
-               .getOrFail(DETAILS, common::PEG_SALARY_PER_PERIOD)->getAs<eosio::asset>();
+      //Since this could be optional let's return invalid asset if not found
+      auto pegToken = m_daoSettings->getSettingOrDefault<eosio::asset>(common::PEG_TOKEN);
+
+      if (!pegToken.is_valid()) return {}; 
+
+      //It's posible that the assignment was created before the reward token was setup, so let's check for that case
+      auto cw = getContentWrapper();
+
+      if (!cw.exists(DETAILS, common::PEG_SALARY_PER_PERIOD)) return {};
+
+      return getContentWrapper()
+              .getOrFail(DETAILS, common::PEG_SALARY_PER_PERIOD)->getAs<eosio::asset>();
     }
 
     TimeShare Assignment::getInitialTimeShare() 

@@ -805,8 +805,8 @@ void dao::claimnextper(uint64_t assignment_id)
   )
 
   auto daoTokens = AssetBatch{
-    .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-    .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+    .reward = daoSettings->getSettingOrDefault<asset>(common::REWARD_TOKEN),
+    .peg = daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN),
     .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
   };
 
@@ -844,9 +844,6 @@ void dao::claimnextper(uint64_t assignment_id)
   }
 
   // EOS_CHECK(deferredSeeds.is_valid(), "fatal error: SEEDS has to be a valid asset");
-  EOS_CHECK(ab.peg.is_valid(), "fatal error: PEG has to be a valid asset");
-  EOS_CHECK(ab.voice.is_valid(), "fatal error: VOICE has to be a valid asset");
-  EOS_CHECK(ab.reward.is_valid(), "fatal error: REWARD has to be a valid asset");
 
   string assignmentNodeLabel = "";
   if (auto [idx, assignmentLabel] = assignment.getContentWrapper().get(SYSTEM, NODE_LABEL); assignmentLabel)
@@ -862,8 +859,17 @@ void dao::claimnextper(uint64_t assignment_id)
 
   string memo = assignmentNodeLabel + ", period: " + periodToClaim.value().getNodeLabel();
 
-  makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.reward, memo, eosio::name{ 0 }, daoTokens);
-  makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{ 0 }, daoTokens);
+  if (daoTokens.reward.is_valid()) {
+    EOS_CHECK(ab.reward.is_valid(), "fatal error: REWARD has to be a valid asset");
+    makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.reward, memo, eosio::name{ 0 }, daoTokens);
+  }
+
+  if (daoTokens.peg.is_valid()) {
+    EOS_CHECK(ab.peg.is_valid(), "fatal error: PEG has to be a valid asset");
+    makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{ 0 }, daoTokens);
+  }
+
+  EOS_CHECK(ab.voice.is_valid(), "fatal error: VOICE has to be a valid asset");
   makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.peg, memo, eosio::name{ 0 }, daoTokens);
 }
 
@@ -873,8 +879,8 @@ void dao::claimnextper(uint64_t assignment_id)
 
 //   //We might reuse if called from simclaimall
 //   auto daoTokens = AssetBatch{
-//     .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-//     .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+//     .reward = daoSettings->getSettingOrDefault<asset>(common::REWARD_TOKEN),
+//     .peg = daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN),
 //     .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
 //   };
 
@@ -922,8 +928,8 @@ void dao::claimnextper(uint64_t assignment_id)
 //     false,
 //     to_str(
 //         "{\n", 
-//           "\"peg\":\"", total.peg, "\",\n",
-//           "\"reward\":\"", total.reward, "\",\n",
+//           "\"peg\":\"", (total.peg.is_valid() ? to_str(total.peg) : std::string("Not peg")), "\",\n",
+//           "\"reward\":\"", (total.reward.is_valid() ? to_str(total.reward) : std::string("Not reward")), "\",\n",
 //           "\"voice\":\"", total.voice, "\",\n",
 //           "\"ids\":", ids,
 //         "}"
@@ -938,8 +944,8 @@ void dao::claimnextper(uint64_t assignment_id)
 
 //   //We might reuse if called from simclaimall
 //   auto daoTokens = AssetBatch{
-//     .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-//     .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+//     .reward = daoSettings->getSettingOrDefault<asset>(common::REWARD_TOKEN),
+//     .peg = daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN),
 //     .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
 //   };
 
@@ -947,7 +953,14 @@ void dao::claimnextper(uint64_t assignment_id)
 
 //   EOS_CHECK(
 //     false,
-//     to_str("{\n\"peg\":\"", pay.peg, "\",\n\"reward\":\"", pay.reward, "\",\n\"voice\":\"", pay.voice, "\"\n}")
+//     to_str(
+//         "{\n", 
+//           "\"peg\":\"", (pay.peg.is_valid() ? to_str(pay.peg) : std::string("Not peg")), "\",\n",
+//           "\"reward\":\"", (pay.reward.is_valid() ? to_str(pay.reward) : std::string("Not reward")), "\",\n",
+//           "\"voice\":\"", pay.voice, "\",\n",
+//           "\"ids\":", ids,
+//         "}"
+//     )
 //   )
 // }
 
@@ -1022,68 +1035,68 @@ AssetBatch dao::calculatePeriodPayout(Period& period,
 
     //Accumlate each of the currencies with the time share multiplier
 
-    payout.peg += adjustAsset(salary.peg, commitmentMultiplier);
     payout.voice += adjustAsset(salary.voice, commitmentMultiplier);
+    payout.peg += adjustAsset(salary.peg, commitmentMultiplier);
     payout.reward += adjustAsset(salary.reward, commitmentMultiplier);
   }
 
   return payout;
 }
 
-AssetBatch dao::calculatePendingClaims(uint64_t assignmentID, const AssetBatch& daoTokens)
-{
-  Assignment assignment(this, assignmentID);
+// AssetBatch dao::calculatePendingClaims(uint64_t assignmentID, const AssetBatch& daoTokens)
+// {
+//   Assignment assignment(this, assignmentID);
   
-  AssetBatch payAmount {
-    .reward = eosio::asset{ 0, daoTokens.reward.symbol },
-    .peg = eosio::asset{ 0, daoTokens.peg.symbol },
-    .voice = eosio::asset{ 0, daoTokens.voice.symbol }
-  };
+//   AssetBatch payAmount {
+//     .reward = eosio::asset{ 0, daoTokens.reward.symbol },
+//     .peg = eosio::asset{ 0, daoTokens.peg.symbol },
+//     .voice = eosio::asset{ 0, daoTokens.voice.symbol }
+//   };
 
-  // Ensure that the claimed period is within the approved period count
-  Period period = assignment.getStartPeriod();
-  int64_t periodCount = assignment.getPeriodCount();
-  int64_t counter = 0;
+//   // Ensure that the claimed period is within the approved period count
+//   Period period = assignment.getStartPeriod();
+//   int64_t periodCount = assignment.getPeriodCount();
+//   int64_t counter = 0;
 
-  const asset pegSalary = assignment.getPegSalary();
-  const asset voiceSalary = assignment.getVoiceSalary();
-  const asset rewardSalary = assignment.getRewardSalary();
+//   const asset pegSalary = assignment.getPegSalary();
+//   const asset voiceSalary = assignment.getVoiceSalary();
+//   const asset rewardSalary = assignment.getRewardSalary();
 
-  AssetBatch salary{
-    .reward = rewardSalary,
-    .peg = pegSalary,
-    .voice = voiceSalary
-  };
+//   AssetBatch salary{
+//     .reward = rewardSalary,
+//     .peg = pegSalary,
+//     .voice = voiceSalary
+//   };
 
-  auto currentTime = eosio::current_time_point().sec_since_epoch();
+//   auto currentTime = eosio::current_time_point().sec_since_epoch();
 
-  const int64_t initTimeShare = assignment.getInitialTimeShare()
-                                          .getContentWrapper()
-                                          .getOrFail(DETAILS, TIME_SHARE)
-                                          ->getAs<int64_t>();
+//   const int64_t initTimeShare = assignment.getInitialTimeShare()
+//                                           .getContentWrapper()
+//                                           .getOrFail(DETAILS, TIME_SHARE)
+//                                           ->getAs<int64_t>();
 
-  TimeShare current = assignment.getCurrentTimeShare();
+//   TimeShare current = assignment.getCurrentTimeShare();
 
-  //Initialize nextOpt with current in order to have a valid initial timeShare
-  auto nextOpt = std::optional<TimeShare>{ current };
+//   //Initialize nextOpt with current in order to have a valid initial timeShare
+//   auto nextOpt = std::optional<TimeShare>{ current };
 
-  std::optional<TimeShare> lastTimeShare;
+//   std::optional<TimeShare> lastTimeShare;
 
-  while (counter < periodCount)
-  {
-      int64_t periodEndSec = period.getEndTime().sec_since_epoch();
-      if (periodEndSec <= currentTime &&   // if period has lapsed
-          !assignment.isClaimed(&period))         // and not yet claimed
-      {
-          payAmount += calculatePeriodPayout(period, salary, daoTokens, nextOpt, lastTimeShare, initTimeShare);
-          nextOpt = lastTimeShare;
-      }
-      period = period.next();
-      counter++;
-  }
+//   while (counter < periodCount)
+//   {
+//       int64_t periodEndSec = period.getEndTime().sec_since_epoch();
+//       if (periodEndSec <= currentTime &&   // if period has lapsed
+//           !assignment.isClaimed(&period))         // and not yet claimed
+//       {
+//           payAmount += calculatePeriodPayout(period, salary, daoTokens, nextOpt, lastTimeShare, initTimeShare);
+//           nextOpt = lastTimeShare;
+//       }
+//       period = period.next();
+//       counter++;
+//   }
 
-  return payAmount;
-}
+//   return payAmount;
+// }
 
 asset dao::getProRatedAsset(ContentWrapper* assignment, const symbol& symbol, const string& key, const float& proration)
 {

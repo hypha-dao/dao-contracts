@@ -20,8 +20,8 @@ void PayoutProposal::checkTokenItems(Settings* daoSettings, ContentWrapper conte
     auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
     
     auto tokens = AssetBatch {
-        .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-        .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+        .reward = daoSettings->getSettingOrDefault<asset>(common::REWARD_TOKEN),
+        .peg = daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN),
         .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
     };
 
@@ -49,9 +49,9 @@ void PayoutProposal::checkTokenItems(Settings* daoSettings, ContentWrapper conte
             .pegMultipler = static_cast<double>(daoSettings->getSettingOrDefault<int64_t>(common::PEG_MULTIPLIER, 1))
         }, tokens);
 
-        ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::PEG_AMOUNT, salaries.peg });
         ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::VOICE_AMOUNT, salaries.voice });
-        ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::REWARD_AMOUNT, salaries.reward });
+        if (tokens.peg.is_valid()) ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::PEG_AMOUNT, salaries.peg });
+        if (tokens.reward.is_valid()) ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::REWARD_AMOUNT, salaries.reward });
     }
 
     //Verify there is only 1 item of each token type
@@ -82,23 +82,25 @@ void PayoutProposal::checkTokenItems(Settings* daoSettings, ContentWrapper conte
     bool hasReward = false;
 
     for (const auto& item : *detailsGroup) {
-        checkToken(item, common::PEG_AMOUNT, tokens.peg, hasPeg);
         checkToken(item, common::VOICE_AMOUNT, tokens.voice, hasVoice);
-        checkToken(item, common::REWARD_AMOUNT, tokens.reward, hasReward);
+        if (tokens.peg.is_valid()) checkToken(item, common::PEG_AMOUNT, tokens.peg, hasPeg);
+        if (tokens.reward.is_valid()) checkToken(item, common::REWARD_AMOUNT, tokens.reward, hasReward);
     }
 
     EOS_CHECK(
-        hasPeg, 
-        "Missing peg_amount item"
-    );
-
-    EOS_CHECK(
-        hasVoice, 
+        hasVoice,
         "Missing voice_amount item"
     );
 
+    //Either the peg token was found, or the DAO doesn't have peg token
     EOS_CHECK(
-        hasReward, 
+        hasPeg || !tokens.peg.is_valid(), 
+        "Missing peg_amount item"
+    );
+
+    //Either the reward token was found, or the DAO doesn't have reward token
+    EOS_CHECK(
+        hasReward || !tokens.reward.is_valid(),
         "Missing reward_amount item"
     );
 }
@@ -196,18 +198,18 @@ void PayoutProposal::pay(Document &proposal, eosio::name edgeName)
     std::string memo{"one-time payment on proposal: " + to_str(proposal.getID())};
 
     auto tokens = AssetBatch {
-        .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-        .peg = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+        .reward = m_daoSettings->getSettingOrDefault<asset>(common::REWARD_TOKEN),
+        .peg = m_daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN),
         .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
     };
 
     auto detailsGroup = contentWrapper.getGroupOrFail(DETAILS);
 
-    auto payoutItems = std::vector<std::string>{
-        common::VOICE_AMOUNT, 
-        common::REWARD_AMOUNT, 
-        common::PEG_AMOUNT
-    };
+    auto payoutItems = std::vector<std::string>{common::VOICE_AMOUNT};
+    
+    //DAO could not have defined peg or reward token
+    if (tokens.peg.is_valid()) payoutItems.push_back(common::PEG_AMOUNT);
+    if (tokens.reward.is_valid()) payoutItems.push_back(common::REWARD_AMOUNT);
 
     for (Content &content : *detailsGroup)
     {

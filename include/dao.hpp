@@ -477,7 +477,7 @@ namespace pricing {
 
       void onRewardTransfer(const name& from, const name& to, const asset& amount);
 
-      AssetBatch calculatePendingClaims(uint64_t assignmentID, const AssetBatch& daoTokens);
+      //AssetBatch calculatePendingClaims(uint64_t assignmentID, const AssetBatch& daoTokens);
 
       AssetBatch calculatePeriodPayout(Period& period,
                                        const AssetBatch& salary,
