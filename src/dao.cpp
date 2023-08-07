@@ -1914,6 +1914,21 @@ void dao::createdao(ContentGroups& config)
 #endif
   }
   else {
+
+    //Just do this check on mainnet
+    if (!isTestnet()) {
+
+      auto onboarder = configCW.getOrFail(DETAILS, common::ONBOARDER_ACCOUNT)->getAs<name>();
+
+      auto hyphaId = getDAOID("hypha"_n);
+
+      EOS_CHECK(
+        hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
+        "You are not allowed to call this action"
+      );
+    }
+
+    //Regular DAO creation
     auto daoDoc = createDao(nullptr);
     //Verify Root exists
     Document root = Document(get_self(), getRootID());    
@@ -3043,24 +3058,6 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
   auto onboarderAcc = configCW.getOrFail(detailsIdx, common::ONBOARDER_ACCOUNT).second;
 
   const name onboarder = onboarderAcc->getAs<name>();
-
-  //Just do this check on mainnet
-  if (!isTestnet()) {
-
-#ifdef EOS_BUILD
-    EOS_CHECK(
-      onboarder == eosio::name("dao.hypha"),
-      "Only authorized account can create DAO"
-    )
-#else
-    auto hyphaId = getDAOID("hypha"_n);
-
-    EOS_CHECK(
-      hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
-      "You are not allowed to call this action"
-    );
-#endif
-  }
 
   auto votingQuorum = configCW.getOrFail(detailsIdx, VOTING_QUORUM_FACTOR_X100).second;
 
