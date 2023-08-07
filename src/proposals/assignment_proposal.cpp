@@ -173,22 +173,24 @@ namespace hypha
             .pegMultipler = static_cast<double>(m_daoSettings->getSettingOrDefault<int64_t>(common::PEG_MULTIPLIER, 1))
         };
 
-        AssetBatch salaries = calculateSalaries(salaryConf, AssetBatch{
-            .reward = m_daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-            .peg = m_daoSettings->getOrFail<asset>(common::PEG_TOKEN),
+        auto tokens = AssetBatch {
+            .reward = m_daoSettings->getSettingOrDefault<asset>(common::REWARD_TOKEN),
+            .peg = m_daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN),
             .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
-        });
+        };
+
+        AssetBatch salaries = calculateSalaries(salaryConf, tokens);
 
         // add remaining derived per period salary amounts to this document        
-        //if (salaries.peg.amount > 0) {
+        if (tokens.peg.is_valid()) {
             Content pegSalaryPerPeriod(common::PEG_SALARY_PER_PERIOD, salaries.peg);
             ContentWrapper::insertOrReplace(*detailsGroup, pegSalaryPerPeriod);
-        //}
+        }
 
-        //if (salaries.reward.amount > 0) {
+        if (tokens.reward.is_valid()) {
             Content rewardSalaryPerPeriod(common::REWARD_SALARY_PER_PERIOD, salaries.reward);
             ContentWrapper::insertOrReplace(*detailsGroup, rewardSalaryPerPeriod);
-        //}
+        }
 
         //if (salaries.voice.amount > 0) {
             Content voiceSalaryPerPeriod(common::VOICE_SALARY_PER_PERIOD, salaries.voice);

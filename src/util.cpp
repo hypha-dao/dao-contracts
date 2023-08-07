@@ -34,14 +34,19 @@ namespace hypha
     {
         AssetBatch salaries;
 
-        double pegSalaryPerPeriod = salaryConf.periodSalary * (1.0 - salaryConf.deferredPerc);
-        
-        salaries.peg = denormalizeToken(pegSalaryPerPeriod * salaryConf.pegMultipler, tokens.peg);
+        if (tokens.peg.is_valid()) {
+            double pegSalaryPerPeriod = salaryConf.periodSalary * (1.0 - salaryConf.deferredPerc);
+            salaries.peg = denormalizeToken(pegSalaryPerPeriod * salaryConf.pegMultipler, tokens.peg);
+        }
 
-        double rewardSalaryPerPeriod = (salaryConf.periodSalary * salaryConf.deferredPerc) / salaryConf.rewardToPegRatio;
+        if (tokens.reward.is_valid()) {
+            double rewardSalaryPerPeriod = (salaryConf.periodSalary * salaryConf.deferredPerc) / salaryConf.rewardToPegRatio;
+            salaries.reward = denormalizeToken(rewardSalaryPerPeriod * salaryConf.rewardMultipler, tokens.reward);
+        }
 
-        salaries.reward = denormalizeToken(rewardSalaryPerPeriod * salaryConf.rewardMultipler, tokens.reward);
+        EOS_CHECK(tokens.voice.is_valid(), "Voice token must be valid");
 
+        //Voice is a must, should be always valid
         double voiceSalaryPerPeriod = salaryConf.periodSalary * salaryConf.voiceMultipler;
         //TODO: Make the multipler configurable
         salaries.voice = denormalizeToken(voiceSalaryPerPeriod, tokens.voice);
