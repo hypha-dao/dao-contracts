@@ -516,7 +516,8 @@ void dao::onCashTokenTransfer(const name& from, const name& to, const asset& qua
     for (auto& edge : daoEdges) {
       auto daoSettings = getSettingsDocument(edge.getToNode());
 
-      if (daoSettings->getOrFail<asset>(common::PEG_TOKEN).symbol == quantity.symbol) {
+      //Some DAO's might not have a peg token so let's use the default asset{}
+      if (daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN).symbol == quantity.symbol) {
         //If we find it, let's create a lookup edge for the next time we get this symbol
         daoID = edge.getToNode();
         Edge(get_self(), get_self(), rootID, daoID, lookupEdgeName);
@@ -529,6 +530,8 @@ void dao::onCashTokenTransfer(const name& from, const name& to, const asset& qua
     daoID != 0,
     "No DAO uses the transfered token"
   );
+
+  verifyDaoType(daoID);
 
   EOS_CHECK(
     Member::isMember(*this, daoID, from),
