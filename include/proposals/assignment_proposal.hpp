@@ -27,8 +27,6 @@ namespace hypha {
         {
             return true;
         }
-    private: 
-
-        asset calculateTimeShareUsdPerPeriod(const SalaryConfig& salaryConf);
+    private:
     };
 }

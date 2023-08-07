@@ -36,11 +36,11 @@ namespace hypha
 
         double pegSalaryPerPeriod = salaryConf.periodSalary * (1.0 - salaryConf.deferredPerc);
         
-        salaries.peg = denormalizeToken(pegSalaryPerPeriod, tokens.peg);
+        salaries.peg = denormalizeToken(pegSalaryPerPeriod * salaryConf.pegMultipler, tokens.peg);
 
         double rewardSalaryPerPeriod = (salaryConf.periodSalary * salaryConf.deferredPerc) / salaryConf.rewardToPegRatio;
 
-        salaries.reward = denormalizeToken(rewardSalaryPerPeriod, tokens.reward);
+        salaries.reward = denormalizeToken(rewardSalaryPerPeriod * salaryConf.rewardMultipler, tokens.reward);
 
         double voiceSalaryPerPeriod = salaryConf.periodSalary * salaryConf.voiceMultipler;
         //TODO: Make the multipler configurable

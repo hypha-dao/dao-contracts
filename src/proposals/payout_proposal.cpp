@@ -44,7 +44,9 @@ void PayoutProposal::checkTokenItems(Settings* daoSettings, ContentWrapper conte
             .periodSalary = normalizeToken(usd),
             .rewardToPegRatio = normalizeToken(rewardPegVal),
             .deferredPerc = deferred / 100.0,
-            .voiceMultipler = 2.0 
+            .voiceMultipler = static_cast<double>(daoSettings->getSettingOrDefault<int64_t>(common::VOICE_MULTIPLIER, 2)),
+            .rewardMultipler = static_cast<double>(daoSettings->getSettingOrDefault<int64_t>(common::REWARD_MULTIPLIER, 1)),
+            .pegMultipler = static_cast<double>(daoSettings->getSettingOrDefault<int64_t>(common::PEG_MULTIPLIER, 1))
         }, tokens);
 
         ContentWrapper::insertOrReplace(*detailsGroup, Content{ common::PEG_AMOUNT, salaries.peg });
