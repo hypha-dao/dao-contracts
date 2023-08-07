@@ -162,7 +162,15 @@ namespace hypha
         //TODO: Normalize all the tokens to allow different precisions on each token
         //currently they all must be the same or the will not work correctly
 
-        auto rewardPegVal = m_daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO);
+        auto tokens = AssetBatch {
+            .reward = m_daoSettings->getSettingOrDefault<asset>(common::REWARD_TOKEN),
+            .peg = m_daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN),
+            .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+        };
+
+        auto rewardPegVal = tokens.reward.is_valid() ?
+             m_daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO) : 
+             eosio::asset{};
 
         SalaryConfig salaryConf {
             .periodSalary = normalizeToken(usdSalaryPerPeriod.getAs<asset>()) * (timeShare / 100.0),
@@ -171,12 +179,6 @@ namespace hypha
             .voiceMultipler = static_cast<double>(m_daoSettings->getSettingOrDefault<int64_t>(common::VOICE_MULTIPLIER, 2)),
             .rewardMultipler = static_cast<double>(m_daoSettings->getSettingOrDefault<int64_t>(common::REWARD_MULTIPLIER, 1)),
             .pegMultipler = static_cast<double>(m_daoSettings->getSettingOrDefault<int64_t>(common::PEG_MULTIPLIER, 1))
-        };
-
-        auto tokens = AssetBatch {
-            .reward = m_daoSettings->getSettingOrDefault<asset>(common::REWARD_TOKEN),
-            .peg = m_daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN),
-            .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
         };
 
         AssetBatch salaries = calculateSalaries(salaryConf, tokens);

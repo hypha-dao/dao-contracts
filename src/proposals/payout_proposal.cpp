@@ -38,7 +38,9 @@ void PayoutProposal::checkTokenItems(Settings* daoSettings, ContentWrapper conte
         EOS_CHECK(deferred >= 0, DEFERRED + string(" must be greater than or equal to zero. You submitted: ") + std::to_string(deferred));
         EOS_CHECK(deferred <= 100, DEFERRED + string(" must be less than or equal to 100 (=100%). You submitted: ") + std::to_string(deferred));
 
-        auto rewardPegVal = daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO);
+        auto rewardPegVal = tokens.reward.is_valid() ?
+             daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO) : 
+             eosio::asset{};
         
         auto salaries = calculateSalaries(SalaryConfig {
             .periodSalary = normalizeToken(usd),

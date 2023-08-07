@@ -866,11 +866,11 @@ void dao::claimnextper(uint64_t assignment_id)
 
   if (daoTokens.peg.is_valid()) {
     EOS_CHECK(ab.peg.is_valid(), "fatal error: PEG has to be a valid asset");
-    makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{ 0 }, daoTokens);
+    makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.peg, memo, eosio::name{ 0 }, daoTokens);
   }
 
   EOS_CHECK(ab.voice.is_valid(), "fatal error: VOICE has to be a valid asset");
-  makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.peg, memo, eosio::name{ 0 }, daoTokens);
+  makePayment(daoSettings, periodToClaim.value().getID(), assignee, ab.voice, memo, eosio::name{ 0 }, daoTokens);
 }
 
 // void dao::simclaimall(name account, uint64_t dao_id, bool only_ids)
@@ -975,9 +975,9 @@ AssetBatch dao::calculatePeriodPayout(Period& period,
   int64_t periodEndSec = period.getEndTime().sec_since_epoch();
 
   AssetBatch payout {
-    .reward = eosio::asset{ 0, daoTokens.reward.symbol },
-    .peg = eosio::asset{ 0, daoTokens.peg.symbol },
-    .voice = eosio::asset{ 0, daoTokens.voice.symbol }
+    .reward = daoTokens.reward.is_valid() ? asset{ 0, daoTokens.reward.symbol } : asset{},
+    .peg = daoTokens.peg.is_valid() ? asset{ 0, daoTokens.peg.symbol } : asset{},
+    .voice = asset{ 0, daoTokens.voice.symbol }
   };
           
   while (nextTimeShareOpt)
@@ -1036,8 +1036,8 @@ AssetBatch dao::calculatePeriodPayout(Period& period,
     //Accumlate each of the currencies with the time share multiplier
 
     payout.voice += adjustAsset(salary.voice, commitmentMultiplier);
-    payout.peg += adjustAsset(salary.peg, commitmentMultiplier);
-    payout.reward += adjustAsset(salary.reward, commitmentMultiplier);
+    if (daoTokens.peg.is_valid()) payout.peg += adjustAsset(salary.peg, commitmentMultiplier);
+    if (daoTokens.reward.is_valid()) payout.reward += adjustAsset(salary.reward, commitmentMultiplier);
   }
 
   return payout;
