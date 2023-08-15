@@ -1,5 +1,6 @@
 #pragma once
 
+#include <config/config.hpp>
 #include <eosio/symbol.hpp>
 #include <eosio/asset.hpp>
 #include <eosio/name.hpp>
