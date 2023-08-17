@@ -3200,6 +3200,7 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
 
     //Don't move the token as it it will be used later on 
     settingsGroup.push_back(*rewardToken);
+    settingsGroup.push_back(std::move(*rewardToPegTokenRatio));
     settingsGroup.push_back(std::move(rewardTokenName));
     settingsGroup.push_back(*rewardTokenMaxSupply);
   }
