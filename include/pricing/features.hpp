@@ -8,6 +8,8 @@ class dao;
 
 namespace pricing {
 
+#ifdef USE_PRICING_PLAN
+
 class PricingPlan;
 
 void checkDaoCanEnrrollMember(dao& dao, uint64_t daoID);
@@ -19,6 +21,7 @@ void checkDaoCanEnrrollMember(dao& dao, uint64_t daoID);
  * @param daoID 
  */
 void onDaoPlanChange(dao& dao, uint64_t daoID, PricingPlan& newPlan);
+#endif
 
 }
 } // namespace hypha::pricing

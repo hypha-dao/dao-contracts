@@ -75,7 +75,9 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
+#ifdef USE_PRICING_PLAN
         pricing::checkDaoCanEnrrollMember(m_dao, appliedTo);
+#endif
         
         uint64_t rootID = appliedTo;
 

@@ -203,18 +203,11 @@ namespace pricing {
       };
 
       //ACTION cleandao(uint64_t dao_id);
+      ACTION remdockey(uint64_t doc_id, const std::string& group, const std::string& key);
       
       ACTION adddocs(std::vector<Document>& docs);
 
-      ACTION remdoc(uint64_t doc_id);
-
-      ACTION remedge(uint64_t from_node, uint64_t to_node, name edge_name);
-
-      ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
-
       ACTION addedges(std::vector<InputEdge>& edges);
-
-      ACTION addedge(uint64_t from, uint64_t to, const name& edge_name);
 
       ACTION copybadge(uint64_t source_badge_id, uint64_t destination_dao_id, name proposer);
       // ACTION deletetok(asset asset, name contract) {
@@ -303,6 +296,7 @@ namespace pricing {
       ACTION createdaodft(ContentGroups &config);
       ACTION deletedaodft(uint64_t dao_draft_id);
       ACTION archiverecur(uint64_t document_id);
+      ACTION createtokens(uint64_t dao_id, ContentGroups& tokens_info);
       
 #ifdef USE_TREASURY
       
@@ -471,7 +465,18 @@ namespace pricing {
 
       void verifyDaoType(uint64_t daoID);
 
+      void pushPegTokenSettings(name dao, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create);
+      void pushVoiceTokenSettings(name dao, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create);
+      void pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create);
+
       void checkAdminsAuth(uint64_t daoID);
+
+      void createVoiceToken(const eosio::name& daoName,
+                            const eosio::asset& voiceToken,
+                            const uint64_t& decayPeriod,
+                            const uint64_t& decayPerPeriodx10M);
+
+      void createToken(const std::string& contractType, name issuer, const asset& token);
 
    private:
 
@@ -527,13 +532,6 @@ namespace pricing {
 
       asset getProRatedAsset(ContentWrapper *assignment, const symbol &symbol,
                              const string &key, const float &proration);
-
-      void createVoiceToken(const eosio::name& daoName,
-                            const eosio::asset& voiceToken,
-                            const uint64_t& decayPeriod,
-                            const uint64_t& decayPerPeriodx10M);
-
-      void createToken(const std::string& contractType, name issuer, const asset& token);
 
       std::vector<Document> getCurrentBadges(Period& period, const eosio::name &member, uint64_t dao);
 

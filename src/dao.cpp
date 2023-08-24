@@ -76,17 +76,7 @@ void dao::remdoc(uint64_t doc_id)
 
 #ifdef DEVELOP_BUILD_HELPERS
 
-void dao::addedge(uint64_t from, uint64_t to, const name& edge_name)
-{
-  require_auth(get_self());
-
-  Document fromDoc(get_self(), from);
-  Document toDoc(get_self(), to);
-
-  Edge(get_self(), get_self(), fromDoc.getID(), toDoc.getID(), edge_name);
-}
-
-void dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value)
+void dao::remdockey(uint64_t doc_id, const std::string& group, const std::string& key)
 {
   require_auth(get_self());
 
@@ -94,15 +84,9 @@ void dao::editdoc(uint64_t doc_id, const std::string& group, const std::string& 
 
   auto cw = doc.getContentWrapper();
 
-  cw.insertOrReplace(*cw.getGroupOrFail(group), Content{key, value});
+  cw.removeContent(group, key);
 
   doc.update();
-}
-
-void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
-{
-    eosio::require_auth(get_self());
-    Edge::get(get_self(), from_node, to_node, edge_name).erase();
 }
 
 void dao::adddocs(std::vector<Document>& docs)
@@ -115,13 +99,6 @@ void dao::adddocs(std::vector<Document>& docs)
       newDoc = std::move(doc);
     });
   }
-}
-
-void dao::remdoc(uint64_t doc_id)
-{
-    eosio::require_auth(get_self());
-    Document doc(get_self(), doc_id);
-    m_documentGraph.eraseDocument(doc_id, true);
 }
 
 void dao::addedges(std::vector<InputEdge>& edges)
@@ -1700,10 +1677,13 @@ void dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_dur
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
   verifyDaoType(dao_id);
-
-  if (!eosio::has_auth(get_self())) {
-    checkAdminsAuth(dao_id);
-  }
+  checkAdminsAuth(dao_id);
+  
+  // DAO's using shared periods doesn't have END edge, so it would fail if trying to add more periods
+  EOS_CHECK(
+    !getGraph().getEdgesFrom(dao_id, common::END).empty(),
+    "This DAO is not allowed to call this action"
+  )
 
   genPeriods(dao_id, period_count);
 }
@@ -2058,6 +2038,58 @@ void dao::archiverecur(uint64_t document_id)
       recurAct.scheduleArchive();
     }
   }
+}
+
+void dao::createtokens(uint64_t dao_id, ContentGroups& tokens_info)
+{
+  checkAdminsAuth(dao_id);
+
+  auto cw = ContentWrapper(tokens_info);
+
+  auto daoSettings = getSettingsDocument(dao_id);
+  auto settingsCW = daoSettings->getContentWrapper();
+  auto settingsGroup = settingsCW.getGroupOrFail(SETTINGS);
+  auto daoName = daoSettings->getOrFail<name>(DAO_NAME);
+
+  if (auto [pegIdx, pegGroup] = cw.getGroup("peg_details"); pegGroup) {
+    pushPegTokenSettings(daoName, *settingsGroup, cw, pegIdx, true);
+  }
+
+  if (auto [rewardIdx, rewardGroup] = cw.getGroup("reward_details"); rewardGroup) {
+    pushRewardTokenSettings(daoName, dao_id, *settingsGroup, cw, rewardIdx, true);
+  }
+
+  //Voice is always created in create dao, so we don't have to create it again
+  if (auto [voiceIdx, voiceGroup] = cw.getGroup("voice_details"); voiceGroup) {
+    if (auto [_, multiplier] = cw.get(voiceIdx, common::VOICE_MULTIPLIER); multiplier) {
+      multiplier->getAs<int64_t>();
+      ContentWrapper::insertOrReplace(*settingsGroup, *multiplier);
+    }
+
+    Content* decayPeriod = nullptr;
+    Content* decayPerPeriod = nullptr;
+
+    if (auto [_, decayPeriodContent] = cw.get(voiceIdx, common::VOICE_TOKEN_DECAY_PERIOD); decayPeriodContent) {
+      decayPeriod = decayPeriodContent;
+      ContentWrapper::insertOrReplace(*settingsGroup, *decayPeriod);
+    }
+
+    if (auto [_, decayPerPeriodContent] = cw.get(voiceIdx, common::VOICE_TOKEN_DECAY_PER_PERIOD); decayPerPeriodContent) {
+      decayPerPeriod = decayPerPeriodContent;
+      ContentWrapper::insertOrReplace(*settingsGroup, *decayPerPeriod);
+    }
+
+    if (decayPeriod || decayPerPeriod) {
+      changeDecay(
+        getSettingsDocument(),
+        daoSettings,
+        (decayPeriod ? decayPeriod->getAs<int64_t>() : daoSettings->getOrFail<int64_t>(SETTINGS, common::VOICE_TOKEN_DECAY_PERIOD)),
+        (decayPerPeriod ? decayPerPeriod->getAs<int64_t>() : daoSettings->getOrFail<int64_t>(SETTINGS, common::VOICE_TOKEN_DECAY_PER_PERIOD))
+      );
+    }
+  }
+
+  daoSettings->update();
 }
 
 // void dao::createroot(const std::string& notes)
@@ -2999,9 +3031,143 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
   sg.push_back({ common::DAO_ORGANISATION_PARAGRAPH, "Select from a multitude of tools to finetune how the organization works. From treasury and compensation to decision-making, from roles to badges, you have every lever at your fingertips." });
   sg.push_back({ common::ADD_ADMINS_ENABLED, int64_t(1) });
   sg.push_back({ common::CLAIM_ENABLED, int64_t(1) });
-  sg.push_back({ common::VOICE_MULTIPLIER, int64_t(2) });
-  sg.push_back({ common::REWARD_MULTIPLIER, int64_t(1) });
-  sg.push_back({ common::PEG_MULTIPLIER, int64_t(1) });
+}
+
+void dao::pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create) {
+
+  auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
+
+  auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
+
+  rewardToPegTokenRatio->getAs<asset>();
+
+  auto rewardTokenMaxSupply = configCW.getOrFail(detailsIdx, "reward_token_max_supply").second;
+
+  EOS_CHECK(
+    rewardToken->getAs<asset>().symbol == rewardTokenMaxSupply->getAs<asset>().symbol,
+    "Symbol mismatch between reward_token and reward_token_max_supply"
+  )
+
+  Content rewardTokenName = Content{  
+    common::REWARD_TOKEN_NAME,
+    to_str(rewardToken->getAs<eosio::asset>().symbol.code())
+  };
+
+  if (auto [_, rwrdTokName] = configCW.get(detailsIdx, common::REWARD_TOKEN_NAME);
+      rwrdTokName)
+  {
+    rewardTokenName.value = std::move(rwrdTokName->value);
+  }
+
+  EOS_CHECK(
+    rewardTokenName.getAs<std::string>().size() <= 30,
+    "Utility token name must be less than 30 characters"
+  )
+
+  auto rewardMultiplier = configCW.getOrFail(detailsIdx, common::REWARD_MULTIPLIER).second;
+
+  rewardMultiplier->getAs<int64_t>();
+
+  //Don't move the token as it it will be used later on 
+  settingsGroup.push_back(*rewardToken);
+  settingsGroup.push_back(std::move(*rewardToPegTokenRatio));
+  settingsGroup.push_back(std::move(rewardTokenName));
+  settingsGroup.push_back(*rewardTokenMaxSupply);
+  ContentWrapper::insertOrReplace(settingsGroup, *rewardMultiplier);
+
+  if (create) {
+    //Assign token
+    eosio::action(
+      eosio::permission_level{ get_self(), name("active") },
+      get_self(),
+      name("assigntokdao"),
+      std::make_tuple(
+        rewardToken->getAs<asset>(),
+        daoID,
+        false
+      )
+    ).send();
+    
+    createToken(
+      REWARD_TOKEN_CONTRACT,
+      get_self(),
+      rewardToken->getAs<eosio::asset>()
+    );
+  }
+}
+
+void dao::pushVoiceTokenSettings(name dao, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create) {
+  
+  auto voiceToken = Content {
+    common::VOICE_TOKEN,
+    asset{0, eosio::symbol{eosio::symbol_code{"VOICE"}, 2}}
+  };
+
+  //Voice is optional 
+  if (auto [_, voiceContent] = configCW.get(detailsIdx, common::VOICE_TOKEN); voiceContent) {
+    voiceToken.value = voiceContent->getAs<asset>();
+  }
+
+  auto voiceTokenDecayPeriod = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PERIOD).second;
+  auto voiceTokenDecayPerPeriodX10M = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PER_PERIOD).second;
+  auto voiceMultiplier = configCW.getOrFail(detailsIdx, common::VOICE_MULTIPLIER).second;
+
+  voiceMultiplier->getAs<int64_t>();
+
+  settingsGroup.push_back(voiceToken);
+  settingsGroup.push_back(*voiceTokenDecayPeriod);
+  settingsGroup.push_back(*voiceTokenDecayPerPeriodX10M);
+  settingsGroup.push_back(*voiceMultiplier);
+
+  if (create) {
+    createVoiceToken(
+      dao,
+      voiceToken.getAs<asset>(),
+      voiceTokenDecayPeriod->getAs<int64_t>(),
+      voiceTokenDecayPerPeriodX10M->getAs<int64_t>()
+    );
+  }
+}
+
+void dao::pushPegTokenSettings(name dao, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create) {
+
+  auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
+    
+  Content pegTokenName = Content{  
+    common::PEG_TOKEN_NAME,
+    to_str(pegToken->getAs<eosio::asset>().symbol.code())
+  };
+
+  if (auto [_, pegTokName] = configCW.get(detailsIdx, common::PEG_TOKEN_NAME);
+      pegTokName) 
+  {
+    pegTokenName.value = std::move(pegTokName->value);
+  }
+
+  EOS_CHECK(
+    pegTokenName.getAs<std::string>().size() <= 30,
+    "Cash token name must be less than 30 characters"
+  )
+
+  auto pegMultiplier = configCW.getOrFail(detailsIdx, common::PEG_MULTIPLIER).second;
+
+  pegMultiplier->getAs<int64_t>();
+
+  //Don't move the token as it it will be used later on 
+  settingsGroup.push_back(*pegToken);
+  settingsGroup.push_back(std::move(pegTokenName));
+  ContentWrapper::insertOrReplace(settingsGroup, *pegMultiplier);
+
+  if (create) {
+
+    auto dhoSettings = getSettingsDocument();
+
+    createToken(
+      PEG_TOKEN_CONTRACT,
+      dhoSettings->getOrFail<eosio::name>(TREASURY_CONTRACT),
+      pegToken->getAs<eosio::asset>()
+    );
+  }
 }
 
 /*
@@ -3040,10 +3206,6 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
     daoTitleStr.size() <= 48,
     "Dao title has be less than 48 characters"
   );
-
-  auto voiceToken = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN).second;
-  auto voiceTokenDecayPeriod = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PERIOD).second;
-  auto voiceTokenDecayPerPeriodX10M = configCW.getOrFail(detailsIdx, common::VOICE_TOKEN_DECAY_PER_PERIOD).second;
 
   //Generate periods
   //auto inititialPeriods = configCW.getOrFail(detailsIdx, PERIOD_COUNT);
@@ -3116,14 +3278,11 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
     std::move(*daoTitle),
     std::move(*daoDescription),
     std::move(daoURL),
-    *voiceToken,
     std::move(*periodDurationSeconds),
     std::move(*votingDurationSeconds),
     std::move(*onboarderAcc),
     std::move(*votingQuorum),
     std::move(*votingAllignment),
-    *voiceTokenDecayPeriod,
-    *voiceTokenDecayPerPeriodX10M,
     Content{common::DAO_USES_SEEDS, useSeeds},
     std::move(*primaryColor),
     std::move(*secondaryColor),
@@ -3142,67 +3301,14 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
     skipRewardTok = skipRew->getAs<int64_t>() == 1;
   }
 
+  pushVoiceTokenSettings(dao, settingsGroup, configCW, detailsIdx, !isDraft);
+
   if (!skipPegTok) {
-
-    auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
-    
-    Content pegTokenName = Content{  
-      common::PEG_TOKEN_NAME,
-      to_str(pegToken->getAs<eosio::asset>().symbol.code())
-    };
-
-    if (auto [_, pegTokName] = configCW.get(detailsIdx, common::PEG_TOKEN_NAME);
-        pegTokName) 
-    {
-      pegTokenName.value = std::move(pegTokName->value);
-    }
-
-    EOS_CHECK(
-      pegTokenName.getAs<std::string>().size() <= 30,
-      "Cash token name must be less than 30 characters"
-    )
-
-    //Don't move the token as it it will be used later on 
-    settingsGroup.push_back(*pegToken);
-    settingsGroup.push_back(std::move(pegTokenName));
+    pushPegTokenSettings(dao, settingsGroup, configCW, detailsIdx, !isDraft);
   }
 
   if (!skipRewardTok) {
-
-    auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
-
-    auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
-
-    rewardToPegTokenRatio->getAs<asset>();
-
-    auto rewardTokenMaxSupply = configCW.getOrFail(detailsIdx, "reward_token_max_supply").second;
-
-    EOS_CHECK(
-      rewardToken->getAs<asset>().symbol == rewardTokenMaxSupply->getAs<asset>().symbol,
-      "Symbol mismatch between reward_token and reward_token_max_supply"
-    )
-
-    Content rewardTokenName = Content{  
-      common::REWARD_TOKEN_NAME,
-      to_str(rewardToken->getAs<eosio::asset>().symbol.code())
-    };
-
-    if (auto [_, rwrdTokName] = configCW.get(detailsIdx, common::REWARD_TOKEN_NAME);
-        rwrdTokName)
-    {
-      rewardTokenName.value = std::move(rwrdTokName->value);
-    }
-
-    EOS_CHECK(
-      rewardTokenName.getAs<std::string>().size() <= 30,
-      "Utility token name must be less than 30 characters"
-    )
-
-    //Don't move the token as it it will be used later on 
-    settingsGroup.push_back(*rewardToken);
-    settingsGroup.push_back(std::move(*rewardToPegTokenRatio));
-    settingsGroup.push_back(std::move(rewardTokenName));
-    settingsGroup.push_back(*rewardTokenMaxSupply);
+    pushRewardTokenSettings(dao, daoID, settingsGroup, configCW, detailsIdx, !isDraft);    
   }
 
   addDefaultSettings(settingsGroup, daoTitleStr, daoDescStr);
@@ -3219,62 +3325,6 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
 
   Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
   Edge::write(get_self(), get_self(), daoID, settingsDoc.getID(), common::SETTINGS_EDGE);
-
-  //If this is a draft we don't need to do any of the following
-  if (isDraft) return;
-
-  createVoiceToken(
-    dao,
-    voiceToken->getAs<asset>(),
-    voiceTokenDecayPeriod->getAs<int64_t>(),
-    voiceTokenDecayPerPeriodX10M->getAs<int64_t>()
-  );
-
-  auto dhoSettings = getSettingsDocument();
-  
-  //Check if we should skip creating reward & peg tokens
-  //this might be the case if the tokens already exists
-  if (!skipPegTok) {
-    auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
-
-    //TODO: Add supply
-
-    createToken(
-      PEG_TOKEN_CONTRACT,
-      dhoSettings->getOrFail<eosio::name>(TREASURY_CONTRACT),
-      pegToken->getAs<eosio::asset>()
-    );
-  }
-  // else {
-  //   //Only dao.hypha should be able skip creating reward or peg token
-  //   eosio::require_auth(get_self());
-  // }
-
-  if (!skipRewardTok) {
-    auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
-
-    //Assign token
-    eosio::action(
-      eosio::permission_level{ get_self(), name("active") },
-      get_self(),
-      name("assigntokdao"),
-      std::make_tuple(
-        rewardToken->getAs<asset>(),
-        daoID,
-        false
-      )
-    ).send();
-    
-    createToken(
-      REWARD_TOKEN_CONTRACT,
-      get_self(),
-      rewardToken->getAs<eosio::asset>()
-    );
-  }
-  // else {
-  //   //Only dao.hypha should be able skip creating reward or peg token
-  //   eosio::require_auth(get_self());
-  // }
 }
 
 } // namespace hypha

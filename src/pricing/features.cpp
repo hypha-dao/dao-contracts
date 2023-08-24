@@ -12,6 +12,8 @@
 namespace hypha::pricing
 {
 
+#ifdef USE_PRICING_PLAN
+
 static 
 PricingPlan getCurrentPlan(PlanManager& planManager)
 {
@@ -101,5 +103,7 @@ void onDaoPlanChange(dao& dao, uint64_t daoID, PricingPlan& newPlan)
         }
     }
 }
+
+#endif
 
 } // namespace hypha::pricing
