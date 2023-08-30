@@ -3035,6 +3035,33 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
 
 void dao::pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create) {
 
+  if (settingsGroup.size() < 4) {
+    
+    auto rewardMultiplier = configCW.get(detailsIdx, common::REWARD_MULTIPLIER).second;
+    auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
+
+    // If we need to add 1 other settings just change 4 to 5,6,7 etc. and add the null check here
+    size_t defined = size_t(rewardMultiplier != nullptr) + size_t(rewardToPegTokenRatio != nullptr);
+
+    EOS_CHECK(
+      (settingsGroup.size() > 1) && 
+      (defined == settingsGroup.size() - 1),
+      "Missing some expected parameters [utility_token_multiplier, reward_to_peg_ratio]"
+    )
+
+    if (rewardMultiplier) {
+      rewardMultiplier->getAs<int64_t>();
+      ContentWrapper::insertOrReplace(settingsGroup, *rewardMultiplier);
+    }
+
+    if (rewardToPegTokenRatio) {
+      rewardToPegTokenRatio->getAs<asset>();
+      ContentWrapper::insertOrReplace(settingsGroup, std::move(*rewardToPegTokenRatio));
+    }
+
+    return;
+  }
+
   auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
 
   auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
@@ -3070,9 +3097,9 @@ void dao::pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settin
 
   //Don't move the token as it it will be used later on 
   settingsGroup.push_back(*rewardToken);
-  settingsGroup.push_back(std::move(*rewardToPegTokenRatio));
   settingsGroup.push_back(std::move(rewardTokenName));
   settingsGroup.push_back(*rewardTokenMaxSupply);
+  ContentWrapper::insertOrReplace(settingsGroup, std::move(*rewardToPegTokenRatio));
   ContentWrapper::insertOrReplace(settingsGroup, *rewardMultiplier);
 
   if (create) {
@@ -3131,6 +3158,17 @@ void dao::pushVoiceTokenSettings(name dao, ContentGroup& settingsGroup, ContentW
 
 void dao::pushPegTokenSettings(name dao, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create) {
 
+  if (settingsGroup.size() == 2) {
+    
+    auto pegMultiplier = configCW.getOrFail(detailsIdx, common::PEG_MULTIPLIER).second;
+
+    pegMultiplier->getAs<int64_t>();
+
+    ContentWrapper::insertOrReplace(settingsGroup, *pegMultiplier);
+
+    return;
+  }
+
   auto pegToken = configCW.getOrFail(detailsIdx, common::PEG_TOKEN).second;
     
   Content pegTokenName = Content{  
@@ -3159,6 +3197,20 @@ void dao::pushPegTokenSettings(name dao, ContentGroup& settingsGroup, ContentWra
   ContentWrapper::insertOrReplace(settingsGroup, *pegMultiplier);
 
   if (create) {
+
+    auto daoId = getDAOID(dao);
+
+    EOS_CHECK(
+      daoId, 
+      to_str(dao, " is not registered with the ID: ", *daoId)
+    );
+
+    auto daoSettings = getSettingsDocument(*daoId);
+
+    EOS_CHECK(
+      !daoSettings->getSettingOpt<asset>(common::PEG_TOKEN),
+      "DAO has a peg token already"
+    )
 
     auto dhoSettings = getSettingsDocument();
 
