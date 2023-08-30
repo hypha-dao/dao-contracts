@@ -4,6 +4,8 @@
 
 #include <document_graph/document.hpp>
 
+#include <optional>
+
 namespace hypha
 {
     class dao;
@@ -35,6 +37,8 @@ namespace hypha
                           const std::string &label);
 
         Period next();
+
+        std::optional<Period> nextOpt();
 
         Period getNthPeriodAfter(int64_t count) const;
         int64_t getPeriodCountTo(Period& other);

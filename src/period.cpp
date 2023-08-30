@@ -137,9 +137,20 @@ namespace hypha
     Period Period::next()
     {
         TRACE_FUNCTION()
+        auto nextPeriod = nextOpt();
+        EOS_CHECK(nextPeriod, "End of calendar has been reached. Contact administrator to add more time periods.");
+        return *nextPeriod;
+    }
+
+    std::optional<Period> Period::nextOpt()
+    {
         auto [exists, period] = Edge::getIfExists(m_dao->get_self(), getID (), common::NEXT);
-        EOS_CHECK(exists, "End of calendar has been reached. Contact administrator to add more time periods.");
-        return Period(m_dao, period.getToNode());
+        
+        if (exists) {
+            return std::make_optional<Period>(m_dao, period.getToNode());
+        }
+
+        return std::nullopt;
     }
 
     Period Period::getNthPeriodAfter(int64_t count) const

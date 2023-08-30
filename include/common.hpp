@@ -18,6 +18,9 @@ namespace hypha::common
     inline constexpr auto TESTNET_CONTRACT_NAME = name("mtdhoxhyphaa");
 #endif
 
+    inline constexpr auto CALENDAR_WEEK = "weekly";
+    inline constexpr auto CALENDAR_LUNAR = "lunar";
+
     inline constexpr auto PEG_TOKEN = "peg_token";
     inline constexpr auto VOICE_TOKEN = "voice_token";
     inline constexpr auto REWARD_TOKEN = "reward_token";

@@ -126,10 +126,10 @@ namespace hypha
             // )
 
             //TODO Period: Remove since period refactor will no longer point to DAO
-            EOS_CHECK(
-                Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
-                "Period must belong to the DAO"
-            );
+            // EOS_CHECK(
+            //     Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
+            //     "Period must belong to the DAO"
+            // );
         } else {
             // default START_PERIOD to next period
             ContentWrapper::insertOrReplace(
