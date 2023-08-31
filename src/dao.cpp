@@ -1723,7 +1723,7 @@ ACTION dao::initcalendar(uint64_t calendar_id, uint64_t next_period)
     Edge(get_self(), get_self(), calendar_id, next_period, common::START);
   }
 
-  const size_t MAX_ITS_PER_ACTION = 40;
+  const size_t MAX_ITS_PER_ACTION = 50;
 
   size_t i = 0;
 

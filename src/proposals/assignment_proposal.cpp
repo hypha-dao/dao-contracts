@@ -120,16 +120,19 @@ namespace hypha
                 static_cast<uint64_t>(startPeriod->getAs<int64_t>()),
                 common::PERIOD
             );
+
             // EOS_CHECK(
             //     period.getStartTime().sec_since_epoch() >= eosio::current_time_point().sec_since_epoch(),
             //     "Only future periods are allowed for starting period"
             // )
 
+            auto calendarId = Edge::get(m_dao.get_self(), period.getID(), common::CALENDAR).getToNode();
+
             //TODO Period: Remove since period refactor will no longer point to DAO
-            // EOS_CHECK(
-            //     Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
-            //     "Period must belong to the DAO"
-            // );
+            EOS_CHECK(
+                Edge::exists(m_dao.get_self(), m_daoID, calendarId, common::CALENDAR),
+                "Period must belong to the DAO"
+            );
         } else {
             // default START_PERIOD to next period
             ContentWrapper::insertOrReplace(

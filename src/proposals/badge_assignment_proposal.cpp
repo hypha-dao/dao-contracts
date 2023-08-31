@@ -194,11 +194,13 @@ namespace hypha
                 common::PERIOD
             );
             
+            auto calendarId = Edge::get(m_dao.get_self(), period.getID(), common::CALENDAR).getToNode();
+
             //TODO Period: Remove since period refactor will no longer point to DAO
-            // EOS_CHECK(
-            //     Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
-            //     "Period must belong to the DAO"
-            // );
+            EOS_CHECK(
+                Edge::exists(m_dao.get_self(), m_daoID, calendarId, common::CALENDAR),
+                "Period must belong to the DAO"
+            );
         } 
         else {
             // default START_PERIOD to next period

@@ -42,9 +42,11 @@ namespace hypha
         //Check start period
         Document period = getItemDoc(START_PERIOD, common::PERIOD, cw);
 
+        auto calendarId = Edge::get(m_dao.get_self(), period.getID(), common::CALENDAR).getToNode();
+
         //TODO Period: Remove since period refactor will no longer point to DAO
         EOS_CHECK(
-            Edge::exists(m_dao.get_self(), period.getID(), m_daoID, common::DAO),
+            Edge::exists(m_dao.get_self(), m_daoID, calendarId, common::CALENDAR),
             "Period must belong to the DAO"
         );
 
