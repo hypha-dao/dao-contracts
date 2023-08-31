@@ -1679,13 +1679,75 @@ void dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_dur
   verifyDaoType(dao_id);
   checkAdminsAuth(dao_id);
   
-  // DAO's using shared periods doesn't have END edge, so it would fail if trying to add more periods
+  auto calendarEdge = getGraph().getEdgesFrom(dao_id, common::CALENDAR);
+
   EOS_CHECK(
-    !getGraph().getEdgesFrom(dao_id, common::END).empty(),
+    calendarEdge.size() == 1,
+    to_str("DAO should have 1 calendar but found: ", calendarEdge.size())
+  );
+
+  auto calendarId = calendarEdge[0].getToNode();
+
+  //Only the owner of the calendar can update it
+  EOS_CHECK(
+    Edge::exists(get_self(), dao_id, calendarId, common::OWNS),
     "This DAO is not allowed to call this action"
   )
 
-  genPeriods(dao_id, period_count);
+  genPeriods(dao_id, calendarId, period_count);
+}
+
+ACTION dao::createcalen()
+{
+  eosio::require_auth(get_self());
+  Document calendarDoc(get_self(), get_self(), {
+    ContentGroup {
+        Content(CONTENT_GROUP_LABEL, DETAILS),
+    },
+    ContentGroup {
+        Content(CONTENT_GROUP_LABEL, SYSTEM),
+        Content(TYPE, common::CALENDAR),
+    }
+  });
+}
+
+ACTION dao::initcalendar(uint64_t calendar_id, uint64_t next_period)
+{
+  eosio::require_auth(get_self());
+
+  auto calendar = TypedDocument::withType(*this, calendar_id, common::CALENDAR);
+
+  auto nextPeriod = std::make_optional<Period>(this, next_period);
+  
+  if (getGraph().getEdgesFrom(calendar_id, common::START).empty()) {
+    Edge(get_self(), get_self(), calendar_id, next_period, common::START);
+  }
+
+  const size_t MAX_ITS_PER_ACTION = 40;
+
+  size_t i = 0;
+
+  auto lastID = nextPeriod->getID();
+
+  while (nextPeriod && i++ < MAX_ITS_PER_ACTION) {
+    Edge(get_self(), get_self(), calendar_id, nextPeriod->getID(), common::PERIOD);
+    Edge(get_self(), get_self(), nextPeriod->getID(), calendar_id, common::CALENDAR);
+
+    lastID = nextPeriod->getID();
+    nextPeriod = nextPeriod->nextOpt();
+  }
+
+  if (nextPeriod) {
+    eosio::action(
+      eosio::permission_level(get_self(), eosio::name("active")),
+      get_self(),
+      eosio::name("initcalendar"),
+      std::make_tuple(calendar_id, nextPeriod->getID())
+    ).send();
+  }
+  else {
+    Edge(get_self(), get_self(), calendar_id, lastID, common::END);
+  }
 }
 
 static void initCoreMembers(dao& dao, uint64_t daoID, eosio::name onboarder, ContentWrapper config) 
@@ -1823,12 +1885,13 @@ void dao::createdao(ContentGroups& config)
     EOS_CHECK(
       calendar == common::CALENDAR_WEEK ||
       calendar == common::CALENDAR_LUNAR,
-      to_str("Unkonw calendar type: ", calendar)
+      to_str("Unkonw calendar type: ", std::string(calendar))
     );
 
-    uint64_t startPeriodId = Edge::get(get_self(), getRootID(), name(calendar)).getToNode();
+    uint64_t calendarId = Edge::get(get_self(), getRootID(), name(calendar)).getToNode();
 
-    Edge(get_self(), get_self(), daoDoc.getID(), startPeriodId, common::START);
+    Edge(get_self(), get_self(), daoDoc.getID(), calendarId, common::CALENDAR);
+    Edge(get_self(), get_self(), calendarId, daoDoc.getID(), common::DAO);
     
 #ifdef USE_TREASURY
     // Create Treasury
@@ -1848,15 +1911,6 @@ void dao::createdao(ContentGroups& config)
       name("setupdefs"),
       std::make_tuple(
         daoDoc.getID()
-      )
-    ).send();
-
-    eosio::action(
-      eosio::permission_level{ get_self(), name("active") },
-      get_self(),
-      name("initperiods"),
-      std::make_tuple(
-        daoDoc.getID(), startPeriodId
       )
     ).send();
 
@@ -2790,23 +2844,21 @@ void dao::checkAdminsAuth(uint64_t dao_id)
   );
 }
 
-void dao::genPeriods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/)
+void dao::genPeriods(uint64_t daoId, uint64_t calendarId, int64_t period_count/*, int64_t period_duration_sec*/)
 {
   //Max number of periods that should be created in one call
   const int64_t MAX_PERIODS_PER_CALL = 10;
 
   //Get last period
-  //Document daoDoc(get_self(), dao_id);
+  //Document daoDoc(get_self(), dao_id);  
 
-  auto settings = getSettingsDocument(dao_id);
+  auto settings = getSettingsDocument(daoId);
 
   int64_t periodDurationSecs = settings->getOrFail<int64_t>(common::PERIOD_DURATION);
 
   name daoName = settings->getOrFail<eosio::name>(DAO_NAME);
 
-  auto lastEdge = Edge::get(get_self(), dao_id, common::END);
-
-  auto updateDaos = getGraph().getEdgesFrom(lastEdge.getToNode(), common::DAO);
+  auto lastEdge = Edge::get(get_self(), calendarId, common::END);
 
   lastEdge.erase();
 
@@ -2826,34 +2878,22 @@ void dao::genPeriods(uint64_t dao_id, int64_t period_count/*, int64_t period_dur
     );
 
     Edge(get_self(), get_self(), lastPeriodID, nextPeriod.getID(), common::NEXT);
-    
-    for (auto& updateDao : updateDaos) {
-      Edge(get_self(), get_self(), updateDao.getToNode(), nextPeriod.getID(), common::PERIOD);
-    }
-
-    Edge(get_self(), get_self(), nextPeriod.getID(), dao_id, common::DAO);
+    Edge(get_self(), get_self(), calendarId, nextPeriod.getID(), common::PERIOD);
+    Edge(get_self(), get_self(), nextPeriod.getID(), calendarId, common::CALENDAR);
 
     lastPeriodStartSecs = nextPeriodStart.sec_since_epoch();
     lastPeriodID = nextPeriod.getID();
   }
 
-  Edge(get_self(), get_self(), dao_id, lastPeriodID, common::END);
-
-  for (auto& updateDao : updateDaos) {
-    if (updateDao.getToNode() != dao_id) {
-      Edge(get_self(), get_self(), lastPeriodID, updateDao.getToNode(), common::DAO);
-      updateDao.erase();
-    }
-  }
+  Edge(get_self(), get_self(), calendarId, lastPeriodID, common::END);
 
   //Check if there are more periods to created
-
   if (period_count > MAX_PERIODS_PER_CALL) {
     eosio::action(
       eosio::permission_level(get_self(), eosio::name("active")),
       get_self(),
       eosio::name("genperiods"),
-      std::make_tuple(dao_id,
+      std::make_tuple(daoId,
         period_count - MAX_PERIODS_PER_CALL)
     ).send();
   }
@@ -2879,43 +2919,6 @@ void dao::createVoiceToken(const eosio::name& daoName,
       decayPerPeriodx10M
     )
   ).send();
-}
-
-void dao::initperiods(uint64_t dao_id, int64_t next_period)
-{ 
-  verifyDaoType(dao_id);
-
-  checkAdminsAuth(dao_id);
-
-  auto period = std::make_optional<Period>(this, next_period);
-
-  const size_t MAX_PERIODS_PER_CALL = 15;
-
-  int it = 0;
-
-  while (period && it++ < MAX_PERIODS_PER_CALL) {
-    Edge(get_self(), get_self(), dao_id, period->getID(), common::PERIOD);
-
-    auto prev = std::move(period);
-    
-    //If next period is empty, then we reached the end of the period list
-    if (!(period = prev->next())) {
-      //Only the last period will create a reference to the DAO
-      Edge(get_self(), get_self(), prev->getID(), dao_id, common::DAO);
-    }
-  }
-
-  //We didn't finish
-  if (period) {
-    eosio::action(
-      eosio::permission_level{ get_self(), name("active") },
-      get_self(),
-      name("initperiods"),
-      std::make_tuple(
-        dao_id, period->getID()
-      )
-    ).send();
-  }
 }
 
 void dao::createToken(const std::string& contractType, name issuer, const asset& token)

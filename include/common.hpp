@@ -240,6 +240,7 @@ namespace hypha::common
     inline constexpr name COMMEMBER = name("commember");
     inline constexpr name DHO = name ("dho");
     inline constexpr name DAO = name ("dao");
+    inline constexpr name CALENDAR = name ("calendar");
     inline constexpr name MSIG = name ("multisig");
     inline constexpr name OPEN_MSIG = name ("openmultisig");
     inline constexpr name FAILED_MSIG = name ("failnmultisig");

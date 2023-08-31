@@ -160,7 +160,6 @@ namespace pricing {
       //ACTION remsetting(const string &key);
 
       ACTION genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_duration_sec*/);
-      ACTION initperiods(uint64_t dao_id, int64_t next_period);
 
       ACTION claimnextper(uint64_t assignment_id);
       // ACTION simclaimall(name account, uint64_t dao_id, bool only_ids);
@@ -192,6 +191,10 @@ namespace pricing {
       ACTION editdoc(uint64_t doc_id, const std::string& group, const std::string& key, const Content::FlexValue &value);
 
       ACTION remdoc(uint64_t doc_id);
+
+      ACTION createcalen();
+
+      ACTION initcalendar(uint64_t calendar_id, uint64_t next_period);
       
 #ifdef DEVELOP_BUILD_HELPERS
 
@@ -529,7 +532,7 @@ namespace pricing {
 
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
-      void genPeriods(uint64_t daoID, int64_t period_count/*, int64_t period_duration_sec*/);
+      void genPeriods(uint64_t daoId, uint64_t calendarId, int64_t period_count/*, int64_t period_duration_sec*/);
 
       asset getProRatedAsset(ContentWrapper *assignment, const symbol &symbol,
                              const string &key, const float &proration);
