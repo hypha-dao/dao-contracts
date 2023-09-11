@@ -85,6 +85,18 @@ namespace hypha
         return std::move(cgs);
     }
 
+    double getMultiplier(Settings* settings, const char* multiplierName, double defaultVal)
+    {
+        // Since multiplier is stored in base 100, we need to normalize it to base 1 i.e. 200 value means 2.0 multiplier
+        const auto MULTIPLIER_BASE = 100.0;
+        
+        if (auto multiplier = settings->getSettingOpt<int64_t>(multiplierName)) {
+           return static_cast<double>(*multiplier) / MULTIPLIER_BASE;
+        }
+        
+        return defaultVal;
+    }
+
     eosio::asset adjustAsset(const asset &originalAsset, const float &adjustment)
     {
         return eosio::asset{static_cast<int64_t>(originalAsset.amount * adjustment), originalAsset.symbol};

@@ -66,6 +66,8 @@ namespace hypha
 
     vector<string_view> splitStringView(string_view str, char delimiter);
 
+    double getMultiplier(Settings* settings, const char* multiplierName, double defaultVal);
+
     template<typename T>
     class ShowType;
 

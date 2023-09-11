@@ -179,9 +179,9 @@ namespace hypha
             .periodSalary = normalizeToken(usdSalaryPerPeriod.getAs<asset>()) * (timeShare / 100.0),
             .rewardToPegRatio = normalizeToken(rewardPegVal),
             .deferredPerc = deferred / 100.0,
-            .voiceMultipler = static_cast<double>(m_daoSettings->getSettingOrDefault<int64_t>(common::VOICE_MULTIPLIER, 2)),
-            .rewardMultipler = static_cast<double>(m_daoSettings->getSettingOrDefault<int64_t>(common::REWARD_MULTIPLIER, 1)),
-            .pegMultipler = static_cast<double>(m_daoSettings->getSettingOrDefault<int64_t>(common::PEG_MULTIPLIER, 1))
+            .voiceMultipler = getMultiplier(m_daoSettings, common::VOICE_MULTIPLIER, 2.0),
+            .rewardMultipler = getMultiplier(m_daoSettings, common::REWARD_MULTIPLIER, 1.0),
+            .pegMultipler = getMultiplier(m_daoSettings, common::PEG_MULTIPLIER, 1.0)
         };
 
         AssetBatch salaries = calculateSalaries(salaryConf, tokens);
