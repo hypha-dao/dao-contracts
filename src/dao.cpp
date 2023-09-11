@@ -3263,26 +3263,19 @@ void dao::pushPegTokenSettings(name dao, ContentGroup& settingsGroup, ContentWra
 
   pegMultiplier->getAs<int64_t>();
 
+  EOS_CHECK(
+    std::count_if(settingsGroup.begin(), settingsGroup.end(), [](Content& c){
+      return c.label == common::PEG_TOKEN;
+    }) == 0,
+    "DAO has a peg token already"
+  )
+
   //Don't move the token as it it will be used later on 
   settingsGroup.push_back(*pegToken);
   settingsGroup.push_back(std::move(pegTokenName));
   ContentWrapper::insertOrReplace(settingsGroup, *pegMultiplier);
 
   if (create) {
-
-    auto daoId = getDAOID(dao);
-
-    EOS_CHECK(
-      daoId, 
-      to_str(dao, " is not registered with the ID: ", *daoId)
-    );
-
-    auto daoSettings = getSettingsDocument(*daoId);
-
-    EOS_CHECK(
-      !daoSettings->getSettingOpt<asset>(common::PEG_TOKEN),
-      "DAO has a peg token already"
-    )
 
     auto dhoSettings = getSettingsDocument();
 
