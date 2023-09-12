@@ -420,13 +420,17 @@ ACTION dao::updatemsig(uint64_t msig_id)
 void dao::onNativeTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo)
 {
 #ifdef USE_TREASURY
+
+  if (from == get_self()) {
+    return;
+  }
+
   auto settings = getSettingsDocument();
+  auto nativeToken = settings->getSettingOpt<asset>(treasury::common::fields::NATIVE_TOKEN);
 
-  auto nativeToken = settings->getOrFail<asset>(treasury::common::fields::NATIVE_TOKEN);
-
-  if (from != get_self() && 
-      to == get_self() &&
-      nativeToken.symbol == quantity.symbol) {
+  if ( to == get_self() &&
+      nativeToken.has_value() &&
+      nativeToken.value().symbol == quantity.symbol) {
 
     auto memoParams = splitStringView(memo, ';');
 
