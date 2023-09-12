@@ -8,7 +8,7 @@ BUILD_DIR="$SCRIPT_DIR/../build_ninja"
 
 echo "Running wasm-opt on $BUILD_DIR/dao/dao.wasm"
 
-wasm-opt -O3 -o "$BUILD_DIR/dao/dao_O3.wasm" "$BUILD_DIR/dao/dao.wasm"
+wasm-opt -Oz -o "$BUILD_DIR/dao/dao_O3.wasm" "$BUILD_DIR/dao/dao.wasm"
 
 echo "Optimized wasm saved in $BUILD_DIR/dao/dao_O3.wasm"
 
