@@ -38,12 +38,6 @@ cleos --print-request -u http://eos.greymass.com set code --compression 1 daoxhy
 ## Others accept it
 cleos --print-request -u https://eos.eosusa.io set code --compression 1 dao.hypha dao_gery_v105.wasm -p dao.hypha@active
 
-
-https://eos.eosusa.io/
-http://eos.eosusa.io/
-
-cleos -u https://eos.eosusa.io get actions -j dao.hypha
-
 # Powerup Usage
 
 ```
