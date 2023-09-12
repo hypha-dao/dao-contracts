@@ -49,6 +49,10 @@ If there is an unexpected problem uploading, check the size of the WASM file.
 
 It is possible to shrink the file prior to upload using wasm-opt
 
+#### Very important: Use wasm-opt version 105 (older)
+Version 105 works fine
+Version 112 and 114 produce invalid opcode errors when uploading
+
 ```
 # Optimize for size.
 wasm-opt -Os -o output.wasm input.wasm
