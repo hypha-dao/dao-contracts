@@ -37,7 +37,8 @@ const {
   CREATE_DAO,
   CLEAN_DHO_CONTRACT,
   INIT_DHO_ROOT,
-  EOS_PK_1
+  EOS_PK_1,
+  EOS_PK_2,
 } = process.env;
 
 //const eosEndpoint = 'http://127.0.0.1:8888'
@@ -273,7 +274,8 @@ const createDAO = ({
   onboarder_account,
   voting_alignment_x100,
   voting_quorum_x100,
-  period_count
+  period_count,
+  primary_color,
 }) => {
   return runAction('createdao', {
     config: [[
@@ -289,8 +291,19 @@ const createDAO = ({
       getItem('period_duration_sec', period_duration_sec, Types.Int),
       getItem('voting_alignment_x100', voting_alignment_x100, Types.Int),
       getItem('voting_quorum_x100', voting_quorum_x100, Types.Int),
+      getItem('voice_token_decay_period', 200, Types.Int),
+      getItem('voice_token_decay_per_period_x10M', 200000000, Types.Int),
+      getItem('voice_token_multiplier', 100, Types.Int),
       getItem('onboarder_account', onboarder_account, Types.Name),
       getItem('period_count', period_count, Types.Int),
+      getItem('content_group_label', 'style', Types.String),
+      getItem('primary_color', primary_color, Types.String),
+      getItem('secondary_color', primary_color, Types.String),
+      getItem('text_color', primary_color, Types.String),
+      getItem('logo', 'random.png', Types.String),
+      getItem('content_group_label', 'settings', Types.String),
+      getItem('governance_token_contract', "voice.hypha", Types.String),
+
     ]]
   })
 }
@@ -875,6 +888,7 @@ const main = async () => {
       console.log("Creating DAO...");
       await setupDao({
         dao_name:DAO_NAME,
+        primary_color:"FFFFFF",
         dao_title:DAO_TITLE,
         dao_description:DAO_DESCRIPTION,
         voting_duration_sec:VOTING_DURATION_SEC,
