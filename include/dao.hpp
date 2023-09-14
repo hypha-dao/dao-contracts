@@ -295,7 +295,7 @@ namespace pricing {
       ACTION withdraw(name owner, uint64_t document_id);
       ACTION suspend(name proposer, uint64_t document_id, string reason);
 
-      //ACTION createroot(const std::string &notes);
+      ACTION createroot(const std::string &notes);
       ACTION createdao(ContentGroups &config);
       ACTION createdaodft(ContentGroups &config);
       ACTION deletedaodft(uint64_t dao_draft_id);
