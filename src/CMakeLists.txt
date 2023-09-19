@@ -1,6 +1,7 @@
 project(dao)
 
 set(EOSIO_WASM_OLD_BEHAVIOR "Off")
+
 find_package(eosio.cdt)
 
 # Activate Logging
@@ -72,3 +73,6 @@ add_contract( dao dao
 
 target_include_directories( dao PUBLIC ${CMAKE_SOURCE_DIR}/../include ${CMAKE_SOURCE_DIR}/../document-graph/include )
 target_ricardian_directory( dao ${CMAKE_SOURCE_DIR}/../ricardian )
+
+set(CMAKE_CXX_COMPILER_WORKS 1)
+set(CMAKE_CXX_FLAGS "-O=s --lto-opt=O3 --fmerge-all-constants")

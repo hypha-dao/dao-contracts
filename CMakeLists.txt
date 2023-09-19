@@ -1,8 +1,12 @@
-project(dao)
-
 cmake_minimum_required(VERSION 3.16)
 
+# Bypass compiler check - normal c++ can't handle eosio-cpp flags and fails
+set(CMAKE_CXX_COMPILER_WORKS 1)
+
+project(dao)
+
 include(ExternalProject)
+
 # if no cdt root is given use default path
 if(EOSIO_CDT_ROOT STREQUAL "" OR NOT EOSIO_CDT_ROOT)
    find_package(eosio.cdt)
@@ -19,3 +23,7 @@ ExternalProject_Add(
    INSTALL_COMMAND ""
    BUILD_ALWAYS 1
 )
+
+# Set eosio-cpp flags 
+set(CMAKE_CXX_FLAGS "-O=s --lto-opt=O3 --fmerge-all-constants")
+
