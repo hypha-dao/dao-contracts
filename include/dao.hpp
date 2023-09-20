@@ -196,6 +196,8 @@ namespace pricing {
 
       ACTION initcalendar(uint64_t calendar_id, uint64_t next_period);
       
+      ACTION reset(); // debugging - maybe with the dev flags
+
 #ifdef DEVELOP_BUILD_HELPERS
 
       struct InputEdge {
@@ -481,6 +483,19 @@ namespace pricing {
                             const uint64_t& decayPerPeriodx10M);
 
       void createToken(const std::string& contractType, name issuer, const asset& token);
+
+      template <typename T>
+      inline void delete_table (const name & code, const uint64_t & scope) {
+
+         T table(code, scope);
+         auto itr = table.begin();
+
+         while (itr != table.end()) {
+            itr = table.erase(itr);
+         }
+
+      }
+
 
    private:
 

@@ -1967,18 +1967,18 @@ void dao::createdao(ContentGroups& config)
   }
   else {
 
-    //Just do this check on mainnet
-    if (!isTestnet()) {
+    // //Just do this check on mainnet
+    // if (!isTestnet()) {
 
-      auto onboarder = configCW.getOrFail(DETAILS, common::ONBOARDER_ACCOUNT)->getAs<name>();
+    //   auto onboarder = configCW.getOrFail(DETAILS, common::ONBOARDER_ACCOUNT)->getAs<name>();
 
-      auto hyphaId = getDAOID("hypha"_n);
+    //   auto hyphaId = getDAOID("hypha"_n);
 
-      EOS_CHECK(
-        hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
-        "You are not allowed to call this action"
-      );
-    }
+    //   EOS_CHECK(
+    //     hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
+    //     "You are not allowed to call this action"
+    //   );
+    // }
 
     //Regular DAO creation
     auto daoDoc = createDao(nullptr);
@@ -3443,5 +3443,35 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
   Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
   Edge::write(get_self(), get_self(), daoID, settingsDoc.getID(), common::SETTINGS_EDGE);
 }
+
+void dao::reset() {
+  require_auth(_self);
+
+  delete_table<election_vote_table>(get_self(), 0);
+  delete_table<election_vote_table>(get_self(), 1);
+  delete_table<election_vote_table>(get_self(), 2);
+  delete_table<election_vote_table>(get_self(), 3);
+  delete_table<token_to_dao_table>(get_self(), get_self().value);
+  delete_table<dao_table>(get_self(), get_self().value);
+  delete_table<member_table>(get_self(), get_self().value);
+  delete_table<payment_table>(get_self(), get_self().value);
+
+  delete_table<Document::document_table>(get_self(), get_self().value);
+  delete_table<Edge::edge_table>(get_self(), get_self().value);
+
+  // Document::document_table d_t(get_self(), get_self().value);
+  // auto d_itr = d_t.begin();
+  // while (d_itr != d_t.end()) {
+  //   d_itr = d_t.erase(d_itr);
+  // }
+
+  // Edge::edge_table e_t(get_self(), get_self().value);
+  // auto e_itr = e_t.begin();
+  // while (e_itr != e_t.end()) {
+  //   e_itr = e_t.erase(e_itr);
+  // }
+
+}
+
 
 } // namespace hypha
