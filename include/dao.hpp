@@ -192,7 +192,7 @@ namespace pricing {
 
       ACTION remdoc(uint64_t doc_id);
 
-      ACTION createcalen();
+      ACTION createcalen(bool is_default);
 
       ACTION initcalendar(uint64_t calendar_id, uint64_t next_period);
       
@@ -532,7 +532,7 @@ namespace pricing {
 
       DocumentGraph m_documentGraph = DocumentGraph(get_self());
 
-      void genPeriods(uint64_t daoId, uint64_t calendarId, int64_t period_count/*, int64_t period_duration_sec*/);
+      void genPeriods(const std::string& owner, int64_t periodDuration, uint64_t ownerId, uint64_t calendarId, int64_t periodCount/*, int64_t period_duration_sec*/);
 
       asset getProRatedAsset(ContentWrapper *assignment, const symbol &symbol,
                              const string &key, const float &proration);

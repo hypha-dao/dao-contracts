@@ -1676,8 +1676,15 @@ void dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_dur
   TRACE_FUNCTION();
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
-  verifyDaoType(dao_id);
-  checkAdminsAuth(dao_id);
+  const auto isRoot = getRootID() == dao_id;
+
+  if (isRoot) {
+    eosio::require_auth(get_self());
+  }
+  else {
+    verifyDaoType(dao_id);
+    checkAdminsAuth(dao_id);
+  }
   
   auto calendarEdge = getGraph().getEdgesFrom(dao_id, common::CALENDAR);
 
@@ -1694,10 +1701,16 @@ void dao::genperiods(uint64_t dao_id, int64_t period_count/*, int64_t period_dur
     "This DAO is not allowed to call this action"
   )
 
-  genPeriods(dao_id, calendarId, period_count);
+  auto settings = getSettingsDocument(dao_id);
+
+  int64_t periodDurationSecs = settings->getOrFail<int64_t>(common::PERIOD_DURATION);
+  
+  std::string owner = isRoot ? "Root Node" : to_str(settings->getOrFail<eosio::name>(DAO_NAME));
+
+  genPeriods(owner, periodDurationSecs, dao_id, calendarId, period_count);
 }
 
-ACTION dao::createcalen()
+ACTION dao::createcalen(bool is_default)
 {
   eosio::require_auth(get_self());
   Document calendarDoc(get_self(), get_self(), {
@@ -1709,6 +1722,32 @@ ACTION dao::createcalen()
         Content(TYPE, common::CALENDAR),
     }
   });
+
+  if (is_default) {
+
+    Period newPeriod(this, eosio::current_time_point(), to_str("Calendar start period"));
+
+    Edge(get_self(), get_self(), calendarDoc.getID(), newPeriod.getID(), common::START);
+    Edge(get_self(), get_self(), calendarDoc.getID(), newPeriod.getID(), common::END);
+    Edge(get_self(), get_self(), calendarDoc.getID(), newPeriod.getID(), common::PERIOD);
+    Edge(get_self(), get_self(), newPeriod.getID(), calendarDoc.getID(), common::CALENDAR);
+
+    const auto rootId = getRootID();
+
+    Edge(get_self(), get_self(), rootId, calendarDoc.getID(), name(common::CALENDAR_WEEK));
+    Edge(get_self(), get_self(), rootId, calendarDoc.getID(), common::OWNS);
+    Edge(get_self(), get_self(), calendarDoc.getID(), rootId, common::OWNED_BY);
+
+    auto settings = getSettingsDocument();
+
+    auto INIT_PERIOD_COUNT = 30;
+
+    if (auto count = settings->getSettingOpt<int64_t>("init_period_count")) {
+      INIT_PERIOD_COUNT = *count;
+    }
+    
+    genperiods(rootId, INIT_PERIOD_COUNT);
+  }
 }
 
 ACTION dao::initcalendar(uint64_t calendar_id, uint64_t next_period)
@@ -2844,19 +2883,13 @@ void dao::checkAdminsAuth(uint64_t dao_id)
   );
 }
 
-void dao::genPeriods(uint64_t daoId, uint64_t calendarId, int64_t period_count/*, int64_t period_duration_sec*/)
+void dao::genPeriods(const std::string& owner, int64_t periodDuration, uint64_t ownerId, uint64_t calendarId, int64_t periodCount/*, int64_t period_duration_sec*/)
 {
   //Max number of periods that should be created in one call
   const int64_t MAX_PERIODS_PER_CALL = 10;
 
   //Get last period
   //Document daoDoc(get_self(), dao_id);  
-
-  auto settings = getSettingsDocument(daoId);
-
-  int64_t periodDurationSecs = settings->getOrFail<int64_t>(common::PERIOD_DURATION);
-
-  name daoName = settings->getOrFail<eosio::name>(DAO_NAME);
 
   auto lastEdge = Edge::get(get_self(), calendarId, common::END);
 
@@ -2868,13 +2901,13 @@ void dao::genPeriods(uint64_t daoId, uint64_t calendarId, int64_t period_count/*
     .getStartTime()
     .sec_since_epoch();
 
-  for (int64_t i = 0; i < std::min(MAX_PERIODS_PER_CALL, period_count); ++i) {
-    time_point nextPeriodStart(eosio::seconds(lastPeriodStartSecs + periodDurationSecs));
+  for (int64_t i = 0; i < std::min(MAX_PERIODS_PER_CALL, periodCount); ++i) {
+    time_point nextPeriodStart(eosio::seconds(lastPeriodStartSecs + periodDuration));
 
     Period nextPeriod(
       this,
       nextPeriodStart,
-      to_str(daoName, ":", nextPeriodStart.time_since_epoch().count())
+      to_str(owner, ": ", nextPeriodStart.time_since_epoch().count())
     );
 
     Edge(get_self(), get_self(), lastPeriodID, nextPeriod.getID(), common::NEXT);
@@ -2888,13 +2921,15 @@ void dao::genPeriods(uint64_t daoId, uint64_t calendarId, int64_t period_count/*
   Edge(get_self(), get_self(), calendarId, lastPeriodID, common::END);
 
   //Check if there are more periods to created
-  if (period_count > MAX_PERIODS_PER_CALL) {
+  if (periodCount > MAX_PERIODS_PER_CALL) {
     eosio::action(
       eosio::permission_level(get_self(), eosio::name("active")),
       get_self(),
       eosio::name("genperiods"),
-      std::make_tuple(daoId,
-        period_count - MAX_PERIODS_PER_CALL)
+      std::make_tuple(
+        ownerId,
+        periodCount - MAX_PERIODS_PER_CALL
+      )
     ).send();
   }
 }
