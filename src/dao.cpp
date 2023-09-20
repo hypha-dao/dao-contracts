@@ -1024,11 +1024,11 @@ AssetBatch dao::calculatePeriodPayout(Period& period,
 // {
 //   Assignment assignment(this, assignmentID);
   
-  AssetBatch payAmount {
-    .reward = eosio::asset{ 0, daoTokens.reward.symbol },
-    .peg = eosio::asset{ 0, daoTokens.peg.symbol },
-    .voice = eosio::asset{ 0, daoTokens.voice.symbol }
-  };
+//   AssetBatch payAmount {
+//     .reward = eosio::asset{ 0, daoTokens.reward.symbol },
+//     .peg = eosio::asset{ 0, daoTokens.peg.symbol },
+//     .voice = eosio::asset{ 0, daoTokens.voice.symbol }
+//   };
 
 //   // Ensure that the claimed period is within the approved period count
 //   Period period = assignment.getStartPeriod();
@@ -1039,11 +1039,11 @@ AssetBatch dao::calculatePeriodPayout(Period& period,
 //   const asset voiceSalary = assignment.getVoiceSalary();
 //   const asset rewardSalary = assignment.getRewardSalary();
 
-  AssetBatch salary{
-    .reward = rewardSalary,
-    .peg = pegSalary,
-    .voice = voiceSalary
-  };
+//   AssetBatch salary{
+//     .reward = rewardSalary,
+//     .peg = pegSalary,
+//     .voice = voiceSalary
+//   };
 
 //   auto currentTime = eosio::current_time_point().sec_since_epoch();
 
