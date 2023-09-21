@@ -21,6 +21,7 @@
 #include <recurring_activity.hpp>
 #include <time_share.hpp>
 #include <settings.hpp>
+#include <treasury/treasury.hpp>
 #include <typed_document.hpp>
 #include <comments/section.hpp>
 #include <comments/comment.hpp>
@@ -1991,14 +1992,20 @@ void dao::createdao(ContentGroups& config)
     
 #ifdef USE_TREASURY
     // Create Treasury
-    eosio::action(
-      eosio::permission_level{ get_self(), name("active") },
-      get_self(),
-      name("createtrsy"),
-      std::make_tuple(
-        daoDoc.getID()
-      )
-    ).send();
+
+    // this is all it really does in createtrsy
+    hypha::treasury::Treasury trsy(*this, hypha::treasury::TreasuryData {
+        .dao = static_cast<int64_t>(daoDoc.getID())
+    });
+
+    // eosio::action(
+    //   eosio::permission_level{ get_self(), name("active") },
+    //   get_self(),
+    //   name("createtrsy"),
+    //   std::make_tuple(
+    //     daoDoc.getID()
+    //   )
+    // ).send();
 #endif
 
     _setupdefs(daoDoc.getID());
@@ -2940,7 +2947,7 @@ void dao::checkAdminsAuth(uint64_t dao_id)
 void dao::genPeriods(const std::string& owner, int64_t periodDuration, uint64_t ownerId, uint64_t calendarId, int64_t periodCount/*, int64_t period_duration_sec*/)
 {
   //Max number of periods that should be created in one call
-  const int64_t MAX_PERIODS_PER_CALL = 10;
+  const int64_t MAX_PERIODS_PER_CALL = 20;
 
   //Get last period
   //Document daoDoc(get_self(), dao_id);  
@@ -2996,18 +3003,23 @@ void dao::createVoiceToken(const eosio::name& daoName,
   auto dhoSettings = getSettingsDocument();
   name governanceContract = dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
-  eosio::action(
+  eosio::transaction txn;
+  txn.actions.emplace_back(
     eosio::permission_level{ governanceContract, name("active") },
     governanceContract,
     name("create"),
     std::make_tuple(
-      daoName,
-      get_self(),
-      asset{ -getTokenUnit(voiceToken), voiceToken.symbol },
-      decayPeriod,
-      decayPerPeriodx10M
+        daoName,
+        get_self(),
+        asset{ -getTokenUnit(voiceToken), voiceToken.symbol },
+        decayPeriod,
+        decayPerPeriodx10M
     )
-  ).send();
+  );
+  txn.send(daoName.value, get_self());
+  
+
+  
 }
 
 void dao::createToken(const std::string& contractType, name issuer, const asset& token)
