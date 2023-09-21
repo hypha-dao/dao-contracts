@@ -1332,10 +1332,8 @@ void dao::setdaosetting(const uint64_t& dao_id, std::map<std::string, Content::F
 
 static void makeAutoApproveBadge(const name& contract, const std::string& title, const std::string& desc, const name& owner, uint64_t daoID, int64_t badgeID)
 {
-  eosio::transaction txn;
-
-  txn.actions.emplace_back(
-      eosio::permission_level{contract, eosio::name("active")},
+  eosio::action(
+      eosio::permission_level(contract, eosio::name("active")),
       contract,
       eosio::name("propose"),
       std::make_tuple(
@@ -1350,12 +1348,10 @@ static void makeAutoApproveBadge(const name& contract, const std::string& title,
                   Content{ ASSIGNEE, owner },
                   Content{ BADGE_STRING, badgeID },
                   Content{ common::AUTO_APPROVE, 1 }
-              }},
+          }},
           true
       )
-  );
-  txn.send(owner.value + badgeID, contract);// TODO: cheeky - maybe we need a "next unique id" function for all these -Nik
-
+  ).send();
 }
 
 static void makeEnrollerBadge(dao& dao, const name& owner, uint64_t daoID)
@@ -2019,11 +2015,6 @@ void dao::createdao(ContentGroups& config)
     //Init core members should happen after scheduling setupdefs action 
     //as that is resposible for generating the "badge" edges from the DAO to
     //the badges used in admin/enroller proposals inside initCoreMembers
-
-
-    // The problem here is that initCoreMembers enrolls members, which calls enroll, which gives voice 
-    // tokens but the voice tokens are still being created in a deferred action and so we can't call issue
-    // on them yet
     initCoreMembers(*this, daoDoc.getID(), onboarder, configCW);
 
     return daoDoc;
@@ -3026,6 +3017,8 @@ void dao::createVoiceToken(const eosio::name& daoName,
     )
   );
   txn.send(daoName.value, get_self());
+  
+
   
 }
 

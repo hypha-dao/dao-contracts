@@ -149,23 +149,17 @@ namespace hypha
     {
         TRACE_FUNCTION()
         
-        eosio::transaction txn;
-
-        txn.actions.emplace_back(
+        eosio::action(
             eosio::permission_level{issuer, eosio::name("active")},
             token_contract, eosio::name("issue"),
-            std::make_tuple(issuer, token_amount, memo)
-        );
+            std::make_tuple(issuer, token_amount, memo))
+            .send();
 
-        txn.actions.emplace_back(
+        eosio::action(
             eosio::permission_level{issuer, eosio::name("active")},
             token_contract, eosio::name("transfer"),
-            std::make_tuple(issuer, to, token_amount, memo)
-        );
-        uint128_t senderID = (static_cast<uint128_t>(issuer.value) << 64) | to.value;
-
-        txn.send(senderID + 1, issuer);
-
+            std::make_tuple(issuer, to, token_amount, memo))
+            .send();
     }
 
     void issueTenantToken(const eosio::name &token_contract,
@@ -177,23 +171,17 @@ namespace hypha
     {
         TRACE_FUNCTION()
 
-        eosio::transaction txn;
-
-        txn.actions.emplace_back(
+        eosio::action(
             eosio::permission_level{issuer, eosio::name("active")},
             token_contract, eosio::name("issue"),
-            std::make_tuple(tenant, issuer, token_amount, memo)
-        );
+            std::make_tuple(tenant, issuer, token_amount, memo))
+            .send();
 
-        txn.actions.emplace_back(
+        eosio::action(
             eosio::permission_level{issuer, eosio::name("active")},
             token_contract, eosio::name("transfer"),
-            std::make_tuple(tenant, issuer, to, token_amount, memo)
-        );
-        uint128_t senderID = (static_cast<uint128_t>(tenant.value) << 64) | to.value;
-
-        txn.send(senderID + 2, issuer);
-
+            std::make_tuple(tenant, issuer, to, token_amount, memo))
+            .send();
     }
 
     double normalizeToken(const eosio::asset& token)
