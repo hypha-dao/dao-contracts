@@ -3003,8 +3003,7 @@ void dao::createVoiceToken(const eosio::name& daoName,
   auto dhoSettings = getSettingsDocument();
   name governanceContract = dhoSettings->getOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
-  eosio::transaction txn;
-  txn.actions.emplace_back(
+  eosio::action(
     eosio::permission_level{ governanceContract, name("active") },
     governanceContract,
     name("create"),
@@ -3015,10 +3014,7 @@ void dao::createVoiceToken(const eosio::name& daoName,
         decayPeriod,
         decayPerPeriodx10M
     )
-  );
-  txn.send(daoName.value, get_self());
-  
-
+  ).send();
   
 }
 
