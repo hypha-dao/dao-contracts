@@ -258,6 +258,13 @@ void dao::setupdefs(uint64_t dao_id)
   
   checkAdminsAuth(dao_id);
 
+  _setupdefs(dao_id);
+
+}
+
+void dao::_setupdefs(uint64_t dao_id)
+{
+
   auto defBadges = m_documentGraph.getEdgesFrom(getRootID(), name("defbadge"));
 
   for (auto& badge : defBadges) {
@@ -1353,6 +1360,54 @@ static void makeEnrollerBadge(dao& dao, const name& owner, uint64_t daoID)
   makeAutoApproveBadge(dao.get_self(), "Enroller", "Enroller Permissions", owner, daoID, enrollerBadge.getID());
 }
 
+void dao::initSysBadges() {
+
+  createSystemBadge(badges::common::links::ADMIN_BADGE, "Admin Badge", "https://assets.hypha.earth/badges/badge_admin.png");
+  createSystemBadge(badges::common::links::ENROLLER_BADGE, "Enroller Badge", "https://assets.hypha.earth/badges/badge_enroller.png");
+  createSystemBadge(badges::common::links::ENROLLER_BADGE, "Enroller Badge", "https://assets.hypha.earth/badges/badge_enroller.png");
+
+}
+
+void dao::createSystemBadge(name badge_edge, string label, string icon) {
+  
+  badges::SystemBadgeType systemBadgeType;
+  if (badge_edge == badges::common::links::ADMIN_BADGE) {
+    systemBadgeType = badges::SystemBadgeType::Admin;
+  } else if (badge_edge == badges::common::links::ENROLLER_BADGE) {
+    systemBadgeType = badges::SystemBadgeType::Enroller;
+  } else {
+    eosio::check(false, "unknown system type");
+  }
+  
+  
+  Document badge(
+    get_self(), 
+    get_self(),
+    ContentGroups{
+        ContentGroup{
+            Content(CONTENT_GROUP_LABEL, DETAILS),
+            Content(common::STATE, common::STATE_APPROVED),
+            Content(common::VOICE_COEFFICIENT, 10000),
+            Content(common::REWARD_COEFFICIENT, 10000),
+            Content(common::PEG_COEFFICIENT, 10000),
+            Content("dao", (int64_t)getRootID()),
+            Content(ICON, icon)
+        },
+        ContentGroup{
+            Content(CONTENT_GROUP_LABEL, SYSTEM),
+            Content(TYPE, common::BADGE_NAME),
+            Content(hypha::badges::common::items::SYSTEM_BADGE_ID, (int64_t)systemBadgeType),
+            Content(NODE_LABEL, label)
+        }
+      }
+    );
+                    
+  auto edge = Edge(get_self(), get_self(), getRootID(), badge.getID(), badge_edge);
+  auto edge2 = Edge(get_self(), get_self(), getRootID(), badge.getID(), name("defbadge"));
+
+}
+
+
 static void makeAdminBadge(dao& dao, const name& owner, uint64_t daoID)
 {
   auto adminBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::ADMIN_BADGE);
@@ -1735,6 +1790,7 @@ ACTION dao::createcalen(bool is_default)
     const auto rootId = getRootID();
 
     Edge(get_self(), get_self(), rootId, calendarDoc.getID(), name(common::CALENDAR_WEEK));
+    Edge(get_self(), get_self(), rootId, calendarDoc.getID(), name(common::CALENDAR));
     Edge(get_self(), get_self(), rootId, calendarDoc.getID(), common::OWNS);
     Edge(get_self(), get_self(), calendarDoc.getID(), rootId, common::OWNED_BY);
 
@@ -1848,6 +1904,7 @@ static void checkEcosystemDao(dao& dao, uint64_t daoID)
 void dao::createdao(ContentGroups& config)
 {
   TRACE_FUNCTION();
+
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
   auto configCW = ContentWrapper(config);
@@ -1944,14 +2001,7 @@ void dao::createdao(ContentGroups& config)
     ).send();
 #endif
 
-    eosio::action(
-      eosio::permission_level{ get_self(), name("active") },
-      get_self(),
-      name("setupdefs"),
-      std::make_tuple(
-        daoDoc.getID()
-      )
-    ).send();
+    _setupdefs(daoDoc.getID());
 
     auto onboarder = getSettingsDocument(daoDoc.getID())->getOrFail<name>(common::ONBOARDER_ACCOUNT);
 
@@ -2214,6 +2264,10 @@ void dao::createroot(const std::string& notes)
   Settings dhoSettings(*this, rootDoc.getID());
 
   addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
+
+  getOrCreateMember(get_self());
+
+  initSysBadges();
 }
 
 void dao::modalerts(uint64_t root_id, ContentGroups& alerts)

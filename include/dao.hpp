@@ -524,6 +524,12 @@ namespace pricing {
 
       void addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle, const string& daoDescStr);
 
+      void _setupdefs(uint64_t dao_id);
+
+      void initSysBadges();
+      void createSystemBadge(name badge_edge, string label, string icon);
+
+      
       template<class Table>
       std::optional<uint64_t> getNameID(const name& n) const
       {
