@@ -1,7 +1,11 @@
-#!/bin/sh
+#!/bin/bash
+
+YELLOW="\e[33m"
+DEFAULT="\e[0m"
+RED="\e[31m"
 
 echoerr() { 
-    echo "\033[0;31m Error - Invalid arguments: \033[0m $1"
+    echo -e "${RED}Error${DEFAULT} - Invalid arguments: ${RED}$1${DEFAULT}"
     echo "Expected one of the following modes of operation:"
     echo "  Mode 1: setup.sh (dev|eosdev|prod|eosprod|develop|production)        (e.g., 'setup.sh dev')"
     echo "  Mode 2: setup.sh compiler (docker|local) (e.g., 'setup.sh compiler docker')"
@@ -28,7 +32,7 @@ then
 
     # Get setup.sh directory since we could be running this script from a different location
     CWD="$(dirname "$0")"
-    echo "\nConfiguring build for \033[1;33m"$ENV"\033[0m\n"
+    echo -e "\nConfiguring build for ${YELLOW}"$ENV"${DEFAULT}\n"
     cp "$CWD/templates/config/$ENV.config.hpp" "$CWD/include/config/config.hpp"
     mkdir -p build
 
@@ -49,7 +53,7 @@ then
 
         # Get setup.sh directory since we could be running this script from a different location
         CWD="$(dirname "$0")"
-        echo "\nConfiguring compiler for \033[1;33m"$COMPILER"\033[0m\n"
+        echo "\nConfiguring compiler for ${YELLOW}"$COMPILER"${DEFAULT}\n"
 
         if [[ "$COMPILER" == "local" ]];
         then
