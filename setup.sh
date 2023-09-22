@@ -1,8 +1,20 @@
 #!/bin/bash
 
-YELLOW="\e[33m"
-DEFAULT="\e[0m"
-RED="\e[31m"
+if [ "$(uname)" == "Linux" ]; then
+    YELLOW="\e[33m"
+    DEFAULT="\e[0m"
+    RED="\e[31m"
+elif [ "$(uname)" == "Darwin" ]; then
+    RED="\033[0;31m"
+    DEFAULT="\033[0m"
+    YELLOW="\033[1;33m"
+else
+    RED=""
+    DEFAULT=""
+    YELLOW=""
+    echo "INFO: Colored text disabled"
+fi
+    
 
 echoerr() { 
     echo -e "${RED}Error${DEFAULT} - Invalid arguments: ${RED}$1${DEFAULT}"
