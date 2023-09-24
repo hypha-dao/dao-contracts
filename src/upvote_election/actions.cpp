@@ -398,32 +398,45 @@ uint64_t sha256ToUint64(const eosio::checksum256& sha256Hash) {
 
 /// @brief Test random group creation
 /// @param ids 
-void dao::testgrouprng(std::vector<uint64_t> ids, uint32_t seed) {
-    auto randomIds = shuffleVector(ids, seed);
-    
-    eosio::print("ids: ");
-    for (const uint64_t& element : ids) {
-        eosio::print(element, " ");
-    }
-    eosio::print("\n");
+void dao::testgroupr1(uint32_t num_members, uint32_t seed) {
+    require_auth(get_self());
 
-    eosio::print("random ids: ");
-    for (const uint64_t& element : randomIds) {
-        eosio::print(element, " ");
+    std::vector<uint64_t> ids(num_members); // Initialize a vector with 100 elements
+
+    // Set each element's value to its index
+    for (size_t i = 0; i < num_members; ++i) {
+        ids[i] = static_cast<uint64_t>(i);
     }
-    eosio::print("\n");
+    testgrouprng(ids, seed);
+
+}
+
+void dao::testgrouprng(std::vector<uint64_t> ids, uint32_t seed) {
+    
+    require_auth(get_self());
+    
+    // eosio::print(" ids: ");
+    // for (const uint64_t& element : ids) {
+    //     eosio::print(element, " ");
+    // }
+
+    auto randomIds = shuffleVector(ids, seed);
+
+    // eosio::print(" random ids: ");
+    // for (const uint64_t& element : randomIds) {
+    //     eosio::print(element, " ");
+    // }
 
     auto groups = createGroups(randomIds);
 
-    eosio::print("groups: ");
-    for (uint32_t i = 0; i < groups.size(); ++i) {
-        auto group = groups[i];
-        eosio::print("group: ", i, "(", group.size(), "): ");
-        for (const uint64_t& element : group) {
-            eosio::print(element, " ");
-        }
-    }
-    eosio::print("\n");
+    // eosio::print(" groups: ");
+    // for (uint32_t i = 0; i < groups.size(); ++i) {
+    //     auto group = groups[i];
+    //     eosio::print("group: ", i, "(", group.size(), "): ");
+    //     for (const uint64_t& element : group) {
+    //         eosio::print(element, " ");
+    //     }
+    // }
 
 }
 
@@ -453,9 +466,6 @@ std::vector<uint64_t> dao::shuffleVector(std::vector<uint64_t>& ids, uint32_t se
 
             seed = (uint32_t)((a * seed + c) % 0x7fffffff);
             value = ((uint64_t)seed * max()) >> 31;
-
-            // Increment the value each time operator() is called
-            ++value;
 
             return value;
         }

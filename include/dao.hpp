@@ -330,6 +330,7 @@ namespace pricing {
       //Upvote System
       ACTION startupelc(uint64_t election_id, bool reschedule);
       ACTION testgrouprng(std::vector<uint64_t> ids, uint32_t seed);
+      ACTION testgroupr1(uint32_t num_members, uint32_t seed);
 
       ACTION createupvelc(uint64_t dao_id, ContentGroups& election_config);
       ACTION editupvelc(uint64_t election_id, ContentGroups& election_config);
