@@ -13,6 +13,9 @@
 
 #include <member.hpp>
 
+#include <eosio/crypto.hpp>
+
+
 #ifdef USE_UPVOTE_ELECTIONS
 
 namespace hypha {
@@ -385,6 +388,147 @@ void dao::importelct(uint64_t dao_id, bool deferred)
 }
 #endif
 
+
+// Function to convert eosio::sha256 to a 64-bit uint
+uint64_t sha256ToUint64(const eosio::checksum256& sha256Hash) {
+    const uint64_t* hashData = reinterpret_cast<const uint64_t*>(sha256Hash.data());
+    // Assuming sha256Hash is 32 bytes, take the first two 64-bit values
+    return hashData[0] ^ hashData[1];
+}
+
+/// @brief Test random group creation
+/// @param ids 
+void dao::testgrouprng(std::vector<uint64_t> ids, uint32_t seed) {
+    auto randomIds = shuffleVector(ids, seed);
+    
+    eosio::print("ids: ");
+    for (const uint64_t& element : ids) {
+        eosio::print(element, " ");
+    }
+    eosio::print("\n");
+
+    eosio::print("random ids: ");
+    for (const uint64_t& element : randomIds) {
+        eosio::print(element, " ");
+    }
+    eosio::print("\n");
+
+    auto groups = createGroups(randomIds);
+
+    eosio::print("groups: ");
+    for (uint32_t i = 0; i < groups.size(); ++i) {
+        auto group = groups[i];
+        eosio::print("group: ", i, "(", group.size(), "): ");
+        for (const uint64_t& element : group) {
+            eosio::print(element, " ");
+        }
+    }
+    eosio::print("\n");
+
+}
+
+std::vector<uint64_t> dao::shuffleVector(std::vector<uint64_t>& ids, uint32_t seed) {
+    struct MyRandomGenerator {
+        using result_type = uint32_t;
+
+        static constexpr result_type min() {
+            return 0;  // Minimum possible random value
+        }
+
+        static constexpr result_type max() {
+            return UINT32_MAX;  // Maximum possible random value
+        }
+
+        uint32_t seed;
+        uint32_t value;
+
+        MyRandomGenerator(uint32_t seed, uint32_t value) {
+            this->seed = seed;
+            this->value = value;
+        }
+
+        result_type operator()() {
+            const uint64_t a = 1103515245;
+            const uint64_t c = 12345;
+
+            seed = (uint32_t)((a * seed + c) % 0x7fffffff);
+            value = ((uint64_t)seed * max()) >> 31;
+
+            // Increment the value each time operator() is called
+            ++value;
+
+            return value;
+        }
+    };
+
+    // Create a random number generator with the seed
+    MyRandomGenerator rng(seed, 0);
+
+    // Shuffle the vector using the RNG
+    std::shuffle(ids.begin(), ids.end(), rng);
+
+    return ids;
+
+}
+
+std::vector<std::vector<uint64_t>> dao::createGroups(const std::vector<uint64_t>& ids) {
+    std::vector<std::vector<uint64_t>> groups;
+
+    // Calculate the number of groups needed
+    int numGroups = std::ceil(static_cast<double>(ids.size()) / 6);
+
+    // Create the groups with an initial capacity of 6
+    for (int i = 0; i < numGroups; ++i) {
+        groups.push_back(std::vector<uint64_t>());
+        groups.back().reserve(6);
+    }
+
+    // Initialize group iterators
+    auto currentGroup = groups.begin();
+    auto endGroup = groups.end();
+
+    // Iterate over the IDs and distribute them into groups
+    for (const auto& id : ids) {
+        // Add the ID to the current group
+        currentGroup->push_back(id);
+
+        // Move to the next group (take turns)
+        ++currentGroup;
+
+        // Wrap back to the beginning of the groups if needed
+        if (currentGroup == endGroup) {
+            currentGroup = groups.begin();
+        }
+    }
+
+    return groups;
+}
+
+void dao::startupelc(uint64_t election_id, bool reschedule) 
+{
+    UpvoteElection election(*this, election_id);
+
+    auto status = election.getStatus();
+
+    auto now = eosio::current_time_point();
+
+    auto daoId = election.getDaoID();
+
+    // 1 - randomize 
+    std::vector<Edge> delegates = getGraph().getEdgesFrom(daoId, badges::common::links::DELEGATE);
+
+    std::vector<uint64_t> delegateIDs(delegates.size());
+    for (Edge& delegate : delegates) {
+        delegateIDs.push_back(std::move(delegate.getToNode()));
+    }
+    
+    // eosio::checksum256 checksum = /* Your checksum calculation here */;
+    // Convert the checksum into a 32-bit integer seed
+    uint32_t seed = 0; // checksumToUint64(checksum);
+
+
+}
+
 //Check if we need to update an ongoing elections status:
 //upcoming -> ongoing
 //ongoing -> finished
@@ -416,6 +560,8 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
 
         //Let's update as we already started
         if (start <= now) {
+
+            // startUpvoteElection();
             
             Edge::get(get_self(), daoId, election.getId(), upvote_common::links::UPCOMING_ELECTION).erase();
             
@@ -427,6 +573,7 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
             election.setCurrentRound(&startRound);
 
             //Setup all candidates
+            // TODO: randomize this list
             auto delegates = getGraph().getEdgesFrom(daoId, badges::common::links::DELEGATE);
 
             std::vector<uint64_t> delegateIds;
@@ -434,6 +581,14 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
             
             for (auto& delegate : delegates) {
                 delegateIds.push_back(delegate.getToNode());
+                // TODO
+                // 
+                // instead of adding delegates to the round, we add them to groups
+                // and we add the groups to the round
+                // A round and a group is the same data structure
+                // only the round has groups, and the group has members.
+                // 
+                // 
                 startRound.addCandidate(delegate.getToNode());
             }
 
@@ -459,11 +614,14 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
             Edge::get(get_self(), election_id, upvote_common::links::CURRENT_ROUND).erase();
 
             if (auto nextRound = currentRound.getNextRound()) {
+                
+                // set up the next round
 
                 election.setCurrentRound(nextRound.get());
 
                 setupCandidates(nextRound->getId(), winners);
 
+                // round.addCandidate adds candidates
                 for (auto& winner : winners) {
                     nextRound->addCandidate(winner);
                 }
@@ -471,6 +629,9 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
                 scheduleElectionUpdate(*this, election, nextRound->getEndDate());
             }
             else {
+
+                // The election has ended.
+
                 Edge::get(get_self(), daoId, election.getId(), upvote_common::links::ONGOING_ELECTION).erase();
 
                 Edge(get_self(), get_self(), daoId, election.getId(), upvote_common::links::PREVIOUS_ELECTION);
@@ -547,6 +708,28 @@ void dao::cancelupvelc(uint64_t election_id)
     election.update();
 }
 
+// 
+// void VoteGroup::castvote(ElectionRound& round, VoteGroup& group, name voter, uint64_t member) {
+//     eosio::require_auth(voter);
+
+//     //Verify round_id is the same as the current round
+//     ElectionRound round(*this, round_id);
+
+//     UpvoteElection election = round.getElection();
+
+//     //Current round has to be defined
+//     auto currentRound = election.getCurrentRound();
+
+//     EOS_CHECK(
+//         currentRound.getId() == round_id,
+//         "You can only vote on the current round"
+//     );
+
+//     /// 
+//     /// Get ElectionVoteGroup document for this memeber and this round
+
+// }
+
 void dao::castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> voted)
 {
     eosio::require_auth(voter);
@@ -567,6 +750,10 @@ void dao::castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> vot
     );
 
     auto memberId = getMemberID(voter);
+
+    // TODO: We can probably change this check - we get the 
+    // auto groupId = getGroup(voter)
+    // 
 
     EOS_CHECK(
         badges::hasVoterBadge(*this, election.getDaoID(), memberId) ||
@@ -714,5 +901,6 @@ void dao::editupvelc(uint64_t election_id, ContentGroups& election_config)
 }
 
 }
+
 
 #endif

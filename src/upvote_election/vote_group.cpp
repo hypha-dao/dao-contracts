@@ -6,6 +6,10 @@
 
 #include "dao.hpp"
 
+// this document keeps all votes a member has made in a round
+// this will need to change since each member can only vote once in a round now, not as many as they want
+
+
 namespace hypha::upvote_election {
 
 using namespace upvote_election::common;
@@ -62,6 +66,14 @@ std::optional<VoteGroup> VoteGroup::getFromRound(dao& dao, uint64_t roundId, uin
     return std::nullopt;
 }
 
+
+// limit the members field to 1
+// check the member is member of the same group
+// This is one vote for multiple members in a large group - we won't have this anymore
+// Vote group is tied to a single member
+
+// We can change the meaning of this
+
 void VoteGroup::castVotes(ElectionRound& round, std::vector<uint64_t> members)
 {
     auto roundId = getRoundID();
@@ -75,6 +87,7 @@ void VoteGroup::castVotes(ElectionRound& round, std::vector<uint64_t> members)
     auto contract = getDao().get_self();
 
     //We need to first erase previous votes if any
+    // Because someone might change their vote
     auto prevVotes = getDao().getGraph().getEdgesFrom(getId(), links::VOTE);
 
     dao::election_vote_table elctn_t(contract, roundId);

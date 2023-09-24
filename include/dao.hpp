@@ -328,6 +328,9 @@ namespace pricing {
 #endif
 #ifdef USE_UPVOTE_ELECTIONS
       //Upvote System
+      ACTION startupelc(uint64_t election_id, bool reschedule);
+      ACTION testgrouprng(std::vector<uint64_t> ids, uint32_t seed);
+
       ACTION createupvelc(uint64_t dao_id, ContentGroups& election_config);
       ACTION editupvelc(uint64_t election_id, ContentGroups& election_config);
       ACTION cancelupvelc(uint64_t election_id);
@@ -498,6 +501,9 @@ namespace pricing {
 
 
    private:
+
+      std::vector<uint64_t> shuffleVector(std::vector<uint64_t>& ids, uint32_t seed);
+      std::vector<std::vector<uint64_t>> createGroups(const std::vector<uint64_t>& ids);
 
       void onRewardTransfer(const name& from, const name& to, const asset& amount);
 
