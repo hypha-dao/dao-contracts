@@ -1,6 +1,7 @@
 #include "upvote_election/election_group.hpp"
 #include "upvote_election/upvote_election.hpp"
 #include "upvote_election/common.hpp"
+#include "upvote_election/up_vote_vote.hpp"
 
 #include <document_graph/edge.hpp>
 
@@ -62,90 +63,54 @@ std::optional<hypha::Member> ElectionGroup::getWinner() {
     return std::nullopt;
 }
 
-/*
-UpvoteElection ElectionRound::getElection() {
-    return UpvoteElection(
-        getDao(),
-        Edge::get(getDao().get_self(), getId(), links::ELECTION).getToNode()
-    );
-}
-
-std::vector<uint64_t> ElectionRound::getWinners()
-{
-    std::vector<uint64_t> winners;
-
-    dao::election_vote_table elctn_t(getDao().get_self(), getId());
-
-    auto byAmount = elctn_t.get_index<"byamount"_n>();
-
-    auto beg = byAmount.rbegin();
-
-    auto idx = 0;
-
-    while (idx < getPassingCount() && beg != byAmount.rend()) {
-        winners.push_back(beg->account_id);
-        ++idx;
-        ++beg;
-    }
-
-    return winners;
-}
-
-void ElectionRound::setNextRound(ElectionRound* nextRound) const
-{
-    EOS_CHECK(
-        !getNextRound(),
-        "Election Round already has next round set"
-    );
-
-    Edge(
-        getDao().get_self(),
-        getDao().get_self(),
-        getId(),
-        nextRound->getId(),
-        links::NEXT_ROUND
-    );
-}
-
-std::unique_ptr<ElectionRound> ElectionRound::getNextRound() const
-{
-    if (auto [exists, edge] = Edge::getIfExists(getDao().get_self(), getId(), links::NEXT_ROUND);
-        exists) {
-        return std::make_unique<ElectionRound>(getDao(), edge.getToNode());    
-    }
-    
-    return {};
-}
-
-bool ElectionRound::isCandidate(uint64_t accountId)
+bool ElectionGroup::isElectionRoundMember(uint64_t accountId)
 {
     return Edge::exists(
         getDao().get_self(),
         getId(),
         accountId,
-        links::ROUND_CANDIDATE
+        links::ELECTION_ROUND_MEMBER
     );
 } 
 
-int64_t ElectionRound::getAccountPower(uint64_t accountId)
+void ElectionGroup::vote(uint64_t from, uint64_t to)
 {
-    if (isCandidate(accountId)) {
-        return std::max(int64_t{1}, getDelegatePower());
+
+    // get all existing vote edges
+    std::vector<Edge> voteEdges = getDao().getGraph().getEdgesFrom(getId(), links::UP_VOTE_VOTE);
+    
+    // make sure both members are part of this group
+
+    // get the member count
+
+    // iterate over vote edges - calculate who has the most votes and find the "from" edge
+    UpVoteVote* vote = nullptr;
+
+    for (auto& edge : voteEdges) {
+
     }
 
-    return 1;
+    // if from edge, delete the edge and create a new upvote doc - or change its voted field and save it back?
+    // if no from edge, create a new UpVoteVote doc
+
+    
+
+
+    // if (exists) {
+    //     vote = UpVoteVote(getDao(), edge.getToNode());
+    // } else {
+    //     vote = UpVoteVote()
+    // }
+
+    // Edge(
+    //     getDao().get_self(),
+    //     getDao().get_self(),
+    //     getId(),
+    //     nextRound->getId(),
+    //     links::NEXT_ROUND
+    // );
 }
 
-void ElectionRound::addCandidate(uint64_t accountId)
-{
-    Edge(
-        getDao().get_self(),
-        getDao().get_self(),
-        getId(),
-        accountId,
-        links::ROUND_CANDIDATE
-    );
-}
-*/
+
 
 }

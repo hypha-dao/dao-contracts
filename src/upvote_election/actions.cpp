@@ -2,6 +2,8 @@
 #include "upvote_election/upvote_election.hpp"
 #include "upvote_election/election_round.hpp"
 #include "upvote_election/vote_group.hpp"
+#include "upvote_election/election_group.hpp"
+#include "upvote_election/up_vote_vote.hpp"
 
 #include <numeric>
 #include <algorithm>
@@ -24,8 +26,12 @@ using upvote_election::UpvoteElection;
 using upvote_election::UpvoteElectionData;
 using upvote_election::ElectionRound;
 using upvote_election::ElectionRoundData;
+using upvote_election::ElectionGroup;
+using upvote_election::ElectionGroupData;
 using upvote_election::VoteGroup;
 using upvote_election::VoteGroupData;
+using upvote_election::UpVoteVote;
+using upvote_election::UpVoteVoteData;
 
 namespace upvote_common = upvote_election::common;
 
@@ -740,6 +746,63 @@ void dao::cancelupvelc(uint64_t election_id)
 
 // }
 
+void dao::castupvote(uint64_t round_id, uint64_t group_id, name voter, uint64_t voted_id)
+{
+    // Check auth
+    eosio::require_auth(voter);
+    auto memberId = getMemberID(voter);
+
+    // Check the round is valid
+    ElectionRound round(*this, round_id);
+    UpvoteElection election = round.getElection();
+    auto currentRound = election.getCurrentRound();
+
+    EOS_CHECK(
+        currentRound.getId() == round_id,
+        "You can only vote on the current round"
+    );
+
+    // Check the group membership of voter and voted
+    ElectionGroup group(*this, group_id);
+
+    EOS_CHECK(
+        group.isElectionRoundMember(memberId),
+        "Only members of the group can vote."
+    );
+
+    EOS_CHECK(
+        group.isElectionRoundMember(voted_id),
+        "Only members of the group can be voted for."
+    );
+
+    // group.vote();
+
+    // EOS_CHECK(
+    //     badges::hasVoterBadge(*this, election.getDaoID(), memberId) ||
+    //     //Just enable voting to candidates if the round is not the first one
+    //     (currentRound.isCandidate(memberId) && currentRound.getDelegatePower() > 0),
+    //     "Only registered voters are allowed to perform this action"
+    // );
+
+    // auto votedEdge = Edge::getOrNew(get_self(), get_self(), round_id, memberId, eosio::name("voted"));
+
+    // if (votedEdge.empty()) {
+    //     votedEdge.erase();
+    //     return;
+    // }
+
+    // if (auto voteGroup = VoteGroup::getFromRound(*this, round_id, memberId)) {
+    //     voteGroup->castVotes(round, std::move(voted));
+    // }
+    // else {
+    //     VoteGroup group(*this, memberId, VoteGroupData{
+    //         .round_id = static_cast<int64_t>(round_id)
+    //     });
+
+    //     group.castVotes(round, std::move(voted));
+    // }
+}
+
 void dao::castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> voted)
 {
     eosio::require_auth(voter);
@@ -790,6 +853,7 @@ void dao::castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> vot
         group.castVotes(round, std::move(voted));
     }
 }
+
 
 /*
 election_config: [

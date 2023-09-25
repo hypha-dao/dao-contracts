@@ -331,12 +331,16 @@ namespace pricing {
       ACTION startupelc(uint64_t election_id, bool reschedule);
       ACTION testgrouprng(std::vector<uint64_t> ids, uint32_t seed);
       ACTION testgroupr1(uint32_t num_members, uint32_t seed);
+      ACTION castupvote(uint64_t round_id, uint64_t group_id, name voter, uint64_t voted_id);
 
       ACTION createupvelc(uint64_t dao_id, ContentGroups& election_config);
       ACTION editupvelc(uint64_t election_id, ContentGroups& election_config);
       ACTION cancelupvelc(uint64_t election_id);
       ACTION updateupvelc(uint64_t election_id, bool reschedule);
       ACTION castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> voted);
+
+
+
 #ifdef EOS_BUILD
       ACTION importelct(uint64_t dao_id, bool deferred);
 #endif

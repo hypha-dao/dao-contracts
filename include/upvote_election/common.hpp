@@ -19,6 +19,7 @@ namespace types {
     inline constexpr auto ELECTION_ROUND = eosio::name("electn.round");
     inline constexpr auto ELECTION_GROUP = eosio::name("electn.group");
     inline constexpr auto ELECTION_VOTE = eosio::name("election.vote");
+    inline constexpr auto ELECTION_UP_VOTE = eosio::name("upvt.vote");
 
     // TODO: Remove this
     inline constexpr auto ELECTION_VOTE_GROUP = eosio::name("vote.group");
@@ -47,6 +48,7 @@ namespace links {
     inline constexpr auto ROUND_CANDIDATE = eosio::name("candidate");
     inline constexpr auto ROUND_WINNER = eosio::name("winner");
     inline constexpr auto ELECTION_GROUP = eosio::name("elctngroup");
+    inline constexpr auto UP_VOTE_VOTE = eosio::name("ue.vote");
     inline constexpr auto VOTE = eosio::name("vote");
     inline constexpr auto CHIEF_DELEGATE = eosio::name("chiefdelegate");
     inline constexpr auto HEAD_DELEGATE = eosio::name("headdelegate");

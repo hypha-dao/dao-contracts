@@ -15,9 +15,9 @@ class UpvoteElection;
 
 class ElectionGroup : public TypedDocument
 {
+
     DECLARE_DOCUMENT(
         Data,
-        PROPERTY(type, std::string, Type, USE_GET),
         PROPERTY(member_count, int64_t, MemberCount, USE_GET),
         PROPERTY(group_id, int64_t, RoundId, USE_GET)
     )
@@ -26,13 +26,9 @@ public:
     ElectionGroup(dao& dao, uint64_t group_id, std::vector<uint64_t> member_ids, Data data);
 
     std::optional<Member> getWinner();
+    bool isElectionRoundMember(uint64_t accountId);
+    void vote(uint64_t from, uint64_t to);
 
-    // UpvoteElection getElection();
-    // std::vector<uint64_t> getWinners();
-    // int64_t getAccountPower(uint64_t accountId);
-    // bool isCandidate(uint64_t accountId);
-    // void addCandidate(uint64_t accountId);
-    
 private:
     virtual const std::string buildNodeLabel(ContentGroups &content) override
     {
