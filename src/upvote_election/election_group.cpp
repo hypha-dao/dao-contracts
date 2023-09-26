@@ -37,7 +37,6 @@ ElectionGroup::ElectionGroup(dao& dao, uint64_t round_id, std::vector<uint64_t> 
         );
     }
 
-    
     // Create edge from the round to this group
     Edge(
         getDao().get_self(),
@@ -47,14 +46,6 @@ ElectionGroup::ElectionGroup(dao& dao, uint64_t round_id, std::vector<uint64_t> 
         links::ELECTION_GROUP_LINK
     );
 
-    // I don't think we need 2 way links everywhere?!
-    // Edge(
-    //     getDao().get_self(),
-    //     getDao().get_self(),
-    //     getId(),
-    //     election_id,
-    //     links::ELECTION
-    // );
 }
 
 bool ElectionGroup::isElectionRoundMember(uint64_t accountId)
@@ -92,24 +83,28 @@ void ElectionGroup::vote(int64_t from, int64_t to)
         int64_t voted_id = upvote.getVotedId();
         int64_t voter_id = upvote.getVoterId();
 
-        if (voteCount.find(voted_id) == voteCount.end()) {
-            voteCount[voted_id] = 1;
-        } else {
-            voteCount[voted_id] = voteCount[voted_id] + 1;
+        // If the voter has already voted before, we change their 
+        // vote to the new voted "to"
+        if (voter_id == from) {
+            existingVote = true;
+            upvote.setVotedId(to);
+            upvote.update();
+            voted_id = to;
         }
+
+
+        // Count all votes
+        // if (voteCount.find(voted_id) == voteCount.end()) {
+        //     voteCount[voted_id] = 1;
+        // } else {
+        //     voteCount[voted_id] = voteCount[voted_id] + 1;
+        // }
+        voteCount[voted_id]++;
 
         // check for winner
         if (voteCount[voted_id] >= votesToWin) {
             hasWinner = true;
             winner = voted_id;
-        }
-
-        // check if we need to change the vote
-        if (voter_id == from) {
-            // change vote
-            existingVote = true;
-            upvote.setVotedId(to);
-            upvote.update();
         }
     }
 
@@ -119,11 +114,22 @@ void ElectionGroup::vote(int64_t from, int64_t to)
             .voter_id = from,
             .voted_id = to
         });
-        // edge case - can't happen in upvote elections
-        // if (votesToWin == 1) {
-        //     hasWinner = true;
-        //     winner = to;
+
+        // Count
+        // if (voteCount.find(to) == voteCount.end()) {
+        //     voteCount[to] = 1;
+        // } else {
+        //     voteCount[to] = voteCount[to] + 1;
         // }
+        voteCount[to]++;
+
+        // check for winner
+        if (voteCount[to] >= votesToWin) {
+            hasWinner = true;
+            winner = to;
+        }
+
+        
     }
 
     if (hasWinner) {

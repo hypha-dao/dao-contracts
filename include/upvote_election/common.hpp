@@ -62,6 +62,7 @@ namespace items {
     // inline constexpr auto PASSING_AMOUNT = "passing_count"; // TODO: remove
     inline constexpr auto ROUND_ID = "round_id";
     inline constexpr auto ROUND_TYPE = "type";
+    inline constexpr auto WINNER = "winner";
 }
 
 } // namespace hypha::upvote

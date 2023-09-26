@@ -107,7 +107,7 @@ static void createRounds(dao& dao, UpvoteElection& election, std::map<int64_t, E
 {
     std::unique_ptr<ElectionRound> prevRound;
 
-    bool hasChief = false;
+    // bool hasChief = false; // I don't think we need to check rounds..
 
     for (auto& [roundId, roundData] : rounds) {
         
@@ -121,20 +121,20 @@ static void createRounds(dao& dao, UpvoteElection& election, std::map<int64_t, E
 
         roundData.end_date = startDate + eosio::seconds(roundData.duration);
 
-        if (roundData.type == upvote_common::round_types::HEAD) {
-            EOS_CHECK(
-                prevRound && prevRound->getType() == upvote_common::round_types::CHIEF,
-                "There has to be a Chief round previous to Head Delegate round"
-            );
-        }
-        else {
-            EOS_CHECK(
-                !hasChief,
-                to_str("Cannot create ", roundData.type, "type rounds after a Chief round")
-            );
+        // if (roundData.type == upvote_common::round_types::HEAD) {
+        //     EOS_CHECK(
+        //         prevRound && prevRound->getType() == upvote_common::round_types::CHIEF,
+        //         "There has to be a Chief round previous to Head Delegate round"
+        //     );
+        // }
+        // else {
+        //     EOS_CHECK(
+        //         !hasChief,
+        //         to_str("Cannot create ", roundData.type, "type rounds after a Chief round")
+        //     );
 
-            hasChief = hasChief || roundData.type == upvote_common::round_types::CHIEF;
-        }
+        //     hasChief = hasChief || roundData.type == upvote_common::round_types::CHIEF;
+        // }
 
         auto electionRound = std::make_unique<ElectionRound>(
             dao,
@@ -159,14 +159,14 @@ static void createRounds(dao& dao, UpvoteElection& election, std::map<int64_t, E
         prevRound = std::move(electionRound);
     }
 
-    EOS_CHECK(
-        prevRound->getType() == upvote_common::round_types::CHIEF ||
-        prevRound->getType() == upvote_common::round_types::HEAD,
-        "Last round must be of type Chief or Head"
-    )
+    // EOS_CHECK(
+    //     prevRound->getType() == upvote_common::round_types::CHIEF ||
+    //     prevRound->getType() == upvote_common::round_types::HEAD,
+    //     "Last round must be of type Chief or Head"
+    // )
 
     //Verify we have a chief round
-    election.getChiefRound();
+    // election.getChiefRound();
 
     //At the end both start date and end date should be the same
     EOS_CHECK(
@@ -526,31 +526,6 @@ std::vector<std::vector<uint64_t>> dao::createGroups(const std::vector<uint64_t>
     return groups;
 }
 
-void dao::startupelc(uint64_t election_id, bool reschedule) 
-{
-    UpvoteElection election(*this, election_id);
-
-    auto status = election.getStatus();
-
-    auto now = eosio::current_time_point();
-
-    auto daoId = election.getDaoID();
-
-    // 1 - randomize 
-    std::vector<Edge> delegates = getGraph().getEdgesFrom(daoId, badges::common::links::DELEGATE);
-
-    std::vector<uint64_t> delegateIDs(delegates.size());
-    for (Edge& delegate : delegates) {
-        delegateIDs.push_back(std::move(delegate.getToNode()));
-    }
-    
-    // eosio::checksum256 checksum = /* Your checksum calculation here */;
-    // Convert the checksum into a 32-bit integer seed
-    uint32_t seed = 0; // checksumToUint64(checksum);
-
-
-}
-
 //Check if we need to update an ongoing elections status:
 //upcoming -> ongoing
 //ongoing -> finished
@@ -582,8 +557,7 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
 
         //Let's update as we already started
         if (start <= now) {
-
-            // startUpvoteElection();
+            // START....
             
             Edge::get(get_self(), daoId, election.getId(), upvote_common::links::UPCOMING_ELECTION).erase();
             
@@ -610,7 +584,6 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
             
             auto groups = createGroups(randomIds);
 
-            // we could add this to the round interface - to add groups
             for (auto& groupMembers : groups) {
                 startRound.addElectionGroup(groupMembers);
             }
@@ -619,7 +592,7 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
 
 
 
-            // Analuze what this is and if we need it
+            // analyze what this is and if we need it
             // setupCandidates(startRound.getId(), delegateIds);
 
             scheduleElectionUpdate(*this, election, startRound.getEndDate());

@@ -2,6 +2,8 @@
 #include "upvote_election/election_group.hpp"
 
 #include <document_graph/edge.hpp>
+// #include <document_graph/content_wrapper.hpp>
+// #include <document_graph/content.hpp>
 
 #include "upvote_election/common.hpp"
 
@@ -152,6 +154,16 @@ namespace hypha::upvote_election {
     std::vector<uint64_t> ElectionRound::getWinners()
     {
         std::vector<uint64_t> winners;
+
+        std::vector<Edge> groupEdges = getDao().getGraph().getEdgesFrom(getId(), links::ELECTION_GROUP_LINK);
+        for (auto& edge : groupEdges) {
+            ElectionGroup group(getDao(), edge.getToNode());
+            auto cw = group.getDocument().getContentWrapper();
+            auto [idx, item] = cw.get(DETAILS, items::WINNER);
+            if (idx != -1) {
+                winners.push_back(item->getAs<int64_t>());
+            }
+        }
 
         return winners;
     }
