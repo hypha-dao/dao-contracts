@@ -22,3 +22,4 @@ main1.go
 dao-contracts
 migration.sh
 build_ninja
+lib
