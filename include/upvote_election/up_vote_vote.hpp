@@ -17,8 +17,8 @@ class UpVoteVote : public TypedDocument
 {
     DECLARE_DOCUMENT(
         Data,
-        PROPERTY(voter_id, int64_t, VoterID, USE_GET),
-        PROPERTY(voted_id, int64_t, VotedID, USE_GET)
+        PROPERTY(voter_id, int64_t, VoterId, USE_GET),
+        PROPERTY(voted_id, int64_t, VotedId, USE_GETSET)
     )
 
 public:

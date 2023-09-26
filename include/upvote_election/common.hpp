@@ -49,6 +49,7 @@ namespace links {
     inline constexpr auto ROUND_WINNER = eosio::name("winner");
     inline constexpr auto ELECTION_GROUP = eosio::name("elctngroup");
     inline constexpr auto UP_VOTE_VOTE = eosio::name("ue.vote");
+    inline constexpr auto UPVOTE_GROUP_WINNER = eosio::name("ue.winner");
     inline constexpr auto VOTE = eosio::name("vote");
     inline constexpr auto CHIEF_DELEGATE = eosio::name("chiefdelegate");
     inline constexpr auto HEAD_DELEGATE = eosio::name("headdelegate");

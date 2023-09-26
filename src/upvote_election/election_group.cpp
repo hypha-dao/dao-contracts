@@ -6,6 +6,7 @@
 #include <document_graph/edge.hpp>
 
 #include "dao.hpp"
+#include <unordered_map> 
 
 namespace hypha::upvote_election {
 
@@ -23,6 +24,8 @@ ElectionGroup::ElectionGroup(dao& dao, uint64_t round_id, std::vector<uint64_t> 
 {
 
     auto cgs = convert(std::move(data));
+
+    //data.member_count = member_ids.size();
 
     initializeDocument(dao, cgs);
 
@@ -59,10 +62,6 @@ ElectionGroup::ElectionGroup(dao& dao, uint64_t round_id, std::vector<uint64_t> 
     // );
 }
 
-std::optional<hypha::Member> ElectionGroup::getWinner() {
-    return std::nullopt;
-}
-
 bool ElectionGroup::isElectionRoundMember(uint64_t accountId)
 {
     return Edge::exists(
@@ -73,7 +72,7 @@ bool ElectionGroup::isElectionRoundMember(uint64_t accountId)
     );
 } 
 
-void ElectionGroup::vote(uint64_t from, uint64_t to)
+void ElectionGroup::vote(int64_t from, int64_t to)
 {
 
     // get all existing vote edges
@@ -82,13 +81,61 @@ void ElectionGroup::vote(uint64_t from, uint64_t to)
     // make sure both members are part of this group
 
     // get the member count
+    auto memcount = getMemberCount();
+    uint64_t votesToWin = memcount * 2 / 3 + 1;
 
     // iterate over vote edges - calculate who has the most votes and find the "from" edge
-    UpVoteVote* vote = nullptr;
+    std::unordered_map<int64_t, int> voteCount;
+
+    bool existingVote = false;
+    bool hasWinner = false;
+    int64_t winner = 0;
 
     for (auto& edge : voteEdges) {
+        UpVoteVote upvote(getDao(), edge.getToNode());
 
+        int64_t voted_id = upvote.getVotedId();
+        int64_t voter_id = upvote.getVoterId();
+
+        if (voteCount.find(voted_id) == voteCount.end()) {
+            voteCount[voted_id] = 1;
+        } else {
+            voteCount[voted_id] = voteCount[voted_id] + 1;
+        }
+
+        // check for winner
+        if (voteCount[voted_id] >= votesToWin) {
+            hasWinner = true;
+            winner = voted_id;
+        }
+
+        // check if we need to change the vote
+        if (voter_id == from) {
+            // change vote
+            existingVote = true;
+            upvote.setVotedId(to);
+            upvote.update();
+        }
     }
+
+    if (!existingVote) {
+        // Create a new vote
+        UpVoteVote vote(getDao(), getId(), UpVoteVoteData{
+            .voter_id = from,
+            .voted_id = to
+        });
+        // edge case - can't happen in upvote elections
+        // if (votesToWin == 1) {
+        //     hasWinner = true;
+        //     winner = to;
+        // }
+    }
+
+    if (hasWinner) {
+        setWinner(winner);
+        update();
+    }
+    
 
     // if from edge, delete the edge and create a new upvote doc - or change its voted field and save it back?
     // if no from edge, create a new UpVoteVote doc

@@ -18,12 +18,6 @@ UpVoteVote::UpVoteVote(dao& dao, uint64_t id)
     : TypedDocument(dao, id, types::ELECTION_UP_VOTE)
 {}
 
-// invoke
-        // UpVoteVote upvote(*this, memberId, UpVoteVoteData{
-        //     .round_id = static_cast<int64_t>(round_id)
-        // });
-
-
 UpVoteVote::UpVoteVote(dao& dao, uint64_t group_id, Data data)
     : TypedDocument(dao, types::ELECTION_UP_VOTE)
 {

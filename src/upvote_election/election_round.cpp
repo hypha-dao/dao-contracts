@@ -10,6 +10,41 @@
 
 namespace hypha::upvote_election {
 
+// SET VALUE EXAMPLE - use accessors magically created with the DECLARE_DOCUMENT Macro
+//
+    // DECLARE_DOCUMENT(
+    //     Data,
+    //     PROPERTY(credit, eosio::asset, Credit, USE_GETSET),
+    //     PROPERTY(type, std::string, Type, USE_GETSET)
+    // )
+////
+//// ... code
+//     setCredit(std::move(newCredit)); // credit is asset type
+//     update();
+//// ...
+// get 
+//     float offerDisc = 1.0f - offer.getDiscountPercentage() / 10000.f;
+//
+//
+// the magical setters are defined to acess the content group details and get/set
+// they don't seem to call update, so update needs to be called.
+//
+// #define USE_GET_SET_DEC(name, type, getSet)\
+// const type& get##getSet() {\
+//     return getContentWrapper()\
+//           .getOrFail(DETAILS, #name)\
+//           ->getAs<type>();\
+// }\
+// void set##getSet(type value) {\
+//     auto cw = getContentWrapper();\
+//     cw.insertOrReplace(\
+//         *cw.getGroupOrFail(DETAILS),\
+//         Content{ #name, std::move(value) }\
+//     );\
+// }
+
+
+
 using namespace upvote_election::common;
 
 static void validateStartDate(const time_point& startDate)
