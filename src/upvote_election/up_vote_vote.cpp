@@ -1,4 +1,4 @@
-#include "upvote_election/vote_group.hpp"
+#include "upvote_election/up_vote_vote.hpp"
 
 #include "upvote_election/common.hpp"
 

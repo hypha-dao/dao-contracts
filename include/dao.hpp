@@ -337,7 +337,6 @@ namespace pricing {
       ACTION editupvelc(uint64_t election_id, ContentGroups& election_config);
       ACTION cancelupvelc(uint64_t election_id);
       ACTION updateupvelc(uint64_t election_id, bool reschedule);
-      ACTION castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> voted);
 
 
 

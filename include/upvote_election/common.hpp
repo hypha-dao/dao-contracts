@@ -59,7 +59,7 @@ namespace items {
     inline constexpr auto UPVOTE_STARTDATE = "upvote_start_date_time";
     inline constexpr auto UPVOTE_DURATION = "upvote_duration";
     inline constexpr auto ROUND_DURATION = "duration";
-    inline constexpr auto PASSING_AMOUNT = "passing_count";
+    // inline constexpr auto PASSING_AMOUNT = "passing_count"; // TODO: remove
     inline constexpr auto ROUND_ID = "round_id";
     inline constexpr auto ROUND_TYPE = "type";
 }

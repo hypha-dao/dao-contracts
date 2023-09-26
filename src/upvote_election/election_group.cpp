@@ -1,7 +1,6 @@
 #include "upvote_election/election_group.hpp"
 #include "upvote_election/upvote_election.hpp"
 #include "upvote_election/common.hpp"
-#include "upvote_election/up_vote_vote.hpp"
 
 #include <document_graph/edge.hpp>
 

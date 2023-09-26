@@ -94,6 +94,9 @@ namespace hypha::upvote_election {
                 "There is another chief delegate round already"
             )
 
+            // TODO: I don't think we need to know what kinds of rounds there are.
+            // We can estimate the maximum number of rounds but since any group may not have a winner
+            // it could be over after round 1. 
                 Edge(
                     getDao().get_self(),
                     getDao().get_self(),
@@ -116,10 +119,10 @@ namespace hypha::upvote_election {
                     links::HEAD_ROUND
                 );
 
-            EOS_CHECK(
-                getPassingCount() == 1,
-                "There can be only 1 Head Delegate"
-            )
+            // EOS_CHECK(
+            //     getPassingCount() == 1,
+            //     "There can be only 1 Head Delegate"
+            // )
         }
 
         Edge(

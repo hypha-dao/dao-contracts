@@ -8,6 +8,8 @@
 
 #include <member.hpp>
 
+#include "upvote_election/up_vote_vote.hpp"
+
 namespace hypha::upvote_election
 {
 

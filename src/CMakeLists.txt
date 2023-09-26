@@ -18,6 +18,12 @@ add_contract( dao dao
                 recurring_activity.cpp
                 time_share.cpp
                 settings.cpp
+                upvote_election/actions.cpp
+                upvote_election/election_round.cpp
+                upvote_election/election_group.cpp
+                upvote_election/upvote_election.cpp
+                upvote_election/up_vote_vote.cpp
+                upvote_election/vote_group.cpp
                 treasury/actions.cpp
                 treasury/balance.cpp
                 treasury/payment.cpp
@@ -58,11 +64,6 @@ add_contract( dao dao
                 comments/comment.cpp
                 comments/section.cpp
                 comments/reaction.cpp
-                upvote_election/actions.cpp
-                upvote_election/election_round.cpp
-                upvote_election/election_group.cpp
-                upvote_election/upvote_election.cpp
-                upvote_election/vote_group.cpp
                 ../document-graph/src/document_graph/document_graph.cpp
                 ../document-graph/src/document_graph/document.cpp
                 ../document-graph/src/document_graph/content_wrapper.cpp

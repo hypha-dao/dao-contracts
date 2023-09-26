@@ -35,6 +35,9 @@ using upvote_election::UpVoteVoteData;
 
 namespace upvote_common = upvote_election::common;
 
+// This creates rounds based on the election data - 
+// We can create a maximum number of rounds from this?
+// 
 static std::map<int64_t, ElectionRoundData> getRounds(ContentGroups& electionConfig, time_point& endDate) 
 {    
     auto cw = ContentWrapper(electionConfig);
@@ -47,15 +50,15 @@ static std::map<int64_t, ElectionRoundData> getRounds(ContentGroups& electionCon
             
             ElectionRoundData data;
 
-            data.passing_count = cw.getOrFail(
-                i,
-                upvote_common::items::PASSING_AMOUNT
-            ).second->getAs<int64_t>();
+            // data.passing_count = cw.getOrFail(
+            //     i,
+            //     upvote_common::items::PASSING_AMOUNT
+            // ).second->getAs<int64_t>();
 
-            EOS_CHECK(
-                data.passing_count >= 1,
-                "Passing count must be greater or equal to 1"
-            )
+            // EOS_CHECK(
+            //     data.passing_count >= 1,
+            //     "Passing count must be greater or equal to 1"
+            // )
 
             data.type = cw.getOrFail(
                 i,
@@ -108,13 +111,15 @@ static void createRounds(dao& dao, UpvoteElection& election, std::map<int64_t, E
 
     for (auto& [roundId, roundData] : rounds) {
         
+        // TODO: What is this?? 
         roundData.delegate_power = getDelegatePower(roundId);
 
         roundData.start_date = startDate;
 
-        startDate += eosio::seconds(roundData.duration);
+        // Nik: Let's not modify start date?
+        //startDate += eosio::seconds(roundData.duration);
 
-        roundData.end_date = startDate;
+        roundData.end_date = startDate + eosio::seconds(roundData.duration);
 
         if (roundData.type == upvote_common::round_types::HEAD) {
             EOS_CHECK(
@@ -139,10 +144,11 @@ static void createRounds(dao& dao, UpvoteElection& election, std::map<int64_t, E
 
         if (prevRound) {
             
-            EOS_CHECK(
-                prevRound->getPassingCount() > electionRound->getPassingCount(),
-                "Passing count has to be decremental"
-            );
+            // Nik: Not sure what this check is for - we're not using getPassingCount anymore anyway
+            // EOS_CHECK(
+            //     prevRound->getPassingCount() > electionRound->getPassingCount(),
+            //     "Passing count has to be decremental"
+            // );
 
             prevRound->setNextRound(electionRound.get());
         }
@@ -782,85 +788,8 @@ void dao::castupvote(uint64_t round_id, uint64_t group_id, name voter, uint64_t 
         "Only members of the group can be voted for."
     );
 
-    // group.vote();
+    group.vote(memberId, voted_id);
 
-    // EOS_CHECK(
-    //     badges::hasVoterBadge(*this, election.getDaoID(), memberId) ||
-    //     //Just enable voting to candidates if the round is not the first one
-    //     (currentRound.isCandidate(memberId) && currentRound.getDelegatePower() > 0),
-    //     "Only registered voters are allowed to perform this action"
-    // );
-
-    // auto votedEdge = Edge::getOrNew(get_self(), get_self(), round_id, memberId, eosio::name("voted"));
-
-    // if (votedEdge.empty()) {
-    //     votedEdge.erase();
-    //     return;
-    // }
-
-    // if (auto voteGroup = VoteGroup::getFromRound(*this, round_id, memberId)) {
-    //     voteGroup->castVotes(round, std::move(voted));
-    // }
-    // else {
-    //     VoteGroup group(*this, memberId, VoteGroupData{
-    //         .round_id = static_cast<int64_t>(round_id)
-    //     });
-
-    //     group.castVotes(round, std::move(voted));
-    // }
-}
-
-void dao::castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> voted)
-{
-    eosio::require_auth(voter);
-
-    //TODO: Cancel existing Delegate badges
-
-    //Verify round_id is the same as the current round
-    ElectionRound round(*this, round_id);
-
-    UpvoteElection election = round.getElection();
-
-    //Current round has to be defined
-    auto currentRound = election.getCurrentRound();
-
-    EOS_CHECK(
-        currentRound.getId() == round_id,
-        "You can only vote on the current round"
-    );
-
-    auto memberId = getMemberID(voter);
-
-    // TODO: We can probably change this check - we get the 
-    // auto groupId = getGroup(voter)
-    // 
-
-    // EOS_CHECK(
-    //     badges::hasVoterBadge(*this, election.getDaoID(), memberId) ||
-    //     //Just enable voting to candidates if the round is not the first one
-    //     (currentRound.isCandidate(memberId) && currentRound.getDelegatePower() > 0),
-    //     "Only registered voters are allowed to perform this action"
-    // );
-
-    auto votedEdge = Edge::getOrNew(get_self(), get_self(), round_id, memberId, eosio::name("voted"));
-
-    if (voted.empty()) {
-        votedEdge.erase();
-        return;
-    }
-
-    // TODO: remove or replace with our voting
-
-    // if (auto voteGroup = VoteGroup::getFromRound(*this, round_id, memberId)) {
-    //     voteGroup->castVotes(round, std::move(voted));
-    // }
-    // else {
-    //     VoteGroup group(*this, memberId, VoteGroupData{
-    //         .round_id = static_cast<int64_t>(round_id)
-    //     });
-
-    //     group.castVotes(round, std::move(voted));
-    // }
 }
 
 
@@ -921,7 +850,7 @@ void dao::createupvelc(uint64_t dao_id, ContentGroups& election_config)
     time_point endDate = startDate;
 
     //Will calculate also what is the endDate for the upvote election
-    auto rounds = getRounds(election_config, endDate);
+    auto roundsMap = getRounds(election_config, endDate);
 
     UpvoteElection upvoteElection(*this, dao_id, UpvoteElectionData{
         .start_date = startDate,
@@ -930,7 +859,7 @@ void dao::createupvelc(uint64_t dao_id, ContentGroups& election_config)
         .duration = duration
     });
 
-    createRounds(*this, upvoteElection, rounds, startDate, endDate);
+    createRounds(*this, upvoteElection, roundsMap, startDate, endDate);
 
     scheduleElectionUpdate(*this, upvoteElection, startDate);
 }

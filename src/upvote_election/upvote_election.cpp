@@ -116,10 +116,11 @@ std::vector<ElectionRound> UpvoteElection::getRounds() const
         rounds.emplace_back(getDao(), next->getId());
     }
 
-    EOS_CHECK(
-        rounds.size() >= 2,
-        "There has to be at least 2 election rounds"
-    );
+    // a getter should never throw?!
+    // EOS_CHECK(
+    //     rounds.size() >= 2,
+    //     "There has to be at least 2 election rounds"
+    // );
 
     return rounds;
 }
