@@ -18,7 +18,6 @@ public:
     VoteGroup(dao& dao, uint64_t id);
     VoteGroup(dao& dao, uint64_t memberId, Data data);
 
-    void castVotes(ElectionRound& round, std::vector<uint64_t> members);
     uint64_t getOwner();
 
     static std::optional<VoteGroup> getFromRound(dao& dao, uint64_t roundId, uint64_t memberId);

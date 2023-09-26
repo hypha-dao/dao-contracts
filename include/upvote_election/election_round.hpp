@@ -33,9 +33,8 @@ public:
 
     void setNextRound(ElectionRound* nextRound) const;
     std::unique_ptr<ElectionRound> getNextRound() const;
-    int64_t getAccountPower(uint64_t accountId);
-    bool isCandidate(uint64_t accountId);
-    void addCandidate(uint64_t accountId);
+    
+    void addElectionGroup(std::vector<uint64_t> accound_ids);
     
 private:
     virtual const std::string buildNodeLabel(ContentGroups &content) override

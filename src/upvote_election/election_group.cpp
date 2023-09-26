@@ -18,14 +18,10 @@ ElectionGroup::ElectionGroup(dao& dao, uint64_t id)
 {}
 
 ElectionGroup::ElectionGroup(dao& dao, uint64_t round_id, std::vector<uint64_t> member_ids, Data data)
-
-//ElectionGroup::ElectionGroup(dao& dao, uint64_t id, Data data)
     : TypedDocument(dao, types::ELECTION_GROUP)
 {
 
     auto cgs = convert(std::move(data));
-
-    //data.member_count = member_ids.size();
 
     initializeDocument(dao, cgs);
 

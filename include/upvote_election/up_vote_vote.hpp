@@ -25,11 +25,8 @@ public:
     UpVoteVote(dao& dao, uint64_t id);
     UpVoteVote(dao& dao, uint64_t group_id, Data data);
 
-    // void castVotes(ElectionGroup& group, uint64_t voted); //??
-
     uint64_t getElectionGroup();
     
-    // static std::optional<VoteGroup> getFromRound(dao& dao, uint64_t roundId, uint64_t memberId);
 private:
     virtual const std::string buildNodeLabel(ContentGroups &content) override
     {

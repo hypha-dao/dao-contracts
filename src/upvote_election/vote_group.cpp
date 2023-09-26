@@ -74,63 +74,63 @@ std::optional<VoteGroup> VoteGroup::getFromRound(dao& dao, uint64_t roundId, uin
 
 // We can change the meaning of this
 
-void VoteGroup::castVotes(ElectionRound& round, std::vector<uint64_t> members)
-{
-    auto roundId = getRoundID();
-    auto power = round.getAccountPower(getOwner());
+// void VoteGroup::castVotes(ElectionRound& round, std::vector<uint64_t> members)
+// {
+//     auto roundId = getRoundID();
+//     auto power = round.getAccountPower(getOwner());
 
-    EOS_CHECK(
-        roundId == round.getId(),
-        "Missmatch between stored round id and round parameter"
-    );
+//     EOS_CHECK(
+//         roundId == round.getId(),
+//         "Missmatch between stored round id and round parameter"
+//     );
 
-    auto contract = getDao().get_self();
+//     auto contract = getDao().get_self();
 
-    //We need to first erase previous votes if any
-    // Because someone might change their vote
-    auto prevVotes = getDao().getGraph().getEdgesFrom(getId(), links::VOTE);
+//     //We need to first erase previous votes if any
+//     // Because someone might change their vote
+//     auto prevVotes = getDao().getGraph().getEdgesFrom(getId(), links::VOTE);
 
-    dao::election_vote_table elctn_t(contract, roundId);
+//     dao::election_vote_table elctn_t(contract, roundId);
 
-    for (auto& edge : prevVotes) {
-        auto memId = edge.getToNode();
-        auto voteEntry = elctn_t.get(memId, "Member entry doesn't exists");
-        elctn_t.modify(voteEntry, eosio::same_payer, [&](dao::ElectionVote& vote){
-            vote.total_amount -= power;
-        });
-        edge.erase();
-    }
+//     for (auto& edge : prevVotes) {
+//         auto memId = edge.getToNode();
+//         auto voteEntry = elctn_t.get(memId, "Member entry doesn't exists");
+//         elctn_t.modify(voteEntry, eosio::same_payer, [&](dao::ElectionVote& vote){
+//             vote.total_amount -= power;
+//         });
+//         edge.erase();
+//     }
 
-    for (auto memId : members) {
-        //Verify member is a candidate
-        EOS_CHECK(
-            round.isCandidate(memId),
-            "Member must be a candidate to be voted"
-        );
+//     for (auto memId : members) {
+//         //Verify member is a candidate
+//         EOS_CHECK(
+//             round.isCandidate(memId),
+//             "Member must be a candidate to be voted"
+//         );
 
-        auto voteIt = elctn_t.find(memId);
+//         auto voteIt = elctn_t.find(memId);
 
-        if (voteIt != elctn_t.end()) {
-            elctn_t.modify(voteIt, eosio::same_payer, [&](dao::ElectionVote& vote){
-                vote.total_amount += power;
-            });
-        }
-        else {
-            elctn_t.emplace(contract, [&](dao::ElectionVote& vote){
-                vote.total_amount += power;
-                vote.account_id = memId;
-            });
-        }
+//         if (voteIt != elctn_t.end()) {
+//             elctn_t.modify(voteIt, eosio::same_payer, [&](dao::ElectionVote& vote){
+//                 vote.total_amount += power;
+//             });
+//         }
+//         else {
+//             elctn_t.emplace(contract, [&](dao::ElectionVote& vote){
+//                 vote.total_amount += power;
+//                 vote.account_id = memId;
+//             });
+//         }
 
-        Edge(
-            contract,
-            contract,
-            getId(),
-            memId,
-            links::VOTE
-        );
-    }
-}
+//         Edge(
+//             contract,
+//             contract,
+//             getId(),
+//             memId,
+//             links::VOTE
+//         );
+//     }
+// }
 
 }
 

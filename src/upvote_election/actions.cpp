@@ -589,7 +589,6 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
             election.setCurrentRound(&startRound);
 
             //Setup all candidates
-            // TODO: randomize this list
             auto delegates = getGraph().getEdgesFrom(daoId, badges::common::links::DELEGATE);
 
             std::vector<uint64_t> delegateIds;
@@ -597,18 +596,25 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
             
             for (auto& delegate : delegates) {
                 delegateIds.push_back(delegate.getToNode());
-                // TODO
-                // 
-                // instead of adding delegates to the round, we add them to groups
-                // and we add the groups to the round
-                // A round and a group is the same data structure
-                // only the round has groups, and the group has members.
-                // 
-                // 
-                startRound.addCandidate(delegate.getToNode());
             }
 
-            setupCandidates(startRound.getId(), delegateIds);
+            uint64_t seed = 0; // TODO: Get seed from table
+
+            auto randomIds = shuffleVector(delegateIds, seed);
+            
+            auto groups = createGroups(randomIds);
+
+            // we could add this to the round interface - to add groups
+            for (auto& groupMembers : groups) {
+                startRound.addElectionGroup(groupMembers);
+            }
+
+
+
+
+
+            // Analuze what this is and if we need it
+            // setupCandidates(startRound.getId(), delegateIds);
 
             scheduleElectionUpdate(*this, election, startRound.getEndDate());
         }
@@ -639,7 +645,8 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
 
                 // round.addCandidate adds candidates
                 for (auto& winner : winners) {
-                    nextRound->addCandidate(winner);
+                    // TODO: Change all this - Nik
+                    //nextRound->addCandidate(winner);
                 }
 
                 scheduleElectionUpdate(*this, election, nextRound->getEndDate());
@@ -828,12 +835,12 @@ void dao::castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> vot
     // auto groupId = getGroup(voter)
     // 
 
-    EOS_CHECK(
-        badges::hasVoterBadge(*this, election.getDaoID(), memberId) ||
-        //Just enable voting to candidates if the round is not the first one
-        (currentRound.isCandidate(memberId) && currentRound.getDelegatePower() > 0),
-        "Only registered voters are allowed to perform this action"
-    );
+    // EOS_CHECK(
+    //     badges::hasVoterBadge(*this, election.getDaoID(), memberId) ||
+    //     //Just enable voting to candidates if the round is not the first one
+    //     (currentRound.isCandidate(memberId) && currentRound.getDelegatePower() > 0),
+    //     "Only registered voters are allowed to perform this action"
+    // );
 
     auto votedEdge = Edge::getOrNew(get_self(), get_self(), round_id, memberId, eosio::name("voted"));
 
@@ -842,16 +849,18 @@ void dao::castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> vot
         return;
     }
 
-    if (auto voteGroup = VoteGroup::getFromRound(*this, round_id, memberId)) {
-        voteGroup->castVotes(round, std::move(voted));
-    }
-    else {
-        VoteGroup group(*this, memberId, VoteGroupData{
-            .round_id = static_cast<int64_t>(round_id)
-        });
+    // TODO: remove or replace with our voting
 
-        group.castVotes(round, std::move(voted));
-    }
+    // if (auto voteGroup = VoteGroup::getFromRound(*this, round_id, memberId)) {
+    //     voteGroup->castVotes(round, std::move(voted));
+    // }
+    // else {
+    //     VoteGroup group(*this, memberId, VoteGroupData{
+    //         .round_id = static_cast<int64_t>(round_id)
+    //     });
+
+    //     group.castVotes(round, std::move(voted));
+    // }
 }
 
 
