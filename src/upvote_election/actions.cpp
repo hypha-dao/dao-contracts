@@ -36,6 +36,22 @@ using upvote_election::UpVoteVoteData;
 namespace upvote_common = upvote_election::common;
 
 
+// we capture a checksum256 seed, then convert it to a uint32_t to use for our rng
+// we always store the last seed in the election document, so we can keep using it
+// our rng changes the seed on every operation
+static uint32_t checksum256_to_uint32(const eosio::checksum256& checksum) {
+    // Hash the data using SHA-256
+    auto hash = eosio::sha256(reinterpret_cast<char*>(checksum.extract_as_byte_array().data()), 32);
+
+    // Extract the first 4 bytes and convert to uint32_t
+    uint32_t result = 0;
+    for (int i = 0; i < 4; ++i) {
+        result = (result << 8) | hash.extract_as_byte_array()[i];
+    }
+
+    return result;
+}
+
    static uint32_t int_pow(uint32_t base, uint32_t exponent)
    {
       uint32_t result = 1;
