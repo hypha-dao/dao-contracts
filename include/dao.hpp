@@ -506,7 +506,7 @@ namespace pricing {
    private:
 
       std::vector<uint64_t> shuffleVector(std::vector<uint64_t>& ids, uint32_t seed);
-      std::vector<std::vector<uint64_t>> createGroups(const std::vector<uint64_t>& ids);
+      std::vector<std::vector<uint64_t>> createGroups(const std::vector<uint64_t>& ids, int minGroupSize);
 
       void onRewardTransfer(const name& from, const name& to, const asset& amount);
 

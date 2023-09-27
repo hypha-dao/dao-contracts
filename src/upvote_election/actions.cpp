@@ -35,6 +35,92 @@ using upvote_election::UpVoteVoteData;
 
 namespace upvote_common = upvote_election::common;
 
+
+   static uint32_t int_pow(uint32_t base, uint32_t exponent)
+   {
+      uint32_t result = 1;
+      for (uint32_t i = 0; i < exponent; ++i)
+      {
+         result *= base;
+      }
+      return result;
+   }
+
+    // From Eden Code
+   static uint32_t int_root(uint32_t x, uint32_t y)
+   {
+      // find z, such that $z^y \le x < (z+1)^y$
+      //
+      // hard coded limits based on the election constraints
+      uint32_t low = 0, high = 12;
+      while (high - low > 1)
+      {
+         uint32_t mid = (high + low) / 2;
+         if (x < int_pow(mid, y))
+         {
+            high = mid;
+         }
+         else
+         {
+            low = mid;
+         }
+      }
+      return low;
+   }
+
+   static std::size_t count_rounds(uint32_t num_members)
+   {
+      std::size_t result = 1;
+      for (uint32_t i = 12; i <= num_members; i *= 4)
+      {
+         ++result;
+      }
+      return result;
+   }
+
+   static std::vector<uint32_t> get_group_sizes(uint32_t num_members, std::size_t num_rounds)
+   {
+      auto basic_group_size = int_root(num_members, num_rounds);
+      if (basic_group_size == 3)
+      {
+         std::vector<uint32_t> result(num_rounds, 4);
+         // result.front() is always 4, but for some reason, that causes clang to miscompile this.
+         // TODO: look for UB...
+         auto large_rounds =
+             static_cast<std::size_t>(std::log(static_cast<double>(num_members) /
+                                               int_pow(result.front(), num_rounds - 1) / 3) /
+                                      std::log(1.25));
+         result.back() = 3;
+         eosio::check(large_rounds <= 1,
+                      "More that one large round is unexpected when the final group size is 3.");
+         for (std::size_t i = result.size() - large_rounds - 1; i < result.size() - 1; ++i)
+         {
+            result[i] = 5;
+         }
+         return result;
+      }
+      else if (basic_group_size >= 6)
+      {
+         // 5,6,...,6,N
+         std::vector<uint32_t> result(num_rounds, 6);
+         result.front() = 5;
+         auto divisor = int_pow(6, num_rounds - 1);
+         result.back() = (num_members + divisor - 1) / divisor;
+         return result;
+      }
+      else
+      {
+         // \lfloor \log_{(G+1)/G}\frac{N}{G^R} \rfloor
+         auto large_rounds = static_cast<std::size_t>(
+             std::log(static_cast<double>(num_members) / int_pow(basic_group_size, num_rounds)) /
+             std::log((basic_group_size + 1.0) / basic_group_size));
+         // x,x,x,x,x,x
+         std::vector<uint32_t> result(num_rounds, basic_group_size + 1);
+         std::fill_n(result.begin(), num_rounds - large_rounds, basic_group_size);
+         return result;
+      }
+   }
+
 // This creates rounds based on the election data - 
 // We can create a maximum number of rounds from this?
 // 
@@ -411,6 +497,8 @@ uint64_t sha256ToUint64(const eosio::checksum256& sha256Hash) {
 /// @brief Test random group creation
 /// @param ids 
 void dao::testgroupr1(uint32_t num_members, uint32_t seed) {
+
+    
     require_auth(get_self());
 
     std::vector<uint64_t> ids(num_members); // Initialize a vector with 100 elements
@@ -420,6 +508,23 @@ void dao::testgroupr1(uint32_t num_members, uint32_t seed) {
         ids[i] = static_cast<uint64_t>(i);
     }
     testgrouprng(ids, seed);
+    
+    // for (uint32_t n = 0; n < num_members; ++n) {
+    //     auto rounds = count_rounds(n);
+
+    //     std::vector<uint32_t> group_sizes = get_group_sizes(n, rounds);
+        
+    //     eosio::print(" N: ", n, " rounds: ", rounds, " g_sizes: ");
+
+    //     for (uint32_t s : group_sizes) {
+    //         eosio::print(s, " ");
+    //     }
+        
+    //     eosio::print(" ::: ");
+
+
+    // }
+
 
 }
 
@@ -427,28 +532,37 @@ void dao::testgrouprng(std::vector<uint64_t> ids, uint32_t seed) {
     
     require_auth(get_self());
     
-    // eosio::print(" ids: ");
-    // for (const uint64_t& element : ids) {
-    //     eosio::print(element, " ");
-    // }
+    eosio::print(" ids: ");
+    for (const uint64_t& element : ids) {
+        eosio::print(element, " ");
+    }
 
     auto randomIds = shuffleVector(ids, seed);
 
-    // eosio::print(" random ids: ");
-    // for (const uint64_t& element : randomIds) {
-    //     eosio::print(element, " ");
-    // }
+    eosio::print(" random ids: ");
+    for (const uint64_t& element : randomIds) {
+        eosio::print(element, " ");
+    }
 
-    auto groups = createGroups(randomIds);
+    //// Eden defines min group size as 4, but depending on 
+    //// the numbers, Edenia code does something slightly different
+    // int minGroupsSize = 4;
 
-    // eosio::print(" groups: ");
-    // for (uint32_t i = 0; i < groups.size(); ++i) {
-    //     auto group = groups[i];
-    //     eosio::print("group: ", i, "(", group.size(), "): ");
-    //     for (const uint64_t& element : group) {
-    //         eosio::print(element, " ");
-    //     }
-    // }
+    //// use Edenia code to figure out group size
+    auto n = ids.size();
+    auto rounds = count_rounds(n);
+    std::vector<uint32_t> group_sizes = get_group_sizes(n, rounds);
+    int minGroupsSize = group_sizes[0];
+    auto groups = createGroups(randomIds, minGroupsSize);
+
+    eosio::print(" groups min size: ", minGroupsSize);
+    for (uint32_t i = 0; i < groups.size(); ++i) {
+        auto group = groups[i];
+        eosio::print(" group: ", i, "(", group.size(), "): ");
+        for (const uint64_t& element : group) {
+            eosio::print(element, " ");
+        }
+    }
 
 }
 
@@ -493,16 +607,58 @@ std::vector<uint64_t> dao::shuffleVector(std::vector<uint64_t>& ids, uint32_t se
 
 }
 
-std::vector<std::vector<uint64_t>> dao::createGroups(const std::vector<uint64_t>& ids) {
+
+// 36 / 6 = 6 => 1 round, 1 HD round
+size_t numrounds(size_t num_delegates) {
+    size_t rounds = 1;
+    if (num_delegates > 12) {
+        size_t numGroups = std::ceil(static_cast<double>(num_delegates) / 6);
+
+    }
+    return rounds;
+}
+
+// From EDEN contracts - decides group max size by num groups and num participants
+//    struct election_round_config
+//    {
+//       uint16_t num_participants;
+//       uint16_t num_groups;
+//       constexpr uint8_t group_max_size() const
+//       {
+//          return (num_participants + num_groups - 1) / num_groups;
+//       }
+//       constexpr uint16_t num_short_groups() const
+//       {
+//          return group_max_size() * num_groups - num_participants;
+//       }
+
+//       constexpr uint32_t num_large_groups() const { return num_groups - num_short_groups(); }
+//       constexpr uint32_t group_min_size() const { return group_max_size() - 1; }
+//       uint32_t member_index_to_group(uint32_t idx) const;
+//       uint32_t group_to_first_member_index(uint32_t idx) const;
+//       // invariants:
+//       // num_groups * group_max_size - num_short_groups = num_participants
+//       // group_max_size <= 12
+//       // num_short_groups < num_groups
+//    };
+
+
+   // Requirements:
+   // - Except for the last round, the group size shall be in [4,6]
+   // - The last round has a minimum group size of 3
+   // - The maximum group size shall be as small as possible
+   // - The group sizes within a round shall have a maximum difference of 1
+std::vector<std::vector<uint64_t>> dao::createGroups(const std::vector<uint64_t>& ids, int minGroupSize) {
     std::vector<std::vector<uint64_t>> groups;
 
-    // Calculate the number of groups needed
-    int numGroups = std::ceil(static_cast<double>(ids.size()) / 6);
+    // Calculate the number of groups needed - group size fills up to 6 max, except when there's
+    // only 1 group, which goes up to 11
+    int numGroups = ids.size() / minGroupSize;
 
-    // Create the groups with an initial capacity of 6
+    // Create the groups with an initial capacity of 4
     for (int i = 0; i < numGroups; ++i) {
         groups.push_back(std::vector<uint64_t>());
-        groups.back().reserve(6);
+        groups.back().reserve(4);
     }
 
     // Initialize group iterators
@@ -517,7 +673,7 @@ std::vector<std::vector<uint64_t>> dao::createGroups(const std::vector<uint64_t>
         // Move to the next group (take turns)
         ++currentGroup;
 
-        // Wrap back to the beginning of the groups if needed
+        // Wrap back to the beginning of the groups
         if (currentGroup == endGroup) {
             currentGroup = groups.begin();
         }
@@ -541,16 +697,16 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
 
     auto daoId = election.getDaoID();
 
-    auto setupCandidates = [&](uint64_t roundId, const std::vector<uint64_t>& members){
-        election_vote_table elctn_t(get_self(), roundId);
+    // auto setupCandidates = [&](uint64_t roundId, const std::vector<uint64_t>& members){
+    //     election_vote_table elctn_t(get_self(), roundId);
 
-        for (auto& memId : members) {
-            elctn_t.emplace(get_self(), [memId](ElectionVote& vote) {
-                vote.total_amount = 0;
-                vote.account_id = memId;
-            });
-        }
-    };
+    //     for (auto& memId : members) {
+    //         elctn_t.emplace(get_self(), [memId](ElectionVote& vote) {
+    //             vote.total_amount = 0;
+    //             vote.account_id = memId;
+    //         });
+    //     }
+    // };
 
     if (status == upvote_common::upvote_status::UPCOMING) {
         auto start = election.getStartDate();
@@ -582,15 +738,11 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
 
             auto randomIds = shuffleVector(delegateIds, seed);
             
-            auto groups = createGroups(randomIds);
+            auto groups = createGroups(randomIds, 4); // TODO: CHANGE THIS TO EDENIA CODE
 
             for (auto& groupMembers : groups) {
                 startRound.addElectionGroup(groupMembers);
             }
-
-
-
-
 
             // analyze what this is and if we need it
             // setupCandidates(startRound.getId(), delegateIds);
@@ -620,7 +772,7 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
 
                 election.setCurrentRound(nextRound.get());
 
-                setupCandidates(nextRound->getId(), winners);
+                // setupCandidates(nextRound->getId(), winners);
 
                 // round.addCandidate adds candidates
                 for (auto& winner : winners) {
