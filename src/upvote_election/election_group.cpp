@@ -72,10 +72,10 @@ void ElectionGroup::vote(int64_t from, int64_t to)
 
     // iterate over vote edges - calculate who has the most votes and find the "from" edge
     std::unordered_map<int64_t, int> voteCount;
+    std::unordered_map<int64_t, bool> selfVotes;
 
     bool existingVote = false;
-    bool hasWinner = false;
-    int64_t winner = 0;
+    int64_t majorityWinner = -1;
 
     for (auto& edge : voteEdges) {
         UpVoteVote upvote(getDao(), edge.getToNode());
@@ -92,19 +92,16 @@ void ElectionGroup::vote(int64_t from, int64_t to)
             voted_id = to;
         }
 
-
-        // Count all votes
-        // if (voteCount.find(voted_id) == voteCount.end()) {
-        //     voteCount[voted_id] = 1;
-        // } else {
-        //     voteCount[voted_id] = voteCount[voted_id] + 1;
-        // }
         voteCount[voted_id]++;
 
         // check for winner
         if (voteCount[voted_id] >= votesToWin) {
-            hasWinner = true;
-            winner = voted_id;
+            majorityWinner = voted_id;
+        }
+        
+        // keep track of self votes
+        if (voted_id == voter_id) {
+            selfVotes[voted_id] = true;
         }
     }
 
@@ -115,25 +112,16 @@ void ElectionGroup::vote(int64_t from, int64_t to)
             .voted_id = to
         });
 
-        // Count
-        // if (voteCount.find(to) == voteCount.end()) {
-        //     voteCount[to] = 1;
-        // } else {
-        //     voteCount[to] = voteCount[to] + 1;
-        // }
         voteCount[to]++;
 
         // check for winner
         if (voteCount[to] >= votesToWin) {
-            hasWinner = true;
-            winner = to;
+            majorityWinner = to;
         }
-
-        
     }
-
-    if (hasWinner) {
-        setWinner(winner);
+    
+    if (majorityWinner > 0 && selfVotes[majorityWinner]) {
+        setWinner(majorityWinner);
         update();
     }
     
