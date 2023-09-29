@@ -117,19 +117,49 @@ namespace hypha::upvote_election {
             rounds.emplace_back(getDao(), next->getId());
         }
 
-        // a getter should never throw?!
-        // EOS_CHECK(
-        //     rounds.size() >= 2,
-        //     "There has to be at least 2 election rounds"
-        // );
-
         return rounds;
     }
 
+    ElectionRound UpvoteElection::addRound() 
+    {
+        ElectionRoundData roundData;
+        roundData.type = round_types::DELEGATE;
+        roundData.round_duration = getRoundDuration();
+        eosio::time_point startDate;
+        std::unique_ptr<ElectionRound> currentRound;
+        
+        auto [exists, currentRoundEdge] = Edge::getIfExists(getDao().get_self(), getId(), links::CURRENT_ROUND);
+        if (!exists) {
+            startDate = getStartDate();
+        } else {
+            currentRound = std::make_unique<ElectionRound>(
+                getDao(),
+                currentRoundEdge.getToNode()
+            );
+            startDate = currentRound->getEndDate();
+            //currentRound = std::move(current);
+        }
+        roundData.start_date = startDate;
+        roundData.end_date = startDate + eosio::seconds(roundData.round_duration);
+        auto round = std::make_unique<ElectionRound>(
+            getDao(),
+            getId(),
+            roundData
+        );
+
+        setEndDate(roundData.end_date);
+
+        if (!exists) {
+            setStartRound(round.get());
+        } else {
+            currentRound->setNextRound(round.get());
+        }
+    }
+
+    
+
     void UpvoteElection::setStartRound(ElectionRound* startRound) const
     {
-        //TODO: Check if there is no start round already
-
         Edge(
             getDao().get_self(),
             getDao().get_self(),
@@ -195,15 +225,7 @@ namespace hypha::upvote_election {
     {
         return ElectionRound(
             getDao(),
-            Edge::get(getDao().get_self(), getId(), links::CURRENT_ROUND).getToNode()
-        );
-    }
-
-    ElectionRound UpvoteElection::getChiefRound() const
-    {
-        return ElectionRound(
-            getDao(),
-            Edge::get(getDao().get_self(), getId(), links::CHIEF_ROUND).getToNode()
+            Edge::get(getDao().get_self(), getId(), links::ELECTION_ROUND).getToNode()
         );
     }
 

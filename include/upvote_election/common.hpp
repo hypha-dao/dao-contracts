@@ -5,6 +5,7 @@
 namespace hypha::upvote_election::common {
 
 namespace round_types {
+    // TODO: We can remove round types - not needed
     inline constexpr auto DELEGATE = "delegate";
     inline constexpr auto CHIEF = "chief";
     inline constexpr auto HEAD = "head";
@@ -39,10 +40,8 @@ namespace links {
     inline constexpr auto ELECTION = eosio::name("election");
     inline constexpr auto START_ROUND = eosio::name("startround");
     inline constexpr auto CURRENT_ROUND = eosio::name("currentround");
-    inline constexpr auto CHIEF_ROUND = eosio::name("chiefround");
+    inline constexpr auto ELECTION_ROUND = eosio::name("ue.round");
     inline constexpr auto ELECTION_ROUND_MEMBER = eosio::name("ue.rd.member");
-    inline constexpr auto HEAD_ROUND = eosio::name("headround");
-    inline constexpr auto ROUND = eosio::name("round");
     inline constexpr auto ELECTION_GROUP_LINK = eosio::name("ue.group.lnk");
     inline constexpr auto NEXT_ROUND = eosio::name("nextround");
     inline constexpr auto ROUND_CANDIDATE = eosio::name("candidate");
@@ -59,7 +58,6 @@ namespace items {
     inline constexpr auto UPVOTE_STARTDATE = "upvote_start_date_time";
     inline constexpr auto UPVOTE_DURATION = "upvote_duration";
     inline constexpr auto ROUND_DURATION = "duration";
-    // inline constexpr auto PASSING_AMOUNT = "passing_count"; // TODO: remove
     inline constexpr auto ROUND_ID = "round_id";
     inline constexpr auto ROUND_TYPE = "type";
     inline constexpr auto WINNER = "winner";

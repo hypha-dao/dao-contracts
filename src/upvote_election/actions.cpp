@@ -1,7 +1,6 @@
 #include <dao.hpp>
 #include "upvote_election/upvote_election.hpp"
 #include "upvote_election/election_round.hpp"
-#include "upvote_election/vote_group.hpp"
 #include "upvote_election/election_group.hpp"
 #include "upvote_election/up_vote_vote.hpp"
 
@@ -28,8 +27,6 @@ using upvote_election::ElectionRound;
 using upvote_election::ElectionRoundData;
 using upvote_election::ElectionGroup;
 using upvote_election::ElectionGroupData;
-using upvote_election::VoteGroup;
-using upvote_election::VoteGroupData;
 using upvote_election::UpVoteVote;
 using upvote_election::UpVoteVoteData;
 
@@ -139,7 +136,8 @@ static uint32_t checksum256_to_uint32(const eosio::checksum256& checksum) {
 
 // This creates rounds based on the election data - 
 // We can create a maximum number of rounds from this?
-// 
+// Or else just create 1 round at a time.
+// parsing extermal document
 static std::map<int64_t, ElectionRoundData> getRounds(ContentGroups& electionConfig, time_point& endDate) 
 {    
     auto cw = ContentWrapper(electionConfig);
@@ -151,16 +149,6 @@ static std::map<int64_t, ElectionRoundData> getRounds(ContentGroups& electionCon
         if (cw.getGroupLabel(group) == upvote_common::groups::ROUND) {
             
             ElectionRoundData data;
-
-            // data.passing_count = cw.getOrFail(
-            //     i,
-            //     upvote_common::items::PASSING_AMOUNT
-            // ).second->getAs<int64_t>();
-
-            // EOS_CHECK(
-            //     data.passing_count >= 1,
-            //     "Passing count must be greater or equal to 1"
-            // )
 
             data.type = cw.getOrFail(
                 i,
@@ -190,7 +178,7 @@ static std::map<int64_t, ElectionRoundData> getRounds(ContentGroups& electionCon
                 upvote_common::items::ROUND_DURATION
             ).second->getAs<int64_t>();
 
-            data.duration = duration;
+            data.round_duration = duration;
 
             endDate += eosio::seconds(duration);
 
@@ -205,6 +193,9 @@ static constexpr int64_t getDelegatePower(int64_t roundId) {
     return roundId * 1 << roundId;
 }
 
+// move out this code - only create a start round
+// then add more rounds as needed
+// Analyze election round data and see what we need - start and end date for sure
 static void createRounds(dao& dao, UpvoteElection& election, std::map<int64_t, ElectionRoundData>& rounds, time_point startDate, time_point endDate) 
 {
     std::unique_ptr<ElectionRound> prevRound;
@@ -221,7 +212,7 @@ static void createRounds(dao& dao, UpvoteElection& election, std::map<int64_t, E
         // Nik: Let's not modify start date?
         //startDate += eosio::seconds(roundData.duration);
 
-        roundData.end_date = startDate + eosio::seconds(roundData.duration);
+        roundData.end_date = startDate + eosio::seconds(roundData.round_duration);
 
         // if (roundData.type == upvote_common::round_types::HEAD) {
         //     EOS_CHECK(
@@ -810,7 +801,7 @@ void dao::updateupvelc(uint64_t election_id, bool reschedule)
                 
                 if (currentRound.getType() == upvote_common::round_types::HEAD) {
                     //Get previous round for chief delegates
-                    auto chiefs = election.getChiefRound().getWinners();
+                    auto chiefs = election.getCurrentRound().getWinners();
 
                     //Remove head delegate
                     chiefs.erase(
@@ -857,6 +848,8 @@ void dao::cancelupvelc(uint64_t election_id)
 
     auto status = election.getStatus();
 
+    // TODO
+    // canceling an ongoing election - debug feature?
     bool isOngoing = status == upvote_common::upvote_status::ONGOING;
 
     EOS_CHECK(
@@ -866,7 +859,7 @@ void dao::cancelupvelc(uint64_t election_id)
     );
 
     if (isOngoing) {
-        election.getCurrentRound().erase();
+        /// TODO get all rounds, then delete them all
         Edge::get(get_self(), daoId, election.getId(), upvote_common::links::ONGOING_ELECTION).erase();
     } 
     else {
@@ -877,28 +870,6 @@ void dao::cancelupvelc(uint64_t election_id)
 
     election.update();
 }
-
-// 
-// void VoteGroup::castvote(ElectionRound& round, VoteGroup& group, name voter, uint64_t member) {
-//     eosio::require_auth(voter);
-
-//     //Verify round_id is the same as the current round
-//     ElectionRound round(*this, round_id);
-
-//     UpvoteElection election = round.getElection();
-
-//     //Current round has to be defined
-//     auto currentRound = election.getCurrentRound();
-
-//     EOS_CHECK(
-//         currentRound.getId() == round_id,
-//         "You can only vote on the current round"
-//     );
-
-//     /// 
-//     /// Get ElectionVoteGroup document for this memeber and this round
-
-// }
 
 void dao::castupvote(uint64_t round_id, uint64_t group_id, name voter, uint64_t voted_id)
 {
@@ -942,6 +913,9 @@ election_config: [
         { "label": "upvote_start_date_time", "value": ["timepoint", "..."] },
         //How much will chief/head Delegates hold their badges after upvote is finished
         { "label": "upvote_duration", "value": ["int64", 7776000] },
+        // Round Duration in seconds
+        { "label": "round_duration", "value": ["int64", 3600] },
+
     ],
     [
         { "label":, "content_group_label", "value": ["string", "round"] },
@@ -952,7 +926,6 @@ election_config: [
         //Number that indicates the order of this round, should start at 0 and increment by 1 for each round
         { "label": "round_id", "value": ["int64", 0] },
         //Number of candidates that will pass after the round is over
-        { "label": "passing_count", "value": ["int64", 50] }
 
     ],
     [
@@ -960,14 +933,12 @@ election_config: [
         { "label": "duration", "value": ["int64", 9000] }, //Duration in seconds
         { "label": "type", "value": ["string", "chief"] },
         { "label": "round_id", "value": ["int64", 1] },
-        { "label": "passing_count", "value": ["int64", 5] }
     ],
     [
         { "label":, "content_group_label", "value": ["string", "round"] },
         { "label": "duration", "value": ["int64", 9000] }, //Duration in seconds
         { "label": "type", "value": ["string", "head"] },
         { "label": "round_id", "value": ["int64", 1] },
-        { "label": "passing_count", "value": ["int64", 1] }
     ]
 ]
 */
@@ -988,22 +959,28 @@ void dao::createupvelc(uint64_t dao_id, ContentGroups& election_config)
         upvote_common::items::UPVOTE_DURATION
     )->getAs<int64_t>();
 
-    time_point endDate = startDate;
+    auto round_duration = cw.getOrFail(
+        DETAILS,
+        upvote_common::items::ROUND_DURATION
+    )->getAs<int64_t>();
 
-    //Will calculate also what is the endDate for the upvote election
-    auto roundsMap = getRounds(election_config, endDate);
+    time_point endDate = startDate;
 
     UpvoteElection upvoteElection(*this, dao_id, UpvoteElectionData{
         .start_date = startDate,
         .end_date = endDate,
         .status = upvote_common::upvote_status::UPCOMING,
-        .duration = duration
+        .duration = duration,
+        .round_duration = round_duration
     });
 
-    createRounds(*this, upvoteElection, roundsMap, startDate, endDate);
+    // add start round
+    upvoteElection.addRound();
 
     scheduleElectionUpdate(*this, upvoteElection, startDate);
 }
+
+// TODO combine this with create - so we extract the data only in one place
 
 void dao::editupvelc(uint64_t election_id, ContentGroups& election_config)
 {
@@ -1048,7 +1025,9 @@ void dao::editupvelc(uint64_t election_id, ContentGroups& election_config)
     upvoteElection.validate();
     upvoteElection.update();
 
-    createRounds(*this, upvoteElection, rounds, startDate, endDate);
+    auto startRound = upvoteElection.getStartRound();
+    startRound.erase();
+    upvoteElection.addRound();
 
     scheduleElectionUpdate(*this, upvoteElection, startDate);
 }

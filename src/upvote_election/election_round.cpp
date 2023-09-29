@@ -90,49 +90,12 @@ namespace hypha::upvote_election {
 
         auto type = getType();
 
-        if (type == round_types::CHIEF) {
-            EOS_CHECK(
-                !Edge::getIfExists(dao.get_self(), election_id, links::CHIEF_ROUND).first,
-                "There is another chief delegate round already"
-            )
-
-            // TODO: I don't think we need to know what kinds of rounds there are.
-            // We can estimate the maximum number of rounds but since any group may not have a winner
-            // it could be over after round 1. 
-                Edge(
-                    getDao().get_self(),
-                    getDao().get_self(),
-                    election_id,
-                    getId(),
-                    links::CHIEF_ROUND
-                );
-        }
-        else if (type == round_types::HEAD) {
-            EOS_CHECK(
-                !Edge::getIfExists(dao.get_self(), election_id, links::HEAD_ROUND).first,
-                "There is another head delegate round already"
-            )
-
-                Edge(
-                    getDao().get_self(),
-                    getDao().get_self(),
-                    election_id,
-                    getId(),
-                    links::HEAD_ROUND
-                );
-
-            // EOS_CHECK(
-            //     getPassingCount() == 1,
-            //     "There can be only 1 Head Delegate"
-            // )
-        }
-
         Edge(
             getDao().get_self(),
             getDao().get_self(),
             election_id,
             getId(),
-            links::ROUND
+            links::ELECTION_ROUND
         );
 
         Edge(
@@ -193,25 +156,6 @@ namespace hypha::upvote_election {
 
         return {};
     }
-
-    // bool ElectionRound::isCandidate(uint64_t accountId)
-    // {
-    //     return Edge::exists(
-    //         getDao().get_self(),
-    //         getId(),
-    //         accountId,
-    //         links::ROUND_CANDIDATE
-    //     );
-    // } 
-
-    // int64_t ElectionRound::getAccountPower(uint64_t accountId)
-    // {
-    //     if (isCandidate(accountId)) {
-    //         return std::max(int64_t{1}, getDelegatePower());
-    //     }
-
-    //     return 1;
-    // }
 
     void ElectionRound::addElectionGroup(std::vector<uint64_t> accound_ids)
     {

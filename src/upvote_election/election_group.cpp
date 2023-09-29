@@ -64,8 +64,6 @@ void ElectionGroup::vote(int64_t from, int64_t to)
     // get all existing vote edges
     std::vector<Edge> voteEdges = getDao().getGraph().getEdgesFrom(getId(), links::UP_VOTE_VOTE);
     
-    // make sure both members are part of this group
-
     // get the member count
     auto memcount = getMemberCount();
     uint64_t votesToWin = memcount * 2 / 3 + 1;
@@ -106,6 +104,9 @@ void ElectionGroup::vote(int64_t from, int64_t to)
     }
 
     if (!existingVote) {
+        if (from == to) {
+            selfVotes[from] = true;
+        }
         // Create a new vote
         UpVoteVote vote(getDao(), getId(), UpVoteVoteData{
             .voter_id = from,

@@ -23,7 +23,6 @@ add_contract( dao dao
                 upvote_election/election_group.cpp
                 upvote_election/upvote_election.cpp
                 upvote_election/up_vote_vote.cpp
-                upvote_election/vote_group.cpp
                 treasury/actions.cpp
                 treasury/balance.cpp
                 treasury/payment.cpp
