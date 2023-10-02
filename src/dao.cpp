@@ -1365,7 +1365,11 @@ void dao::initSysBadges() {
 
   createSystemBadge(badges::common::links::ADMIN_BADGE, "Admin Badge", "https://assets.hypha.earth/badges/badge_admin.png");
   createSystemBadge(badges::common::links::ENROLLER_BADGE, "Enroller Badge", "https://assets.hypha.earth/badges/badge_enroller.png");
-  createSystemBadge(badges::common::links::ENROLLER_BADGE, "Enroller Badge", "https://assets.hypha.earth/badges/badge_enroller.png");
+  createSystemBadge(badges::common::links::DELEGATE, "Upvote Delegate Badge", "");
+  createSystemBadge(badges::common::links::CHIEF_DELEGATE, "Chief Delegate Badge", "");
+  createSystemBadge(badges::common::links::HEAD_DELEGATE, "Head Delegate Badge", "");
+  createSystemBadge(badges::common::links::TREASURY_BADGE, "Treasurer Badge", "https://assets.hypha.earth/badges/badge_treasurer.png");
+  createSystemBadge(badges::common::links::NORTH_STAR_BADGE, "North Star Badge", "https://assets.hypha.earth/badges/badge_north_star.png");
 
 }
 
@@ -1376,6 +1380,16 @@ void dao::createSystemBadge(name badge_edge, string label, string icon) {
     systemBadgeType = badges::SystemBadgeType::Admin;
   } else if (badge_edge == badges::common::links::ENROLLER_BADGE) {
     systemBadgeType = badges::SystemBadgeType::Enroller;
+  } else if (badge_edge == badges::common::links::NORTH_STAR_BADGE) {
+    systemBadgeType = badges::SystemBadgeType::NorthStar;
+  } else if (badge_edge == badges::common::links::TREASURY_BADGE) {
+    systemBadgeType = badges::SystemBadgeType::Treasurer;
+  } else if (badge_edge == badges::common::links::DELEGATE) {
+    systemBadgeType = badges::SystemBadgeType::Delegate;
+  } else if (badge_edge == badges::common::links::CHIEF_DELEGATE) {
+    systemBadgeType = badges::SystemBadgeType::ChiefDelegate;
+  } else if (badge_edge == badges::common::links::HEAD_DELEGATE) {
+    systemBadgeType = badges::SystemBadgeType::HeadDelegate;
   } else {
     eosio::check(false, "unknown system type");
   }

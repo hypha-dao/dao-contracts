@@ -19,6 +19,9 @@
 #include <period.hpp>
 #include <settings.hpp>
 
+// TODO: Move this to upvote code section
+#include <upvote_election/random_number_generator.hpp>
+
 #include <config/config.hpp>
 
 using eosio::multi_index;
@@ -330,6 +333,7 @@ namespace pricing {
       //Upvote System
       ACTION testgrouprng(std::vector<uint64_t> ids, uint32_t seed);
       ACTION testgroupr1(uint32_t num_members, uint32_t seed);
+
       ACTION castupvote(uint64_t round_id, uint64_t group_id, name voter, uint64_t voted_id);
 
       ACTION createupvelc(uint64_t dao_id, ContentGroups& election_config);
@@ -505,7 +509,7 @@ namespace pricing {
 
    private:
 
-      std::vector<uint64_t> shuffleVector(std::vector<uint64_t>& ids, uint32_t seed);
+      std::vector<uint64_t> shuffleVector(std::vector<uint64_t>& ids, UERandomGenerator rng);
       std::vector<std::vector<uint64_t>> createGroups(const std::vector<uint64_t>& ids, int minGroupSize);
 
       void onRewardTransfer(const name& from, const name& to, const asset& amount);
