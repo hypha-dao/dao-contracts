@@ -30,7 +30,7 @@ public:
 
     uint64_t getDaoID() const;
 
-    ElectionRound addRound();
+    uint64_t addRound();
 
     std::vector<ElectionRound> getRounds() const;
     ElectionRound getCurrentRound() const;

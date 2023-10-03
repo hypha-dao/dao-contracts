@@ -207,7 +207,7 @@ namespace hypha {
         for (auto& [roundId, roundData] : rounds) {
 
             // TODO: What is this?? 
-            roundData.delegate_power = getDelegatePower(roundId);
+            //roundData.delegate_power = getDelegatePower(roundId);
 
             roundData.start_date = startDate;
 
@@ -536,6 +536,39 @@ namespace hypha {
 
 
     }
+
+    void dao::testround(uint64_t dao_id) {
+        require_auth(get_self());
+        
+        auto edge = Edge::get(get_self(), dao_id, upvote_common::links::ELECTION);
+        
+        auto electionId = edge.getToNode();
+        
+        eosio::print(" election id: ", electionId, " ::: ");
+
+        UpvoteElection upvoteElection(*this, electionId);
+
+        upvoteElection.addRound();
+
+        // for (uint32_t n = 0; n < num_members; ++n) {
+        //     auto rounds = count_rounds(n);
+
+        //     std::vector<uint32_t> group_sizes = get_group_sizes(n, rounds);
+
+        //     eosio::print(" N: ", n, " rounds: ", rounds, " g_sizes: ");
+
+        //     for (uint32_t s : group_sizes) {
+        //         eosio::print(s, " ");
+        //     }
+
+        //     eosio::print(" ::: ");
+
+
+        // }
+
+
+    }
+
 
     void dao::testgrouprng(std::vector<uint64_t> ids, uint32_t seed) {
 
@@ -933,7 +966,7 @@ namespace hypha {
             upvote_common::items::ROUND_DURATION
         )->getAs<int64_t>();
 
-        time_point endDate = startDate;
+        time_point endDate = startDate + eosio::seconds(round_duration);
 
         UpvoteElection upvoteElection(*this, dao_id, UpvoteElectionData{
             .start_date = startDate,
@@ -944,7 +977,7 @@ namespace hypha {
             });
 
         // add start round
-        upvoteElection.addRound();
+        auto roundId = upvoteElection.addRound();
 
         scheduleElectionUpdate(*this, upvoteElection, startDate);
     }

@@ -18,8 +18,7 @@ class ElectionRound : public TypedDocument
         PROPERTY(type, std::string, Type, USE_GET),
         PROPERTY(start_date, eosio::time_point, StartDate, USE_GET),
         PROPERTY(end_date, eosio::time_point, EndDate, USE_GET),
-        PROPERTY(round_duration, int64_t, RoundDuration, USE_GET),
-        PROPERTY(delegate_power, int64_t, DelegatePower, USE_GET)
+        PROPERTY(round_duration, int64_t, RoundDuration, USE_GET)
     )
 public:
     ElectionRound(dao& dao, uint64_t id);

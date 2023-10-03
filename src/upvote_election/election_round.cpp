@@ -50,23 +50,23 @@ namespace hypha::upvote_election {
 
     using namespace upvote_election::common;
 
-    static void validateStartDate(const time_point& startDate)
-    {
-        //Only valid if start date is in the future
-        EOS_CHECK(
-            startDate > eosio::current_time_point(),
-            _s("Election start date must be in the future")
-        )
-    }
+    // static void validateStartDate(const time_point& startDate)
+    // {
+    //     //Only valid if start date is in the future
+    //     EOS_CHECK(
+    //         startDate > eosio::current_time_point(),
+    //         _s("Election start date must be in the future")
+    //     )
+    // }
 
-    static void validateEndDate(const time_point& startDate, const time_point& endDate)
-    {
-        //Only valid if start date is in the future
-        EOS_CHECK(
-            endDate > startDate,
-            to_str("End date must happen after start date: ", startDate, " to ", endDate)
-        );
-    }
+    // static void validateEndDate(const time_point& startDate, const time_point& endDate)
+    // {
+    //     //Only valid if start date is in the future
+    //     EOS_CHECK(
+    //         endDate > startDate,
+    //         to_str("End date must happen after start date: ", startDate, " to ", endDate)
+    //     );
+    // }
 
     ElectionRound::ElectionRound(dao& dao, uint64_t id)
         : TypedDocument(dao, id, types::ELECTION_ROUND)
@@ -75,14 +75,14 @@ namespace hypha::upvote_election {
     ElectionRound::ElectionRound(dao& dao, uint64_t election_id, Data data)
         : TypedDocument(dao, types::ELECTION_ROUND)
     {
-        EOS_CHECK(
-            data.delegate_power >= 0,
-            "Delegate Power must be greater or equal to 0"
-        );
+        // EOS_CHECK(
+        //     data.delegate_power >= 0,
+        //     "Delegate Power must be greater or equal to 0"
+        // );
 
-        validateStartDate(data.start_date);
+        // validateStartDate(data.start_date);
 
-        validateEndDate(data.start_date, data.end_date);
+        // validateEndDate(data.start_date, data.end_date);
 
         auto cgs = convert(std::move(data));
 

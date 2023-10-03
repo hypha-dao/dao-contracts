@@ -16,23 +16,23 @@ namespace hypha::upvote_election {
         : TypedDocument(dao, id, types::UPVOTE_ELECTION)
     {}
 
-    static void validateStartDate(const time_point& startDate)
-    {
-        //Only valid if start date is in the future
-        EOS_CHECK(
-            startDate > eosio::current_time_point(),
-            _s("Election start date must be in the future")
-        )
-    }
+    // static void validateStartDate(const time_point& startDate)
+    // {
+    //     //Only valid if start date is in the future
+    //     EOS_CHECK(
+    //         startDate > eosio::current_time_point(),
+    //         _s("Election start date must be in the future")
+    //     )
+    // }
 
-    static void validateEndDate(const time_point& startDate, const time_point& endDate)
-    {
-        //Only valid if start date is in the future
-        EOS_CHECK(
-            endDate > startDate,
-            to_str("End date must happen after start date: ", startDate, " to ", endDate)
-        );
-    }
+    // static void validateEndDate(const time_point& startDate, const time_point& endDate)
+    // {
+    //     //Only valid if start date is in the future
+    //     EOS_CHECK(
+    //         endDate > startDate,
+    //         to_str("End date must happen after start date: ", startDate, " to ", endDate)
+    //     );
+    // }
 
     UpvoteElection::UpvoteElection(dao& dao, uint64_t dao_id, Data data)
         : TypedDocument(dao, types::UPVOTE_ELECTION)
@@ -120,46 +120,70 @@ namespace hypha::upvote_election {
         return rounds;
     }
 
-    ElectionRound UpvoteElection::addRound() 
+    uint64_t UpvoteElection::addRound() 
     {
-        ElectionRoundData roundData;
-        roundData.type = round_types::DELEGATE;
-        roundData.round_duration = getRoundDuration();
+
         eosio::time_point startDate;
-        std::unique_ptr<ElectionRound> currentRound;
+        auto roundDuration = getRoundDuration();
+
+        eosio::print(" round dur ", roundDuration);
         
+        std::unique_ptr<ElectionRound> currentRound;
         auto [exists, currentRoundEdge] = Edge::getIfExists(getDao().get_self(), getId(), links::CURRENT_ROUND);
         if (!exists) {
             startDate = getStartDate();
+            eosio::print(" first round ", std::to_string(startDate.sec_since_epoch()));
         } else {
             currentRound = std::make_unique<ElectionRound>(
                 getDao(),
                 currentRoundEdge.getToNode()
             );
+            
+            eosio::print(" current round ", currentRound->getId());
+
             startDate = currentRound->getEndDate();
-            //currentRound = std::move(current);
         }
-        roundData.start_date = startDate;
-        roundData.end_date = startDate + eosio::seconds(roundData.round_duration);
-        auto round = std::make_unique<ElectionRound>(
+        auto endDate = startDate + eosio::seconds(roundDuration);
+
+        ElectionRoundData roundData{
+            .type = round_types::DELEGATE,
+            .start_date = startDate,
+            .end_date = endDate,
+            .round_duration = roundDuration
+        };
+
+        eosio::print(" round: start date: ", startDate.sec_since_epoch(), " dur ", roundDuration, " end date ", endDate.sec_since_epoch());
+
+        ElectionRound round(
             getDao(),
             getId(),
             roundData
         );
 
-        setEndDate(roundData.end_date);
+        setEndDate(std::move(endDate));
+        setEndDate(endDate);
+        update();
+
+        eosio::print(" upd ");
 
         if (!exists) {
-            setStartRound(round.get());
+            eosio::print(" new round - exists: ", exists);
+            setStartRound(&round);
         } else {
-            currentRound->setNextRound(round.get());
+            eosio::print(" round exists: ", exists, " ", currentRound->getId());
+
+            currentRound->setNextRound(&round);
         }
+        eosio::print(" 1 addRound finished. ");
+
+        return round.getId();
     }
 
     
 
     void UpvoteElection::setStartRound(ElectionRound* startRound) const
     {
+
         Edge(
             getDao().get_self(),
             getDao().get_self(),
@@ -167,6 +191,7 @@ namespace hypha::upvote_election {
             startRound->getId(),
             links::START_ROUND
         );
+        
     }
 
     void UpvoteElection::setCurrentRound(ElectionRound* currenttRound) const
@@ -232,8 +257,7 @@ namespace hypha::upvote_election {
     void UpvoteElection::validate()
     {
         auto startDate = getStartDate();
-        validateStartDate(startDate);
-        validateEndDate(startDate, getEndDate());
+        // validateStartDate(startDate);
     }
 
 }

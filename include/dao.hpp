@@ -333,6 +333,7 @@ namespace pricing {
       //Upvote System
       ACTION testgrouprng(std::vector<uint64_t> ids, uint32_t seed);
       ACTION testgroupr1(uint32_t num_members, uint32_t seed);
+      ACTION testround(uint64_t dao_id);
 
       ACTION castupvote(uint64_t round_id, uint64_t group_id, name voter, uint64_t voted_id);
 
