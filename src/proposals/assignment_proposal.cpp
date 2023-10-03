@@ -179,7 +179,7 @@ namespace hypha
             .periodSalary = normalizeToken(usdSalaryPerPeriod.getAs<asset>()) * (timeShare / 100.0),
             .rewardToPegRatio = normalizeToken(rewardPegVal),
             .deferredPerc = deferred / 100.0,
-            .voiceMultipler = getMultiplier(m_daoSettings, common::VOICE_MULTIPLIER, 2.0),
+            .voiceMultipler = getMultiplier(m_daoSettings, common::VOICE_MULTIPLIER, 1.0),
             .rewardMultipler = getMultiplier(m_daoSettings, common::REWARD_MULTIPLIER, 1.0),
             .pegMultipler = getMultiplier(m_daoSettings, common::PEG_MULTIPLIER, 1.0)
         };
