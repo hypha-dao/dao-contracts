@@ -2007,17 +2007,17 @@ void dao::createdao(ContentGroups& config)
   else {
 
     //Just do this check on mainnet
-    if (!isTestnet()) {
+    // if (!isTestnet()) {
 
-      auto onboarder = configCW.getOrFail(DETAILS, common::ONBOARDER_ACCOUNT)->getAs<name>();
+    //   auto onboarder = configCW.getOrFail(DETAILS, common::ONBOARDER_ACCOUNT)->getAs<name>();
 
-      auto hyphaId = getDAOID("hypha"_n);
+    //   auto hyphaId = getDAOID("hypha"_n);
 
-      EOS_CHECK(
-        hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
-        "You are not allowed to call this action"
-      );
-    }
+    //   EOS_CHECK(
+    //     hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
+    //     "You are not allowed to call this action"
+    //   );
+    // }
 
     //Regular DAO creation
     auto daoDoc = createDao(nullptr);
