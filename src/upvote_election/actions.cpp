@@ -280,7 +280,7 @@ namespace hypha {
             eosio::permission_level(dao.get_self(), eosio::name("active")),
             dao.get_self(),
             eosio::name("updateupvelc"),
-            std::make_tuple(election.getId(), true)
+            std::make_tuple(election.getId(), true, false)
         ));
 
         EOS_CHECK(
@@ -695,11 +695,16 @@ namespace hypha {
     }
 
     //Check if we need to update an ongoing elections status:
-    //upcoming -> ongoing
-    //ongoing -> finished
-    //or change the current round
-    void dao::updateupvelc(uint64_t election_id, bool reschedule)
+    // upcoming -> ongoing
+    // ongoing -> finished
+    // or change the current round
+    // reschedule flag: Whether or not to put another deferred transaction to try again (should be true in normal use)
+    // force flag: force update of status - for debugging, not used in normal use - true requires self authorization
+    void dao::updateupvelc(uint64_t election_id, bool reschedule, bool force)
     {
+        if (force) {
+            require_auth(get_self());
+        }
         //eosio::require_auth();
         UpvoteElection election(*this, election_id);
 
@@ -712,9 +717,15 @@ namespace hypha {
         if (status == upvote_common::upvote_status::UPCOMING) {
             auto start = election.getStartDate();
 
+                    std::string timeStrNow = eosio::time_point_sec(now).to_string();
+                    std::string timeStrStart = eosio::time_point_sec(start).to_string();
+
+            eosio::print(" upcoming ", timeStrNow, " ", timeStrStart);
+
             //Let's update as we already started
-            if (start <= now) {
+            if (start <= now || force) {
                 // START....
+                eosio::print(" -> starting ");
 
                 Edge::get(get_self(), daoId, election.getId(), upvote_common::links::UPCOMING_ELECTION).erase();
 
@@ -739,6 +750,8 @@ namespace hypha {
 
                 uint64_t seed = checksum256_to_uint32(initialSeed);
 
+                eosio::print(" init sd: ", initialSeed, " seed ", seed);
+
                 // Create a random number generator with the seed
                 UERandomGenerator rng(seed, 0);
 
@@ -750,6 +763,12 @@ namespace hypha {
                 auto groups = createGroups(randomIds, 4); // TODO: CHANGE THIS TO EDENIA CODE
 
                 for (auto& groupMembers : groups) {
+
+                    eosio::print(" add gr: ", groupMembers.size(), ": ");
+                    for (uint64_t m : groupMembers) {
+                        eosio::print(m, ", ");
+                    }
+
                     startRound.addElectionGroup(groupMembers);
                 }
 
@@ -759,13 +778,21 @@ namespace hypha {
                 scheduleElectionUpdate(*this, election, startRound.getEndDate());
             }
             else if (reschedule) {
+                eosio::print(" -> not ready, rescheduling ");
+
                 scheduleElectionUpdate(*this, election, start);
             }
         }
         else if (status == upvote_common::upvote_status::ONGOING) {
+
+            eosio::print(" ongoing ");
+
             auto currentRound = election.getCurrentRound();
             auto end = currentRound.getEndDate();
-            if (end <= now) {
+            if (end <= now || force) {
+
+
+                eosio::print(" current round ended ");
 
                 auto winners = currentRound.getWinners();
 
@@ -872,6 +899,22 @@ namespace hypha {
 
         election.update();
     }
+
+      void dao::uesubmitseed(uint64_t dao_id, eosio::checksum256 seed, name account) {
+        eosio::require_auth(account);
+        
+        auto edge = Edge::get(get_self(), dao_id, upvote_common::links::ELECTION);
+        
+        auto electionId = edge.getToNode();
+
+        UpvoteElection upvoteElection(*this, electionId);
+
+        upvoteElection.setSeed(seed);
+
+        upvoteElection.update();
+
+
+      }
 
     void dao::castupvote(uint64_t round_id, uint64_t group_id, name voter, uint64_t voted_id)
     {

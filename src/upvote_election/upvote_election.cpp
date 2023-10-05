@@ -125,22 +125,17 @@ namespace hypha::upvote_election {
 
         eosio::time_point startDate;
         auto roundDuration = getRoundDuration();
-
-        eosio::print(" round dur ", roundDuration);
         
         std::unique_ptr<ElectionRound> currentRound;
         auto [exists, currentRoundEdge] = Edge::getIfExists(getDao().get_self(), getId(), links::CURRENT_ROUND);
         if (!exists) {
             startDate = getStartDate();
-            eosio::print(" first round ", std::to_string(startDate.sec_since_epoch()));
         } else {
             currentRound = std::make_unique<ElectionRound>(
                 getDao(),
                 currentRoundEdge.getToNode()
             );
             
-            eosio::print(" current round ", currentRound->getId());
-
             startDate = currentRound->getEndDate();
         }
         auto endDate = startDate + eosio::seconds(roundDuration);
@@ -152,8 +147,6 @@ namespace hypha::upvote_election {
             .round_duration = roundDuration
         };
 
-        eosio::print(" round: start date: ", startDate.sec_since_epoch(), " dur ", roundDuration, " end date ", endDate.sec_since_epoch());
-
         ElectionRound round(
             getDao(),
             getId(),
@@ -164,8 +157,6 @@ namespace hypha::upvote_election {
         setEndDate(endDate);
         update();
 
-        eosio::print(" upd ");
-
         if (!exists) {
             eosio::print(" new round - exists: ", exists);
             setStartRound(&round);
@@ -174,8 +165,6 @@ namespace hypha::upvote_election {
 
             currentRound->setNextRound(&round);
         }
-        eosio::print(" 1 addRound finished. ");
-
         return round.getId();
     }
 

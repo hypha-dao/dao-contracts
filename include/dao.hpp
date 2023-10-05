@@ -336,11 +336,12 @@ namespace pricing {
       ACTION testround(uint64_t dao_id);
 
       ACTION castupvote(uint64_t round_id, uint64_t group_id, name voter, uint64_t voted_id);
+      ACTION uesubmitseed(uint64_t dao_id, eosio::checksum256 seed, name account);
 
       ACTION createupvelc(uint64_t dao_id, ContentGroups& election_config);
       ACTION editupvelc(uint64_t election_id, ContentGroups& election_config);
       ACTION cancelupvelc(uint64_t election_id);
-      ACTION updateupvelc(uint64_t election_id, bool reschedule);
+      ACTION updateupvelc(uint64_t election_id, bool reschedule, bool force);
 
 
 

@@ -90,6 +90,8 @@ namespace hypha::upvote_election {
 
         auto type = getType();
 
+        // eosio::print(" add edge - election id: ", election_id, " -> round id: ", getId(), " name: ", links::ELECTION_ROUND);
+
         Edge(
             getDao().get_self(),
             getDao().get_self(),

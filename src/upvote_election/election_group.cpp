@@ -26,6 +26,8 @@ ElectionGroup::ElectionGroup(dao& dao, uint64_t round_id, std::vector<uint64_t> 
 
     EOS_CHECK(member_ids.size() <= 6, "max 6 members in group");
 
+    eosio::print(" adding election group ", getId(), " to round ", round_id);
+
     // create edges to all members (max 6)
     for (size_t i = 0; i < member_ids.size(); ++i) {
         Edge(
@@ -36,6 +38,8 @@ ElectionGroup::ElectionGroup(dao& dao, uint64_t round_id, std::vector<uint64_t> 
             links::ELECTION_ROUND_MEMBER
         );
     }
+
+    eosio::print(" link from  ", round_id, " to ", getId(), " ");
 
     // Create edge from the round to this group
     Edge(
@@ -126,26 +130,6 @@ void ElectionGroup::vote(int64_t from, int64_t to)
         update();
     }
     
-
-    // if from edge, delete the edge and create a new upvote doc - or change its voted field and save it back?
-    // if no from edge, create a new UpVoteVote doc
-
-    
-
-
-    // if (exists) {
-    //     vote = UpVoteVote(getDao(), edge.getToNode());
-    // } else {
-    //     vote = UpVoteVote()
-    // }
-
-    // Edge(
-    //     getDao().get_self(),
-    //     getDao().get_self(),
-    //     getId(),
-    //     nextRound->getId(),
-    //     links::NEXT_ROUND
-    // );
 }
 
 
