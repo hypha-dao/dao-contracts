@@ -270,6 +270,83 @@ namespace hypha {
         );
     }
 
+       // Requirements:
+       // - Except for the last round, the group size shall be in [4,6]
+       // - The last round has a minimum group size of 3
+       // - The maximum group size shall be as small as possible
+       // - The group sizes within a round shall have a maximum difference of 1
+    static std::vector<std::vector<uint64_t>> createGroups(const std::vector<uint64_t>& ids, int minGroupSize) {
+        std::vector<std::vector<uint64_t>> groups;
+
+        // Calculate the number of groups needed - group size fills up to 6 max, except when there's
+        // only 1 group, which goes up to 11
+        int numGroups = ids.size() / minGroupSize;
+
+        // Create the groups with an initial capacity of 4
+        for (int i = 0; i < numGroups; ++i) {
+            groups.push_back(std::vector<uint64_t>());
+            groups.back().reserve(4);
+        }
+
+        // Initialize group iterators
+        auto currentGroup = groups.begin();
+        auto endGroup = groups.end();
+
+        // Iterate over the IDs and distribute them into groups
+        for (const auto& id : ids) {
+            // Add the ID to the current group
+            currentGroup->push_back(id);
+
+            // Move to the next group (take turns)
+            ++currentGroup;
+
+            // Wrap back to the beginning of the groups
+            if (currentGroup == endGroup) {
+                currentGroup = groups.begin();
+            }
+        }
+
+        return groups;
+    }
+
+    /// @brief Use the Edenia method to figure out number of rounds and group sizes
+    /// @param ids a list of member Ids
+    /// @return A list of groups of member Ids. 
+    static std::vector<std::vector<uint64_t>> createGroupsEden(const std::vector<uint64_t>& ids) {
+        // Edenia code for counting number of rounds and min group sizes for the rounds
+        auto n = ids.size();
+        auto rounds = count_rounds(n);
+        std::vector<uint32_t> group_sizes = get_group_sizes(n, rounds);
+        int minGroupsSize = group_sizes[0];
+        return createGroups(ids, minGroupsSize);
+    }
+
+    static void initRound(UpvoteElection& election, ElectionRound& round, uint32_t seed, std::vector<uint64_t> delegateIds) {
+
+        // Create a random number generator with the seed
+        UERandomGenerator rng(seed, 0);
+
+        auto randomIds = delegateIds;
+
+        std::shuffle(randomIds.begin(), randomIds.end(), rng);
+
+        election.setRunningSeed(rng.seed);
+        election.update();
+
+        auto groups = createGroupsEden(randomIds);
+
+        for (auto& groupMembers : groups) {
+
+            eosio::print(" add gr: ", groupMembers.size(), ": ");
+            for (uint64_t m : groupMembers) {
+                eosio::print(m, ", ");
+            }
+
+            round.addElectionGroup(groupMembers);
+        }
+
+    }
+
     static void scheduleElectionUpdate(dao& dao, UpvoteElection& election, time_point date)
     {
         if (date < eosio::current_time_point()) return;
@@ -300,9 +377,10 @@ namespace hypha {
         dhoSettings->setSetting(Content{ "next_schedule_id", nextID + 1 });
     }
 
-    static void assignDelegateBadges(dao& dao, uint64_t daoId, uint64_t electionId, const std::vector<uint64_t>& chiefDelegates, std::optional<uint64_t> headDelegate, eosio::transaction* trx = nullptr)
+    static void assignDelegateBadges(dao& dao, uint64_t daoId, uint64_t electionId, const std::vector<uint64_t>& chiefDelegates, uint64_t headDelegate, eosio::transaction* trx = nullptr)
     {
-        //Generate proposals for each one of the delegates
+        // Generate proposals for each one of the delegates
+        // Note: These are auto-approved and instantly on.
 
         auto createAssignment = [&](const std::string& title, uint64_t member, uint64_t badge) {
 
@@ -346,11 +424,13 @@ namespace hypha {
         auto headBadge = TypedDocument::withType(dao, headBadgeEdge.getToNode(), common::BADGE_NAME);
 
         for (auto& chief : chiefDelegates) {
-            createAssignment("Chief Delegate", chief, chiefBadge.getID());
+            if (chief != headDelegate) {
+                createAssignment("Chief Delegate", chief, chiefBadge.getID());
+            }
         }
 
         if (headDelegate) {
-            createAssignment("Head Delegate", *headDelegate, headBadge.getID());
+            createAssignment("Head Delegate", headDelegate, headBadge.getID());
         }
     }
 
@@ -581,7 +661,9 @@ namespace hypha {
 
         UERandomGenerator rng(seed, 0);
 
-        auto randomIds = shuffleVector(ids, rng);
+        auto randomIds = ids;
+
+        std::shuffle(randomIds.begin(), randomIds.end(), rng);
 
         eosio::print(" random ids: ");
         for (const uint64_t& element : randomIds) {
@@ -609,16 +691,6 @@ namespace hypha {
         }
 
     }
-
-    std::vector<uint64_t> dao::shuffleVector(std::vector<uint64_t>& ids, UERandomGenerator rng) {
-
-        // Shuffle the vector using the RNG
-        std::shuffle(ids.begin(), ids.end(), rng);
-
-        return ids;
-
-    }
-
 
     // 36 / 6 = 6 => 1 round, 1 HD round
     size_t numrounds(size_t num_delegates) {
@@ -655,44 +727,6 @@ namespace hypha {
     //    };
 
 
-       // Requirements:
-       // - Except for the last round, the group size shall be in [4,6]
-       // - The last round has a minimum group size of 3
-       // - The maximum group size shall be as small as possible
-       // - The group sizes within a round shall have a maximum difference of 1
-    std::vector<std::vector<uint64_t>> dao::createGroups(const std::vector<uint64_t>& ids, int minGroupSize) {
-        std::vector<std::vector<uint64_t>> groups;
-
-        // Calculate the number of groups needed - group size fills up to 6 max, except when there's
-        // only 1 group, which goes up to 11
-        int numGroups = ids.size() / minGroupSize;
-
-        // Create the groups with an initial capacity of 4
-        for (int i = 0; i < numGroups; ++i) {
-            groups.push_back(std::vector<uint64_t>());
-            groups.back().reserve(4);
-        }
-
-        // Initialize group iterators
-        auto currentGroup = groups.begin();
-        auto endGroup = groups.end();
-
-        // Iterate over the IDs and distribute them into groups
-        for (const auto& id : ids) {
-            // Add the ID to the current group
-            currentGroup->push_back(id);
-
-            // Move to the next group (take turns)
-            ++currentGroup;
-
-            // Wrap back to the beginning of the groups
-            if (currentGroup == endGroup) {
-                currentGroup = groups.begin();
-            }
-        }
-
-        return groups;
-    }
 
     //Check if we need to update an ongoing elections status:
     // upcoming -> ongoing
@@ -745,35 +779,11 @@ namespace hypha {
                 for (auto& delegate : delegates) {
                     delegateIds.push_back(delegate.getToNode());
                 }
-
                 auto initialSeed = election.getSeed();
-
-                uint64_t seed = checksum256_to_uint32(initialSeed);
-
+                uint32_t seed = checksum256_to_uint32(initialSeed);
                 eosio::print(" init sd: ", initialSeed, " seed ", seed);
 
-                // Create a random number generator with the seed
-                UERandomGenerator rng(seed, 0);
-
-                auto randomIds = shuffleVector(delegateIds, rng);
-
-                election.setRunningSeed(rng.seed);
-                election.update();
-
-                auto groups = createGroups(randomIds, 4); // TODO: CHANGE THIS TO EDENIA CODE
-
-                for (auto& groupMembers : groups) {
-
-                    eosio::print(" add gr: ", groupMembers.size(), ": ");
-                    for (uint64_t m : groupMembers) {
-                        eosio::print(m, ", ");
-                    }
-
-                    startRound.addElectionGroup(groupMembers);
-                }
-
-                // analyze what this is and if we need it
-                // setupCandidates(startRound.getId(), delegateIds);
+                initRound(election, startRound, seed, delegateIds);
 
                 scheduleElectionUpdate(*this, election, startRound.getEndDate());
             }
@@ -790,65 +800,49 @@ namespace hypha {
             auto currentRound = election.getCurrentRound();
             auto end = currentRound.getEndDate();
             if (end <= now || force) {
-
-
                 eosio::print(" current round ended ");
 
                 auto winners = currentRound.getWinners();
 
                 for (auto& winner : winners) {
+                    eosio::print(winner, ", "); // DEBUG REMOVE
                     Edge(get_self(), get_self(), currentRound.getId(), winner, upvote_common::links::ROUND_WINNER);
                 }
 
                 Edge::get(get_self(), election_id, upvote_common::links::CURRENT_ROUND).erase();
 
-                if (auto nextRound = currentRound.getNextRound()) {
 
+                if (winners.size() > 11) {
                     // set up the next round
+                    auto round = election.addRound();
 
-                    election.setCurrentRound(nextRound.get());
+                    election.setCurrentRound(&round);
+                    
+                    int32_t seed = election.getRunningSeed();
 
-                    // setupCandidates(nextRound->getId(), winners);
+                    initRound(election, round, seed, winners);
 
-                    // round.addCandidate adds candidates
-                    for (auto& winner : winners) {
-                        // TODO: Change all this - Nik
-                        //nextRound->addCandidate(winner);
-                    }
-
-                    scheduleElectionUpdate(*this, election, nextRound->getEndDate());
+                    scheduleElectionUpdate(*this, election, round.getEndDate());
                 }
                 else {
+                    eosio::print(" election ended. ");
 
                     // The election has ended.
-
+                    
+                    // delete ongoing election link
                     Edge::get(get_self(), daoId, election.getId(), upvote_common::links::ONGOING_ELECTION).erase();
 
+                    // add previous election link
                     Edge(get_self(), get_self(), daoId, election.getId(), upvote_common::links::PREVIOUS_ELECTION);
 
-                    //TODO: Setup head & chief badges
+                    // select head
+                    UERandomGenerator rng(seed, 0);
+                    auto headIndex = rng.operator() % winners.size();
+                    auto headDelegate = winners[headIndex];
 
-                    if (currentRound.getType() == upvote_common::round_types::HEAD) {
-                        //Get previous round for chief delegates
-                        auto chiefs = election.getCurrentRound().getWinners();
+                    eosio::print(" head del ix: ", headIndex, " winners size: ", winners.size(), " head del: ", headDelegate, " ");
 
-                        //Remove head delegate
-                        chiefs.erase(
-                            std::remove_if(
-                                chiefs.begin(),
-                                chiefs.end(),
-                                [head = winners.at(0)](uint64_t id) { return id == head; }
-                            ),
-                            chiefs.end()
-                        );
-
-                        assignDelegateBadges(*this, daoId, election.getId(), chiefs, winners.at(0));
-                    }
-                    //No head delegate
-                    else {
-                        assignDelegateBadges(*this, daoId, election.getId(), winners, std::nullopt);
-                    }
-
+                    assignDelegateBadges(*this, daoId, election.getId(), winners, headDelegate);
 
                     election.setStatus(upvote_common::upvote_status::FINISHED);
                 }

@@ -120,7 +120,7 @@ namespace hypha::upvote_election {
         return rounds;
     }
 
-    uint64_t UpvoteElection::addRound() 
+    ElectionRound UpvoteElection::addRound() 
     {
 
         eosio::time_point startDate;
@@ -154,7 +154,6 @@ namespace hypha::upvote_election {
         );
 
         setEndDate(std::move(endDate));
-        setEndDate(endDate);
         update();
 
         if (!exists) {
@@ -165,7 +164,7 @@ namespace hypha::upvote_election {
 
             currentRound->setNextRound(&round);
         }
-        return round.getId();
+        return round;
     }
 
     

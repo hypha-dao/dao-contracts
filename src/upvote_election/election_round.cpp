@@ -123,10 +123,9 @@ namespace hypha::upvote_election {
         std::vector<Edge> groupEdges = getDao().getGraph().getEdgesFrom(getId(), links::ELECTION_GROUP_LINK);
         for (auto& edge : groupEdges) {
             ElectionGroup group(getDao(), edge.getToNode());
-            auto cw = group.getDocument().getContentWrapper();
-            auto [idx, item] = cw.get(DETAILS, items::WINNER);
-            if (idx != -1) {
-                winners.push_back(item->getAs<int64_t>());
+            int64_t winner = group.getWinner();
+            if (winner != -1) {
+                winners.push_back(winner);
             }
         }
 
@@ -166,7 +165,8 @@ namespace hypha::upvote_election {
             getId(),    
             accound_ids,  
             ElectionGroupData{
-                .member_count = accound_ids.size()
+                .member_count = accound_ids.size(),
+                .winner = -1
             }
         );
 

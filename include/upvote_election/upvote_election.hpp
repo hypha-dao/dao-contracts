@@ -17,7 +17,7 @@ class UpvoteElection : public TypedDocument
         PROPERTY(start_date, eosio::time_point, StartDate, USE_GETSET),
         PROPERTY(end_date, eosio::time_point, EndDate, USE_GETSET),
         PROPERTY(seed, eosio::checksum256, Seed, USE_GETSET),
-        PROPERTY(runningSeed, int32_t, RunningSeed, USE_GETSET),
+        PROPERTY(runningSeed, int64_t, RunningSeed, USE_GETSET),
         PROPERTY(status, std::string, Status, USE_GETSET),
         PROPERTY(duration, int64_t, Duration, USE_GETSET),
         PROPERTY(round_duration, int64_t, RoundDuration, USE_GET)
@@ -30,7 +30,7 @@ public:
 
     uint64_t getDaoID() const;
 
-    uint64_t addRound();
+    ElectionRound addRound();
 
     std::vector<ElectionRound> getRounds() const;
     ElectionRound getCurrentRound() const;

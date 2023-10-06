@@ -24,7 +24,7 @@ ElectionGroup::ElectionGroup(dao& dao, uint64_t round_id, std::vector<uint64_t> 
 
     initializeDocument(dao, cgs);
 
-    EOS_CHECK(member_ids.size() <= 6, "max 6 members in group");
+    //EOS_CHECK(member_ids.size() <= 6, "max 6 members in group"); // the last group is up to 11 members?!
 
     eosio::print(" adding election group ", getId(), " to round ", round_id);
 

@@ -95,7 +95,8 @@ namespace hypha
             return;
         }
 
-        //Voter badge and Delegate badge has to be auto approved
+        // Voter badge and Delegate badge has to be auto approved
+        // Chief and head delegates are also auto approved, but the proposal can only be created by the DAO
         if (badges::isSelfApproveBadge(badgeInfo.systemType)) {
             
             selfApprove = true;
@@ -116,11 +117,13 @@ namespace hypha
 
                     int64_t duration = 0;
                     
-                    //0 value 45means that the upvote election was imported
+                    //0 value means that the upvote election was imported
                     if (election) {
                         upvote_election::UpvoteElection upvoteElection(m_dao, election);
-                        //Set start as when the election is finished
-                        start = upvoteElection.getEndDate();
+                        //Set start as when the election started, 
+                        // this way duration syncs with the duration of the election
+
+                        start = upvoteElection.getStartDate();
                         duration = upvoteElection.getDuration();
                     }
                     else {
