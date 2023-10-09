@@ -377,17 +377,107 @@ namespace hypha {
         dhoSettings->setSetting(Content{ "next_schedule_id", nextID + 1 });
     }
 
-    static void assignDelegateBadges(dao& dao, uint64_t daoId, uint64_t electionId, const std::vector<uint64_t>& chiefDelegates, uint64_t headDelegate, eosio::transaction* trx = nullptr)
+    static void assignDelegateBadges(
+        dao& dao, 
+        uint64_t daoId, 
+        uint64_t electionId, 
+        const std::vector<uint64_t>& chiefDelegates, 
+        uint64_t headDelegate, 
+        bool deleteExistingBadges,
+        eosio::transaction* trx = nullptr)
     {
+        // TODO This removes and adds badges. They're all pretty expensive operations but at most there's 11 badges
+        // So it should work in all cases. If not we could pack it into deferred transactions. 
+
+        // Delete existing if required
+        if (deleteExistingBadges) {
+            eosio::transaction removeOldBadgesTrx;
+
+            //Remove existing Head Delegate/Chief Delegate badges if any
+            // TODO: Make this a static(?) helper method and invoke from where needed.
+            auto cleanBadgesOf = [&](const name& badgeEdge) {
+                auto badgeId = Edge::get(dao.get_self(), dao.getRootID(), badgeEdge).getToNode();
+
+                auto badgeAssignmentEdges = dao.getGraph().getEdgesFrom(badgeId, common::ASSIGNMENT);
+
+                if (badgeAssignmentEdges.size() == 0) {
+                    eosio::print(" no existing badge holders ", badgeEdge);
+                    return;
+                }
+
+                //Filter out those that are not from the specified DAO
+                auto badgeAssignments = std::vector<uint64_t>{};
+                badgeAssignments.reserve(badgeAssignmentEdges.size());
+
+                std::transform(
+                    badgeAssignmentEdges.begin(),
+                    badgeAssignmentEdges.end(),
+                    std::back_inserter(badgeAssignments),
+                    [](const Edge& edge) {
+                        return edge.to_node;
+                    }
+                );
+
+                badgeAssignments.erase(
+                    std::remove_if(
+                        badgeAssignments.begin(),
+                        badgeAssignments.end(),
+                        [&](uint64_t id) {
+                            return !Edge::exists(dao.get_self(), id, daoId, common::DAO);
+                        }
+                    ),
+                    badgeAssignments.end()
+                );
+
+                for (auto& id : badgeAssignments) {
+                    auto doc = TypedDocument::withType(dao, id, common::ASSIGN_BADGE);
+
+                    auto cw = doc.getContentWrapper();
+
+                    cw.insertOrReplace(*cw.getGroupOrFail(SYSTEM), Content{
+                        "force_archive",
+                        1
+                        });
+
+                    cw.insertOrReplace(*cw.getGroupOrFail(DETAILS), Content{
+                        END_TIME,
+                        eosio::current_time_point()
+                        });
+
+                    doc.update();
+
+                    removeOldBadgesTrx.actions.emplace_back(eosio::action(
+                        eosio::permission_level(dao.get_self(), eosio::name("active")),
+                        dao.get_self(),
+                        eosio::name("archiverecur"),
+                        std::make_tuple(id)
+                    ));
+                }
+            };
+
+            cleanBadgesOf(badges::common::links::HEAD_DELEGATE);
+            cleanBadgesOf(badges::common::links::CHIEF_DELEGATE);
+
+            if (removeOldBadgesTrx.actions.size() > 0) {
+                auto dhoSettings = dao.getSettingsDocument();
+                auto nextID = dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
+
+                removeOldBadgesTrx.send(nextID, dao.get_self());
+
+                dhoSettings->setSetting(Content{ "next_schedule_id", nextID + 1 });
+            } 
+
+        }
+
         // Generate proposals for each one of the delegates
         // Note: These are auto-approved and instantly on.
-
         auto createAssignment = [&](const std::string& title, uint64_t member, uint64_t badge) {
 
             Member mem(dao, member);
 
             auto memAccount = mem.getAccount();
 
+            // TODO: I wonder if we could call this directly
             auto action = eosio::action(
                 eosio::permission_level(dao.get_self(), eosio::name("active")),
                 dao.get_self(),
@@ -417,20 +507,22 @@ namespace hypha {
             }
             };
 
-        auto chiefBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), upvote_common::links::CHIEF_DELEGATE);
-        auto chiefBadge = TypedDocument::withType(dao, chiefBadgeEdge.getToNode(), common::BADGE_NAME);
+        auto chiefBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::CHIEF_DELEGATE);
+        auto chiefBadgeId = chiefBadgeEdge.getToNode();
+        // auto chiefBadge = TypedDocument::withType(dao, chiefBadgeId, common::BADGE_NAME);
 
-        auto headBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), upvote_common::links::HEAD_DELEGATE);
-        auto headBadge = TypedDocument::withType(dao, headBadgeEdge.getToNode(), common::BADGE_NAME);
+        auto headBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::HEAD_DELEGATE);
+        auto headBadgeId = headBadgeEdge.getToNode();
+        // auto headBadge = TypedDocument::withType(dao, headBadgeId, common::BADGE_NAME);
 
         for (auto& chief : chiefDelegates) {
             if (chief != headDelegate) {
-                createAssignment("Chief Delegate", chief, chiefBadge.getID());
+                createAssignment("Chief Delegate", chief, chiefBadgeId);
             }
         }
 
         if (headDelegate) {
-            createAssignment("Head Delegate", headDelegate, headBadge.getID());
+            createAssignment("Head Delegate", headDelegate, headBadgeId);
         }
     }
 
@@ -499,8 +591,8 @@ namespace hypha {
             }
             };
 
-        cleanBadgesOf(upvote_common::links::HEAD_DELEGATE);
-        cleanBadgesOf(upvote_common::links::CHIEF_DELEGATE);
+        cleanBadgesOf(badges::common::links::HEAD_DELEGATE);
+        cleanBadgesOf(badges::common::links::CHIEF_DELEGATE);
 
         struct [[eosio::table("elect.state"), eosio::contract("genesis.eden")]] election_state_v0 {
             name lead_representative;
@@ -551,7 +643,7 @@ namespace hypha {
             }, state);
 
         //Send election id as 0 meaning that election was done outside
-        assignDelegateBadges(*this, dao_id, 0, chiefs, head, &trx);
+        assignDelegateBadges(*this, dao_id, 0, chiefs, head, false, &trx);
 
         //Trigger all cleanup and propose actions
         if (deferred) {
@@ -811,6 +903,7 @@ namespace hypha {
 
                 Edge::get(get_self(), election_id, upvote_common::links::CURRENT_ROUND).erase();
 
+                int32_t seed = election.getRunningSeed();
 
                 if (winners.size() > 11) {
                     // set up the next round
@@ -818,8 +911,6 @@ namespace hypha {
 
                     election.setCurrentRound(&round);
                     
-                    int32_t seed = election.getRunningSeed();
-
                     initRound(election, round, seed, winners);
 
                     scheduleElectionUpdate(*this, election, round.getEndDate());
@@ -837,12 +928,12 @@ namespace hypha {
 
                     // select head
                     UERandomGenerator rng(seed, 0);
-                    auto headIndex = rng.operator() % winners.size();
+                    auto headIndex = rng() % winners.size();
                     auto headDelegate = winners[headIndex];
 
                     eosio::print(" head del ix: ", headIndex, " winners size: ", winners.size(), " head del: ", headDelegate, " ");
 
-                    assignDelegateBadges(*this, daoId, election.getId(), winners, headDelegate);
+                    assignDelegateBadges(*this, daoId, election.getId(), winners, headDelegate, true);
 
                     election.setStatus(upvote_common::upvote_status::FINISHED);
                 }
