@@ -238,7 +238,7 @@ namespace hypha::upvote_election {
     {
         return ElectionRound(
             getDao(),
-            Edge::get(getDao().get_self(), getId(), links::ELECTION_ROUND).getToNode()
+            Edge::get(getDao().get_self(), getId(), links::CURRENT_ROUND).getToNode()
         );
     }
 

@@ -861,6 +861,7 @@ namespace hypha {
 
                 auto startRound = election.getStartRound();
                 election.setCurrentRound(&startRound);
+                election.update();
 
                 //Setup all candidates
                 auto delegates = getGraph().getEdgesFrom(daoId, badges::common::links::DELEGATE);
@@ -901,19 +902,21 @@ namespace hypha {
                     Edge(get_self(), get_self(), currentRound.getId(), winner, upvote_common::links::ROUND_WINNER);
                 }
 
-                Edge::get(get_self(), election_id, upvote_common::links::CURRENT_ROUND).erase();
 
                 int32_t seed = election.getRunningSeed();
 
                 if (winners.size() > 11) {
-                    eosio::print(" -> next round with mem ", winners.size(), " ");
 
                     // set up the next round
                     auto round = election.addRound();
-
+                    eosio::print(" -> next round with mem ", winners.size(), " rd: ", round.getId(), " ");
+                    
+                    Edge::get(get_self(), election_id, upvote_common::links::CURRENT_ROUND).erase();
                     election.setCurrentRound(&round);
+                    election.update();
                     
                     initRound(election, round, seed, winners);
+
 
                     scheduleElectionUpdate(*this, election, round.getEndDate());
                 }
@@ -921,7 +924,8 @@ namespace hypha {
                     eosio::print(" election ended. ");
 
                     // The election has ended.
-                    
+                    Edge::get(get_self(), election_id, upvote_common::links::CURRENT_ROUND).erase();
+
                     // delete ongoing election link
                     Edge::get(get_self(), daoId, election.getId(), upvote_common::links::ONGOING_ELECTION).erase();
 
@@ -1016,7 +1020,7 @@ namespace hypha {
 
         EOS_CHECK(
             currentRound.getId() == round_id,
-            "You can only vote on the current round"
+            "You can only vote on the current round"  + std::to_string(currentRound.getId())
         );
 
         // Check the group membership of voter and voted
