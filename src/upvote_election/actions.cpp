@@ -990,7 +990,7 @@ namespace hypha {
       void dao::uesubmitseed(uint64_t dao_id, eosio::checksum256 seed, name account) {
         eosio::require_auth(account);
         
-        auto edge = Edge::get(get_self(), dao_id, upvote_common::links::ELECTION);
+        auto edge = Edge::get(get_self(), dao_id, upvote_common::links::UPCOMING_ELECTION);
         
         auto electionId = edge.getToNode();
 
