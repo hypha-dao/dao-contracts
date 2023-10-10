@@ -391,10 +391,12 @@ namespace hypha {
 
         // Delete existing if required
         if (deleteExistingBadges) {
-            eosio::transaction removeOldBadgesTrx;
+            // Note: This must happen before we assign new badges, since new and old badge holders
+            // might be the same
+
+            // Note: This might not be needed since badges actually expire when their period is over.
 
             //Remove existing Head Delegate/Chief Delegate badges if any
-            // TODO: Make this a static(?) helper method and invoke from where needed.
             auto cleanBadgesOf = [&](const name& badgeEdge) {
                 auto badgeId = Edge::get(dao.get_self(), dao.getRootID(), badgeEdge).getToNode();
 
@@ -446,26 +448,24 @@ namespace hypha {
 
                     doc.update();
 
-                    removeOldBadgesTrx.actions.emplace_back(eosio::action(
+                    auto action = eosio::action(
                         eosio::permission_level(dao.get_self(), eosio::name("active")),
                         dao.get_self(),
                         eosio::name("archiverecur"),
                         std::make_tuple(id)
-                    ));
+                    );
+
+                    if (trx) {
+                        trx->actions.emplace_back(std::move(action));
+                    }
+                    else {
+                        action.send();
+                    }
                 }
             };
 
             cleanBadgesOf(badges::common::links::HEAD_DELEGATE);
             cleanBadgesOf(badges::common::links::CHIEF_DELEGATE);
-
-            if (removeOldBadgesTrx.actions.size() > 0) {
-                auto dhoSettings = dao.getSettingsDocument();
-                auto nextID = dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
-
-                removeOldBadgesTrx.send(nextID, dao.get_self());
-
-                dhoSettings->setSetting(Content{ "next_schedule_id", nextID + 1 });
-            } 
 
         }
 
@@ -906,6 +906,8 @@ namespace hypha {
                 int32_t seed = election.getRunningSeed();
 
                 if (winners.size() > 11) {
+                    eosio::print(" -> next round with mem ", winners.size(), " ");
+
                     // set up the next round
                     auto round = election.addRound();
 
