@@ -1411,7 +1411,6 @@ void dao::createSystemBadge(name badge_edge, string label, string icon) {
             Content(CONTENT_GROUP_LABEL, DETAILS),
             Content(common::STATE, common::STATE_APPROVED),
             Content(common::VOICE_COEFFICIENT, 10000),
-            Content(common::TITLE, label),
             Content(common::REWARD_COEFFICIENT, 10000),
             Content(common::PEG_COEFFICIENT, 10000),
             Content("dao", (int64_t)getRootID()),
