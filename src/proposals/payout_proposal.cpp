@@ -37,16 +37,11 @@ void PayoutProposal::checkTokenItems(Settings* daoSettings, ContentWrapper conte
         int64_t deferred = contentWrapper.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>();
         EOS_CHECK(deferred >= 0, DEFERRED + string(" must be greater than or equal to zero. You submitted: ") + std::to_string(deferred));
         EOS_CHECK(deferred <= 100, DEFERRED + string(" must be less than or equal to 100 (=100%). You submitted: ") + std::to_string(deferred));
-
-        auto rewardPegVal = tokens.reward.is_valid() ?
-             daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO) : 
-             eosio::asset{};
         
         auto salaries = calculateSalaries(SalaryConfig {
             .periodSalary = normalizeToken(usd),
-            .rewardToPegRatio = normalizeToken(rewardPegVal),
             .deferredPerc = deferred / 100.0,
-            .voiceMultipler = getMultiplier(daoSettings, common::VOICE_MULTIPLIER, 2.0),
+            .voiceMultipler = getMultiplier(daoSettings, common::VOICE_MULTIPLIER, 1.0),
             .rewardMultipler = getMultiplier(daoSettings, common::REWARD_MULTIPLIER, 1.0),
             .pegMultipler = getMultiplier(daoSettings, common::PEG_MULTIPLIER, 1.0)
         }, tokens);

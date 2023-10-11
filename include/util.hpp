@@ -38,7 +38,6 @@ namespace hypha
     {
       // double annualSalary;
       double periodSalary;
-      double rewardToPegRatio;
       double deferredPerc;
       double voiceMultipler = 2.0;
       double rewardMultipler = 1.0;
