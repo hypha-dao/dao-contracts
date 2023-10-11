@@ -124,11 +124,18 @@ void ElectionGroup::vote(int64_t from, int64_t to)
             majorityWinner = to;
         }
     }
-    
+    std::vector<Edge> winnerEdges = getDao().getGraph().getEdgesFrom(getId(), links::GROUP_WINNER);
+    if (winnerEdges.size() > 0) {
+        winnerEdges[0].erase();
+    }
+
     if (majorityWinner > 0 && selfVotes[majorityWinner]) {
         setWinner(majorityWinner);
-        update();
+        Edge(getDao().get_self(), getDao().get_self(), getId(), majorityWinner, links::GROUP_WINNER);
+    } else {
+        setWinner(-1);
     }
+    update();
     
 }
 

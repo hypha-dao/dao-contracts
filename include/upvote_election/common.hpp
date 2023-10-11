@@ -46,6 +46,7 @@ namespace links {
     inline constexpr auto NEXT_ROUND = eosio::name("ue.nextrnd");
     inline constexpr auto ROUND_CANDIDATE = eosio::name("ue.candidate");
     inline constexpr auto ROUND_WINNER = eosio::name("ue.winner");
+    inline constexpr auto GROUP_WINNER = eosio::name("ue.group.win");
     inline constexpr auto ELECTION_GROUP = eosio::name("ue.elctngrp");
     inline constexpr auto UP_VOTE_VOTE = eosio::name("ue.vote");
     inline constexpr auto UPVOTE_GROUP_WINNER = eosio::name("ue.winner");
