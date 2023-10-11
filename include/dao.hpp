@@ -199,7 +199,7 @@ namespace pricing {
 
       ACTION initcalendar(uint64_t calendar_id, uint64_t next_period);
       
-      ACTION reset(); // debugging - maybe with the dev flags
+      //ACTION reset(); // debugging - maybe with the dev flags
 
 #ifdef DEVELOP_BUILD_HELPERS
 
@@ -302,6 +302,7 @@ namespace pricing {
 
       ACTION createroot(const std::string &notes);
       ACTION createdao(ContentGroups &config);
+
       ACTION createdaodft(ContentGroups &config);
       ACTION deletedaodft(uint64_t dao_draft_id);
       ACTION archiverecur(uint64_t document_id);
@@ -331,9 +332,10 @@ namespace pricing {
 #endif
 #ifdef USE_UPVOTE_ELECTIONS
       //Upvote System
-      ACTION testgrouprng(std::vector<uint64_t> ids, uint32_t seed);
-      ACTION testgroupr1(uint32_t num_members, uint32_t seed);
-      ACTION testround(uint64_t dao_id);
+      // ACTION testgrouprng(std::vector<uint64_t> ids, uint32_t seed);
+      // ACTION testgroupr1(uint32_t num_members, uint32_t seed);
+      // ACTION testround(uint64_t dao_id);
+      ACTION inituebadges();
 
       ACTION castupvote(uint64_t round_id, uint64_t group_id, name voter, uint64_t voted_id);
       ACTION uesubmitseed(uint64_t dao_id, eosio::checksum256 seed, name account);

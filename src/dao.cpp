@@ -1373,6 +1373,12 @@ void dao::initSysBadges() {
 
 }
 
+void dao::inituebadges() {
+  createSystemBadge(badges::common::links::DELEGATE, "Upvote Delegate Badge", "");
+  createSystemBadge(badges::common::links::CHIEF_DELEGATE, "Chief Delegate Badge", "");
+  createSystemBadge(badges::common::links::HEAD_DELEGATE, "Head Delegate Badge", "");
+}
+
 void dao::createSystemBadge(name badge_edge, string label, string icon) {
   
   badges::SystemBadgeType systemBadgeType;
@@ -1403,6 +1409,7 @@ void dao::createSystemBadge(name badge_edge, string label, string icon) {
             Content(CONTENT_GROUP_LABEL, DETAILS),
             Content(common::STATE, common::STATE_APPROVED),
             Content(common::VOICE_COEFFICIENT, 10000),
+            Content(common::TITLE, label),
             Content(common::REWARD_COEFFICIENT, 10000),
             Content(common::PEG_COEFFICIENT, 10000),
             Content("dao", (int64_t)getRootID()),
@@ -3555,34 +3562,24 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
   Edge::write(get_self(), get_self(), daoID, settingsDoc.getID(), common::SETTINGS_EDGE);
 }
 
-void dao::reset() {
-  require_auth(_self);
+// void dao::reset() {
 
-  delete_table<election_vote_table>(get_self(), 0);
-  delete_table<election_vote_table>(get_self(), 1);
-  delete_table<election_vote_table>(get_self(), 2);
-  delete_table<election_vote_table>(get_self(), 3);
-  delete_table<token_to_dao_table>(get_self(), get_self().value);
-  delete_table<dao_table>(get_self(), get_self().value);
-  delete_table<member_table>(get_self(), get_self().value);
-  delete_table<payment_table>(get_self(), get_self().value);
+//   check(false, "reset is only for testing");
 
-  delete_table<Document::document_table>(get_self(), get_self().value);
-  delete_table<Edge::edge_table>(get_self(), get_self().value);
+//   require_auth(_self);
 
-  // Document::document_table d_t(get_self(), get_self().value);
-  // auto d_itr = d_t.begin();
-  // while (d_itr != d_t.end()) {
-  //   d_itr = d_t.erase(d_itr);
-  // }
+//   delete_table<election_vote_table>(get_self(), 0);
+//   delete_table<election_vote_table>(get_self(), 1);
+//   delete_table<election_vote_table>(get_self(), 2);
+//   delete_table<election_vote_table>(get_self(), 3);
+//   delete_table<token_to_dao_table>(get_self(), get_self().value);
+//   delete_table<dao_table>(get_self(), get_self().value);
+//   delete_table<member_table>(get_self(), get_self().value);
+//   delete_table<payment_table>(get_self(), get_self().value);
+//   delete_table<Document::document_table>(get_self(), get_self().value);
+//   delete_table<Edge::edge_table>(get_self(), get_self().value);
 
-  // Edge::edge_table e_t(get_self(), get_self().value);
-  // auto e_itr = e_t.begin();
-  // while (e_itr != e_t.end()) {
-  //   e_itr = e_t.erase(e_itr);
-  // }
-
-}
+// }
 
 
 } // namespace hypha

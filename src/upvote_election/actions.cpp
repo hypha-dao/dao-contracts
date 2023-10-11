@@ -677,112 +677,97 @@ namespace hypha {
 
     /// @brief Test random group creation
     /// @param ids 
-    void dao::testgroupr1(uint32_t num_members, uint32_t seed) {
+    // void dao::testgroupr1(uint32_t num_members, uint32_t seed) {
 
 
-        require_auth(get_self());
+    //     require_auth(get_self());
 
-        std::vector<uint64_t> ids(num_members); // Initialize a vector with 100 elements
+    //     std::vector<uint64_t> ids(num_members); // Initialize a vector with 100 elements
 
-        // Set each element's value to its index
-        for (size_t i = 0; i < num_members; ++i) {
-            ids[i] = static_cast<uint64_t>(i);
-        }
-        testgrouprng(ids, seed);
-
-        // for (uint32_t n = 0; n < num_members; ++n) {
-        //     auto rounds = count_rounds(n);
-
-        //     std::vector<uint32_t> group_sizes = get_group_sizes(n, rounds);
-
-        //     eosio::print(" N: ", n, " rounds: ", rounds, " g_sizes: ");
-
-        //     for (uint32_t s : group_sizes) {
-        //         eosio::print(s, " ");
-        //     }
-
-        //     eosio::print(" ::: ");
+    //     // Set each element's value to its index
+    //     for (size_t i = 0; i < num_members; ++i) {
+    //         ids[i] = static_cast<uint64_t>(i);
+    //     }
+    //     testgrouprng(ids, seed);
 
 
-        // }
 
+    // }
 
-    }
-
-    void dao::testround(uint64_t dao_id) {
-        require_auth(get_self());
+    // void dao::testround(uint64_t dao_id) {
+    //     require_auth(get_self());
         
-        auto edge = Edge::get(get_self(), dao_id, upvote_common::links::ELECTION);
+    //     auto edge = Edge::get(get_self(), dao_id, upvote_common::links::ELECTION);
         
-        auto electionId = edge.getToNode();
+    //     auto electionId = edge.getToNode();
         
-        eosio::print(" election id: ", electionId, " ::: ");
+    //     eosio::print(" election id: ", electionId, " ::: ");
 
-        UpvoteElection upvoteElection(*this, electionId);
+    //     UpvoteElection upvoteElection(*this, electionId);
 
-        upvoteElection.addRound();
+    //     upvoteElection.addRound();
 
-        // for (uint32_t n = 0; n < num_members; ++n) {
-        //     auto rounds = count_rounds(n);
+    //     for (uint32_t n = 0; n < num_members; ++n) {
+    //         auto rounds = count_rounds(n);
 
-        //     std::vector<uint32_t> group_sizes = get_group_sizes(n, rounds);
+    //         std::vector<uint32_t> group_sizes = get_group_sizes(n, rounds);
 
-        //     eosio::print(" N: ", n, " rounds: ", rounds, " g_sizes: ");
+    //         eosio::print(" N: ", n, " rounds: ", rounds, " g_sizes: ");
 
-        //     for (uint32_t s : group_sizes) {
-        //         eosio::print(s, " ");
-        //     }
+    //         for (uint32_t s : group_sizes) {
+    //             eosio::print(s, " ");
+    //         }
 
-        //     eosio::print(" ::: ");
-
-
-        // }
+    //         eosio::print(" ::: ");
 
 
-    }
+    //     }
 
 
-    void dao::testgrouprng(std::vector<uint64_t> ids, uint32_t seed) {
+    // }
 
-        require_auth(get_self());
 
-        eosio::print(" ids: ");
-        for (const uint64_t& element : ids) {
-            eosio::print(element, " ");
-        }
+    // void dao::testgrouprng(std::vector<uint64_t> ids, uint32_t seed) {
 
-        UERandomGenerator rng(seed, 0);
+    //     require_auth(get_self());
 
-        auto randomIds = ids;
+    //     eosio::print(" ids: ");
+    //     for (const uint64_t& element : ids) {
+    //         eosio::print(element, " ");
+    //     }
 
-        std::shuffle(randomIds.begin(), randomIds.end(), rng);
+    //     UERandomGenerator rng(seed, 0);
 
-        eosio::print(" random ids: ");
-        for (const uint64_t& element : randomIds) {
-            eosio::print(element, " ");
-        }
+    //     auto randomIds = ids;
 
-        //// Eden defines min group size as 4, but depending on 
-        //// the numbers, Edenia code does something slightly different
-        // int minGroupsSize = 4;
+    //     std::shuffle(randomIds.begin(), randomIds.end(), rng);
 
-        //// use Edenia code to figure out group size
-        auto n = ids.size();
-        auto rounds = count_rounds(n);
-        std::vector<uint32_t> group_sizes = get_group_sizes(n, rounds);
-        int minGroupsSize = group_sizes[0];
-        auto groups = createGroups(randomIds, minGroupsSize);
+    //     eosio::print(" random ids: ");
+    //     for (const uint64_t& element : randomIds) {
+    //         eosio::print(element, " ");
+    //     }
 
-        eosio::print(" groups min size: ", minGroupsSize);
-        for (uint32_t i = 0; i < groups.size(); ++i) {
-            auto group = groups[i];
-            eosio::print(" group: ", i, "(", group.size(), "): ");
-            for (const uint64_t& element : group) {
-                eosio::print(element, " ");
-            }
-        }
+    //     //// Eden defines min group size as 4, but depending on 
+    //     //// the numbers, Edenia code does something slightly different
+    //     // int minGroupsSize = 4;
 
-    }
+    //     //// use Edenia code to figure out group size
+    //     auto n = ids.size();
+    //     auto rounds = count_rounds(n);
+    //     std::vector<uint32_t> group_sizes = get_group_sizes(n, rounds);
+    //     int minGroupsSize = group_sizes[0];
+    //     auto groups = createGroups(randomIds, minGroupsSize);
+
+    //     eosio::print(" groups min size: ", minGroupsSize);
+    //     for (uint32_t i = 0; i < groups.size(); ++i) {
+    //         auto group = groups[i];
+    //         eosio::print(" group: ", i, "(", group.size(), "): ");
+    //         for (const uint64_t& element : group) {
+    //             eosio::print(element, " ");
+    //         }
+    //     }
+
+    // }
 
     // 36 / 6 = 6 => 1 round, 1 HD round
     size_t numrounds(size_t num_delegates) {
