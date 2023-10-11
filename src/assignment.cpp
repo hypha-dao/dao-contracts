@@ -57,55 +57,35 @@ namespace hypha
         return std::nullopt;
     }
 
-    eosio::asset Assignment::getRewardSalary() 
+    AssetBatch Assignment::getSalary() 
     {
-      auto rewardToken = m_daoSettings->getSettingOrDefault<eosio::asset>(common::REWARD_TOKEN);
+      //Since multipliers can change from time to time, we need to recalculate salary using the latest values
+      auto tokens = AssetBatch {
+          .reward = m_daoSettings->getSettingOrDefault<asset>(common::REWARD_TOKEN),
+          .peg = m_daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN),
+          .voice = m_daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
+      };
 
-      if (!rewardToken.is_valid()) return {};
-
-      //It's posible that the assignment was created before the reward token was setup, so let's check for that case
       auto cw = getContentWrapper();
 
-      if (!cw.exists(DETAILS, common::REWARD_SALARY_PER_PERIOD)) return {};
+      asset usdPerPeriod = cw.getOrFail(DETAILS, USD_SALARY_PER_PERIOD)->getAs<eosio::asset>();
 
-      asset usdPerPeriod = cw
-                           .getOrFail(DETAILS, USD_SALARY_PER_PERIOD)->getAs<eosio::asset>();
+      int64_t initialTimeshare = getInitialTimeShare().getContentWrapper()
+                                                      .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
 
-      int64_t initialTimeshare = getInitialTimeShare()
-                                 .getContentWrapper()
-                                 .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
+      int64_t deferred = cw.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>();
 
-      double usdPerPeriodCommitmentAdjusted = normalizeToken(usdPerPeriod) * (initialTimeshare / 100.0);
+      SalaryConfig salaryConf {
+          .periodSalary = normalizeToken(usdPerPeriod) * (initialTimeshare / 100.0),
+          .deferredPerc = deferred / 100.0,
+          .voiceMultipler = getMultiplier(m_daoSettings, common::VOICE_MULTIPLIER, 1.0),
+          .rewardMultipler = getMultiplier(m_daoSettings, common::REWARD_MULTIPLIER, 1.0),
+          .pegMultipler = getMultiplier(m_daoSettings, common::PEG_MULTIPLIER, 1.0)
+      };
 
-      double deferred = static_cast<float>(cw.getOrFail(DETAILS, DEFERRED)->getAs<int64_t>()) / 100.0;
-            
-      auto rewardToPegVal = normalizeToken(m_daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO));
+      AssetBatch salary = calculateSalaries(salaryConf, tokens);
 
-      auto rewardPerPeriod = usdPerPeriodCommitmentAdjusted * deferred / rewardToPegVal;
-    
-      return denormalizeToken(rewardPerPeriod, rewardToken);
-    }
-
-    eosio::asset Assignment::getVoiceSalary()
-    {
-      return getContentWrapper()
-              .getOrFail(DETAILS, common::VOICE_SALARY_PER_PERIOD)->getAs<eosio::asset>();
-    }
-
-    eosio::asset Assignment::getPegSalary()
-    {
-      //Since this could be optional let's return invalid asset if not found
-      auto pegToken = m_daoSettings->getSettingOrDefault<eosio::asset>(common::PEG_TOKEN);
-
-      if (!pegToken.is_valid()) return {}; 
-
-      //It's posible that the assignment was created before the reward token was setup, so let's check for that case
-      auto cw = getContentWrapper();
-
-      if (!cw.exists(DETAILS, common::PEG_SALARY_PER_PERIOD)) return {};
-
-      return getContentWrapper()
-              .getOrFail(DETAILS, common::PEG_SALARY_PER_PERIOD)->getAs<eosio::asset>();
+      return salary;
     }
 
     TimeShare Assignment::getInitialTimeShare() 

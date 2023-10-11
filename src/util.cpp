@@ -40,7 +40,7 @@ namespace hypha
         }
 
         if (tokens.reward.is_valid()) {
-            double rewardSalaryPerPeriod = (salaryConf.periodSalary * salaryConf.deferredPerc) / salaryConf.rewardToPegRatio;
+            double rewardSalaryPerPeriod = (salaryConf.periodSalary * salaryConf.deferredPerc);
             salaries.reward = denormalizeToken(rewardSalaryPerPeriod * salaryConf.rewardMultipler, tokens.reward);
         }
 

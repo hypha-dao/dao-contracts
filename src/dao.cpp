@@ -787,9 +787,11 @@ void dao::claimnextper(uint64_t assignment_id)
     .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
   };
 
-  const asset pegSalary = assignment.getPegSalary();
-  const asset voiceSalary = assignment.getVoiceSalary();
-  const asset rewardSalary = assignment.getRewardSalary();
+  auto salary  = assignment.getSalary();
+
+  const asset& pegSalary = salary.peg;
+  const asset& voiceSalary = salary.voice;
+  const asset& rewardSalary = salary.reward;
 
   const int64_t initTimeShare = assignment.getInitialTimeShare()
     .getContentWrapper()
@@ -2620,44 +2622,29 @@ void dao::adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferred
       approvedDeferredPerc, " - ", UPPER_LIMIT, "]:", new_deferred_perc_x100)
   );
 
-  asset usdPerPeriod = cw.getOrFail(detailsIdx, USD_SALARY_PER_PERIOD)
-    .second->getAs<eosio::asset>();
-
-  int64_t initialTimeshare = assignment.getInitialTimeShare()
-    .getContentWrapper()
-    .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-
-  auto daoSettings = getSettingsDocument(assignment.getDaoID());
-
-  auto usdPerPeriodCommitmentAdjusted = normalizeToken(usdPerPeriod) * (initialTimeshare / 100.0);
-
-  auto deferred = new_deferred_perc_x100 / 100.0;
-
-  auto pegVal = usdPerPeriodCommitmentAdjusted * (1.0 - deferred);
-  //husdVal.symbol = common::S_PEG;
-
+  //Update deferred value
   cw.insertOrReplace(*detailsGroup, Content{
     DEFERRED,
     new_deferred_perc_x100
-    });
+  });
 
-  auto rewardToPegVal = normalizeToken(daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO));
-
-  auto rewardToken = daoSettings->getOrFail<eosio::asset>(common::REWARD_TOKEN);
-
-  auto pegToken = daoSettings->getOrFail<eosio::asset>(common::PEG_TOKEN);
-
-  auto rewardVal = usdPerPeriodCommitmentAdjusted * deferred / rewardToPegVal;
+  //Get new salaries with the updated deferred
+  auto salaries = assignment.getSalary();
 
   cw.insertOrReplace(*detailsGroup, Content{
-  common::REWARD_SALARY_PER_PERIOD,
-  denormalizeToken(rewardVal, rewardToken)
-    });
+    common::REWARD_SALARY_PER_PERIOD,
+    salaries.reward
+  });
 
   cw.insertOrReplace(*detailsGroup, Content{
     common::PEG_SALARY_PER_PERIOD,
-    denormalizeToken(pegVal, pegToken)
-    });
+    salaries.peg
+  });
+
+  cw.insertOrReplace(*detailsGroup, Content{
+    common::VOICE_SALARY_PER_PERIOD,
+    salaries.voice
+  });
 
   assignment.update();
 }
@@ -3142,38 +3129,7 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
 
 void dao::pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create) {
 
-  if (settingsGroup.size() < 4) {
-    
-    auto rewardMultiplier = configCW.get(detailsIdx, common::REWARD_MULTIPLIER).second;
-    auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
-
-    // If we need to add 1 other settings just change 4 to 5,6,7 etc. and add the null check here
-    size_t defined = size_t(rewardMultiplier != nullptr) + size_t(rewardToPegTokenRatio != nullptr);
-
-    EOS_CHECK(
-      (settingsGroup.size() > 1) && 
-      (defined == settingsGroup.size() - 1),
-      "Missing some expected parameters [utility_token_multiplier, reward_to_peg_ratio]"
-    )
-
-    if (rewardMultiplier) {
-      rewardMultiplier->getAs<int64_t>();
-      ContentWrapper::insertOrReplace(settingsGroup, *rewardMultiplier);
-    }
-
-    if (rewardToPegTokenRatio) {
-      rewardToPegTokenRatio->getAs<asset>();
-      ContentWrapper::insertOrReplace(settingsGroup, std::move(*rewardToPegTokenRatio));
-    }
-
-    return;
-  }
-
   auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
-
-  auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
-
-  rewardToPegTokenRatio->getAs<asset>();
 
   auto rewardTokenMaxSupply = configCW.getOrFail(detailsIdx, "reward_token_max_supply").second;
 
@@ -3206,7 +3162,6 @@ void dao::pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settin
   settingsGroup.push_back(*rewardToken);
   settingsGroup.push_back(std::move(rewardTokenName));
   settingsGroup.push_back(*rewardTokenMaxSupply);
-  ContentWrapper::insertOrReplace(settingsGroup, std::move(*rewardToPegTokenRatio));
   ContentWrapper::insertOrReplace(settingsGroup, *rewardMultiplier);
 
   if (create) {

@@ -24,7 +24,6 @@ namespace hypha::common
     inline constexpr auto PEG_TOKEN = "peg_token";
     inline constexpr auto VOICE_TOKEN = "voice_token";
     inline constexpr auto REWARD_TOKEN = "reward_token";
-    inline constexpr auto REWARD_TO_PEG_RATIO = "reward_to_peg_ratio";
     inline constexpr auto NATIVE_TOKEN_TO_USD_RATIO = "native_token_to_usd_ratio";
     inline constexpr symbol S_REWARD("BM", 2);
     inline constexpr symbol S_VOICE("BMV", 2);
