@@ -831,17 +831,21 @@ namespace hypha {
         if (status == upvote_common::upvote_status::UPCOMING) {
             auto start = election.getStartDate();
 
-                    std::string timeStrNow = eosio::time_point_sec(now).to_string();
-                    std::string timeStrStart = eosio::time_point_sec(start).to_string();
-
-            eosio::print(" upcoming ", timeStrNow, " ", timeStrStart);
-
             //Let's update as we already started
             if (start <= now || force) {
                 // START....
                 eosio::print(" -> starting ");
 
                 Edge::get(get_self(), daoId, election.getId(), upvote_common::links::UPCOMING_ELECTION).erase();
+
+                //Setup all candidates
+                auto delegates = getGraph().getEdgesFrom(daoId, badges::common::links::DELEGATE);
+                if (delegates.size() < 1) {
+                    eosio::print(" no delegates, cancel election! ");
+                    election.setStatus(upvote_common::upvote_status::CANCELED);
+                    election.update();
+                    return;
+                }
 
                 Edge(get_self(), get_self(), daoId, election.getId(), upvote_common::links::ONGOING_ELECTION);
 
@@ -851,10 +855,8 @@ namespace hypha {
                 election.setCurrentRound(&startRound);
                 election.update();
 
-                //Setup all candidates
-                auto delegates = getGraph().getEdgesFrom(daoId, badges::common::links::DELEGATE);
-
                 std::vector<uint64_t> delegateIds;
+                
                 delegateIds.reserve(delegates.size());
 
                 for (auto& delegate : delegates) {
