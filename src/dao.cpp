@@ -1375,12 +1375,6 @@ void dao::initSysBadges() {
 
 }
 
-void dao::inituebadges() {
-  createSystemBadge(badges::common::links::DELEGATE, "Upvote Delegate Badge", "");
-  createSystemBadge(badges::common::links::CHIEF_DELEGATE, "Chief Delegate Badge", "");
-  createSystemBadge(badges::common::links::HEAD_DELEGATE, "Head Delegate Badge", "");
-}
-
 void dao::createSystemBadge(name badge_edge, string label, string icon) {
   
   badges::SystemBadgeType systemBadgeType;
@@ -3518,7 +3512,7 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
 
 // void dao::reset() {
 
-//   check(false, "reset is only for testing");
+//   // eosio::check(false, "reset is only for testing");
 
 //   require_auth(_self);
 
