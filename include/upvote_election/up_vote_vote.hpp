@@ -30,7 +30,7 @@ public:
 private:
     virtual const std::string buildNodeLabel(ContentGroups &content) override
     {
-        return "Vote Group";
+        return "UpVote";
     }
 };
 
