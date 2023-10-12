@@ -199,7 +199,7 @@ namespace pricing {
 
       ACTION initcalendar(uint64_t calendar_id, uint64_t next_period);
       
-      //ACTION reset(); // debugging - maybe with the dev flags
+      ACTION reset(); // debugging - maybe with the dev flags
 
 #ifdef DEVELOP_BUILD_HELPERS
 

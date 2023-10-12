@@ -158,7 +158,7 @@ namespace hypha::upvote_election {
         return {};
     }
 
-    void ElectionRound::addElectionGroup(std::vector<uint64_t> accound_ids)
+    void ElectionRound::addElectionGroup(std::vector<uint64_t> accound_ids, int64_t winner)
     {
         ElectionGroup electionGroup(
             getDao(),   
@@ -166,10 +166,13 @@ namespace hypha::upvote_election {
             accound_ids,  
             ElectionGroupData{
                 .member_count = accound_ids.size(),
-                .winner = -1
+                .winner = winner
             }
         );
 
+        if (winner != -1) {
+            Edge(getDao().get_self(), getDao().get_self(), electionGroup.getId(), winner, links::GROUP_WINNER);
+        }
     }
 
 }

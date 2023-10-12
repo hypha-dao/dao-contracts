@@ -31,7 +31,7 @@ public:
     void setNextRound(ElectionRound* nextRound) const;
     std::unique_ptr<ElectionRound> getNextRound() const;
     
-    void addElectionGroup(std::vector<uint64_t> accound_ids);
+    void addElectionGroup(std::vector<uint64_t> accound_ids, int64_t winner = -1);
     
 private:
     virtual const std::string buildNodeLabel(ContentGroups &content) override

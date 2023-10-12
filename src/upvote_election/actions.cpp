@@ -347,6 +347,12 @@ namespace hypha {
 
     }
 
+    static void initLastRound(UpvoteElection& election, ElectionRound& round, std::vector<uint64_t> delegateIds, int64_t winner) {
+        auto groups = createGroupsEden(delegateIds);
+        eosio::check(groups.size() == 1, "last group is 1");
+        round.addElectionGroup(groups[0], winner);
+    }
+
     static void scheduleElectionUpdate(dao& dao, UpvoteElection& election, time_point date)
     {
         if (date < eosio::current_time_point()) return;
@@ -386,9 +392,6 @@ namespace hypha {
         bool deleteExistingBadges,
         eosio::transaction* trx = nullptr)
     {
-        // TODO This removes and adds badges. They're all pretty expensive operations but at most there's 11 badges
-        // So it should work in all cases. If not we could pack it into deferred transactions. 
-
         // Delete existing if required
         if (deleteExistingBadges) {
             // Note: This must happen before we assign new badges, since new and old badge holders
@@ -477,7 +480,6 @@ namespace hypha {
 
             auto memAccount = mem.getAccount();
 
-            // TODO: I wonder if we could call this directly
             auto action = eosio::action(
                 eosio::permission_level(dao.get_self(), eosio::name("active")),
                 dao.get_self(),
@@ -505,15 +507,15 @@ namespace hypha {
             else {
                 action.send();
             }
-            };
+        };
 
         auto chiefBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::CHIEF_DELEGATE);
         auto chiefBadgeId = chiefBadgeEdge.getToNode();
-        // auto chiefBadge = TypedDocument::withType(dao, chiefBadgeId, common::BADGE_NAME);
+        //auto chiefBadge = TypedDocument::withType(dao, chiefBadgeId, common::BADGE_NAME);
 
         auto headBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::HEAD_DELEGATE);
         auto headBadgeId = headBadgeEdge.getToNode();
-        // auto headBadge = TypedDocument::withType(dao, headBadgeId, common::BADGE_NAME);
+        //auto headBadge = TypedDocument::withType(dao, headBadgeId, common::BADGE_NAME);
 
         for (auto& chief : chiefDelegates) {
             if (chief != headDelegate) {
@@ -813,6 +815,7 @@ namespace hypha {
     // force flag: force update of status - for debugging, not used in normal use - true requires self authorization
     void dao::updateupvelc(uint64_t election_id, bool reschedule, bool force)
     {
+
         if (force) {
             require_auth(get_self());
         }
@@ -899,7 +902,6 @@ namespace hypha {
                     Edge::get(get_self(), election_id, upvote_common::links::CURRENT_ROUND).erase();
                     election.setCurrentRound(&round);
                     election.update();
-                    
                     initRound(election, round, seed, winners);
 
 
@@ -908,8 +910,12 @@ namespace hypha {
                 else {
                     eosio::print(" election ended. ");
 
-                    // The election has ended.
+                    auto round = election.addRound();
+
+                    // Set up the last round to store winners
                     Edge::get(get_self(), election_id, upvote_common::links::CURRENT_ROUND).erase();
+                    election.setCurrentRound(&round);
+                    election.update();
 
                     // delete ongoing election link
                     Edge::get(get_self(), daoId, election.getId(), upvote_common::links::ONGOING_ELECTION).erase();
@@ -923,6 +929,8 @@ namespace hypha {
                     auto headDelegate = winners[headIndex];
 
                     eosio::print(" head del ix: ", headIndex, " winners size: ", winners.size(), " head del: ", headDelegate, " ");
+
+                    initLastRound(election, round, winners, headDelegate);
 
                     assignDelegateBadges(*this, daoId, election.getId(), winners, headDelegate, true);
 

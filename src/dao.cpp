@@ -3510,24 +3510,24 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
   Edge::write(get_self(), get_self(), daoID, settingsDoc.getID(), common::SETTINGS_EDGE);
 }
 
-// void dao::reset() {
+void dao::reset() {
 
-//   // eosio::check(false, "reset is only for testing");
+  eosio::check(false, "reset is only for testing");
 
-//   require_auth(_self);
+  require_auth(_self);
 
-//   delete_table<election_vote_table>(get_self(), 0);
-//   delete_table<election_vote_table>(get_self(), 1);
-//   delete_table<election_vote_table>(get_self(), 2);
-//   delete_table<election_vote_table>(get_self(), 3);
-//   delete_table<token_to_dao_table>(get_self(), get_self().value);
-//   delete_table<dao_table>(get_self(), get_self().value);
-//   delete_table<member_table>(get_self(), get_self().value);
-//   delete_table<payment_table>(get_self(), get_self().value);
-//   delete_table<Document::document_table>(get_self(), get_self().value);
-//   delete_table<Edge::edge_table>(get_self(), get_self().value);
+  delete_table<election_vote_table>(get_self(), 0);
+  delete_table<election_vote_table>(get_self(), 1);
+  delete_table<election_vote_table>(get_self(), 2);
+  delete_table<election_vote_table>(get_self(), 3);
+  delete_table<token_to_dao_table>(get_self(), get_self().value);
+  delete_table<dao_table>(get_self(), get_self().value);
+  delete_table<member_table>(get_self(), get_self().value);
+  delete_table<payment_table>(get_self(), get_self().value);
+  delete_table<Document::document_table>(get_self(), get_self().value);
+  delete_table<Edge::edge_table>(get_self(), get_self().value);
 
-// }
+}
 
 
 } // namespace hypha
