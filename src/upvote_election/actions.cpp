@@ -389,88 +389,16 @@ namespace hypha {
         uint64_t electionId, 
         const std::vector<uint64_t>& chiefDelegates, 
         uint64_t headDelegate, 
-        bool deleteExistingBadges,
         eosio::transaction* trx = nullptr)
     {
-        // Delete existing if required
-        if (deleteExistingBadges) {
-            // Note: This must happen before we assign new badges, since new and old badge holders
-            // might be the same
 
-            // Note: This might not be needed since badges actually expire when their period is over.
+        auto chiefBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::CHIEF_DELEGATE);
+        auto chiefBadgeId = chiefBadgeEdge.getToNode();
+        //auto chiefBadge = TypedDocument::withType(dao, chiefBadgeId, common::BADGE_NAME);
 
-            //Remove existing Head Delegate/Chief Delegate badges if any
-            auto cleanBadgesOf = [&](const name& badgeEdge) {
-                auto badgeId = Edge::get(dao.get_self(), dao.getRootID(), badgeEdge).getToNode();
-
-                auto badgeAssignmentEdges = dao.getGraph().getEdgesFrom(badgeId, common::ASSIGNMENT);
-
-                if (badgeAssignmentEdges.size() == 0) {
-                    eosio::print(" no existing badge holders ", badgeEdge);
-                    return;
-                }
-
-                //Filter out those that are not from the specified DAO
-                auto badgeAssignments = std::vector<uint64_t>{};
-                badgeAssignments.reserve(badgeAssignmentEdges.size());
-
-                std::transform(
-                    badgeAssignmentEdges.begin(),
-                    badgeAssignmentEdges.end(),
-                    std::back_inserter(badgeAssignments),
-                    [](const Edge& edge) {
-                        return edge.to_node;
-                    }
-                );
-
-                badgeAssignments.erase(
-                    std::remove_if(
-                        badgeAssignments.begin(),
-                        badgeAssignments.end(),
-                        [&](uint64_t id) {
-                            return !Edge::exists(dao.get_self(), id, daoId, common::DAO);
-                        }
-                    ),
-                    badgeAssignments.end()
-                );
-
-                for (auto& id : badgeAssignments) {
-                    auto doc = TypedDocument::withType(dao, id, common::ASSIGN_BADGE);
-
-                    auto cw = doc.getContentWrapper();
-
-                    cw.insertOrReplace(*cw.getGroupOrFail(SYSTEM), Content{
-                        "force_archive",
-                        1
-                        });
-
-                    cw.insertOrReplace(*cw.getGroupOrFail(DETAILS), Content{
-                        END_TIME,
-                        eosio::current_time_point()
-                        });
-
-                    doc.update();
-
-                    auto action = eosio::action(
-                        eosio::permission_level(dao.get_self(), eosio::name("active")),
-                        dao.get_self(),
-                        eosio::name("archiverecur"),
-                        std::make_tuple(id)
-                    );
-
-                    if (trx) {
-                        trx->actions.emplace_back(std::move(action));
-                    }
-                    else {
-                        action.send();
-                    }
-                }
-            };
-
-            cleanBadgesOf(badges::common::links::HEAD_DELEGATE);
-            cleanBadgesOf(badges::common::links::CHIEF_DELEGATE);
-
-        }
+        auto headBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::HEAD_DELEGATE);
+        auto headBadgeId = headBadgeEdge.getToNode();
+        //auto headBadge = TypedDocument::withType(dao, headBadgeId, common::BADGE_NAME);
 
         // Generate proposals for each one of the delegates
         // Note: These are auto-approved and instantly on.
@@ -508,14 +436,6 @@ namespace hypha {
                 action.send();
             }
         };
-
-        auto chiefBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::CHIEF_DELEGATE);
-        auto chiefBadgeId = chiefBadgeEdge.getToNode();
-        //auto chiefBadge = TypedDocument::withType(dao, chiefBadgeId, common::BADGE_NAME);
-
-        auto headBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::HEAD_DELEGATE);
-        auto headBadgeId = headBadgeEdge.getToNode();
-        //auto headBadge = TypedDocument::withType(dao, headBadgeId, common::BADGE_NAME);
 
         for (auto& chief : chiefDelegates) {
             if (chief != headDelegate) {
@@ -934,7 +854,7 @@ namespace hypha {
 
                     initLastRound(election, round, winners, headDelegate);
 
-                    assignDelegateBadges(*this, daoId, election.getId(), winners, headDelegate, true);
+                    assignDelegateBadges(*this, daoId, election.getId(), winners, headDelegate);
 
                     election.setStatus(upvote_common::upvote_status::FINISHED);
                 }
