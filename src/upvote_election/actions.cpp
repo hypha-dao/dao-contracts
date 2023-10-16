@@ -955,6 +955,26 @@ namespace hypha {
 
     }
 
+    void dao::upvotevideo(uint64_t group_id, name account, std::string link)
+    {
+        // Check auth
+        eosio::require_auth(account);
+        auto memberId = getMemberID(account);
+
+        // Check the group membership of voter and voted
+        ElectionGroup group(*this, group_id);
+
+        EOS_CHECK(
+            group.isElectionRoundMember(memberId),
+            "Only members of the group can vote."
+        );
+
+        group.setVideoLink(link);
+        group.update();
+
+    }
+
+
 
     /*
     election_config: [

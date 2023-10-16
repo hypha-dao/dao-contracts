@@ -21,7 +21,8 @@ class ElectionGroup : public TypedDocument
     DECLARE_DOCUMENT(
         Data,
         PROPERTY(member_count, int64_t, MemberCount, USE_GETSET),
-        PROPERTY(winner, int64_t, Winner, USE_GETSET)
+        PROPERTY(winner, int64_t, Winner, USE_GETSET),
+        PROPERTY(videolink, string, VideoLink, USE_GETSET)
         
     )
 public:
