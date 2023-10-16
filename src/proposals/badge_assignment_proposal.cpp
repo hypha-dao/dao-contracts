@@ -122,8 +122,13 @@ namespace hypha
                         upvote_election::UpvoteElection upvoteElection(m_dao, election);
                         //Set start as when the election started, 
                         // this way duration syncs with the duration of the election
-
-                        start = upvoteElection.getStartDate();
+                        auto electionStartDate = upvoteElection.getStartDate();
+                        if (start < electionStartDate) {
+                            // this doesn't happen, except while debugging and forcing elections to start
+                            // debug code. In debug mode, keep it at now time point to get the badge assignment.
+                        } else {
+                            start = electionStartDate;
+                        }
                         duration = upvoteElection.getDuration();
                     }
                     else {
