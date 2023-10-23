@@ -842,6 +842,11 @@ namespace hypha {
                     // delete ongoing election link
                     Edge::get(get_self(), daoId, election.getId(), upvote_common::links::ONGOING_ELECTION).erase();
 
+                    // delete previous previous election link
+                    if (auto [exists, edge] = Edge::getIfExists(get_self(), daoId, upvote_common::links::PREVIOUS_ELECTION); exists) {
+                        edge.erase();
+                    }
+
                     // add previous election link
                     Edge(get_self(), get_self(), daoId, election.getId(), upvote_common::links::PREVIOUS_ELECTION);
 
