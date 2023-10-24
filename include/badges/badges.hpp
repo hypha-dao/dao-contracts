@@ -51,6 +51,10 @@ bool hasHeadDelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID);
 
 bool hasChiefDelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID);
 
+bool hasL1DelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID);
+
+bool hasL2DelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID);
+
 void checkHoldsBadge(dao& dao, Document& badge, uint64_t daoID, uint64_t memberID);
 
 //bool isPeriodBased(Document& badge);

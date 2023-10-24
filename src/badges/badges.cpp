@@ -152,6 +152,12 @@ void onBadgeActivated(dao& dao, RecurringActivity& badgeAssign)
         case SystemBadgeType::ChiefDelegate: {
             createLink(badges_links::CHIEF_DELEGATE);
         } break;
+        case SystemBadgeType::L1Delegate: {
+            createLink(badges_links::L1_DELEGATE);
+        } break;
+        case SystemBadgeType::L2Delegate: {
+            createLink(badges_links::L2_DELEGATE);
+        } break;
         default:
             EOS_CHECK(false, "Invalid system badge type");
             break;
@@ -213,6 +219,12 @@ void onBadgeArchived(dao& dao, RecurringActivity& badgeAssign)
         case SystemBadgeType::ChiefDelegate: {
             removeLink(badges_links::CHIEF_DELEGATE);
         } break;
+        case SystemBadgeType::L1Delegate: {
+            removeLink(badges_links::L1_DELEGATE);
+        } break;
+        case SystemBadgeType::L2Delegate: {
+            removeLink(badges_links::L2_DELEGATE);
+        } break;
         default:
             EOS_CHECK(false, "Invalid system badge type");
             break;
@@ -271,6 +283,16 @@ bool hasChiefDelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID)
     return Edge::exists(dao.get_self(), daoID, memberID, badges_links::CHIEF_DELEGATE);
 }
 
+bool hasL1DelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID)
+{
+    return Edge::exists(dao.get_self(), daoID, memberID, badges_links::L1_DELEGATE);
+}
+
+bool hasL2DelegateBadge(dao& dao, uint64_t daoID, uint64_t memberID)
+{
+    return Edge::exists(dao.get_self(), daoID, memberID, badges_links::L2_DELEGATE);
+}
+
 bool isSelfApproveBadge(SystemBadgeType systemType)
 {
 
@@ -303,7 +325,9 @@ void checkHoldsBadge(dao& dao, Document& badge, uint64_t daoID, uint64_t memberI
       { SystemBadgeType::Voter, hasVoterBadge },
       { SystemBadgeType::Delegate, hasDelegateBadge },
       { SystemBadgeType::HeadDelegate, hasHeadDelegateBadge },
-      { SystemBadgeType::ChiefDelegate, hasChiefDelegateBadge }
+      { SystemBadgeType::ChiefDelegate, hasChiefDelegateBadge },
+      { SystemBadgeType::L1Delegate, hasL1DelegateBadge },
+      { SystemBadgeType::L2Delegate, hasL2DelegateBadge }
     };
 
     EOS_CHECK(

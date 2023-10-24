@@ -1367,11 +1367,13 @@ void dao::initSysBadges() {
 
   createSystemBadge(badges::common::links::ADMIN_BADGE, "Admin Badge", "https://assets.hypha.earth/badges/badge_admin.png");
   createSystemBadge(badges::common::links::ENROLLER_BADGE, "Enroller Badge", "https://assets.hypha.earth/badges/badge_enroller.png");
+  createSystemBadge(badges::common::links::TREASURY_BADGE, "Treasurer Badge", "https://assets.hypha.earth/badges/badge_treasurer.png");
+  createSystemBadge(badges::common::links::NORTH_STAR_BADGE, "North Star Badge", "https://assets.hypha.earth/badges/badge_north_star.png");
   createSystemBadge(badges::common::links::DELEGATE, "Upvote Delegate Badge", "");
   createSystemBadge(badges::common::links::CHIEF_DELEGATE, "Chief Delegate Badge", "");
   createSystemBadge(badges::common::links::HEAD_DELEGATE, "Head Delegate Badge", "");
-  createSystemBadge(badges::common::links::TREASURY_BADGE, "Treasurer Badge", "https://assets.hypha.earth/badges/badge_treasurer.png");
-  createSystemBadge(badges::common::links::NORTH_STAR_BADGE, "North Star Badge", "https://assets.hypha.earth/badges/badge_north_star.png");
+  createSystemBadge(badges::common::links::L1_DELEGATE, "L1 Delegate Badge", "");
+  createSystemBadge(badges::common::links::L2_DELEGATE, "L2 Delegate Badge", "");
 
 }
 
@@ -1392,6 +1394,10 @@ void dao::createSystemBadge(name badge_edge, string label, string icon) {
     systemBadgeType = badges::SystemBadgeType::ChiefDelegate;
   } else if (badge_edge == badges::common::links::HEAD_DELEGATE) {
     systemBadgeType = badges::SystemBadgeType::HeadDelegate;
+  } else if (badge_edge == badges::common::links::L1_DELEGATE) {
+    systemBadgeType = badges::SystemBadgeType::L1Delegate;
+  } else if (badge_edge == badges::common::links::L2_DELEGATE) {
+    systemBadgeType = badges::SystemBadgeType::L2Delegate;
   } else {
     eosio::check(false, "unknown system type");
   }
@@ -3512,7 +3518,7 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
 
 void dao::reset() {
 
-  eosio::check(false, "reset is only for testing");
+  // eosio::check(false, "reset is only for testing");
 
   require_auth(_self);
 

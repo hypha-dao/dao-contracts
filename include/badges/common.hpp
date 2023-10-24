@@ -21,6 +21,8 @@ enum class SystemBadgeType
     ChiefDelegate,
     HeadDelegate,
     None,
+    L1Delegate,
+    L2Delegate, // note only append to this list
 };
 
 namespace items {
@@ -37,6 +39,8 @@ namespace links {
     inline constexpr auto DELEGATE = eosio::name("delegate"); 
     inline constexpr auto HEAD_DELEGATE = eosio::name("headdelegate"); 
     inline constexpr auto CHIEF_DELEGATE = eosio::name("chiefdelegate"); 
+    inline constexpr auto L1_DELEGATE = eosio::name("l1.delegate"); 
+    inline constexpr auto L2_DELEGATE = eosio::name("l2.delegate"); 
 }
 
 }
