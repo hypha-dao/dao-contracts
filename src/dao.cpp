@@ -67,6 +67,39 @@ void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
     Edge::get(get_self(), from_node, to_node, edge_name).erase();
 }
 
+void dao::cleandao(uint64_t dao_id)
+{
+  //Remove DAO entries from 'daos' and 'tokentodao' tables
+  eosio::require_auth(get_self());
+  
+  auto daoDoc = TypedDocument::withType(*this, dao_id, common::DAO);
+
+  auto cw = daoDoc.getContentWrapper();
+
+  auto name = cw.getOrFail(DETAILS, DAO_NAME)->getAs<eosio::name>();
+
+  remNameID<dao_table>(name);
+
+  token_to_dao_table tok_t(get_self(), get_self().value);
+
+  auto by_id = tok_t.get_index<"bydocid"_n>();
+  auto idIt = by_id.find(dao_id);
+  
+  if (idIt != by_id.end()){
+    by_id.erase(idIt);
+  }
+
+  auto voiceContract = getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+
+  //delete voice token, reward and peg tokens are not deletable ATM
+  eosio::action(
+    eosio::permission_level(get_self(), eosio::name("active")),
+    voiceContract,
+    eosio::name("del"),
+    std::make_tuple(name, asset{0, symbol{"VOICE", 2}})
+  ).send();
+}
+
 void dao::remdoc(uint64_t doc_id)
 {
     eosio::require_auth(get_self());
