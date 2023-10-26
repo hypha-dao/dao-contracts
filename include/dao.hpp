@@ -195,6 +195,8 @@ namespace pricing {
 
       ACTION remdoc(uint64_t doc_id);
 
+      ACTION cleandao(uint64_t dao_id);
+
       ACTION createcalen(bool is_default);
 
       ACTION initcalendar(uint64_t calendar_id, uint64_t next_period);
