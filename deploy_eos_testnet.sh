@@ -1,0 +1,1 @@
+cleosjungle4 set contract daoxhypha111 build/dao dao_O3.wasm dao.abi

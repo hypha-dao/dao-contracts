@@ -1,0 +1,1 @@
+cleost set contract mtdhoxhyphaa build/dao dao_O3.wasm dao.abi
