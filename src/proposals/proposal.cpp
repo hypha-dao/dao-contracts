@@ -43,9 +43,9 @@ namespace hypha
         TRACE_FUNCTION()
 
         EOS_CHECK(
-            checkMembership(proposer, contentGroups) ||
-            //Contract can always create proposal
-            proposer == m_dao.get_self(),
+            // Contract can always create proposal
+            proposer == m_dao.get_self() ||
+            checkMembership(proposer, contentGroups),
             "Invalid memership for user: " + proposer.to_string()
         );
         return this->internalPropose(proposer, contentGroups, publish, nullptr);

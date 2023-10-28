@@ -1,0 +1,1 @@
+cleos -u https://jungle4.dfuse.eosnation.io set contract daoxhypha111 build/dao dao_O3.wasm dao.abi

@@ -13,6 +13,7 @@ namespace hypha
     class dao;
     class TimeShare;
     class Settings;
+    struct AssetBatch;
 
     class Assignment : public RecurringActivity
     {
@@ -26,9 +27,7 @@ namespace hypha
         TimeShare getCurrentTimeShare();
         TimeShare getLastTimeShare();
 
-        eosio::asset getRewardSalary();
-        eosio::asset getVoiceSalary();
-        eosio::asset getPegSalary();
+        AssetBatch getSalary();
 
         inline uint64_t getDaoID() { return m_daoID; }
     private: 

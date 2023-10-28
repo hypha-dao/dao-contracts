@@ -19,6 +19,9 @@
 #include <period.hpp>
 #include <settings.hpp>
 
+// TODO: Move this to upvote code section
+#include <upvote_election/random_number_generator.hpp>
+
 #include <config/config.hpp>
 
 using eosio::multi_index;
@@ -192,10 +195,14 @@ namespace pricing {
 
       ACTION remdoc(uint64_t doc_id);
 
+      ACTION cleandao(uint64_t dao_id);
+
       ACTION createcalen(bool is_default);
 
       ACTION initcalendar(uint64_t calendar_id, uint64_t next_period);
       
+      ACTION reset(); // debugging - maybe with the dev flags
+
 #ifdef DEVELOP_BUILD_HELPERS
 
       struct InputEdge {
@@ -297,6 +304,7 @@ namespace pricing {
 
       ACTION createroot(const std::string &notes);
       ACTION createdao(ContentGroups &config);
+
       ACTION createdaodft(ContentGroups &config);
       ACTION deletedaodft(uint64_t dao_draft_id);
       ACTION archiverecur(uint64_t document_id);
@@ -326,11 +334,22 @@ namespace pricing {
 #endif
 #ifdef USE_UPVOTE_ELECTIONS
       //Upvote System
+      // ACTION testgrouprng(std::vector<uint64_t> ids, uint32_t seed);
+      // ACTION testgroupr1(uint32_t num_members, uint32_t seed);
+      // ACTION testround(uint64_t dao_id);
+
+      ACTION castupvote(uint64_t round_id, uint64_t group_id, name voter, uint64_t voted_id);
+      ACTION uesubmitseed(uint64_t dao_id, eosio::checksum256 seed, name account);
+      ACTION upvotevideo(uint64_t group_id, name account, std::string link);
+
+
       ACTION createupvelc(uint64_t dao_id, ContentGroups& election_config);
       ACTION editupvelc(uint64_t election_id, ContentGroups& election_config);
       ACTION cancelupvelc(uint64_t election_id);
-      ACTION updateupvelc(uint64_t election_id, bool reschedule);
-      ACTION castelctnvote(uint64_t round_id, name voter, std::vector<uint64_t> voted);
+      ACTION updateupvelc(uint64_t election_id, bool reschedule, bool force);
+
+
+
 #ifdef EOS_BUILD
       ACTION importelct(uint64_t dao_id, bool deferred);
 #endif
@@ -482,6 +501,19 @@ namespace pricing {
 
       void createToken(const std::string& contractType, name issuer, const asset& token);
 
+      template <typename T>
+      inline void delete_table (const name & code, const uint64_t & scope) {
+
+         T table(code, scope);
+         auto itr = table.begin();
+
+         while (itr != table.end()) {
+            itr = table.erase(itr);
+         }
+
+      }
+
+
    private:
 
       void onRewardTransfer(const name& from, const name& to, const asset& amount);
@@ -509,6 +541,12 @@ namespace pricing {
 
       void addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle, const string& daoDescStr);
 
+      void _setupdefs(uint64_t dao_id);
+
+      void initSysBadges();
+      void createSystemBadge(name badge_edge, string label, string icon);
+
+      
       template<class Table>
       std::optional<uint64_t> getNameID(const name& n) const
       {

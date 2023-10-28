@@ -29,10 +29,10 @@ namespace items {
 }
 
 namespace links {
-    // inline constexpr auto TREASURY_BADGE = "treasurerbdg";
+    inline constexpr auto TREASURY_BADGE = eosio::name("treasurerbdg");
     inline constexpr auto ADMIN_BADGE = eosio::name("adminbdg");
     inline constexpr auto ENROLLER_BADGE = eosio::name("enrollerbdg");
-    // inline constexpr auto NORTH_STAR_BADGE = "northstarbdg";
+    inline constexpr auto NORTH_STAR_BADGE = eosio::name("northstarbdg");
     inline constexpr auto VOTER = eosio::name("voter");
     inline constexpr auto DELEGATE = eosio::name("delegate"); 
     inline constexpr auto HEAD_DELEGATE = eosio::name("headdelegate"); 

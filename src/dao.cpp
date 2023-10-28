@@ -21,6 +21,7 @@
 #include <recurring_activity.hpp>
 #include <time_share.hpp>
 #include <settings.hpp>
+#include <treasury/treasury.hpp>
 #include <typed_document.hpp>
 #include <comments/section.hpp>
 #include <comments/comment.hpp>
@@ -65,6 +66,39 @@ void dao::remedge(uint64_t from_node, uint64_t to_node, name edge_name)
 {
     eosio::require_auth(get_self());
     Edge::get(get_self(), from_node, to_node, edge_name).erase();
+}
+
+void dao::cleandao(uint64_t dao_id)
+{
+  //Remove DAO entries from 'daos' and 'tokentodao' tables
+  eosio::require_auth(get_self());
+  
+  auto daoDoc = TypedDocument::withType(*this, dao_id, common::DAO);
+
+  auto cw = daoDoc.getContentWrapper();
+
+  auto name = cw.getOrFail(DETAILS, DAO_NAME)->getAs<eosio::name>();
+
+  remNameID<dao_table>(name);
+
+  token_to_dao_table tok_t(get_self(), get_self().value);
+
+  auto by_id = tok_t.get_index<"bydocid"_n>();
+  auto idIt = by_id.find(dao_id);
+  
+  if (idIt != by_id.end()){
+    by_id.erase(idIt);
+  }
+
+  auto voiceContract = getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
+
+  //delete voice token, reward and peg tokens are not deletable ATM
+  eosio::action(
+    eosio::permission_level(get_self(), eosio::name("active")),
+    voiceContract,
+    eosio::name("del"),
+    std::make_tuple(name, asset{0, symbol{"VOICE", 2}})
+  ).send();
 }
 
 void dao::remdoc(uint64_t doc_id)
@@ -257,6 +291,13 @@ void dao::setupdefs(uint64_t dao_id)
   verifyDaoType(dao_id);
   
   checkAdminsAuth(dao_id);
+
+  _setupdefs(dao_id);
+
+}
+
+void dao::_setupdefs(uint64_t dao_id)
+{
 
   auto defBadges = m_documentGraph.getEdgesFrom(getRootID(), name("defbadge"));
 
@@ -787,9 +828,11 @@ void dao::claimnextper(uint64_t assignment_id)
     .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
   };
 
-  const asset pegSalary = assignment.getPegSalary();
-  const asset voiceSalary = assignment.getVoiceSalary();
-  const asset rewardSalary = assignment.getRewardSalary();
+  auto salary  = assignment.getSalary();
+
+  const asset& pegSalary = salary.peg;
+  const asset& voiceSalary = salary.voice;
+  const asset& rewardSalary = salary.reward;
 
   const int64_t initTimeShare = assignment.getInitialTimeShare()
     .getContentWrapper()
@@ -952,9 +995,9 @@ AssetBatch dao::calculatePeriodPayout(Period& period,
   int64_t periodEndSec = period.getEndTime().sec_since_epoch();
 
   AssetBatch payout {
-    .reward = daoTokens.reward.is_valid() ? asset{ 0, daoTokens.reward.symbol } : asset{},
-    .peg = daoTokens.peg.is_valid() ? asset{ 0, daoTokens.peg.symbol } : asset{},
-    .voice = asset{ 0, daoTokens.voice.symbol }
+    .reward = eosio::asset{ 0, daoTokens.reward.symbol },
+    .peg = eosio::asset{ 0, daoTokens.peg.symbol },
+    .voice = eosio::asset{ 0, daoTokens.voice.symbol }
   };
           
   while (nextTimeShareOpt)
@@ -1353,6 +1396,68 @@ static void makeEnrollerBadge(dao& dao, const name& owner, uint64_t daoID)
   makeAutoApproveBadge(dao.get_self(), "Enroller", "Enroller Permissions", owner, daoID, enrollerBadge.getID());
 }
 
+void dao::initSysBadges() {
+
+  createSystemBadge(badges::common::links::ADMIN_BADGE, "Admin Badge", "https://assets.hypha.earth/badges/badge_admin.png");
+  createSystemBadge(badges::common::links::ENROLLER_BADGE, "Enroller Badge", "https://assets.hypha.earth/badges/badge_enroller.png");
+  createSystemBadge(badges::common::links::DELEGATE, "Upvote Delegate Badge", "");
+  createSystemBadge(badges::common::links::CHIEF_DELEGATE, "Chief Delegate Badge", "");
+  createSystemBadge(badges::common::links::HEAD_DELEGATE, "Head Delegate Badge", "");
+  createSystemBadge(badges::common::links::TREASURY_BADGE, "Treasurer Badge", "https://assets.hypha.earth/badges/badge_treasurer.png");
+  createSystemBadge(badges::common::links::NORTH_STAR_BADGE, "North Star Badge", "https://assets.hypha.earth/badges/badge_north_star.png");
+
+}
+
+void dao::createSystemBadge(name badge_edge, string label, string icon) {
+  
+  badges::SystemBadgeType systemBadgeType;
+  if (badge_edge == badges::common::links::ADMIN_BADGE) {
+    systemBadgeType = badges::SystemBadgeType::Admin;
+  } else if (badge_edge == badges::common::links::ENROLLER_BADGE) {
+    systemBadgeType = badges::SystemBadgeType::Enroller;
+  } else if (badge_edge == badges::common::links::NORTH_STAR_BADGE) {
+    systemBadgeType = badges::SystemBadgeType::NorthStar;
+  } else if (badge_edge == badges::common::links::TREASURY_BADGE) {
+    systemBadgeType = badges::SystemBadgeType::Treasurer;
+  } else if (badge_edge == badges::common::links::DELEGATE) {
+    systemBadgeType = badges::SystemBadgeType::Delegate;
+  } else if (badge_edge == badges::common::links::CHIEF_DELEGATE) {
+    systemBadgeType = badges::SystemBadgeType::ChiefDelegate;
+  } else if (badge_edge == badges::common::links::HEAD_DELEGATE) {
+    systemBadgeType = badges::SystemBadgeType::HeadDelegate;
+  } else {
+    eosio::check(false, "unknown system type");
+  }
+  
+  
+  Document badge(
+    get_self(), 
+    get_self(),
+    ContentGroups{
+        ContentGroup{
+            Content(CONTENT_GROUP_LABEL, DETAILS),
+            Content(common::STATE, common::STATE_APPROVED),
+            Content(common::VOICE_COEFFICIENT, 10000),
+            Content(common::REWARD_COEFFICIENT, 10000),
+            Content(common::PEG_COEFFICIENT, 10000),
+            Content("dao", (int64_t)getRootID()),
+            Content(ICON, icon)
+        },
+        ContentGroup{
+            Content(CONTENT_GROUP_LABEL, SYSTEM),
+            Content(TYPE, common::BADGE_NAME),
+            Content(hypha::badges::common::items::SYSTEM_BADGE_ID, (int64_t)systemBadgeType),
+            Content(NODE_LABEL, label)
+        }
+      }
+    );
+                    
+  auto edge = Edge(get_self(), get_self(), getRootID(), badge.getID(), badge_edge);
+  auto edge2 = Edge(get_self(), get_self(), getRootID(), badge.getID(), name("defbadge"));
+
+}
+
+
 static void makeAdminBadge(dao& dao, const name& owner, uint64_t daoID)
 {
   auto adminBadgeEdge = Edge::get(dao.get_self(), dao.getRootID(), badges::common::links::ADMIN_BADGE);
@@ -1735,6 +1840,7 @@ ACTION dao::createcalen(bool is_default)
     const auto rootId = getRootID();
 
     Edge(get_self(), get_self(), rootId, calendarDoc.getID(), name(common::CALENDAR_WEEK));
+    Edge(get_self(), get_self(), rootId, calendarDoc.getID(), name(common::CALENDAR));
     Edge(get_self(), get_self(), rootId, calendarDoc.getID(), common::OWNS);
     Edge(get_self(), get_self(), calendarDoc.getID(), rootId, common::OWNED_BY);
 
@@ -1848,6 +1954,7 @@ static void checkEcosystemDao(dao& dao, uint64_t daoID)
 void dao::createdao(ContentGroups& config)
 {
   TRACE_FUNCTION();
+
   EOS_CHECK(!isPaused(), "Contract is paused for maintenance. Please try again later.");
 
   auto configCW = ContentWrapper(config);
@@ -1934,24 +2041,23 @@ void dao::createdao(ContentGroups& config)
     
 #ifdef USE_TREASURY
     // Create Treasury
-    eosio::action(
-      eosio::permission_level{ get_self(), name("active") },
-      get_self(),
-      name("createtrsy"),
-      std::make_tuple(
-        daoDoc.getID()
-      )
-    ).send();
+
+    // this is all it really does in createtrsy
+    hypha::treasury::Treasury trsy(*this, hypha::treasury::TreasuryData {
+        .dao = static_cast<int64_t>(daoDoc.getID())
+    });
+
+    // eosio::action(
+    //   eosio::permission_level{ get_self(), name("active") },
+    //   get_self(),
+    //   name("createtrsy"),
+    //   std::make_tuple(
+    //     daoDoc.getID()
+    //   )
+    // ).send();
 #endif
 
-    eosio::action(
-      eosio::permission_level{ get_self(), name("active") },
-      get_self(),
-      name("setupdefs"),
-      std::make_tuple(
-        daoDoc.getID()
-      )
-    ).send();
+    _setupdefs(daoDoc.getID());
 
     auto onboarder = getSettingsDocument(daoDoc.getID())->getOrFail<name>(common::ONBOARDER_ACCOUNT);
 
@@ -2007,17 +2113,17 @@ void dao::createdao(ContentGroups& config)
   else {
 
     //Just do this check on mainnet
-    if (!isTestnet()) {
+    // if (!isTestnet()) {
 
-      auto onboarder = configCW.getOrFail(DETAILS, common::ONBOARDER_ACCOUNT)->getAs<name>();
+    //   auto onboarder = configCW.getOrFail(DETAILS, common::ONBOARDER_ACCOUNT)->getAs<name>();
 
-      auto hyphaId = getDAOID("hypha"_n);
+    //   auto hyphaId = getDAOID("hypha"_n);
 
-      EOS_CHECK(
-        hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
-        "You are not allowed to call this action"
-      );
-    }
+    //   EOS_CHECK(
+    //     hyphaId.has_value() && Member::isMember(*this, *hyphaId, onboarder),
+    //     "You are not allowed to call this action"
+    //   );
+    // }
 
     //Regular DAO creation
     auto daoDoc = createDao(nullptr);
@@ -2214,6 +2320,10 @@ void dao::createroot(const std::string& notes)
   Settings dhoSettings(*this, rootDoc.getID());
 
   addNameID<dao_table>(common::DHO_ROOT_NAME, rootDoc.getID());
+
+  getOrCreateMember(get_self());
+
+  initSysBadges();
 }
 
 void dao::modalerts(uint64_t root_id, ContentGroups& alerts)
@@ -2620,44 +2730,29 @@ void dao::adjustdeferr(name issuer, uint64_t assignment_id, int64_t new_deferred
       approvedDeferredPerc, " - ", UPPER_LIMIT, "]:", new_deferred_perc_x100)
   );
 
-  asset usdPerPeriod = cw.getOrFail(detailsIdx, USD_SALARY_PER_PERIOD)
-    .second->getAs<eosio::asset>();
-
-  int64_t initialTimeshare = assignment.getInitialTimeShare()
-    .getContentWrapper()
-    .getOrFail(DETAILS, TIME_SHARE)->getAs<int64_t>();
-
-  auto daoSettings = getSettingsDocument(assignment.getDaoID());
-
-  auto usdPerPeriodCommitmentAdjusted = normalizeToken(usdPerPeriod) * (initialTimeshare / 100.0);
-
-  auto deferred = new_deferred_perc_x100 / 100.0;
-
-  auto pegVal = usdPerPeriodCommitmentAdjusted * (1.0 - deferred);
-  //husdVal.symbol = common::S_PEG;
-
+  //Update deferred value
   cw.insertOrReplace(*detailsGroup, Content{
     DEFERRED,
     new_deferred_perc_x100
-    });
+  });
 
-  auto rewardToPegVal = normalizeToken(daoSettings->getOrFail<eosio::asset>(common::REWARD_TO_PEG_RATIO));
-
-  auto rewardToken = daoSettings->getOrFail<eosio::asset>(common::REWARD_TOKEN);
-
-  auto pegToken = daoSettings->getOrFail<eosio::asset>(common::PEG_TOKEN);
-
-  auto rewardVal = usdPerPeriodCommitmentAdjusted * deferred / rewardToPegVal;
+  //Get new salaries with the updated deferred
+  auto salaries = assignment.getSalary();
 
   cw.insertOrReplace(*detailsGroup, Content{
-  common::REWARD_SALARY_PER_PERIOD,
-  denormalizeToken(rewardVal, rewardToken)
-    });
+    common::REWARD_SALARY_PER_PERIOD,
+    salaries.reward
+  });
 
   cw.insertOrReplace(*detailsGroup, Content{
     common::PEG_SALARY_PER_PERIOD,
-    denormalizeToken(pegVal, pegToken)
-    });
+    salaries.peg
+  });
+
+  cw.insertOrReplace(*detailsGroup, Content{
+    common::VOICE_SALARY_PER_PERIOD,
+    salaries.voice
+  });
 
   assignment.update();
 }
@@ -2886,7 +2981,7 @@ void dao::checkAdminsAuth(uint64_t dao_id)
 void dao::genPeriods(const std::string& owner, int64_t periodDuration, uint64_t ownerId, uint64_t calendarId, int64_t periodCount/*, int64_t period_duration_sec*/)
 {
   //Max number of periods that should be created in one call
-  const int64_t MAX_PERIODS_PER_CALL = 10;
+  const int64_t MAX_PERIODS_PER_CALL = 20;
 
   //Get last period
   //Document daoDoc(get_self(), dao_id);  
@@ -2947,13 +3042,14 @@ void dao::createVoiceToken(const eosio::name& daoName,
     governanceContract,
     name("create"),
     std::make_tuple(
-      daoName,
-      get_self(),
-      asset{ -getTokenUnit(voiceToken), voiceToken.symbol },
-      decayPeriod,
-      decayPerPeriodx10M
+        daoName,
+        get_self(),
+        asset{ -getTokenUnit(voiceToken), voiceToken.symbol },
+        decayPeriod,
+        decayPerPeriodx10M
     )
   ).send();
+  
 }
 
 void dao::createToken(const std::string& contractType, name issuer, const asset& token)
@@ -3142,38 +3238,7 @@ void dao::addDefaultSettings(ContentGroup& settingsGroup, const string& daoTitle
 
 void dao::pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create) {
 
-  if (settingsGroup.size() < 4) {
-    
-    auto rewardMultiplier = configCW.get(detailsIdx, common::REWARD_MULTIPLIER).second;
-    auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
-
-    // If we need to add 1 other settings just change 4 to 5,6,7 etc. and add the null check here
-    size_t defined = size_t(rewardMultiplier != nullptr) + size_t(rewardToPegTokenRatio != nullptr);
-
-    EOS_CHECK(
-      (settingsGroup.size() > 1) && 
-      (defined == settingsGroup.size() - 1),
-      "Missing some expected parameters [utility_token_multiplier, reward_to_peg_ratio]"
-    )
-
-    if (rewardMultiplier) {
-      rewardMultiplier->getAs<int64_t>();
-      ContentWrapper::insertOrReplace(settingsGroup, *rewardMultiplier);
-    }
-
-    if (rewardToPegTokenRatio) {
-      rewardToPegTokenRatio->getAs<asset>();
-      ContentWrapper::insertOrReplace(settingsGroup, std::move(*rewardToPegTokenRatio));
-    }
-
-    return;
-  }
-
   auto rewardToken = configCW.getOrFail(detailsIdx, common::REWARD_TOKEN).second;
-
-  auto rewardToPegTokenRatio = configCW.getOrFail(detailsIdx, common::REWARD_TO_PEG_RATIO).second;
-
-  rewardToPegTokenRatio->getAs<asset>();
 
   auto rewardTokenMaxSupply = configCW.getOrFail(detailsIdx, "reward_token_max_supply").second;
 
@@ -3206,7 +3271,6 @@ void dao::pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settin
   settingsGroup.push_back(*rewardToken);
   settingsGroup.push_back(std::move(rewardTokenName));
   settingsGroup.push_back(*rewardTokenMaxSupply);
-  ContentWrapper::insertOrReplace(settingsGroup, std::move(*rewardToPegTokenRatio));
   ContentWrapper::insertOrReplace(settingsGroup, *rewardMultiplier);
 
   if (create) {
@@ -3478,5 +3542,25 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
   Document settingsDoc(get_self(), get_self(), std::move(settingCgs));
   Edge::write(get_self(), get_self(), daoID, settingsDoc.getID(), common::SETTINGS_EDGE);
 }
+
+void dao::reset() {
+
+  eosio::check(false, "reset is only for testing");
+
+  require_auth(_self);
+
+  delete_table<election_vote_table>(get_self(), 0);
+  delete_table<election_vote_table>(get_self(), 1);
+  delete_table<election_vote_table>(get_self(), 2);
+  delete_table<election_vote_table>(get_self(), 3);
+  delete_table<token_to_dao_table>(get_self(), get_self().value);
+  delete_table<dao_table>(get_self(), get_self().value);
+  delete_table<member_table>(get_self(), get_self().value);
+  delete_table<payment_table>(get_self(), get_self().value);
+  delete_table<Document::document_table>(get_self(), get_self().value);
+  delete_table<Edge::edge_table>(get_self(), get_self().value);
+
+}
+
 
 } // namespace hypha

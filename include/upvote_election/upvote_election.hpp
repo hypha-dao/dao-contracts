@@ -3,6 +3,8 @@
 #include <typed_document.hpp>
 #include <macros.hpp>
 
+// TODO: move all abieos libs into their own folder
+#include "stream.hpp"
 namespace hypha::upvote_election
 {
 
@@ -14,8 +16,11 @@ class UpvoteElection : public TypedDocument
         Data,
         PROPERTY(start_date, eosio::time_point, StartDate, USE_GETSET),
         PROPERTY(end_date, eosio::time_point, EndDate, USE_GETSET),
+        PROPERTY(seed, eosio::checksum256, Seed, USE_GETSET),
+        PROPERTY(runningSeed, int64_t, RunningSeed, USE_GETSET),
         PROPERTY(status, std::string, Status, USE_GETSET),
-        PROPERTY(duration, int64_t, Duration, USE_GETSET)
+        PROPERTY(duration, int64_t, Duration, USE_GETSET),
+        PROPERTY(round_duration, int64_t, RoundDuration, USE_GET)
     )
 public:
     UpvoteElection(dao& dao, uint64_t id);
@@ -25,15 +30,16 @@ public:
 
     uint64_t getDaoID() const;
 
-    std::vector<ElectionRound> getRounds() const;
+    ElectionRound addRound();
 
-    //std::unique_ptr<ElectionRound> getStartRound();
+    std::vector<ElectionRound> getRounds() const;
     ElectionRound getCurrentRound() const;
     ElectionRound getStartRound() const;
-    ElectionRound getChiefRound() const;
 
     void setStartRound(ElectionRound* startRound) const;
     void setCurrentRound(ElectionRound* currenttRound) const;
+
+    void updateSeed(eosio::input_stream& bytes);
 
     void validate();
 private:

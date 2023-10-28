@@ -1,0 +1,1 @@
+cleos -u http://mainnet.telos.net set contract dao.hypha build/dao dao_O3.wasm dao.abi

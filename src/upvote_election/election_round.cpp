@@ -1,6 +1,9 @@
 #include "upvote_election/election_round.hpp"
+#include "upvote_election/election_group.hpp"
 
 #include <document_graph/edge.hpp>
+// #include <document_graph/content_wrapper.hpp>
+// #include <document_graph/content.hpp>
 
 #include "upvote_election/common.hpp"
 
@@ -10,181 +13,166 @@
 
 namespace hypha::upvote_election {
 
-using namespace upvote_election::common;
+    // SET VALUE EXAMPLE - use accessors magically created with the DECLARE_DOCUMENT Macro
+    //
+        // DECLARE_DOCUMENT(
+        //     Data,
+        //     PROPERTY(credit, eosio::asset, Credit, USE_GETSET),
+        //     PROPERTY(type, std::string, Type, USE_GETSET)
+        // )
+    ////
+    //// ... code
+    //     setCredit(std::move(newCredit)); // credit is asset type
+    //     update();
+    //// ...
+    // get 
+    //     float offerDisc = 1.0f - offer.getDiscountPercentage() / 10000.f;
+    //
+    //
+    // the magical setters are defined to acess the content group details and get/set
+    // they don't seem to call update, so update needs to be called.
+    //
+    // #define USE_GET_SET_DEC(name, type, getSet)\
+    // const type& get##getSet() {\
+    //     return getContentWrapper()\
+    //           .getOrFail(DETAILS, #name)\
+    //           ->getAs<type>();\
+    // }\
+    // void set##getSet(type value) {\
+    //     auto cw = getContentWrapper();\
+    //     cw.insertOrReplace(\
+    //         *cw.getGroupOrFail(DETAILS),\
+    //         Content{ #name, std::move(value) }\
+    //     );\
+    // }
 
-static void validateStartDate(const time_point& startDate)
-{
-    //Only valid if start date is in the future
-    EOS_CHECK(
-        startDate > eosio::current_time_point(),
-        _s("Election start date must be in the future")
-    )
-}
 
-static void validateEndDate(const time_point& startDate, const time_point& endDate)
-{
-    //Only valid if start date is in the future
-    EOS_CHECK(
-        endDate > startDate,
-        to_str("End date must happen after start date: ", startDate, " to ", endDate)
-    );
-}
 
-ElectionRound::ElectionRound(dao& dao, uint64_t id)
-    : TypedDocument(dao, id,  types::ELECTION_ROUND)
-{}
+    using namespace upvote_election::common;
 
-ElectionRound::ElectionRound(dao& dao, uint64_t election_id, Data data)
-    : TypedDocument(dao, types::ELECTION_ROUND)
-{
-    EOS_CHECK(
-        data.delegate_power >= 0,
-        "Delegate Power must be greater or equal to 0"
-    );
+    // static void validateStartDate(const time_point& startDate)
+    // {
+    //     //Only valid if start date is in the future
+    //     EOS_CHECK(
+    //         startDate > eosio::current_time_point(),
+    //         _s("Election start date must be in the future")
+    //     )
+    // }
 
-    validateStartDate(data.start_date);
+    // static void validateEndDate(const time_point& startDate, const time_point& endDate)
+    // {
+    //     //Only valid if start date is in the future
+    //     EOS_CHECK(
+    //         endDate > startDate,
+    //         to_str("End date must happen after start date: ", startDate, " to ", endDate)
+    //     );
+    // }
 
-    validateEndDate(data.start_date, data.end_date);
+    ElectionRound::ElectionRound(dao& dao, uint64_t id)
+        : TypedDocument(dao, id, types::ELECTION_ROUND)
+    {}
 
-    auto cgs = convert(std::move(data));
+    ElectionRound::ElectionRound(dao& dao, uint64_t election_id, Data data)
+        : TypedDocument(dao, types::ELECTION_ROUND)
+    {
+        // EOS_CHECK(
+        //     data.delegate_power >= 0,
+        //     "Delegate Power must be greater or equal to 0"
+        // );
 
-    initializeDocument(dao, cgs);
+        // validateStartDate(data.start_date);
 
-    auto type = getType();
+        // validateEndDate(data.start_date, data.end_date);
 
-    if (type == round_types::CHIEF) {
-        EOS_CHECK(
-            !Edge::getIfExists(dao.get_self(), election_id, links::CHIEF_ROUND).first,
-            "There is another chief delegate round already"
-        )
+        auto cgs = convert(std::move(data));
+
+        initializeDocument(dao, cgs);
+
+        auto type = getType();
+
+        // eosio::print(" add edge - election id: ", election_id, " -> round id: ", getId(), " name: ", links::ELECTION_ROUND);
 
         Edge(
             getDao().get_self(),
             getDao().get_self(),
             election_id,
             getId(),
-            links::CHIEF_ROUND
+            links::ELECTION_ROUND
         );
-    }
-    else if (type == round_types::HEAD) {
-        EOS_CHECK(
-            !Edge::getIfExists(dao.get_self(), election_id, links::HEAD_ROUND).first,
-            "There is another head delegate round already"
-        )
 
         Edge(
             getDao().get_self(),
             getDao().get_self(),
-            election_id,
             getId(),
-            links::HEAD_ROUND
+            election_id,
+            links::ELECTION
+        );
+    }
+
+    UpvoteElection ElectionRound::getElection() {
+        return UpvoteElection(
+            getDao(),
+            Edge::get(getDao().get_self(), getId(), links::ELECTION).getToNode()
+        );
+    }
+
+    std::vector<uint64_t> ElectionRound::getWinners()
+    {
+        std::vector<uint64_t> winners;
+
+        std::vector<Edge> groupEdges = getDao().getGraph().getEdgesFrom(getId(), links::ELECTION_GROUP_LINK);
+        for (auto& edge : groupEdges) {
+            ElectionGroup group(getDao(), edge.getToNode());
+            int64_t winner = group.getWinner();
+            if (winner != -1) {
+                winners.push_back(winner);
+            }
+        }
+
+        return winners;
+    }
+
+    void ElectionRound::setNextRound(ElectionRound* nextRound) const
+    {
+        EOS_CHECK(
+            !getNextRound(),
+            "Election Round already has next round set"
         );
 
-        EOS_CHECK(
-            getPassingCount() == 1,
-            "There can be only 1 Head Delegate"
-        )
+        Edge(
+            getDao().get_self(),
+            getDao().get_self(),
+            getId(),
+            nextRound->getId(),
+            links::NEXT_ROUND
+        );
     }
 
-    Edge(
-        getDao().get_self(),
-        getDao().get_self(),
-        election_id,
-        getId(),
-        links::ROUND
-    );
+    std::unique_ptr<ElectionRound> ElectionRound::getNextRound() const
+    {
+        if (auto [exists, edge] = Edge::getIfExists(getDao().get_self(), getId(), links::NEXT_ROUND);
+            exists) {
+            return std::make_unique<ElectionRound>(getDao(), edge.getToNode());
+        }
 
-    Edge(
-        getDao().get_self(),
-        getDao().get_self(),
-        getId(),
-        election_id,
-        links::ELECTION
-    );
-}
-
-UpvoteElection ElectionRound::getElection() {
-    return UpvoteElection(
-        getDao(),
-        Edge::get(getDao().get_self(), getId(), links::ELECTION).getToNode()
-    );
-}
-
-std::vector<uint64_t> ElectionRound::getWinners()
-{
-    std::vector<uint64_t> winners;
-
-    dao::election_vote_table elctn_t(getDao().get_self(), getId());
-
-    auto byAmount = elctn_t.get_index<"byamount"_n>();
-
-    auto beg = byAmount.rbegin();
-
-    auto idx = 0;
-
-    while (idx < getPassingCount() && beg != byAmount.rend()) {
-        winners.push_back(beg->account_id);
-        ++idx;
-        ++beg;
+        return {};
     }
 
-    return winners;
-}
+    void ElectionRound::addElectionGroup(std::vector<uint64_t> accound_ids, int64_t winner)
+    {
+        ElectionGroup electionGroup(
+            getDao(),   
+            getId(),    
+            accound_ids,  
+            ElectionGroupData{
+                .member_count = accound_ids.size(),
+                .winner = winner
+            }
+        );
 
-void ElectionRound::setNextRound(ElectionRound* nextRound) const
-{
-    EOS_CHECK(
-        !getNextRound(),
-        "Election Round already has next round set"
-    );
-
-    Edge(
-        getDao().get_self(),
-        getDao().get_self(),
-        getId(),
-        nextRound->getId(),
-        links::NEXT_ROUND
-    );
-}
-
-std::unique_ptr<ElectionRound> ElectionRound::getNextRound() const
-{
-    if (auto [exists, edge] = Edge::getIfExists(getDao().get_self(), getId(), links::NEXT_ROUND);
-        exists) {
-        return std::make_unique<ElectionRound>(getDao(), edge.getToNode());    
+        if (winner != -1) {
+            Edge(getDao().get_self(), getDao().get_self(), electionGroup.getId(), winner, links::GROUP_WINNER);
+        }
     }
-    
-    return {};
-}
-
-bool ElectionRound::isCandidate(uint64_t accountId)
-{
-    return Edge::exists(
-        getDao().get_self(),
-        getId(),
-        accountId,
-        links::ROUND_CANDIDATE
-    );
-} 
-
-int64_t ElectionRound::getAccountPower(uint64_t accountId)
-{
-    if (isCandidate(accountId)) {
-        return std::max(int64_t{1}, getDelegatePower());
-    }
-
-    return 1;
-}
-
-void ElectionRound::addCandidate(uint64_t accountId)
-{
-    Edge(
-        getDao().get_self(),
-        getDao().get_self(),
-        getId(),
-        accountId,
-        links::ROUND_CANDIDATE
-    );
-}
 
 }

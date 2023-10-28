@@ -1,123 +1,135 @@
-#include "upvote_election/vote_group.hpp"
+// #include "upvote_election/vote_group.hpp"
 
-#include "upvote_election/common.hpp"
+// #include "upvote_election/common.hpp"
 
-#include "upvote_election/election_round.hpp"
+// #include "upvote_election/election_round.hpp"
 
-#include "dao.hpp"
+// #include "dao.hpp"
 
-namespace hypha::upvote_election {
+// // this document keeps all votes a member has made in a round
+// // this will need to change since each member can only vote once in a round now, not as many as they want
 
-using namespace upvote_election::common;
 
-VoteGroup::VoteGroup(dao& dao, uint64_t id)
-    : TypedDocument(dao, id, types::ELECTION_VOTE_GROUP)
-{}
+// namespace hypha::upvote_election {
 
-VoteGroup::VoteGroup(dao& dao, uint64_t memberId, Data data)
-    : TypedDocument(dao, types::ELECTION_VOTE_GROUP)
-{
-    auto cgs = convert(std::move(data));
+// using namespace upvote_election::common;
 
-    initializeDocument(dao, cgs);
+// VoteGroup::VoteGroup(dao& dao, uint64_t id)
+//     : TypedDocument(dao, id, types::ELECTION_VOTE_GROUP)
+// {}
 
-    Edge(
-        getDao().get_self(),
-        getDao().get_self(),
-        memberId,
-        getId(),
-        links::ELECTION_GROUP
-    );
+// VoteGroup::VoteGroup(dao& dao, uint64_t memberId, Data data)
+//     : TypedDocument(dao, types::ELECTION_VOTE_GROUP)
+// {
+//     auto cgs = convert(std::move(data));
 
-    Edge(
-        getDao().get_self(),
-        getDao().get_self(),
-        //memberId,
-        getId(),
-        getRoundID(),
-        links::ROUND
-        //name(getRoundID())
-    );
-}
+//     initializeDocument(dao, cgs);
 
-uint64_t VoteGroup::getOwner()
-{
-    return Edge::getTo(
-        getDao().get_self(), 
-        getId(), 
-        links::ELECTION_GROUP
-    ).getFromNode();
-}
+//     Edge(
+//         getDao().get_self(),
+//         getDao().get_self(),
+//         memberId,
+//         getId(),
+//         links::ELECTION_GROUP
+//     );
 
-std::optional<VoteGroup> VoteGroup::getFromRound(dao& dao, uint64_t roundId, uint64_t memberId)
-{
-    auto groups = dao.getGraph().getEdgesFrom(memberId, common::links::ELECTION_GROUP);
+//     Edge(
+//         getDao().get_self(),
+//         getDao().get_self(),
+//         getId(),
+//         getRoundID(),
+//         links::ELECTION_ROUND
+//         //name(getRoundID())
+//     );
+// }
 
-    for (auto& group : groups) {
-        if (Edge::exists(dao.get_self(), group.getToNode(), roundId, links::ROUND)) {
-            return VoteGroup(dao, group.getToNode());
-        }
-    }
+// uint64_t VoteGroup::getOwner()
+// {
+//     return Edge::getTo(
+//         getDao().get_self(), 
+//         getId(), 
+//         links::ELECTION_GROUP
+//     ).getFromNode();
+// }
 
-    return std::nullopt;
-}
+// std::optional<VoteGroup> VoteGroup::getFromRound(dao& dao, uint64_t roundId, uint64_t memberId)
+// {
+//     auto groups = dao.getGraph().getEdgesFrom(memberId, common::links::ELECTION_GROUP);
 
-void VoteGroup::castVotes(ElectionRound& round, std::vector<uint64_t> members)
-{
-    auto roundId = getRoundID();
-    auto power = round.getAccountPower(getOwner());
+//     for (auto& group : groups) {
+//         if (Edge::exists(dao.get_self(), group.getToNode(), roundId, links::ROUND)) {
+//             return VoteGroup(dao, group.getToNode());
+//         }
+//     }
 
-    EOS_CHECK(
-        roundId == round.getId(),
-        "Missmatch between stored round id and round parameter"
-    );
+//     return std::nullopt;
+// }
 
-    auto contract = getDao().get_self();
 
-    //We need to first erase previous votes if any
-    auto prevVotes = getDao().getGraph().getEdgesFrom(getId(), links::VOTE);
+// // limit the members field to 1
+// // check the member is member of the same group
+// // This is one vote for multiple members in a large group - we won't have this anymore
+// // Vote group is tied to a single member
 
-    dao::election_vote_table elctn_t(contract, roundId);
+// // We can change the meaning of this
 
-    for (auto& edge : prevVotes) {
-        auto memId = edge.getToNode();
-        auto voteEntry = elctn_t.get(memId, "Member entry doesn't exists");
-        elctn_t.modify(voteEntry, eosio::same_payer, [&](dao::ElectionVote& vote){
-            vote.total_amount -= power;
-        });
-        edge.erase();
-    }
+// // void VoteGroup::castVotes(ElectionRound& round, std::vector<uint64_t> members)
+// // {
+// //     auto roundId = getRoundID();
+// //     auto power = round.getAccountPower(getOwner());
 
-    for (auto memId : members) {
-        //Verify member is a candidate
-        EOS_CHECK(
-            round.isCandidate(memId),
-            "Member must be a candidate to be voted"
-        );
+// //     EOS_CHECK(
+// //         roundId == round.getId(),
+// //         "Missmatch between stored round id and round parameter"
+// //     );
 
-        auto voteIt = elctn_t.find(memId);
+// //     auto contract = getDao().get_self();
 
-        if (voteIt != elctn_t.end()) {
-            elctn_t.modify(voteIt, eosio::same_payer, [&](dao::ElectionVote& vote){
-                vote.total_amount += power;
-            });
-        }
-        else {
-            elctn_t.emplace(contract, [&](dao::ElectionVote& vote){
-                vote.total_amount += power;
-                vote.account_id = memId;
-            });
-        }
+// //     //We need to first erase previous votes if any
+// //     // Because someone might change their vote
+// //     auto prevVotes = getDao().getGraph().getEdgesFrom(getId(), links::VOTE);
 
-        Edge(
-            contract,
-            contract,
-            getId(),
-            memId,
-            links::VOTE
-        );
-    }
-}
+// //     dao::election_vote_table elctn_t(contract, roundId);
 
-}
+// //     for (auto& edge : prevVotes) {
+// //         auto memId = edge.getToNode();
+// //         auto voteEntry = elctn_t.get(memId, "Member entry doesn't exists");
+// //         elctn_t.modify(voteEntry, eosio::same_payer, [&](dao::ElectionVote& vote){
+// //             vote.total_amount -= power;
+// //         });
+// //         edge.erase();
+// //     }
+
+// //     for (auto memId : members) {
+// //         //Verify member is a candidate
+// //         EOS_CHECK(
+// //             round.isCandidate(memId),
+// //             "Member must be a candidate to be voted"
+// //         );
+
+// //         auto voteIt = elctn_t.find(memId);
+
+// //         if (voteIt != elctn_t.end()) {
+// //             elctn_t.modify(voteIt, eosio::same_payer, [&](dao::ElectionVote& vote){
+// //                 vote.total_amount += power;
+// //             });
+// //         }
+// //         else {
+// //             elctn_t.emplace(contract, [&](dao::ElectionVote& vote){
+// //                 vote.total_amount += power;
+// //                 vote.account_id = memId;
+// //             });
+// //         }
+
+// //         Edge(
+// //             contract,
+// //             contract,
+// //             getId(),
+// //             memId,
+// //             links::VOTE
+// //         );
+// //     }
+// // }
+
+// }
 
