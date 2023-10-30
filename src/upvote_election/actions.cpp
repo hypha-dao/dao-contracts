@@ -565,7 +565,7 @@ namespace hypha {
             }, state);
 
         //Send election id as 0 meaning that election was done outside
-        assignDelegateBadges(*this, dao_id, 0, chiefs, head, false, &trx);
+        assignDelegateBadges(*this, dao_id, 0, chiefs, *head, &trx);
 
         //Trigger all cleanup and propose actions
         if (deferred) {
