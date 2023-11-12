@@ -3117,43 +3117,6 @@ void dao::onRewardTransfer(const name& from, const name& to, const asset& amount
   }
 }
 
-void dao::on_husd(const name& from, const name& to, const asset& quantity, const string& memo) {
-
-  EOS_CHECK(quantity.amount > 0, "quantity must be > 0");
-  EOS_CHECK(quantity.is_valid(), "quantity invalid");
-
-  asset hyphaUsdVal = getSettingOrFail<eosio::asset>(common::HYPHA_USD_VALUE);
-  
-  EOS_CHECK(
-    hyphaUsdVal.symbol.precision() == 4,
-    to_str("Expected hypha_usd_value precision to be 4, but got:", hyphaUsdVal.symbol.precision())
-  );
-
-  double factor = (hyphaUsdVal.amount / 10000.0);
-
-  EOS_CHECK(common::S_HUSD.precision() == common::S_HYPHA.precision(), "unexpected precision mismatch");
-
-  asset hyphaAmount = asset(quantity.amount / factor, common::S_HYPHA);
-
-  auto hyphaID = getDAOID("hypha"_n);
-
-  EOS_CHECK(
-    hyphaID.has_value(),
-    "Missing hypha DAO entry"
-  );
-
-  auto daoSettings = getSettingsDocument(*hyphaID);
-
-  auto daoTokens = AssetBatch{
-    .reward = daoSettings->getOrFail<asset>(common::REWARD_TOKEN),
-    .peg = daoSettings->getOrFail<asset>(common::PEG_TOKEN),
-    .voice = daoSettings->getOrFail<asset>(common::VOICE_TOKEN)
-  };
-
-  std::unique_ptr<Payer> payer = std::unique_ptr<Payer>(PayerFactory::Factory(*this, daoSettings, hyphaAmount.symbol, eosio::name{ 0 }, daoTokens));
-  payer->pay(from, hyphaAmount, string("Buy HYPHA for " + quantity.to_string()));
-}
-
 void dao::updateDaoURL(name dao, const Content::FlexValue& newURL)
 {
   auto newUrlCon = Content{to_str(common::URL, "_", dao), newURL};

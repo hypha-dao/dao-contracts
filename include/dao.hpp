@@ -434,23 +434,13 @@ namespace pricing {
          if (get_first_receiver() == pegContract &&
              to == get_self() &&
              from != get_self()) {
-            //Buying Hypha tokens with HUSD
-            if (memo == "buy") {
-               
-               EOS_CHECK(
-                  quantity.symbol == hypha::common::S_HUSD,
-                  "Buying HYPHA is only available with HUSD tokens"
-               )
-
-               on_husd(from, to, quantity, memo);
-            }
-            else if (memo == "redeem") {
+            if (memo == "redeem") {
                onCashTokenTransfer(from, to, quantity, memo);
             }
             else {
                EOS_CHECK(
                   false, 
-                  "No available actions, please specify in the memo string [buy|redeem]"
+                  "No available actions, please specify in the memo string [redeem]"
                )
             }
          }
@@ -526,8 +516,6 @@ namespace pricing {
                                        std::optional<TimeShare>& nextTimeShareOpt,
                                        std::optional<TimeShare>& lastUsedTimeShare,
                                        int64_t initTimeShare);
-
-      void on_husd(const name& from, const name& to, const asset& quantity, const string& memo);
 
       void onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo);
 
