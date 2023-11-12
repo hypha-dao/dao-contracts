@@ -72,6 +72,13 @@ namespace pricing {
                           eosio::const_mem_fun<TokenToDao, uint64_t, &TokenToDao::by_id>>>
               token_to_dao_table;
 
+      using reward_token_to_dao_table = token_to_dao_table;
+
+      typedef multi_index<name("pegtkentodao"), TokenToDao,
+                          eosio::indexed_by<name("bydocid"),
+                          eosio::const_mem_fun<TokenToDao, uint64_t, &TokenToDao::by_id>>>
+              peg_token_to_dao_table;
+
       TABLE NameToID
       {
         uint64_t id;
@@ -119,7 +126,7 @@ namespace pricing {
                           eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
           payment_table;
 
-      ACTION assigntokdao(asset token, uint64_t dao_id, bool force);
+      ACTION assigntokdao(asset token, uint64_t dao_id, const string& token_type, bool force);
 
       ACTION propose(uint64_t dao_id, const name &proposer, const name &proposal_type, ContentGroups &content_groups, bool publish);
       ACTION vote(const name& voter, uint64_t proposal_id, string &vote, const std::optional<string> & notes);
@@ -478,7 +485,7 @@ namespace pricing {
 
       void verifyDaoType(uint64_t daoID);
 
-      void pushPegTokenSettings(name dao, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create);
+      void pushPegTokenSettings(name dao, uint64_t daoID, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create);
       void pushVoiceTokenSettings(name dao, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create);
       void pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create);
 

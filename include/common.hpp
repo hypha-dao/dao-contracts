@@ -92,6 +92,8 @@ namespace hypha::common
     inline constexpr auto VOICE_MULTIPLIER = "voice_token_multiplier";
     inline constexpr auto REWARD_MULTIPLIER = "utility_token_multiplier";
     inline constexpr auto PEG_MULTIPLIER = "treasury_token_multiplier";
+    inline constexpr auto PEG = "peg";
+    inline constexpr auto REWARD = "reward";
     // 365.25 / 7.4
     //const float PHASES_PER_YEAR = 49.3581081081;
 
