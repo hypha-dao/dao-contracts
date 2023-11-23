@@ -109,7 +109,7 @@ void dao::cleandao(uint64_t dao_id)
 
   //delete voice token, reward and peg tokens are not deletable ATM
   eosio::action(
-    eosio::permission_level(get_self(), eosio::name("active")),
+    eosio::permission_level(voiceContract, eosio::name("active")),
     voiceContract,
     eosio::name("del"),
     std::make_tuple(name, asset{0, symbol{"VOICE", 2}})
