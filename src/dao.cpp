@@ -3560,7 +3560,7 @@ void dao::reset() {
   delete_table<election_vote_table>(get_self(), 1);
   delete_table<election_vote_table>(get_self(), 2);
   delete_table<election_vote_table>(get_self(), 3);
-  delete_table<token_to_dao_table>(get_self(), get_self().value);
+  delete_table<reward_token_to_dao_table>(get_self(), get_self().value);
   delete_table<peg_token_to_dao_table>(get_self(), get_self().value);
   delete_table<dao_table>(get_self(), get_self().value);
   delete_table<member_table>(get_self(), get_self().value);
