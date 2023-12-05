@@ -486,32 +486,19 @@ void dao::onCashTokenTransfer(const name& from, const name& to, const asset& qua
   EOS_CHECK(quantity.amount > 0, "quantity must be > 0");
   EOS_CHECK(quantity.is_valid(), "quantity invalid");
 
-  //Since the symbols must be unique for each Cash token we can use the 
-  //raw value as the edge name
-  name lookupEdgeName = name(quantity.symbol.raw());
+  // Find the token by the raw value
+  auto tokenRaw = quantity.symbol.raw();
 
-  //This would be a very weird scenario where the symbol raw value
-  //equals the edge name 'dao' which would cause unexpected behaviour
-  if (lookupEdgeName == common::DAO) {
-    // auto settings = getSettingsDocument();
-    // settings->setSetting(
-    //   "errors", 
-    //   Content{ "cash_critital_error", to_str("Symbol raw value colapses with 'dao' edge name:", quantity) }
-    // );
-    EOS_CHECK(
-      false, 
-      to_str("Symbol raw value colapses with 'dao' edge name:", quantity)
-    )
+  peg_token_to_dao_table tok_t(get_self(), get_self().value);
 
-    return;
-  }
+  auto it = tok_t.find(tokenRaw);
 
   uint64_t daoID = 0;
 
   auto rootID = getRootID();
   //Fast lookup
-  if (auto [exists, edge] = Edge::getIfExists(get_self(), rootID, lookupEdgeName); exists) {
-    daoID = edge.getToNode();
+  if (it != tok_t.end()) {
+    daoID = it->id;
   }
   //We have to find which DAO this token belongs to (if any)
   else {
@@ -522,25 +509,31 @@ void dao::onCashTokenTransfer(const name& from, const name& to, const asset& qua
 
       //Some DAO's might not have a peg token so let's use the default asset{}
       if (daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN).symbol == quantity.symbol) {
-        //If we find it, let's create a lookup edge for the next time we get this symbol
+        //If we find it, let's create a lookup entry for the next time we get this symbol
         daoID = edge.getToNode();
-        Edge(get_self(), get_self(), rootID, daoID, lookupEdgeName);
+        
+        tok_t.emplace(get_self(), [&](TokenToDao& entry){
+          entry.id = daoID;
+          entry.token = asset{1, quantity.symbol};
+        });
+
         break;
       }
     }
   }
 
-  EOS_CHECK(
-    daoID != 0,
-    "No DAO uses the transfered token"
-  );
+  // This token doesn't belong to any DAO so let's do nothing
+  if (daoID == 0) {
+    return;
+  }
 
   verifyDaoType(daoID);
 
-  EOS_CHECK(
-    Member::isMember(*this, daoID, from),
-    "Sender is not a member of the DAO"
-  )
+  // Allow redeemptions from users that are not members, we might want to disable this
+  // EOS_CHECK(
+  //   Member::isMember(*this, daoID, from),
+  //   "Sender is not a member of the DAO"
+  // )
 
   auto member = Member(*this, getMemberID(from));
 

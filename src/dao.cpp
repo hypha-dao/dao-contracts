@@ -81,20 +81,35 @@ void dao::cleandao(uint64_t dao_id)
 
   remNameID<dao_table>(name);
 
-  token_to_dao_table tok_t(get_self(), get_self().value);
+  // Clean reward token entry if any
+  {
+    token_to_dao_table tok_t(get_self(), get_self().value);
 
-  auto by_id = tok_t.get_index<"bydocid"_n>();
-  auto idIt = by_id.find(dao_id);
-  
-  if (idIt != by_id.end()){
-    by_id.erase(idIt);
+    auto by_id = tok_t.get_index<"bydocid"_n>();
+    auto idIt = by_id.find(dao_id);
+    
+    if (idIt != by_id.end()){
+      by_id.erase(idIt);
+    }
+  }
+
+  // Clean peg token entry if any
+  {
+    peg_token_to_dao_table tok_t(get_self(), get_self().value);
+
+    auto by_id = tok_t.get_index<"bydocid"_n>();
+    auto idIt = by_id.find(dao_id);
+    
+    if (idIt != by_id.end()){
+      by_id.erase(idIt);
+    }
   }
 
   auto voiceContract = getSettingOrFail<eosio::name>(GOVERNANCE_TOKEN_CONTRACT);
 
   //delete voice token, reward and peg tokens are not deletable ATM
   eosio::action(
-    eosio::permission_level(get_self(), eosio::name("active")),
+    eosio::permission_level(voiceContract, eosio::name("active")),
     voiceContract,
     eosio::name("del"),
     std::make_tuple(name, asset{0, symbol{"VOICE", 2}})
@@ -2269,7 +2284,7 @@ void dao::createtokens(uint64_t dao_id, ContentGroups& tokens_info)
   auto daoName = daoSettings->getOrFail<name>(DAO_NAME);
 
   if (auto [pegIdx, pegGroup] = cw.getGroup("peg_details"); pegGroup) {
-    pushPegTokenSettings(daoName, *settingsGroup, cw, pegIdx, true);
+    pushPegTokenSettings(daoName, dao_id, *settingsGroup, cw, pegIdx, true);
   }
 
   if (auto [rewardIdx, rewardGroup] = cw.getGroup("reward_details"); rewardGroup) {
@@ -3069,38 +3084,54 @@ void dao::createToken(const std::string& contractType, name issuer, const asset&
   ).send();
 }
 
-void dao::assigntokdao(asset token, uint64_t dao_id, bool force)
+void dao::assigntokdao(asset token, uint64_t dao_id, const string& token_type, bool force)
 {
   eosio::require_auth(get_self());
 
-  token_to_dao_table tok_t(get_self(), get_self().value);
+  auto assignToTable = [&](auto&& table) {
 
-  auto it = tok_t.find(token.symbol.raw());
+    auto insert = [&](TokenToDao& entry){
+      entry.id = dao_id;
+      entry.token = token;
+    };
+    
+    auto it = table.find(token.symbol.raw());
 
-  auto insert = [&](TokenToDao& entry){
-    entry.id = dao_id;
-    entry.token = token;
+    {
+      auto by_id = table.template get_index<"bydocid"_n>();
+      auto idIt = by_id.find(dao_id);
+      EOS_CHECK(
+        force || idIt == by_id.end(),
+        to_str("There is already an entry for the specified dao_id: ", idIt->token)
+      );
+    }
+
+    if (it != table.end()) {
+      EOS_CHECK(
+        force,
+        to_str("There is already an entry for the specified asset: ", it->id)
+      );
+
+      table.modify(it, eosio::same_payer, insert);
+    }
+    else {
+      table.emplace(get_self(), insert);
+    }
   };
 
-  {
-    auto by_id = tok_t.get_index<"bydocid"_n>();
-    auto idIt = by_id.find(dao_id);
-    EOS_CHECK(
-      force || idIt == by_id.end(),
-      to_str("There is already an entry for the specified dao_id: ", idIt->token)
-    );
+  if (token_type == common::PEG) {
+    peg_token_to_dao_table tok_t(get_self(), get_self().value);
+    assignToTable(tok_t);
   }
-
-  if (it != tok_t.end()) {
-    EOS_CHECK(
-      force,
-      to_str("There is already an entry for the specified asset: ", it->id)
-    );
-
-    tok_t.modify(it, eosio::same_payer, insert);
+  else if (token_type == common::REWARD) {
+    reward_token_to_dao_table tok_t(get_self(), get_self().value);
+    assignToTable(tok_t);
   }
   else {
-    tok_t.emplace(get_self(), insert);
+    EOS_CHECK(
+      false,
+      "Invalid token type, expected [peg | reward]"
+    );
   }
 }
 
@@ -3245,6 +3276,7 @@ void dao::pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settin
       std::make_tuple(
         rewardToken->getAs<asset>(),
         daoID,
+        std::string(common::REWARD),
         false
       )
     ).send();
@@ -3290,7 +3322,7 @@ void dao::pushVoiceTokenSettings(name dao, ContentGroup& settingsGroup, ContentW
   }
 }
 
-void dao::pushPegTokenSettings(name dao, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create) {
+void dao::pushPegTokenSettings(name dao, uint64_t daoID, ContentGroup& settingsGroup, ContentWrapper configCW, int64_t detailsIdx, bool create) {
 
   if (settingsGroup.size() == 2) {
     
@@ -3338,6 +3370,18 @@ void dao::pushPegTokenSettings(name dao, ContentGroup& settingsGroup, ContentWra
   ContentWrapper::insertOrReplace(settingsGroup, *pegMultiplier);
 
   if (create) {
+
+    eosio::action(
+      eosio::permission_level{ get_self(), name("active") },
+      get_self(),
+      name("assigntokdao"),
+      std::make_tuple(
+        pegToken->getAs<asset>(),
+        daoID,
+        std::string(common::PEG),
+        false
+      )
+    ).send();
 
     auto dhoSettings = getSettingsDocument();
 
@@ -3483,7 +3527,7 @@ void dao::readDaoSettings(uint64_t daoID, const name& dao, ContentWrapper config
   pushVoiceTokenSettings(dao, settingsGroup, configCW, detailsIdx, !isDraft);
 
   if (!skipPegTok) {
-    pushPegTokenSettings(dao, settingsGroup, configCW, detailsIdx, !isDraft);
+    pushPegTokenSettings(dao, daoID, settingsGroup, configCW, detailsIdx, !isDraft);
   }
 
   if (!skipRewardTok) {
@@ -3516,7 +3560,8 @@ void dao::reset() {
   delete_table<election_vote_table>(get_self(), 1);
   delete_table<election_vote_table>(get_self(), 2);
   delete_table<election_vote_table>(get_self(), 3);
-  delete_table<token_to_dao_table>(get_self(), get_self().value);
+  delete_table<reward_token_to_dao_table>(get_self(), get_self().value);
+  delete_table<peg_token_to_dao_table>(get_self(), get_self().value);
   delete_table<dao_table>(get_self(), get_self().value);
   delete_table<member_table>(get_self(), get_self().value);
   delete_table<payment_table>(get_self(), get_self().value);
