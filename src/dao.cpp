@@ -3276,7 +3276,7 @@ void dao::pushRewardTokenSettings(name dao, uint64_t daoID, ContentGroup& settin
       std::make_tuple(
         rewardToken->getAs<asset>(),
         daoID,
-        common::REWARD,
+        std::string(common::REWARD),
         false
       )
     ).send();
@@ -3378,7 +3378,7 @@ void dao::pushPegTokenSettings(name dao, uint64_t daoID, ContentGroup& settingsG
       std::make_tuple(
         pegToken->getAs<asset>(),
         daoID,
-        common::PEG,
+        std::string(common::PEG),
         false
       )
     ).send();
