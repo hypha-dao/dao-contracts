@@ -521,28 +521,19 @@ namespace hypha
         publishImpl(proposal);
 
         proposal.update();
-
-        // MARK DEFERRED
         
         //Schedule a trx to close the proposal
-        eosio::transaction trx;
-        trx.actions.emplace_back(eosio::action(
+        eosio::action act(
             permission_level(m_dao.get_self(), eosio::name("active")),
             m_dao.get_self(),
             eosio::name("closedocprop"),
             std::make_tuple(proposal.getID())
-        ));
+        );
 
         auto expiration = proposal.getContentWrapper().getOrFail(BALLOT, EXPIRATION_LABEL, "Proposal has no expiration")->getAs<eosio::time_point>();
 
-        constexpr auto aditionalDelaySec = 60;
-        trx.delay_sec = (expiration.sec_since_epoch() - eosio::current_time_point().sec_since_epoch()) + aditionalDelaySec;
+        m_dao.schedule_deferred_action(expiration + eosio::seconds(4), act);
 
-        auto nextID = m_dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
-
-        trx.send(util::hashCombine(nextID, proposal.getID()), m_dao.get_self());
-
-        m_dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
     }
 
     std::optional<Document> Proposal::getItemDocOpt(const char* docItem, const name& docType, ContentWrapper &contentWrapper)

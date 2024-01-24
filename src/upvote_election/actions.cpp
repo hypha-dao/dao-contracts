@@ -356,33 +356,22 @@ namespace hypha {
     static void scheduleElectionUpdate(dao& dao, UpvoteElection& election, time_point date)
     {
         if (date < eosio::current_time_point()) return;
-
-        // MARK DEFERRED
         
         //Schedule a trx to close the proposal
-        eosio::transaction trx;
-        trx.actions.emplace_back(eosio::action(
+        eosio::action act(
             eosio::permission_level(dao.get_self(), eosio::name("active")),
             dao.get_self(),
             eosio::name("updateupvelc"),
             std::make_tuple(election.getId(), true, false)
-        ));
+        );
+
+        dao.schedule_deferred_action(date + eosio::seconds(4), act);
 
         EOS_CHECK(
             date > eosio::current_time_point(),
             "Can only schedule for dates in the future"
         );
-
-        constexpr auto aditionalDelaySec = 10;
-        trx.delay_sec = (date - eosio::current_time_point()).to_seconds() + aditionalDelaySec;
-
-        auto dhoSettings = dao.getSettingsDocument();
-
-        auto nextID = dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
-
-        trx.send(nextID, dao.get_self());
-
-        dhoSettings->setSetting(Content{ "next_schedule_id", nextID + 1 });
+        
     }
 
     static void assignDelegateBadges(

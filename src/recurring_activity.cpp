@@ -83,30 +83,17 @@ void RecurringActivity::scheduleArchive()
     if (isInfinite()) {
         return;
     }
-    
-    // MARK DEFERRED
-    
+        
     //Schedule a trx to close the proposal
-    eosio::transaction trx;
-    trx.actions.emplace_back(eosio::action(
+    eosio::action act(
         eosio::permission_level(m_dao->get_self(), eosio::name("active")),
         m_dao->get_self(),
         eosio::name("archiverecur"),
         std::make_tuple(getID())
-    ));
+    );
 
-    auto expiration = getEndDate().sec_since_epoch();
+    m_dao->schedule_deferred_action(getEndDate() + eosio::seconds(4), act);
 
-    constexpr auto aditionalDelaySec = 60;
-    trx.delay_sec = (expiration - eosio::current_time_point().sec_since_epoch()) + aditionalDelaySec;
-
-    auto dhoSettings = m_dao->getSettingsDocument();
-
-    auto nextID = dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
-
-    trx.send(nextID, m_dao->get_self());
-
-    dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
 }
 
 eosio::time_point RecurringActivity::getStartDate()

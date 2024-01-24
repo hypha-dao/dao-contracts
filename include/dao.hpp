@@ -541,6 +541,7 @@ namespace pricing {
 
       }
 
+      void schedule_deferred_action(eosio::time_point_sec execute_time, eosio::action action);
 
    private:
 
@@ -571,8 +572,6 @@ namespace pricing {
 
       void initSysBadges();
       void createSystemBadge(name badge_edge, string label, string icon);
-
-      void schedule_deferred_action(eosio::time_point_sec execute_time, eosio::action action);
 
       
       template<class Table>

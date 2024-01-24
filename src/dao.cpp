@@ -2786,28 +2786,15 @@ void dao::activatebdg(uint64_t assign_badge_id)
     //Let's reschedule then 
     //Schedule a trx to close the proposal
 
-    // MARK DEFERRED
-
-    eosio::transaction trx;
-    trx.actions.emplace_back(eosio::action(
+    eosio::action act(
         eosio::permission_level(get_self(), eosio::name("active")),
         get_self(),
         eosio::name("activatebdg"),
         std::make_tuple(badgeAssing.getID())
-    ));
+    );
+    
+    schedule_deferred_action(startTime + eosio::seconds(4), act);
 
-    auto activationTime = startTime.sec_since_epoch();
-
-    constexpr auto aditionalDelaySec = 60;
-    trx.delay_sec = (activationTime - now.sec_since_epoch()) + aditionalDelaySec;
-
-    auto dhoSettings = getSettingsDocument();
-
-    auto nextID = dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
-
-    trx.send(nextID, get_self());
-
-    dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
   }
 }
 
