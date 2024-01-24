@@ -522,6 +522,8 @@ namespace hypha
 
         proposal.update();
 
+        // MARK DEFERRED
+        
         //Schedule a trx to close the proposal
         eosio::transaction trx;
         trx.actions.emplace_back(eosio::action(
