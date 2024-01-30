@@ -137,7 +137,7 @@ namespace pricing {
          eosio::indexed_by<"bytime"_n, eosio::const_mem_fun<deferred_actions_table, uint64_t, &deferred_actions_table::by_execute_time>>
       > deferred_actions_tables;
 
-      /*
+      
       // deferred actions test - remove
       TABLE testdtrx_table {
          uint64_t id;
@@ -147,7 +147,7 @@ namespace pricing {
          uint64_t primary_key() const { return id; }
       };
       typedef multi_index<"testdtrx"_n, testdtrx_table> testdtrx_tables;
-      */
+      
 
       ACTION assigntokdao(asset token, uint64_t dao_id, bool force);
 
@@ -235,11 +235,9 @@ namespace pricing {
 
       ACTION executenext(); // execute stored deferred actions
 
-      /*
       // Actions for testing deferred transactions - only for unit tests
       ACTION addtest(eosio::time_point_sec execute_time, uint64_t number, std::string text);
       ACTION testdtrx(uint64_t number, std::string text);
-      */
 
 #ifdef DEVELOP_BUILD_HELPERS
 

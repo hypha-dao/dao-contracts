@@ -3561,7 +3561,7 @@ void dao::schedule_deferred_action(eosio::time_point_sec execute_time, eosio::ac
     });
 }
 
-/*
+
 // Test methods for deferred transactions - delete
 void dao::addtest(eosio::time_point_sec execute_time, uint64_t number, std::string text) {
     require_auth(get_self());
@@ -3591,7 +3591,7 @@ void dao::testdtrx(uint64_t number, std::string text) {
         row.text = text;
     });
 }
-*/
+
 
 
 } // namespace hypha
