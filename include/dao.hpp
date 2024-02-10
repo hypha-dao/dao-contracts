@@ -118,6 +118,36 @@ namespace pricing {
                           eosio::indexed_by<name("byrecipient"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_recipient>>,
                           eosio::indexed_by<name("byassignment"), eosio::const_mem_fun<Payment, uint64_t, &Payment::by_assignment>>>
           payment_table;
+      
+      // deferred actions table
+
+      TABLE deferred_actions_table {
+         uint64_t id;
+         eosio::time_point_sec execute_time;
+         std::vector<eosio::permission_level> auth;
+         name account;
+         name action_name;
+         std::vector<char> data;
+
+         uint64_t primary_key() const { return id; }
+         uint64_t by_execute_time() const { return execute_time.sec_since_epoch(); }
+
+      };
+      typedef multi_index<"defactions"_n, deferred_actions_table,
+         eosio::indexed_by<"bytime"_n, eosio::const_mem_fun<deferred_actions_table, uint64_t, &deferred_actions_table::by_execute_time>>
+      > deferred_actions_tables;
+
+      
+      // deferred actions test - remove
+      TABLE testdtrx_table {
+         uint64_t id;
+         uint64_t number;
+         std::string text;
+
+         uint64_t primary_key() const { return id; }
+      };
+      typedef multi_index<"testdtrx"_n, testdtrx_table> testdtrx_tables;
+      
 
       ACTION assigntokdao(asset token, uint64_t dao_id, bool force);
 
@@ -202,6 +232,12 @@ namespace pricing {
       ACTION initcalendar(uint64_t calendar_id, uint64_t next_period);
       
       ACTION reset(); // debugging - maybe with the dev flags
+
+      ACTION executenext(); // execute stored deferred actions
+
+      // Actions for testing deferred transactions - only for unit tests
+      ACTION addtest(eosio::time_point_sec execute_time, uint64_t number, std::string text);
+      ACTION testdtrx(uint64_t number, std::string text);
 
 #ifdef DEVELOP_BUILD_HELPERS
 
@@ -503,6 +539,7 @@ namespace pricing {
 
       }
 
+      void schedule_deferred_action(eosio::time_point_sec execute_time, eosio::action action);
 
    private:
 

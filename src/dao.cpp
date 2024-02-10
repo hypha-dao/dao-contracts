@@ -2785,26 +2785,16 @@ void dao::activatebdg(uint64_t assign_badge_id)
   else {
     //Let's reschedule then 
     //Schedule a trx to close the proposal
-    eosio::transaction trx;
-    trx.actions.emplace_back(eosio::action(
+
+    eosio::action act(
         eosio::permission_level(get_self(), eosio::name("active")),
         get_self(),
         eosio::name("activatebdg"),
         std::make_tuple(badgeAssing.getID())
-    ));
+    );
+    
+    schedule_deferred_action(startTime + eosio::seconds(4), act);
 
-    auto activationTime = startTime.sec_since_epoch();
-
-    constexpr auto aditionalDelaySec = 60;
-    trx.delay_sec = (activationTime - now.sec_since_epoch()) + aditionalDelaySec;
-
-    auto dhoSettings = getSettingsDocument();
-
-    auto nextID = dhoSettings->getSettingOrDefault("next_schedule_id", int64_t(0));
-
-    trx.send(nextID, get_self());
-
-    dhoSettings->setSetting(Content{"next_schedule_id", nextID + 1});
   }
 }
 
@@ -3512,6 +3502,7 @@ void dao::reset() {
 
   require_auth(_self);
 
+/*
   delete_table<election_vote_table>(get_self(), 0);
   delete_table<election_vote_table>(get_self(), 1);
   delete_table<election_vote_table>(get_self(), 2);
@@ -3522,8 +3513,85 @@ void dao::reset() {
   delete_table<payment_table>(get_self(), get_self().value);
   delete_table<Document::document_table>(get_self(), get_self().value);
   delete_table<Edge::edge_table>(get_self(), get_self().value);
+  delete_table<deferred_actions_tables>(get_self(), get_self().value);
+  delete_table<testdtrx_tables>(get_self(), get_self().value);
+*/
 
 }
+
+// Action to choose and execute the next action
+// Note: anybody can call this - fails if there is no action to execute.
+void dao::executenext() {
+
+    deferred_actions_tables deftrx(get_self(), get_self().value);
+
+    auto idx = deftrx.get_index<"bytime"_n>();
+    auto itr = idx.begin();
+
+    if (itr != idx.end() && itr->execute_time <= eosio::current_time_point()) {
+
+        // Note: We can't use the public constructor because it will misinterpret the 
+        // data and pack it again - data is already in packed format. 
+        eosio::action act;
+        act.account = itr->account;
+        act.name = itr->action_name;
+        act.authorization = itr->auth;
+        act.data = itr->data;
+
+        act.send();
+        idx.erase(itr);
+    }
+    else {
+        eosio::check(false, "No deferred actions to execute at this time.");
+    }
+}
+
+// Add a new deferred transaction
+void dao::schedule_deferred_action(eosio::time_point_sec execute_time, eosio::action action) {
+    
+    deferred_actions_tables deftrx(get_self(), get_self().value);
+
+    deftrx.emplace(get_self(), [&](auto& row) {
+        row.id = deftrx.available_primary_key();
+        row.execute_time = execute_time;
+        row.auth = action.authorization;
+        row.account = action.account;
+        row.action_name = action.name;
+        row.data = action.data;
+    });
+}
+
+
+// Test methods for deferred transactions - delete
+void dao::addtest(eosio::time_point_sec execute_time, uint64_t number, std::string text) {
+    require_auth(get_self());
+
+    // 1 - Create an action object 
+    eosio::action act(
+        eosio::permission_level(get_self(), eosio::name("active")),
+        get_self(),
+        eosio::name("testdtrx"),
+        std::make_tuple(number, text)
+    );
+
+    /// 2 - Schedule the action
+    schedule_deferred_action(execute_time, act);
+
+}
+
+void dao::testdtrx(uint64_t number, std::string text) {
+    require_auth(get_self());
+
+    testdtrx_tables testdtrx(get_self(), get_self().value);
+
+    // Add the new entry to the testdtrx table
+    testdtrx.emplace(get_self(), [&](auto& row) {
+        row.id = testdtrx.available_primary_key();
+        row.number = number;
+        row.text = text;
+    });
+}
+
 
 
 } // namespace hypha
