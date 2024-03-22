@@ -234,10 +234,11 @@ namespace pricing {
       ACTION reset(); // debugging - maybe with the dev flags
 
       ACTION executenext(); // execute stored deferred actions
+      ACTION removedtx(); // delete stalled deferred action
 
       // Actions for testing deferred transactions - only for unit tests
-      ACTION addtest(eosio::time_point_sec execute_time, uint64_t number, std::string text);
-      ACTION testdtrx(uint64_t number, std::string text);
+      // ACTION addtest(eosio::time_point_sec execute_time, uint64_t number, std::string text);
+      // ACTION testdtrx(uint64_t number, std::string text);
 
 #ifdef DEVELOP_BUILD_HELPERS
 

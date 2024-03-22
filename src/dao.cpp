@@ -3539,12 +3539,32 @@ void dao::executenext() {
         act.data = itr->data;
 
         act.send();
+
         idx.erase(itr);
     }
     else {
         eosio::check(false, "No deferred actions to execute at this time.");
     }
 }
+
+// pick the next executable action, and delete it
+// This is to be used when the scheduler is stalled due to transactions failing.
+void dao::removedtx() {
+    // there should be a special permission for a serivce account set up to call this
+    // permission: scheduler
+    require_auth(get_self());
+
+    deferred_actions_tables deftrx(get_self(), get_self().value);
+    auto idx = deftrx.get_index<"bytime"_n>();
+    auto itr = idx.begin();
+    if (itr != idx.end() && itr->execute_time <= eosio::current_time_point()) {
+        idx.erase(itr);
+    }
+    else {
+        eosio::check(false, "No deferred actions to execute at this time.");
+    }
+}
+
 
 // Add a new deferred transaction
 void dao::schedule_deferred_action(eosio::time_point_sec execute_time, eosio::action action) {
@@ -3561,36 +3581,35 @@ void dao::schedule_deferred_action(eosio::time_point_sec execute_time, eosio::ac
     });
 }
 
-
 // Test methods for deferred transactions - delete
-void dao::addtest(eosio::time_point_sec execute_time, uint64_t number, std::string text) {
-    require_auth(get_self());
+// void dao::addtest(eosio::time_point_sec execute_time, uint64_t number, std::string text) {
+//     require_auth(get_self());
 
-    // 1 - Create an action object 
-    eosio::action act(
-        eosio::permission_level(get_self(), eosio::name("active")),
-        get_self(),
-        eosio::name("testdtrx"),
-        std::make_tuple(number, text)
-    );
+//     // 1 - Create an action object 
+//     eosio::action act(
+//         eosio::permission_level(get_self(), eosio::name("active")),
+//         get_self(),
+//         eosio::name("testdtrx"),
+//         std::make_tuple(number, text)
+//     );
 
-    /// 2 - Schedule the action
-    schedule_deferred_action(execute_time, act);
+//     /// 2 - Schedule the action
+//     schedule_deferred_action(execute_time, act);
 
-}
+// }
 
-void dao::testdtrx(uint64_t number, std::string text) {
-    require_auth(get_self());
+// void dao::testdtrx(uint64_t number, std::string text) {
+//     require_auth(get_self());
 
-    testdtrx_tables testdtrx(get_self(), get_self().value);
+//     testdtrx_tables testdtrx(get_self(), get_self().value);
 
-    // Add the new entry to the testdtrx table
-    testdtrx.emplace(get_self(), [&](auto& row) {
-        row.id = testdtrx.available_primary_key();
-        row.number = number;
-        row.text = text;
-    });
-}
+//     // Add the new entry to the testdtrx table
+//     testdtrx.emplace(get_self(), [&](auto& row) {
+//         row.id = testdtrx.available_primary_key();
+//         row.number = number;
+//         row.text = text;
+//     });
+// }
 
 
 
