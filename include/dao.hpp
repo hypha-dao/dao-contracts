@@ -471,8 +471,13 @@ namespace pricing {
          if (get_first_receiver() == pegContract &&
              to == get_self() &&
              from != get_self()) {
-            if (memo == "redeem") {
-               onCashTokenTransfer(from, to, quantity, memo);
+            
+            const size_t prefix_length = 7; // "redeem,"
+
+            if (memo.substr(0, prefix_length) == "redeem,") {
+               string number_str = memo.substr(prefix_length);
+               uint64_t daoId = stoi(number_str);
+               onCashTokenTransfer(from, to, quantity, daoId, memo);
             }
             else {
                EOS_CHECK(
@@ -555,7 +560,7 @@ namespace pricing {
                                        std::optional<TimeShare>& lastUsedTimeShare,
                                        int64_t initTimeShare);
 
-      void onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo);
+      void onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const uint64_t& daoId, const string& memo);
 
       void onNativeTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo);
 
