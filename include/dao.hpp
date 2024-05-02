@@ -473,6 +473,10 @@ namespace pricing {
              from != get_self()) {
             
             const size_t prefix_length = 7; // "redeem,"
+            
+            if (memo == "redeem") {
+               EOS_CHECK(false, "redeem must have a dao id specified like this: redeem,[daoId]");
+            }
 
             if (memo.substr(0, prefix_length) == "redeem,") {
                string number_str = memo.substr(prefix_length);
