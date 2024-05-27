@@ -475,7 +475,7 @@ void dao::onNativeTokenTransfer(const name& from, const name& to, const asset& q
 #endif
 }
 
-void dao::onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo)
+void dao::onCashTokenTransfer(uint64_t dao_id, const name& from, const name& to, const asset& quantity, const string& memo)
 {
 #ifndef USE_TREASURY
   EOS_CHECK(
@@ -486,65 +486,16 @@ void dao::onCashTokenTransfer(const name& from, const name& to, const asset& qua
   EOS_CHECK(quantity.amount > 0, "quantity must be > 0");
   EOS_CHECK(quantity.is_valid(), "quantity invalid");
 
-  //Since the symbols must be unique for each Cash token we can use the 
-  //raw value as the edge name
-  name lookupEdgeName = name(quantity.symbol.raw());
-
-  //This would be a very weird scenario where the symbol raw value
-  //equals the edge name 'dao' which would cause unexpected behaviour
-  if (lookupEdgeName == common::DAO) {
-    // auto settings = getSettingsDocument();
-    // settings->setSetting(
-    //   "errors", 
-    //   Content{ "cash_critital_error", to_str("Symbol raw value colapses with 'dao' edge name:", quantity) }
-    // );
-    EOS_CHECK(
-      false, 
-      to_str("Symbol raw value colapses with 'dao' edge name:", quantity)
-    )
-
-    return;
-  }
-
-  uint64_t daoID = 0;
-
-  auto rootID = getRootID();
-  //Fast lookup
-  if (auto [exists, edge] = Edge::getIfExists(get_self(), rootID, lookupEdgeName); exists) {
-    daoID = edge.getToNode();
-  }
-  //We have to find which DAO this token belongs to (if any)
-  else {
-    auto daoEdges = getGraph().getEdgesFrom(rootID, common::DAO);
-
-    for (auto& edge : daoEdges) {
-      auto daoSettings = getSettingsDocument(edge.getToNode());
-
-      //Some DAO's might not have a peg token so let's use the default asset{}
-      if (daoSettings->getSettingOrDefault<asset>(common::PEG_TOKEN).symbol == quantity.symbol) {
-        //If we find it, let's create a lookup edge for the next time we get this symbol
-        daoID = edge.getToNode();
-        Edge(get_self(), get_self(), rootID, daoID, lookupEdgeName);
-        break;
-      }
-    }
-  }
+  verifyDaoType(dao_id);
 
   EOS_CHECK(
-    daoID != 0,
-    "No DAO uses the transfered token"
-  );
-
-  verifyDaoType(daoID);
-
-  EOS_CHECK(
-    Member::isMember(*this, daoID, from),
+    Member::isMember(*this, dao_id, from),
     "Sender is not a member of the DAO"
   )
 
   auto member = Member(*this, getMemberID(from));
 
-  Balance memberBal = Balance::getOrCreate(*this, daoID, member.getID());
+  Balance memberBal = Balance::getOrCreate(*this, dao_id, member.getID());
 
   memberBal.add(quantity);
 
