@@ -472,7 +472,15 @@ namespace pricing {
              to == get_self() &&
              from != get_self()) {
             if (memo == "redeem") {
-               onCashTokenTransfer(from, to, quantity, memo);
+               EOS_CHECK(false, "redeem must have a dao id specified like this: redeem,[daoId]");
+            }
+            
+            auto prefix_length = 7;
+
+            if (memo.substr(0, prefix_length) == "redeem,") {
+               string number_str = memo.substr(prefix_length);
+               uint64_t daoId = stoi(number_str);
+               onCashTokenTransfer(daoId, from, to, quantity, memo);
             }
             else {
                EOS_CHECK(
@@ -555,7 +563,7 @@ namespace pricing {
                                        std::optional<TimeShare>& lastUsedTimeShare,
                                        int64_t initTimeShare);
 
-      void onCashTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo);
+      void onCashTokenTransfer(uint64_t dao_id, const name& from, const name& to, const asset& quantity, const string& memo);
 
       void onNativeTokenTransfer(const name& from, const name& to, const asset& quantity, const string& memo);
 
