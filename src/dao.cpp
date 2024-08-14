@@ -2986,6 +2986,10 @@ void dao::genPeriods(const std::string& owner, int64_t periodDuration, uint64_t 
     .getStartTime()
     .sec_since_epoch();
 
+  if (limitTimeExtension) {
+    if (lastPeriodStartSecs + periodDuration) > 365 * 24 * 60 * 60
+  }
+
   for (int64_t i = 0; i < std::min(MAX_PERIODS_PER_CALL, periodCount); ++i) {
     time_point nextPeriodStart(eosio::seconds(lastPeriodStartSecs + periodDuration));
 
@@ -3006,6 +3010,8 @@ void dao::genPeriods(const std::string& owner, int64_t periodDuration, uint64_t 
   Edge(get_self(), get_self(), calendarId, lastPeriodID, common::END);
 
   //Check if there are more periods to created
+  // Note Nik: This makes very little sense since this is an inline action so it will timeout the entire 
+  // transaction if it exceeds the time limit. 
   if (periodCount > MAX_PERIODS_PER_CALL) {
     eosio::action(
       eosio::permission_level(get_self(), eosio::name("active")),
