@@ -51,10 +51,6 @@ namespace links {
     inline constexpr auto UP_VOTE_VOTE = eosio::name("ue.vote");
     inline constexpr auto UPVOTE_GROUP_WINNER = eosio::name("ue.winner");
     inline constexpr auto VOTE = eosio::name("vote"); // ?? 
-
-    // these are defined in badges::common::links
-    // inline constexpr auto CHIEF_DELEGATE 
-    // inline constexpr auto HEAD_DELEGATE 
 }
 
 namespace items {

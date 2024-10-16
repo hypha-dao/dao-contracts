@@ -16,10 +16,12 @@ enum class SystemBadgeType
     Admin,
     Enroller,
     NorthStar,
-    Voter,
-    Delegate,
-    ChiefDelegate,
-    HeadDelegate,
+    // Upvote Election badges are system badges but they work differently from other badges
+    // These are only assigned through the upvote election process
+    Voter, // Upvote Election Voter 
+    Delegate, // Upvote Election Delegate
+    ChiefDelegate, // Upvote Election Chief Delegate
+    HeadDelegate, // Upvote Election Head Delegate
     None,
 };
 
@@ -33,6 +35,8 @@ namespace links {
     inline constexpr auto ADMIN_BADGE = eosio::name("adminbdg");
     inline constexpr auto ENROLLER_BADGE = eosio::name("enrollerbdg");
     inline constexpr auto NORTH_STAR_BADGE = eosio::name("northstarbdg");
+
+    // Upvote Election badges
     inline constexpr auto VOTER = eosio::name("voter");
     inline constexpr auto DELEGATE = eosio::name("delegate"); 
     inline constexpr auto HEAD_DELEGATE = eosio::name("headdelegate"); 

@@ -1,0 +1,1 @@
+cleos -u https://test.pangea.eosusa.io set contract dao.hypha build/dao dao_O3.wasm dao.abi

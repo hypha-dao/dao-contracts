@@ -140,6 +140,12 @@ void onBadgeActivated(dao& dao, RecurringActivity& badgeAssign)
                 common::links::ENROLLER_BADGE
             );
         } break;
+
+        // Note:
+        // Upvote Election Badges should be a separate type since they 
+        // work differently from normal badges, e.g. nobody can apply 
+        // for these badges except through an upvote election...
+
         case SystemBadgeType::Voter: {
             createLink(badges_links::VOTER);
         } break;
